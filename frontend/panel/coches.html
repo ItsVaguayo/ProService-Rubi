@@ -24,8 +24,9 @@
       <a href="coches.html" aria-current="page">Coches</a>
       <a href="coche-nuevo.html">Nuevo coche</a>
       <a href="contactos.html">Contactos <span class="contador">3</span></a>
-      <!-- Solo lo ve gerencia. Al comercial no le sale este enlace. -->
-      <a class="menu__separado" href="usuarios.html">Usuarios</a>
+      <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
+      <a class="menu__separado" href="informes.html">Informes</a>
+      <a href="usuarios.html">Usuarios</a>
     </div>
     <div class="menu__usuario">
       <strong>Jaume</strong>
@@ -153,8 +154,8 @@
           </tr>
           <tr>
             <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
-            <td><a href="coche.html"><span class="matricula">1905 LFV</span></a></td>
-            <td><span class="coche-celda"><a href="coche.html">Renault Clio 1.0 TCe Zen</a><span class="nota">2021 · gasolina · manual · depósito</span></span></td>
+            <td><a href="coche-reservado.html"><span class="matricula">1905 LFV</span></a></td>
+            <td><span class="coche-celda"><a href="coche-reservado.html">Renault Clio 1.0 TCe Zen</a><span class="nota">2021 · gasolina · manual · depósito</span></span></td>
             <td><span class="estado estado--reservado">Reservado</span></td>
             <td class="derecha cifra">45.300</td>
             <td class="derecha cifra">13.900 €</td>
@@ -203,6 +204,17 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- SIN RESULTADOS. Se ve cuando la búsqueda o los filtros no encuentran nada.
+         Para verlo, quita hidden. -->
+    <div class="vacio" hidden>
+      <strong>Ningún coche coincide con la búsqueda</strong>
+      <p class="nota">Revisa la matrícula o quita algún filtro. Si el coche aún no está dado de alta, puedes hacerlo ahora.</p>
+      <div class="ficha-cabecera__linea">
+        <a class="boton boton--secundario" href="coches.html">Quitar filtros</a>
+        <a class="boton" href="coche-nuevo.html">Nuevo coche</a>
+      </div>
     </div>
 
   </main>

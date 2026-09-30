@@ -26,8 +26,9 @@
       <a href="coches.html">Coches</a>
       <a href="coche-nuevo.html">Nuevo coche</a>
       <a href="contactos.html">Contactos <span class="contador">3</span></a>
-      <!-- Solo lo ve gerencia. Al comercial no le sale este enlace. -->
-      <a class="menu__separado" href="usuarios.html">Usuarios</a>
+      <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
+      <a class="menu__separado" href="informes.html">Informes</a>
+      <a href="usuarios.html">Usuarios</a>
     </div>
     <div class="menu__usuario">
       <strong>Jaume</strong>
@@ -60,11 +61,16 @@
     </section>
 
     <!-- TABLERO. Una columna por estado, en el orden del recorrido del coche.
-         Días en ámbar: más de 5 en el mismo estado. En rojo: más de 14,
-         o más de 60 a la venta. -->
+         El número de cada tarjeta son los días en ese estado. En ámbar: más de 5.
+         En rojo: más de 14, o más de 60 a la venta. -->
     <div class="tablero-cabecera">
       <h2>Coches por estado</h2>
-      <span class="nota">Días en el estado actual</span>
+      <!-- Filtro por sitio. Los entregados no salen: están en el listado de coches. -->
+      <nav class="pestanas" aria-label="Dónde está el coche">
+        <a href="index.html" aria-current="page">Todos</a>
+        <a href="#">Patio del taller</a>
+        <a href="#">Parking</a>
+      </nav>
     </div>
     <section class="tablero" aria-label="Coches por estado">
 
@@ -111,7 +117,7 @@
 
       <div class="columna columna--preparacion">
         <h2 class="columna__titulo">Pendiente de fotos <span class="cifra">1</span></h2>
-        <a class="ficha-mini" href="coche.html">
+        <a class="ficha-mini" href="fotos.html">
           <span class="matricula">2156 MHB</span>
           <span class="ficha-mini__coche">Ford Transit Custom 2.0 TDCi 130 CV</span>
           <span class="ficha-mini__datos"><span class="cifra">119.900 km</span><span class="dias dias--aviso cifra">6 días</span></span>
@@ -139,7 +145,7 @@
 
       <div class="columna columna--reservado">
         <h2 class="columna__titulo">Reservado <span class="cifra">1</span></h2>
-        <a class="ficha-mini" href="coche.html">
+        <a class="ficha-mini" href="coche-reservado.html">
           <span class="matricula">1905 LFV</span>
           <span class="ficha-mini__coche">Renault Clio 1.0 TCe Zen</span>
           <span class="ficha-mini__datos"><span class="cifra">45.300 km</span><span class="dias cifra">2 días</span></span>
@@ -155,10 +161,6 @@
         </a>
       </div>
 
-      <div class="columna columna--vendido">
-        <h2 class="columna__titulo">Entregado <span class="cifra">0</span></h2>
-        <p class="columna__vacia">Aquí salen los entregados de los últimos 30 días</p>
-      </div>
 
     </section>
   </main>

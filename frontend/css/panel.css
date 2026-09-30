@@ -205,10 +205,25 @@
 
 .tablero-cabecera {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 12px;
 }
+
+/* Pestañas pequeñas para filtrar (Todos, Patio del taller, Parking) */
+.pestanas { display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: #e6e8ea; }
+.pestanas a {
+  padding: 5px 12px;
+  border-radius: 6px;
+  color: var(--tinta-2);
+  font-size: .8125rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+.pestanas a:hover { color: var(--tinta); }
+.pestanas a[aria-current="page"] { background: var(--blanco); color: var(--tinta); font-weight: 600; box-shadow: 0 1px 2px rgba(23, 25, 28, .08); }
 
 .tablero {
   display: grid;
@@ -343,6 +358,8 @@
 
 .cambiar-estado { display: flex; flex-direction: column; gap: var(--espacio-s); min-width: 220px; }
 .cambiar-estado__fila { display: flex; gap: var(--espacio-s); }
+.enlace-pequeno { color: var(--tinta-3); font-size: .8125rem; text-align: center; }
+.enlace-pequeno:hover { color: var(--tinta); }
 .cambiar-estado select {
   flex: 1;
   min-height: 40px;
@@ -488,6 +505,12 @@
 .margen span { color: #a7adb3; font-size: .875rem; }
 .margen strong { font-size: 1.75rem; line-height: 1; letter-spacing: -.02em; color: #5fd08e; }
 
+/* Reserva activa: los datos en filas */
+.reserva-activa { margin: 0 0 var(--espacio-m); }
+.reserva-activa div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--linea); font-size: .875rem; }
+.reserva-activa dt { color: var(--tinta-3); }
+.reserva-activa dd { margin: 0; font-weight: 600; text-align: right; }
+
 /* Canales donde está publicado */
 .canales { margin: 0; padding: 0; list-style: none; }
 .canales li {
@@ -518,6 +541,171 @@
 
 .pila { display: flex; flex-direction: column; gap: 14px; }
 .pila .nota { margin: 0; }
+
+
+/* Subida de fotos --------------------------------------------------------- */
+
+/* Progreso hacia las 15 fotos obligatorias */
+.progreso {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: var(--espacio-m);
+  padding: 16px 20px;
+  background: var(--blanco);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+}
+.progreso__texto { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; }
+.progreso__texto strong { font-size: 1.125rem; }
+.progreso__barra { height: 8px; border-radius: var(--radio-boton); background: var(--linea); overflow: hidden; }
+.progreso__barra span { display: block; height: 100%; background: var(--rojo); border-radius: inherit; }
+
+/* Zona para soltar o elegir las fotos */
+.subida {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: var(--espacio-l);
+  padding: 32px 20px;
+  border: 2px dashed var(--linea-fuerte);
+  border-radius: var(--radio);
+  background: var(--blanco);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.subida:hover,
+.subida:focus-within { border-color: var(--tinta); background: #fafbfb; }
+.subida__titulo { font-weight: 700; }
+
+/* Lista de fotos en su orden fijo */
+.fotos-orden {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--blanco);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  overflow: hidden;
+}
+
+.foto-fila {
+  display: grid;
+  grid-template-columns: 96px 1fr auto auto auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--linea);
+}
+.foto-fila:first-child { border-top: 0; }
+
+.foto-fila img,
+.foto-fila__hueco { width: 96px; aspect-ratio: 4 / 3; border-radius: var(--radio-pequeno); object-fit: cover; }
+
+.foto-fila__hueco {
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--peligro);
+  background: var(--peligro-fondo);
+  color: var(--peligro);
+  font-size: .8125rem;
+  font-weight: 700;
+}
+
+.foto-fila__info { display: flex; flex-direction: column; min-width: 0; font-size: .875rem; }
+.foto-fila__info .nota { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.foto-fila--falta { background: #fffafa; }
+.foto-fila--falta .foto-fila__info { grid-column: 2 / -1; }
+.foto-fila--dano { background: #fcfcfd; }
+
+/* Flechas para cambiar el orden */
+.foto-fila__mover { display: flex; gap: 4px; }
+.foto-fila__mover button,
+.foto-fila__quitar {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio-pequeno);
+  background: var(--blanco);
+  cursor: pointer;
+}
+.foto-fila__mover button:hover,
+.foto-fila__quitar:hover { border-color: var(--tinta-3); }
+.foto-fila__mover button:disabled { opacity: .35; cursor: default; }
+.foto-fila__quitar { color: var(--peligro); font-size: .8125rem; font-weight: 600; }
+
+
+/* Anuncio en portales ------------------------------------------------------ */
+
+.portales {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--espacio-l);
+  align-items: start;
+}
+
+.portal .nota { margin: 0 0 6px; }
+.portal--retirar { border-color: #e0a23a; }
+
+/* Un dato para copiar: el campo y su botón «Copiar» al lado */
+.copiar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+.copiar textarea { min-height: 220px; line-height: 1.55; }
+.copiar input[readonly],
+.copiar textarea[readonly] { background: #fafbfb; }
+
+.portal__fotos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-pequeno);
+}
+.portal__miniaturas { display: flex; align-items: center; gap: 6px; }
+.portal__miniaturas img { width: 56px; aspect-ratio: 4 / 3; border-radius: 4px; object-fit: cover; }
+
+/* Pasos numerados: aquí el orden sí importa */
+.pasos { margin: 0; padding-left: 20px; color: var(--tinta-2); font-size: .875rem; }
+.pasos li { padding: 2px 0; }
+
+
+/* Informes ----------------------------------------------------------------- */
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: var(--espacio-l);
+  background: var(--blanco);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+}
+.cifras__dato { display: flex; flex-direction: column; gap: 2px; padding: 18px 20px; border-left: 1px solid var(--linea); }
+.cifras__dato:first-child { border-left: 0; }
+.cifras__dato strong { font-size: 1.75rem; letter-spacing: -.02em; line-height: 1.2; }
+.cifras__dato .nota { font-size: .8125rem; }
+
+.coche-celda .matricula { align-self: flex-start; margin-top: 2px; }
+.tabla-pie { margin: 12px 0 0; }
+
+/* Tramos de antigüedad con barra proporcional */
+.tramos { margin: 0; padding: 0; list-style: none; font-size: .875rem; }
+.tramos li { display: grid; grid-template-columns: 1fr 90px 28px; gap: 12px; align-items: center; padding: 8px 0; }
+.tramos strong { text-align: right; }
+.tramos__barra { height: 8px; border-radius: var(--radio-boton); background: var(--fondo); overflow: hidden; }
+.tramos__barra span { display: block; height: 100%; background: var(--tinta-2); }
+.tramos--aviso .tramos__barra span { background: #e0a23a; }
+.tramos--peligro .tramos__barra span { background: var(--peligro); }
 
 
 /* 7. FORMULARIO DE ALTA ---------------------------------------------------- */
@@ -554,6 +742,16 @@
 .bloque--dinero .campo__nombre { color: #d0d4d8; }
 .bloque--dinero .campo input,
 .bloque--dinero .campo select { border-color: transparent; }
+
+/* Equipamiento: casillas agrupadas en columnas */
+.extras-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--espacio-l);
+}
+.grupo-extras { display: flex; flex-direction: column; gap: 8px; }
+.grupo-extras h3 { margin-bottom: 2px; font-size: .8125rem; color: var(--tinta-3); }
+.grupo-extras .casilla { font-size: .875rem; }
 
 /* Barra con el botón de guardar, siempre visible abajo */
 .barra-guardar {
@@ -622,7 +820,8 @@
    Todo lo de aquí abajo solo se aplica en pantallas estrechas. */
 
 @media (max-width: 1150px) {
-  .ficha { grid-template-columns: 1fr; }
+  .ficha,
+  .portales { grid-template-columns: 1fr; }
   .ficha-cabecera { grid-template-columns: 160px 1fr; }
   .cambiar-estado { grid-column: 1 / -1; }
   .recorrido { grid-template-columns: repeat(5, 1fr); row-gap: 14px; }
@@ -677,7 +876,17 @@
   .ficha-cabecera__foto { max-width: 100%; }
 
   .recorrido { grid-template-columns: repeat(2, 1fr); }
+  .cifras { grid-template-columns: 1fr 1fr; }
+  .cifras__dato:nth-child(3) { border-left: 0; }
+  .cifras__dato:nth-child(n+3) { border-top: 1px solid var(--linea); }
 
   .barra-guardar { left: 0; padding: 10px var(--espacio-m); }
+
+  .foto-fila { grid-template-columns: 80px 1fr; gap: 8px 12px; }
+  .foto-fila img,
+  .foto-fila__hueco { width: 80px; grid-row: span 2; }
+  .foto-fila .casilla,
+  .foto-fila__mover,
+  .foto-fila__quitar { grid-column: 2; justify-self: start; }
   .barra-guardar .nota { display: none; }
 }

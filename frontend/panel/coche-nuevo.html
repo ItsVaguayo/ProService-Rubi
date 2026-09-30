@@ -24,8 +24,9 @@
       <a href="coches.html">Coches</a>
       <a href="coche-nuevo.html" aria-current="page">Nuevo coche</a>
       <a href="contactos.html">Contactos <span class="contador">3</span></a>
-      <!-- Solo lo ve gerencia. Al comercial no le sale este enlace. -->
-      <a class="menu__separado" href="usuarios.html">Usuarios</a>
+      <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
+      <a class="menu__separado" href="informes.html">Informes</a>
+      <a href="usuarios.html">Usuarios</a>
     </div>
     <div class="menu__usuario">
       <strong>Jaume</strong>
@@ -46,6 +47,14 @@
          (api/src/modules/vehiculos/campos.js). No lo cambiéis sin avisar a Victor.
          Los importes terminan en _cent porque la API los guarda en céntimos:
          Jaume escribe euros y al conectar el formulario se multiplican por 100. -->
+    <!-- ERROR AL GUARDAR. La API dice qué falla. Para verlo, quita hidden. -->
+    <div class="error error--lista" role="alert" hidden>
+      <strong>No se ha podido guardar:</strong>
+      <ul>
+        <li>Ya hay un coche con la matrícula 4821 LKM</li>
+      </ul>
+    </div>
+
     <form class="formulario" action="coche.html">
 
       <fieldset class="bloque">
@@ -228,6 +237,61 @@
             <span class="campo__nombre">Llantas</span>
             <input name="llantas" placeholder='18" aleación'>
           </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend class="oculto">Equipamiento</legend>
+        <div class="bloque__cabeza">
+          <h2>Equipamiento</h2>
+          <p class="nota">Marca lo que lleva. El cliente podrá filtrar por esto en la web.</p>
+        </div>
+        <!-- Lista provisional. La definitiva sale de la ficha T06 (docs/datos/extras.csv). -->
+        <div class="extras-rejilla">
+          <div class="grupo-extras">
+            <h3>Confort</h3>
+            <label class="casilla"><input type="checkbox" name="extras" value="climatizador"> Climatizador</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="climatizador_bizona"> Climatizador bizona</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="control_de_crucero"> Control de crucero</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="control_de_crucero_adaptativo"> Control de crucero adaptativo</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="asientos_calefactables"> Asientos calefactables</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="asientos_electricos"> Asientos eléctricos</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="volante_multifuncion"> Volante multifunción</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="arranque_sin_llave"> Arranque sin llave</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="porton_electrico"> Portón eléctrico</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="techo_solar"> Techo solar</label>
+          </div>
+          <div class="grupo-extras">
+            <h3>Seguridad</h3>
+            <label class="casilla"><input type="checkbox" name="extras" value="sensores_de_aparcamiento_delanteros"> Sensores de aparcamiento delanteros</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="sensores_de_aparcamiento_traseros"> Sensores de aparcamiento traseros</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="camara_de_marcha_atras"> Cámara de marcha atrás</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="camara_360"> Cámara 360°</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="aviso_de_angulo_muerto"> Aviso de ángulo muerto</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="aviso_de_cambio_de_carril"> Aviso de cambio de carril</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="frenada_de_emergencia"> Frenada de emergencia</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="detector_de_fatiga"> Detector de fatiga</label>
+          </div>
+          <div class="grupo-extras">
+            <h3>Multimedia</h3>
+            <label class="casilla"><input type="checkbox" name="extras" value="navegador"> Navegador</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="apple_carplay"> Apple CarPlay</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="android_auto"> Android Auto</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="bluetooth"> Bluetooth</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="pantalla_tactil"> Pantalla táctil</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="cargador_inalambrico"> Cargador inalámbrico</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="equipo_de_sonido_premium"> Equipo de sonido premium</label>
+          </div>
+          <div class="grupo-extras">
+            <h3>Exterior</h3>
+            <label class="casilla"><input type="checkbox" name="extras" value="faros_led"> Faros LED</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="faros_de_xenon"> Faros de xenón</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="llantas_de_aleacion"> Llantas de aleación</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="barras_de_techo"> Barras de techo</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="enganche_de_remolque"> Enganche de remolque</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="lunas_tintadas"> Lunas tintadas</label>
+            <label class="casilla"><input type="checkbox" name="extras" value="retrovisores_plegables_electricos"> Retrovisores plegables eléctricos</label>
+          </div>
         </div>
       </fieldset>
 

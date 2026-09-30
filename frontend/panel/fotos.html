@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fotos · Ford Transit Custom 2156 MHB · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
+    <div class="menu__enlaces">
+      <a href="index.html">Tablero</a>
+      <a href="coches.html" aria-current="page">Coches</a>
+      <a href="coche-nuevo.html">Nuevo coche</a>
+      <a href="contactos.html">Contactos <span class="contador">3</span></a>
+      <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
+      <a class="menu__separado" href="informes.html">Informes</a>
+      <a href="usuarios.html">Usuarios</a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <a class="volver" href="coche.html">← Volver a la ficha</a>
+
+    <header class="cabecera">
+      <div>
+        <div class="ficha-cabecera__linea">
+          <span class="matricula">2156 MHB</span>
+          <span class="estado estado--preparacion">Pendiente de fotos</span>
+        </div>
+        <h1>Fotos del Ford Transit Custom</h1>
+        <p class="nota">Súbelas en el orden de la lista. Hacen falta 15 para poder publicarlo; como mucho, 25.</p>
+      </div>
+      <div class="cabecera__acciones">
+        <a class="boton boton--secundario" href="coche.html">Guardar y salir</a>
+      </div>
+    </header>
+
+    <!-- PROGRESO: cuántas lleva de las 15 obligatorias -->
+    <section class="progreso" aria-label="Fotos subidas">
+      <div class="progreso__texto">
+        <strong class="cifra">11 de 15</strong>
+        <span class="nota">Faltan 4 para poder publicar: cuadro con km, maletero, motor y llanta</span>
+      </div>
+      <div class="progreso__barra"><span style="width: 73%"></span></div>
+    </section>
+
+    <!-- ZONA DE SUBIDA. Sin JavaScript abre el selector de archivos; al conectar,
+         también se podrán arrastrar las fotos encima. -->
+    <label class="subida">
+      <input class="oculto" type="file" name="fotos" accept="image/*" multiple>
+      <span class="subida__titulo">Arrastra aquí las fotos o pulsa para elegirlas</span>
+      <span class="nota">Puedes subir varias a la vez, tal cual salen del móvil. Se colocan solas en el primer hueco libre.</span>
+    </label>
+
+    <!-- LAS FOTOS EN SU ORDEN FIJO. Cada una: subir o bajar de posición,
+         marcar si es un daño y si sale en la web.
+         Las fotos de daños no cuentan para las 15 y por defecto no salen en la web. -->
+    <ol class="fotos-orden">
+      <li class="foto-fila">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>1 · Frontal</strong><span class="nota">IMG_4812.jpg</span></div>
+        <label class="casilla"><input type="checkbox" name="web-1" checked> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-1"> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición" disabled>↑</button><button type="button" aria-label="Bajar de posición">↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+      <li class="foto-fila">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>2 · 3/4 delantero izq.</strong><span class="nota">IMG_4813.jpg</span></div>
+        <label class="casilla"><input type="checkbox" name="web-2" checked> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-2"> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición">↑</button><button type="button" aria-label="Bajar de posición">↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+      <li class="foto-fila">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>3 · Lateral izq.</strong><span class="nota">IMG_4814.jpg</span></div>
+        <label class="casilla"><input type="checkbox" name="web-3" checked> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-3"> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición">↑</button><button type="button" aria-label="Bajar de posición">↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+      <li class="foto-fila">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>4 · 3/4 trasero izq.</strong><span class="nota">IMG_4815.jpg</span></div>
+        <label class="casilla"><input type="checkbox" name="web-4" checked> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-4"> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición">↑</button><button type="button" aria-label="Bajar de posición">↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+      <li class="foto-fila">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>5 · Trasera</strong><span class="nota">IMG_4816.jpg</span></div>
+        <label class="casilla"><input type="checkbox" name="web-5" checked> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-5"> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición">↑</button><button type="button" aria-label="Bajar de posición">↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+      <li class="foto-fila">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>6 · 3/4 trasero der.</strong><span class="nota">IMG_4817.jpg</span></div>
+        <label class="casilla"><input type="checkbox" name="web-6" checked> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-6"> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición">↑</button><button type="button" aria-label="Bajar de posición">↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+      <li class="foto-fila">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>7 · Lateral der.</strong><span class="nota">IMG_4818.jpg</span></div>
+        <label class="casilla"><input type="checkbox" name="web-7" checked> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-7"> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición">↑</button><button type="button" aria-label="Bajar de posición">↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+      <li class="foto-fila">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>8 · 3/4 delantero der.</strong><span class="nota">IMG_4819.jpg</span></div>
+        <label class="casilla"><input type="checkbox" name="web-8" checked> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-8"> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición">↑</button><button type="button" aria-label="Bajar de posición">↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+      <li class="foto-fila">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>9 · Interior delantero</strong><span class="nota">IMG_4822.jpg</span></div>
+        <label class="casilla"><input type="checkbox" name="web-9" checked> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-9"> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición">↑</button><button type="button" aria-label="Bajar de posición">↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+      <li class="foto-fila">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>10 · Interior trasero</strong><span class="nota">IMG_4823.jpg</span></div>
+        <label class="casilla"><input type="checkbox" name="web-10" checked> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-10"> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición">↑</button><button type="button" aria-label="Bajar de posición">↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+
+      <!-- HUECOS QUE FALTAN -->
+      <li class="foto-fila foto-fila--falta">
+        <span class="foto-fila__hueco">Falta</span>
+        <div class="foto-fila__info"><strong>11 · Cuadro con km</strong><span class="nota">Con el contacto puesto, que se lean los kilómetros</span></div>
+      </li>
+      <li class="foto-fila">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>12 · Consola</strong><span class="nota">IMG_4825.jpg</span></div>
+        <label class="casilla"><input type="checkbox" name="web-12" checked> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-12"> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición">↑</button><button type="button" aria-label="Bajar de posición">↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+      <li class="foto-fila foto-fila--falta">
+        <span class="foto-fila__hueco">Falta</span>
+        <div class="foto-fila__info"><strong>13 · Maletero</strong><span class="nota">Abierto y vacío</span></div>
+      </li>
+      <li class="foto-fila foto-fila--falta">
+        <span class="foto-fila__hueco">Falta</span>
+        <div class="foto-fila__info"><strong>14 · Motor</strong><span class="nota">Con el capó abierto</span></div>
+      </li>
+      <li class="foto-fila foto-fila--falta">
+        <span class="foto-fila__hueco">Falta</span>
+        <div class="foto-fila__info"><strong>15 · Llanta</strong><span class="nota">La delantera, de cerca</span></div>
+      </li>
+
+      <!-- FOTOS DE MÁS (de la 16 a la 25): daños y detalles -->
+      <li class="foto-fila foto-fila--dano">
+        <img src="../img/coche.svg" alt="">
+        <div class="foto-fila__info"><strong>Extra · Puerta lateral</strong><span class="nota">IMG_4830.jpg · Rayón que no se repara</span></div>
+        <label class="casilla"><input type="checkbox" name="web-16"> En la web</label>
+        <label class="casilla"><input type="checkbox" name="dano-16" checked> Daño</label>
+        <div class="foto-fila__mover"><button type="button" aria-label="Subir de posición">↑</button><button type="button" aria-label="Bajar de posición" disabled>↓</button></div>
+        <button class="foto-fila__quitar" type="button">Quitar</button>
+      </li>
+    </ol>
+
+  </main>
+</div>
+</body>
+</html>

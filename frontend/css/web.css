@@ -10,6 +10,7 @@
    3. Listado: filtros y tarjetas
    4. Ficha del coche
    5. Móvil
+   6. Imprimir la ficha
    ========================================================================== */
 
 
@@ -368,6 +369,26 @@ body.web {
 .formulario-web .boton { justify-self: start; min-width: 180px; }
 .formulario-web .casilla { color: #c9ced3; font-size: .875rem; }
 
+/* Vacío sobre fondo negro */
+.web .vacio { border-color: #3a3c41; margin-top: 8px; }
+
+/* Páginas del listado */
+.paginas { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 32px; }
+.paginas a {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #3a3c41;
+  border-radius: var(--radio-boton);
+  color: #c9ced3;
+  font-weight: 600;
+  text-decoration: none;
+}
+.paginas a:hover { border-color: #f1f2f3; color: #f1f2f3; }
+.paginas .paginas__actual { background: var(--rojo); border-color: var(--rojo); color: var(--blanco); }
+
 /* Botón de WhatsApp fijo abajo: solo en el móvil (ver más abajo) */
 .whatsapp-fijo { display: none; }
 
@@ -409,4 +430,37 @@ body.web {
     box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
   }
   body.web { padding-bottom: 84px; }
+}
+
+
+/* 6. IMPRIMIR LA FICHA ------------------------------------------------------
+   Al imprimir (o guardar como PDF) la ficha del coche sale en blanco y negro
+   limpio, sin menú, sin botones y sin formulario. Es la «ficha del coche» que
+   se le da al cliente (8.8 del briefing). */
+
+@media print {
+  body.web { background: #fff; color: #000; font-size: 12pt; padding: 0; }
+  .web-cabecera nav,
+  .web-cabecera .boton,
+  .miga,
+  .galeria__miniaturas,
+  .acciones,
+  .whatsapp-fijo,
+  #contacto,
+  .video,
+  .seccion-web:has(.video) { display: none !important; }
+  .web-cabecera { position: static; background: #151515; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .ficha-web { display: block; }
+  .galeria__grande img { max-height: 9cm; width: auto; margin: 0 auto 12pt; }
+  .resumen { position: static; padding: 0; border: 0; background: none; break-inside: avoid; }
+  .resumen h1, .seccion-web h2 { color: #000; }
+  .resumen__datos span:not(.dgt) { background: none; border: 1px solid #999; color: #000; }
+  .precio, .resumen .cuota { color: #000; }
+  .garantia { background: none; border: 1px solid #999; color: #000; }
+  .garantia strong { color: #000; }
+  .seccion-web { padding-top: 16pt; }
+  .seccion-web h2 { break-after: avoid; }
+  .tabla-datos th, .tabla-datos td { border-color: #ccc; color: #000; padding: 4pt 0; }
+  .equipamiento li::before { color: #000; }
+  .web-pie { margin-top: 16pt; border-color: #ccc; color: #000; }
 }

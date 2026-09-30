@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anuncio en portales · Seat Ateca 4821 LKM · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
+    <div class="menu__enlaces">
+      <a href="index.html">Tablero</a>
+      <a href="coches.html" aria-current="page">Coches</a>
+      <a href="coche-nuevo.html">Nuevo coche</a>
+      <a href="contactos.html">Contactos <span class="contador">3</span></a>
+      <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
+      <a class="menu__separado" href="informes.html">Informes</a>
+      <a href="usuarios.html">Usuarios</a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <a class="volver" href="coche.html">← Volver a la ficha</a>
+
+    <header class="cabecera">
+      <div>
+        <div class="ficha-cabecera__linea">
+          <span class="matricula">4821 LKM</span>
+          <span class="estado estado--venta">Publicado</span>
+        </div>
+        <h1>Anuncio en los portales</h1>
+        <p class="nota">Seat Ateca 1.5 TSI Style · 20.900 €. Todo sale de la ficha: si cambias el precio allí, cambia aquí.</p>
+      </div>
+    </header>
+
+    <!-- UN BLOQUE POR PORTAL.
+         Donde el portal no deja subir los coches solo, el anuncio queda listo para
+         copiar y pegar. Cuando la carga sea automática (ficha T04), el bloque solo
+         enseña el estado. -->
+    <div class="portales">
+
+      <!-- PORTAL PENDIENTE: el que hay que publicar -->
+      <section class="caja portal portal--pendiente" id="wallapop">
+        <div class="caja__titulo">
+          <h2>Wallapop</h2>
+          <span class="estado estado--preparacion">Sin publicar</span>
+        </div>
+
+        <div class="pila">
+          <div class="copiar">
+            <label class="campo">
+              <span class="campo__nombre">Título</span>
+              <input value="Seat Ateca 1.5 TSI Style 150 CV · 2020 · 62.000 km" readonly>
+            </label>
+            <button class="boton boton--secundario boton--pequeno" type="button">Copiar</button>
+          </div>
+
+          <div class="copiar">
+            <label class="campo">
+              <span class="campo__nombre">Precio</span>
+              <input value="20900" readonly>
+            </label>
+            <button class="boton boton--secundario boton--pequeno" type="button">Copiar</button>
+          </div>
+
+          <div class="copiar">
+            <label class="campo">
+              <span class="campo__nombre">Descripción</span>
+              <textarea rows="10" readonly>Seat Ateca 1.5 TSI Style de 150 CV, gasolina, cambio manual. Año 2020 con 62.000 km.
+
+Revisado en nuestro taller de Rubí y con 12 meses de garantía.
+
+Equipamiento: navegador, cámara de marcha atrás, sensores de aparcamiento, control de crucero adaptativo, Apple CarPlay y Android Auto, climatizador bizona, faros LED y portón eléctrico.
+
+Etiqueta DGT C. 5 puertas y 5 plazas. Color gris Magnetic.
+
+Financiación a tu medida. Ven a verlo y pruébalo sin compromiso.
+
+Pro Service Rubí · Ctra. de Terrassa, 83 · Rubí</textarea>
+            </label>
+            <button class="boton boton--secundario boton--pequeno" type="button">Copiar</button>
+          </div>
+
+          <div class="portal__fotos">
+            <div class="portal__miniaturas">
+              <img src="../img/coche.svg" alt="">
+              <img src="../img/coche.svg" alt="">
+              <img src="../img/coche.svg" alt="">
+              <img src="../img/coche.svg" alt="">
+              <span class="nota">+11</span>
+            </div>
+            <a class="boton boton--secundario" href="#">Descargar las 15 fotos</a>
+          </div>
+
+          <ol class="pasos">
+            <li>Copia el título, el precio y la descripción.</li>
+            <li>Descarga las fotos y súbelas en el mismo orden.</li>
+            <li>Cuando esté publicado, pega aquí el enlace del anuncio.</li>
+          </ol>
+
+          <form class="copiar">
+            <label class="campo">
+              <span class="campo__nombre">Enlace del anuncio en Wallapop</span>
+              <input type="url" name="enlace" placeholder="https://es.wallapop.com/item/…">
+            </label>
+            <button class="boton" type="submit">Marcar como publicado</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- PORTALES YA PUBLICADOS: solo el estado y el enlace -->
+      <aside class="ficha__lateral">
+        <section class="caja portal">
+          <div class="caja__titulo">
+            <h2>Web proservicerubi.com</h2>
+            <span class="estado estado--venta">Publicado</span>
+          </div>
+          <p class="nota">Se actualiza sola al cambiar la ficha.</p>
+        </section>
+
+        <section class="caja portal">
+          <div class="caja__titulo">
+            <h2>Coches.net</h2>
+            <span class="estado estado--venta">Publicado</span>
+          </div>
+          <p class="nota">Desde el 8 sep · <a href="#">Ver anuncio</a></p>
+          <p class="nota">Al vender el coche, este anuncio pasa a «Retirar» y sale en «Para hoy» hasta que lo quites.</p>
+        </section>
+
+        <section class="caja portal">
+          <div class="caja__titulo">
+            <h2>Milanuncios</h2>
+            <span class="estado estado--venta">Publicado</span>
+          </div>
+          <p class="nota">Desde el 8 sep · <a href="#">Ver anuncio</a></p>
+        </section>
+
+        <!-- EJEMPLO DE ANUNCIO POR RETIRAR (coche vendido). Para verlo, quita hidden. -->
+        <section class="caja portal portal--retirar" hidden>
+          <div class="caja__titulo">
+            <h2>Milanuncios</h2>
+            <span class="estado estado--preparacion">Retirar</span>
+          </div>
+          <p class="nota">El coche se vendió hace 2 días y el anuncio sigue en pie.</p>
+          <div class="ficha-cabecera__linea">
+            <a class="boton boton--secundario boton--pequeno" href="#">Abrir el anuncio</a>
+            <button class="boton boton--pequeno" type="button">Ya lo he quitado</button>
+          </div>
+        </section>
+      </aside>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>

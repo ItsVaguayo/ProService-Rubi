@@ -25,11 +25,15 @@ frontend/
 ├── img/coche.svg         Foto provisional
 ├── panel/                Lo que usan Jaume y el comercial
 │   ├── login.html
-│   ├── index.html        Tablero con los coches por estado y los avisos
+│   ├── index.html        Tablero: «Para hoy» y los coches por estado
 │   ├── coches.html       Listado con filtros
 │   ├── coche.html        Ficha: recorrido, datos, fotos, dinero, reserva, portales, historial
-│   ├── coche-nuevo.html  Alta de un coche
+│   ├── coche-reservado.html  La misma ficha con una reserva activa
+│   ├── coche-nuevo.html  Alta de un coche, con el equipamiento en casillas
+│   ├── fotos.html        Subida de fotos en su orden fijo
+│   ├── anuncio.html      Anuncio listo para copiar en cada portal
 │   ├── contactos.html    Lo que entra por los formularios de la web
+│   ├── informes.html     Ventas, márgenes y stock parado (solo gerencia)
 │   └── usuarios.html     Quién entra y con qué rol (solo gerencia)
 └── web/                  Lo que ve el cliente en proservicerubi.com
     ├── index.html        Listado con buscador
@@ -48,7 +52,9 @@ El estilo sale de su marca, no de una plantilla:
 - **La matrícula** se dibuja como la placa (`<span class="matricula">4821 LKM</span>`). Jaume reconoce los coches por la matrícula. En la web pública no sale.
 - **Estados por fases.** Los 10 estados van en 5 colores: llegada (gris), preparación (ámbar), a la venta (verde), reservado (azul) y vendido (negro). Diez colores distintos no se distinguen.
 - **Nombres de clase en castellano**, con el formato `bloque__parte--variante`. Por ejemplo, `ficha-mini__coche` es la parte «coche» de la tarjeta pequeña y `boton--secundario` es una variante del botón.
-- **El menú del panel se repite** en cada página. Si lo cambiáis, cambiadlo en las siete.
+- **El menú del panel se repite** en cada página. Si lo cambiáis, cambiadlo en todas.
+- **Errores y pantallas vacías** están en el HTML con el atributo `hidden`. Para verlos en la maqueta, quitadlo.
+- **Imprimir.** La ficha pública (`web/coche.html`) tiene estilo de impresión: con Ctrl + P sale limpia para dársela al cliente en papel o en PDF.
 - **Móvil.** Todas las páginas se adaptan. Lo de móvil está al final de cada CSS, dentro de `@media`. Probadlo con F12 → icono del móvil.
 
 ## Reglas para no romper nada

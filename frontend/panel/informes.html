@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Informes · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
+    <div class="menu__enlaces">
+      <a href="index.html">Tablero</a>
+      <a href="coches.html">Coches</a>
+      <a href="coche-nuevo.html">Nuevo coche</a>
+      <a href="contactos.html">Contactos <span class="contador">3</span></a>
+      <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
+      <a class="menu__separado" href="informes.html" aria-current="page">Informes</a>
+      <a href="usuarios.html">Usuarios</a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <header class="cabecera">
+      <div>
+        <h1>Informes</h1>
+        <p class="nota">Lo que se mira los lunes: ventas, márgenes y coches parados. Solo gerencia.</p>
+      </div>
+      <form class="cabecera__acciones">
+        <label class="campo">
+          <span class="campo__nombre">Mes</span>
+          <select name="mes">
+            <option>Septiembre 2026</option>
+            <option>Agosto 2026</option>
+            <option>Julio 2026</option>
+          </select>
+        </label>
+        <a class="boton boton--secundario" href="#">Exportar para el gestor</a>
+      </form>
+    </header>
+
+    <!-- CIFRAS DEL MES. Datos de ejemplo. -->
+    <section class="cifras" aria-label="Resumen del mes">
+      <div class="cifras__dato">
+        <span class="rotulo">Coches vendidos</span>
+        <strong class="cifra">12</strong>
+        <span class="nota">Igual que en agosto</span>
+      </div>
+      <div class="cifras__dato">
+        <span class="rotulo">Margen bruto</span>
+        <strong class="cifra">31.400 €</strong>
+        <span class="nota">2.617 € por coche</span>
+      </div>
+      <div class="cifras__dato">
+        <span class="rotulo">Días hasta vender</span>
+        <strong class="cifra">45</strong>
+        <span class="nota">Media de los vendidos este mes</span>
+      </div>
+      <div class="cifras__dato">
+        <span class="rotulo">En stock</span>
+        <strong class="cifra">10</strong>
+        <span class="nota">7 en depósito, 3 propios</span>
+      </div>
+    </section>
+
+    <div class="ficha">
+      <div class="ficha__principal">
+
+        <!-- VENTAS DEL MES -->
+        <section class="caja">
+          <div class="caja__titulo"><h2>Ventas de septiembre</h2></div>
+          <div class="tabla-caja">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Coche</th>
+                  <th>Vendió</th>
+                  <th class="derecha">Precio</th>
+                  <th class="derecha">Margen</th>
+                  <th class="derecha">Días</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td class="cifra">26 sep</td><td><span class="coche-celda"><a href="coche.html">Mercedes Vito 114 CDI</a><span class="matricula">6268 JBG</span></span></td><td>Comercial</td><td class="derecha cifra">22.900 €</td><td class="derecha cifra">2.450 €</td><td class="derecha cifra">41</td></tr>
+                <tr><td class="cifra">22 sep</td><td><span class="coche-celda"><a href="coche.html">Opel Astra 1.5 D</a><span class="matricula">4410 KSB</span></span></td><td>Jaume</td><td class="derecha cifra">14.500 €</td><td class="derecha cifra">1.980 €</td><td class="derecha cifra">33</td></tr>
+                <tr><td class="cifra">18 sep</td><td><span class="coche-celda"><a href="coche.html">Hyundai Tucson 1.6 TGDI</a><span class="matricula">8823 LCW</span></span></td><td>Comercial</td><td class="derecha cifra">23.800 €</td><td class="derecha cifra">3.120 €</td><td class="derecha cifra">58</td></tr>
+                <tr><td class="cifra">15 sep</td><td><span class="coche-celda"><a href="coche.html">Citroën C3 1.2 PureTech</a><span class="matricula">2931 KZR</span></span></td><td>Jaume</td><td class="derecha cifra">10.900 €</td><td class="derecha cifra">1.640 €</td><td class="derecha cifra">27</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="nota tabla-pie">Se ven 4 de las 12 ventas del mes. <a href="#">Ver todas</a></p>
+        </section>
+
+      </div>
+
+      <aside class="ficha__lateral">
+
+        <!-- STOCK POR ANTIGÜEDAD. La barra es la proporción de coches en cada tramo. -->
+        <section class="caja">
+          <div class="caja__titulo"><h2>Stock por antigüedad</h2></div>
+          <ul class="tramos">
+            <li><span>Menos de 30 días</span><span class="tramos__barra"><span style="width: 70%"></span></span><strong class="cifra">7</strong></li>
+            <li><span>De 30 a 60 días</span><span class="tramos__barra"><span style="width: 20%"></span></span><strong class="cifra">2</strong></li>
+            <li class="tramos--aviso"><span>De 60 a 90 días</span><span class="tramos__barra"><span style="width: 10%"></span></span><strong class="cifra">1</strong></li>
+            <li class="tramos--peligro"><span>Más de 90 días</span><span class="tramos__barra"><span style="width: 0%"></span></span><strong class="cifra">0</strong></li>
+          </ul>
+        </section>
+
+        <!-- LOS QUE MÁS LLEVAN -->
+        <section class="caja">
+          <div class="caja__titulo"><h2>Los que más llevan en stock</h2></div>
+          <ul class="canales">
+            <li><a href="coche.html">Volkswagen Golf 2.0 TDI</a><span class="dias dias--peligro cifra">81 días</span></li>
+            <li><a href="coche.html">Seat Ateca 1.5 TSI</a><span class="dias cifra">52 días</span></li>
+            <li><a href="coche.html">Mercedes Vito 114 CDI</a><span class="dias cifra">41 días</span></li>
+          </ul>
+        </section>
+
+      </aside>
+    </div>
+
+  </main>
+</div>
+</body>
+</html>
