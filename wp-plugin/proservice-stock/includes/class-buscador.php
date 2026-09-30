@@ -31,6 +31,15 @@ class ProService_Buscador
         add_action('save_post_' . ProService_Ajustes::get('tipo_post'), [__CLASS__, 'olvidar_opciones']);
     }
 
+    /**
+     * Cifras siempre en formato español (20.900), sea cual sea el idioma de WordPress:
+     * number_format_i18n() daría «20,900» en una instalación en inglés.
+     */
+    public static function cifra($numero)
+    {
+        return number_format((int) $numero, 0, ',', '.');
+    }
+
     public static function olvidar_opciones()
     {
         delete_transient(self::TRANSIENT_OPCIONES);
@@ -209,7 +218,7 @@ class ProService_Buscador
         $estado = $m('estado');
         $datos = array_filter([
             $m('anio'),
-            $m('kilometros') !== '' ? number_format_i18n((int) $m('kilometros')) . ' km' : '',
+            $m('kilometros') !== '' ? self::cifra($m('kilometros')) . ' km' : '',
             self::COMBUSTIBLES[$m('combustible')] ?? ucfirst((string) $m('combustible')),
             self::CAMBIOS[$m('cambio')] ?? ucfirst((string) $m('cambio')),
         ]);
@@ -232,7 +241,7 @@ class ProService_Buscador
                 <h2><?php echo esc_html($titulo); ?></h2>
                 <span class="ps-tarjeta__datos"><?php echo esc_html(implode(' · ', $datos)); ?></span>
                 <div class="ps-tarjeta__precio">
-                    <span class="ps-precio"><?php echo $precio !== '' ? esc_html(number_format_i18n((int) $precio) . ' €') : 'Consultar'; ?></span>
+                    <span class="ps-precio"><?php echo $precio !== '' ? esc_html(self::cifra($precio) . ' €') : 'Consultar'; ?></span>
                 </div>
             </div>
         </a>

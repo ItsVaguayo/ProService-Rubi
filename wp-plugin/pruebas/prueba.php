@@ -153,6 +153,8 @@ afirmar(array_slice($orden, 0, 2) === ['VOLKSWAGEN GOLF TDI 105CV FAMILIAR', 'Se
 $_GET = [];
 $html = do_shortcode('[proservice_buscador]');
 afirmar(strpos($html, 'ps-cinta">Reservado') !== false, 'cinta de reservado');
+afirmar(strpos($html, 'ps-precio">12.500 €') !== false && strpos($html, '60.000 km') !== false, 'precio y km en formato español, con punto (aunque WordPress esté en inglés)');
+afirmar(ProService_Buscador::cifra(1234567) === '1.234.567' && ProService_Buscador::cifra(900) === '900', 'separador de miles con punto');
 afirmar(strpos($html, '<option value="hibrido">Híbrido</option>') !== false, 'opciones con nombre legible');
 $_GET = ['marca' => '"><script>alert(1)</script>'];
 $html = do_shortcode('[proservice_buscador]');
