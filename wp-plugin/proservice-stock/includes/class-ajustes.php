@@ -57,6 +57,8 @@ class ProService_Ajustes
             // Ficha pública con el diseño de frontend/web. En proservicerubi.com manda su plantilla: va apagada.
             'ficha_propia'   => false,
             'pagina_listado' => '',
+            // Cabecera, pie y ancho de la maqueta en el listado y la ficha. Solo para pruebas.
+            'diseno_completo' => false,
         ];
         $ajustes = array_merge($por_defecto, is_array($guardado) ? $guardado : []);
         // Una constante en wp-config.php manda sobre lo guardado: así cada entorno apunta a su API.

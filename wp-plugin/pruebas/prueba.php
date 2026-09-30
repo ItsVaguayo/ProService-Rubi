@@ -239,6 +239,21 @@ afirmar(ProService_Ficha::youtube('https://youtu.be/dQw4w9WgXcQ') === 'dQw4w9WgX
 ProService_Ajustes::guardar(['ficha_propia' => false]);
 afirmar(apply_filters('template_include', 'tema.php') === 'tema.php', 'con el ajuste apagado manda la plantilla del tema');
 
+// --- 11. Página completa (cabecera y pie de la maqueta) ----------------------------------------------
+echo "11. Página completa\n";
+ProService_Ajustes::guardar(['diseno_completo' => true]);
+ob_start();
+ProService_Diseno::cabecera();
+$cabecera = ob_get_clean();
+afirmar(strpos($cabecera, '<header class="web-cabecera">') !== false && strpos($cabecera, 'assets/logo-proservice.webp') !== false
+    && strpos($cabecera, 'aria-current="page">Vehículos ocasión') !== false, 'cabecera de la maqueta con logo y «Vehículos ocasión» marcado');
+afirmar(strpos($cabecera, 'ps-web') !== false && strpos($cabecera, 'site-header') === false, 'body con .ps-web y sin la cabecera del tema');
+ob_start();
+ProService_Diseno::pie();
+afirmar(strpos(ob_get_clean(), '<footer class="web-pie">') !== false, 'pie de la maqueta');
+ProService_Ajustes::guardar(['diseno_completo' => false]);
+afirmar(!ProService_Diseno::activo(), 'apagado por defecto en la web real');
+
 // --- Limpieza del estado de la API falsa -------------------------------------------------------------
 modo('ok');
 feed([]);

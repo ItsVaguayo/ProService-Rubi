@@ -28,6 +28,7 @@ require_once PROSERVICE_DIR . 'includes/class-sync.php';
 require_once PROSERVICE_DIR . 'includes/class-admin.php';
 require_once PROSERVICE_DIR . 'includes/class-buscador.php';
 require_once PROSERVICE_DIR . 'includes/class-ficha.php';
+require_once PROSERVICE_DIR . 'includes/class-diseno.php';
 require_once PROSERVICE_DIR . 'includes/class-redirecciones.php';
 
 register_activation_hook(__FILE__, ['ProService_Sync', 'programar']);
@@ -38,6 +39,7 @@ add_action('plugins_loaded', function () {
     ProService_Admin::iniciar();
     ProService_Buscador::iniciar();
     ProService_Ficha::iniciar();
+    ProService_Diseno::iniciar();
     ProService_Redirecciones::iniciar();
 
     if (defined('WP_CLI') && WP_CLI) {

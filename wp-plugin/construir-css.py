@@ -1,4 +1,5 @@
-"""Genera wp-plugin/proservice-stock/assets/web.css a partir de frontend/css/base.css y web.css.
+"""Genera wp-plugin/proservice-stock/assets/web.css a partir de frontend/css/base.css y web.css,
+y copia el logo de frontend/img para la cabecera de la maqueta.
 
 Todo queda colgado de .ps-web para que el diseño de la maqueta no pise el tema de WordPress
 (ni al revés). :root y body pasan a ser .ps-web, así las variables de color solo existen dentro.
@@ -9,10 +10,12 @@ Se vuelve a ejecutar cada vez que cambie el CSS de frontend/. El resultado no se
 """
 import pathlib
 import re
+import shutil
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 ORIGENES = [RAIZ / 'frontend/css/base.css', RAIZ / 'frontend/css/web.css']
 DESTINO = RAIZ / 'wp-plugin/proservice-stock/assets/web.css'
+IMAGENES = ['logo-proservice.webp']
 AMBITO = '.ps-web'
 
 
@@ -70,6 +73,9 @@ def main():
         encoding='utf-8',
     )
     print(f'{DESTINO.relative_to(RAIZ)}: {DESTINO.stat().st_size} bytes')
+    for imagen in IMAGENES:
+        shutil.copyfile(RAIZ / 'frontend/img' / imagen, DESTINO.parent / imagen)
+        print(f'{(DESTINO.parent / imagen).relative_to(RAIZ)} copiado')
 
 
 if __name__ == '__main__':
