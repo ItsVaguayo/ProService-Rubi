@@ -91,7 +91,7 @@ Además, en la semana 0:
 ## Arquitectura (ya montada en la plantilla)
 
 ```
-Panel (React) ─────────┐
+Panel (HTML y CSS) ────┐
                        ├──►  API (Express + SQLite)  ◄── Plugin WordPress
 Portales (exportación) ◄┘       única dueña de los datos     (lee el feed y envía contactos)
 ```
@@ -142,7 +142,7 @@ Te toca lo que Jaume va a usar cada día. Si el panel es lento o le pide datos d
 
 **Semana 1**
 - Pantalla de login (usa lo de Victor desde el miércoles 7; hasta entonces, contra `docs/api.md`).
-- Tablero por estados (ya hay una base en `panel/src/App.jsx`): cambiar un coche de estado con un clic. Si la API rechaza el cambio (por ejemplo, publicar con pocas fotos), se enseña el motivo.
+- Tablero por estados (la maqueta está en `frontend/panel/index.html`): cambiar un coche de estado con un clic. Si la API rechaza el cambio (por ejemplo, publicar con pocas fotos), se enseña el motivo.
 - Formulario de alta por bloques: identificación, mecánica, carrocería, documentación, proveedor y dinero. Los obligatorios se marcan y se validan antes de enviar. El bloque de dinero solo aparece para gerencia.
 
 **Semana 2**
