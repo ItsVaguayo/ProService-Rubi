@@ -130,6 +130,7 @@ Queda:
 - Reservas: crear, cancelar y caducar solas a los N días. Reservar pasa el coche a «Reservado» y cancelar lo devuelve a «Publicado». Una reserva activa por coche como máximo.
 - Margen neto con la regla de IVA del cliente y el caso depósito. Tests con los números de la ficha real.
 - Tabla `contactos` para David.
+- Rutas de usuarios para la página «Usuarios» del panel, solo para gerencia: listar, añadir, cambiar la contraseña y desactivar o reactivar (`GET/POST /api/usuarios`, `PATCH /api/usuarios/:id`). Nadie puede desactivarse a sí mismo. Hoy los usuarios solo se crean desde la terminal con `npm run usuario`.
 
 **Semana 3**
 - Avisos: coche con más de 60 y 90 días, ITV que caduca en 30 días, vendido que sigue publicado en algún canal, contacto sin atender en 24 horas. Correo diario a quien diga el cliente y la misma lista en un endpoint para el panel.

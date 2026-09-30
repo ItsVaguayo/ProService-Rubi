@@ -29,7 +29,8 @@ frontend/
 │   ├── coches.html       Listado con filtros
 │   ├── coche.html        Ficha: recorrido, datos, fotos, dinero, reserva, portales, historial
 │   ├── coche-nuevo.html  Alta de un coche
-│   └── contactos.html    Lo que entra por los formularios de la web
+│   ├── contactos.html    Lo que entra por los formularios de la web
+│   └── usuarios.html     Quién entra y con qué rol (solo gerencia)
 └── web/                  Lo que ve el cliente en proservicerubi.com
     ├── index.html        Listado con buscador
     └── coche.html        Ficha pública
@@ -47,7 +48,7 @@ El estilo sale de su marca, no de una plantilla:
 - **La matrícula** se dibuja como la placa (`<span class="matricula">4821 LKM</span>`). Jaume reconoce los coches por la matrícula. En la web pública no sale.
 - **Estados por fases.** Los 10 estados van en 5 colores: llegada (gris), preparación (ámbar), a la venta (verde), reservado (azul) y vendido (negro). Diez colores distintos no se distinguen.
 - **Nombres de clase en castellano**, con el formato `bloque__parte--variante`. Por ejemplo, `ficha-mini__coche` es la parte «coche» de la tarjeta pequeña y `boton--secundario` es una variante del botón.
-- **El menú del panel se repite** en cada página. Si lo cambiáis, cambiadlo en las seis.
+- **El menú del panel se repite** en cada página. Si lo cambiáis, cambiadlo en las siete.
 - **Móvil.** Todas las páginas se adaptan. Lo de móvil está al final de cada CSS, dentro de `@media`. Probadlo con F12 → icono del móvil.
 
 ## Reglas para no romper nada

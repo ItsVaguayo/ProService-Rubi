@@ -85,6 +85,17 @@
   transform: skewX(-20deg);
 }
 
+/* Enlaces de administración (Usuarios), separados del trabajo diario */
+.menu__enlaces a.menu__separado { margin-top: 12px; }
+.menu__enlaces a.menu__separado::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 12px;
+  right: 12px;
+  border-top: 1px solid var(--negro-3);
+}
+
 /* Numerito al lado de un enlace (contactos sin atender) */
 .contador {
   min-width: 22px;
@@ -299,6 +310,11 @@
 
 /* Miniatura de la foto principal en el listado */
 .miniatura { width: 72px; height: 48px; border-radius: var(--radio-pequeno); object-fit: cover; background: var(--fondo); }
+
+
+/* Fila de algo desactivado: se ve, pero apagada */
+.fila-apagada td { color: var(--tinta-3); }
+.fila-apagada strong { font-weight: 500; }
 
 
 /* 6. FICHA DEL COCHE ------------------------------------------------------- */
