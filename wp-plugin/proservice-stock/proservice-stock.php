@@ -1,53 +1,45 @@
 <?php
 /**
  * Plugin Name: Pro Service Stock
- * Description: Muestra en proservicerubi.com los coches publicados desde la plataforma de stock.
- * Version: 0.1.0
+ * Description: Mantiene las fichas de «coches» de proservicerubi.com al día con la plataforma de stock, y añade el buscador con filtros.
+ * Version: 0.2.0
+ * Requires at least: 6.0
+ * Requires PHP: 7.4
  * Author: Equipo ECS
+ * Text Domain: proservice-stock
  *
- * Dueño: David. Se conecta a la web actual (5.2), no la sustituye.
+ * Cómo funciona: cada 5 minutos lee el feed público de la API y crea, actualiza o retira
+ * los posts del tipo «coches» que ya usa la web. No rehace la web (5.2): su plantilla,
+ * su diseño y sus URLs se quedan como están. Solo toca los posts que tiene vinculados.
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PROSERVICE_API_URL', getenv('PROSERVICE_API_URL') ?: 'http://localhost:3001/api');
+define('PROSERVICE_VERSION', '0.2.0');
+define('PROSERVICE_ARCHIVO', __FILE__);
+define('PROSERVICE_DIR', plugin_dir_path(__FILE__));
+define('PROSERVICE_URL', plugin_dir_url(__FILE__));
 
-function proservice_obtener_coches() {
-    $cache = get_transient('proservice_coches');
-    if ($cache !== false) {
-        return $cache;
-    }
-    $res = wp_remote_get(PROSERVICE_API_URL . '/publicacion/feed/web', ['timeout' => 10]);
-    if (is_wp_error($res)) {
-        return [];
-    }
-    $coches = json_decode(wp_remote_retrieve_body($res), true) ?: [];
-    set_transient('proservice_coches', $coches, 5 * MINUTE_IN_SECONDS);
-    return $coches;
-}
+require_once PROSERVICE_DIR . 'includes/class-ajustes.php';
+require_once PROSERVICE_DIR . 'includes/class-api.php';
+require_once PROSERVICE_DIR . 'includes/class-sync.php';
+require_once PROSERVICE_DIR . 'includes/class-admin.php';
+require_once PROSERVICE_DIR . 'includes/class-buscador.php';
+require_once PROSERVICE_DIR . 'includes/class-redirecciones.php';
 
-// Uso en una página: [proservice_stock]
-// TODO(David): buscador con los filtros de 5.4, ficha pública, formularios y botón de WhatsApp (5.6)
-add_shortcode('proservice_stock', function () {
-    $coches = proservice_obtener_coches();
-    if (!$coches) {
-        return '<p>No hay coches disponibles ahora mismo.</p>';
+register_activation_hook(__FILE__, ['ProService_Sync', 'programar']);
+register_deactivation_hook(__FILE__, ['ProService_Sync', 'desprogramar']);
+
+add_action('plugins_loaded', function () {
+    ProService_Sync::iniciar();
+    ProService_Admin::iniciar();
+    ProService_Buscador::iniciar();
+    ProService_Redirecciones::iniciar();
+
+    if (defined('WP_CLI') && WP_CLI) {
+        require_once PROSERVICE_DIR . 'includes/class-cli.php';
+        WP_CLI::add_command('proservice', 'ProService_CLI');
     }
-    $html = '<div class="proservice-stock">';
-    foreach ($coches as $c) {
-        $reservado = $c['estado'] === 'reservado' ? ' <span class="reservado">Reservado</span>' : '';
-        $html .= sprintf(
-            '<article><h3>%s %s %s</h3><p>%s · %s km · %s €</p>%s</article>',
-            esc_html($c['marca']),
-            esc_html($c['modelo']),
-            esc_html($c['version']),
-            esc_html($c['anio']),
-            esc_html(number_format_i18n($c['kilometros'])),
-            esc_html(number_format_i18n($c['pvp'])),
-            $reservado
-        );
-    }
-    return $html . '</div>';
 });

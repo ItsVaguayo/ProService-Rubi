@@ -25,7 +25,7 @@ npm run dev:front  # solo las maquetas
 npm test           # tests de la API
 ```
 
-El plugin se copia a `wp-content/plugins/` de un WordPress local y se usa con el shortcode `[proservice_stock]`.
+El plugin rellena las fichas «coches» que ya tiene la web y añade el buscador `[proservice_buscador]`. Instalación, ajustes y pruebas en [wp-plugin/README.md](wp-plugin/README.md).
 
 ## Documentación
 
