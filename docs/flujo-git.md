@@ -20,5 +20,5 @@ Cuando algo funciona, PR a `develop`. Victor revisa. Con `npm test` en verde.
 
 ## Zonas compartidas
 
-- `api/src/schema.sql` es de Victor. Si necesitáis una columna, pedidla o proponedla en un PR pequeño aparte.
+- `api/migraciones/` es de Victor. Si necesitáis una columna, pedidla o proponedla en un PR pequeño aparte con una migración nueva (`0002_...sql`). Una migración que ya está en `develop` no se edita nunca.
 - Cada uno toca su módulo de la API: `modules/vehiculos` (Victor), `modules/fotos` (Hafsa), `modules/publicacion` (David).

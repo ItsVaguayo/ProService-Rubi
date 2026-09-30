@@ -83,7 +83,7 @@ Además, en la semana 0:
 ## Reglas del equipo
 
 - **Solo la API toca la base de datos.** Panel, web y portales pasan por la API.
-- `api/src/schema.sql` es de Victor. Si alguien necesita una columna, la pide y Victor la añade en menos de un día, o se propone en un PR pequeño aparte.
+- `api/migraciones/` es de Victor. Si alguien necesita una columna, la pide y Victor la añade en menos de un día con una migración nueva, o se propone en un PR pequeño aparte. Una migración ya mergeada no se edita.
 - **Cada uno en su módulo**: `api/src/modules/vehiculos` (Victor), `modules/fotos` (Hafsa), `modules/publicacion` y `modules/contactos` (David). Si tu módulo necesita reaccionar a algo de otro módulo, el dueño de ese módulo expone una función y tú la usas. No se edita el módulo de otro.
 - **Ramas**: `main` (producción), `develop` (integración), `feat/core-api`, `feat/panel-fotos` y `feat/web-portales`. Se trae `develop` a la rama propia cada mañana. PR a `develop` con tests en verde. Victor revisa en menos de un día. `main` solo se toca para desplegar.
 - **Seguimiento**: 10 minutos al empezar el día en el canal del equipo: qué hice, qué hago y qué me bloquea. Un bloqueo de más de medio día se dice, no se espera.
