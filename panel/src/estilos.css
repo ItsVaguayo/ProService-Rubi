@@ -1,0 +1,11 @@
+:root { --rojo: #b03035; --fondo: #f6f6f7; --texto: #1d1d1f; --borde: #e2e2e5; font-family: system-ui, sans-serif; }
+body { margin: 0; background: var(--fondo); color: var(--texto); }
+main { padding: 16px; }
+header { display: flex; align-items: baseline; gap: 12px; }
+h1 { margin: 0 0 16px; }
+.tablero { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.columna { min-width: 220px; background: #fff; border: 1px solid var(--borde); border-radius: 8px; padding: 8px; }
+.columna h2 { font-size: 14px; margin: 4px 4px 8px; }
+.columna small { color: #888; }
+.tarjeta { display: flex; flex-direction: column; gap: 2px; border-left: 3px solid var(--rojo); padding: 6px 8px; margin-bottom: 6px; background: var(--fondo); border-radius: 4px; font-size: 13px; }
+.error { color: var(--rojo); }
