@@ -15,7 +15,7 @@ docs/        Reparto, flujo de git y resumen del briefing
 
 ## Arrancar
 
-Node 18 o superior.
+Node 22 (mínimo 22.9).
 
 ```bash
 cp .env.example .env

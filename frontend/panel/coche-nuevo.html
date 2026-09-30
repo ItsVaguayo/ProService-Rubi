@@ -33,12 +33,14 @@
     <header class="cabecera">
       <div>
         <h1>Nuevo coche</h1>
-        <p class="nota">Con matrícula, marca, modelo y lo que te costó ya se puede guardar. El resto lo completas antes de publicarlo.</p>
+        <p class="nota">Con matrícula, marca y modelo ya se puede guardar. El resto lo completas antes de publicarlo.</p>
       </div>
     </header>
 
-    <!-- IMPORTANTE: el "name" de cada campo es el nombre que espera la base de datos.
-         No lo cambiéis sin avisar a Victor. -->
+    <!-- IMPORTANTE: el "name" de cada campo es el nombre que espera la API
+         (api/src/modules/vehiculos/campos.js). No lo cambiéis sin avisar a Victor.
+         Los importes terminan en _cent porque la API los guarda en céntimos:
+         Jaume escribe euros y al conectar el formulario se multiplican por 100. -->
     <form class="formulario" action="coche.html">
 
       <fieldset class="bloque">
@@ -99,14 +101,6 @@
             </select>
           </label>
           <label class="campo">
-            <span class="campo__nombre">Proveedor o dueño</span>
-            <input name="proveedor">
-          </label>
-          <label class="campo">
-            <span class="campo__nombre">Teléfono del proveedor o dueño</span>
-            <input type="tel" name="proveedor_telefono">
-          </label>
-          <label class="campo">
             <span class="campo__nombre">Dónde está</span>
             <select name="ubicacion">
               <option value="">Aún no ha llegado</option>
@@ -124,8 +118,12 @@
             <span class="campo__nombre">Combustible</span>
             <select name="combustible">
               <option value="">Elige</option>
-              <option>Gasolina</option><option>Diésel</option><option>Híbrido</option>
-              <option>Híbrido enchufable</option><option>Eléctrico</option><option>GLP</option>
+              <option value="gasolina">Gasolina</option>
+              <option value="diesel">Diésel</option>
+              <option value="hibrido">Híbrido</option>
+              <option value="hibrido_enchufable">Híbrido enchufable</option>
+              <option value="electrico">Eléctrico</option>
+              <option value="glp">GLP</option>
             </select>
           </label>
           <label class="campo">
@@ -148,7 +146,9 @@
             <span class="campo__nombre">Tracción</span>
             <select name="traccion">
               <option value="">Elige</option>
-              <option>Delantera</option><option>Trasera</option><option>Total</option>
+              <option value="delantera">Delantera</option>
+              <option value="trasera">Trasera</option>
+              <option value="total">Total</option>
             </select>
           </label>
           <label class="campo">
@@ -176,9 +176,15 @@
             <span class="campo__nombre">Tipo</span>
             <select name="carroceria">
               <option value="">Elige</option>
-              <option>Utilitario</option><option>Berlina</option><option>Familiar</option>
-              <option>SUV</option><option>Monovolumen</option><option>Coupé</option>
-              <option>Cabrio</option><option>Furgoneta</option><option>Industrial</option>
+              <option value="utilitario">Utilitario</option>
+              <option value="berlina">Berlina</option>
+              <option value="familiar">Familiar</option>
+              <option value="suv">SUV</option>
+              <option value="monovolumen">Monovolumen</option>
+              <option value="coupe">Coupé</option>
+              <option value="cabrio">Cabrio</option>
+              <option value="furgoneta">Furgoneta</option>
+              <option value="industrial">Industrial</option>
             </select>
           </label>
           <label class="campo">
@@ -206,7 +212,7 @@
 
       <fieldset class="bloque">
         <legend>Estado y papeles</legend>
-        <p class="nota">Nada de esto sale en la web salvo la garantía.</p>
+        <p class="nota">Nada de esto sale en la web salvo la garantía y el vídeo.</p>
         <div class="rejilla">
           <label class="campo">
             <span class="campo__nombre">ITV válida hasta</span>
@@ -228,31 +234,66 @@
             <span class="campo__nombre">Daños y golpes</span>
             <textarea name="danos" placeholder="Rayón en el paragolpes trasero, lado derecho"></textarea>
           </label>
+          <label class="campo campo--ancho">
+            <span class="campo__nombre">Vídeo de YouTube</span>
+            <input type="url" name="video_url" placeholder="https://www.youtube.com/watch?v=…">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend>Precio de venta</legend>
+        <p class="nota">Sale en la web y en los portales. Importes en euros.</p>
+        <div class="rejilla">
+          <label class="campo">
+            <span class="campo__nombre">Precio de venta</span>
+            <input type="number" name="pvp_cent" min="0" step="0.01">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Precio si financia</span>
+            <input type="number" name="precio_financiado_cent" min="0" step="0.01">
+          </label>
         </div>
       </fieldset>
 
       <fieldset class="bloque bloque--dinero">
         <legend>Dinero · solo gerencia</legend>
+        <p class="campo__ayuda">Importes en euros. El comercial no ve este bloque.</p>
         <div class="rejilla">
           <label class="campo">
-            <span class="campo__nombre">Precio de compra o pactado con el dueño <em>*</em></span>
-            <input type="number" name="precio_compra" min="0" required>
+            <span class="campo__nombre">Precio de compra</span>
+            <input type="number" name="precio_compra_cent" min="0" step="0.01">
+            <span class="campo__ayuda">Si el coche es nuestro</span>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Dueño del coche</span>
+            <input name="propietario_nombre">
+            <span class="campo__ayuda">Si está en depósito</span>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Teléfono del dueño</span>
+            <input type="tel" name="propietario_telefono">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Pactado con el dueño</span>
+            <input type="number" name="pago_propietario_cent" min="0" step="0.01">
+            <span class="campo__ayuda">Lo que se le paga cuando se vende</span>
           </label>
           <label class="campo">
             <span class="campo__nombre">Transporte</span>
-            <input type="number" name="coste_transporte" min="0" value="0">
+            <input type="number" name="coste_transporte_cent" min="0" step="0.01" value="0">
           </label>
           <label class="campo">
             <span class="campo__nombre">Taller</span>
-            <input type="number" name="coste_taller" min="0" value="0">
+            <input type="number" name="coste_taller_cent" min="0" step="0.01" value="0">
           </label>
           <label class="campo">
             <span class="campo__nombre">Preparación y limpieza</span>
-            <input type="number" name="coste_preparacion" min="0" value="0">
+            <input type="number" name="coste_preparacion_cent" min="0" step="0.01" value="0">
           </label>
           <label class="campo">
             <span class="campo__nombre">Impuestos y gestoría</span>
-            <input type="number" name="coste_impuestos" min="0" value="0">
+            <input type="number" name="coste_impuestos_cent" min="0" step="0.01" value="0">
           </label>
           <label class="campo">
             <span class="campo__nombre">Régimen de IVA</span>
@@ -262,23 +303,15 @@
             </select>
           </label>
           <label class="campo">
-            <span class="campo__nombre">Precio de venta</span>
-            <input type="number" name="pvp" min="0">
-          </label>
-          <label class="campo">
-            <span class="campo__nombre">Precio si financia</span>
-            <input type="number" name="precio_financiado" min="0">
-          </label>
-          <label class="campo">
             <span class="campo__nombre">Precio mínimo aceptable</span>
-            <input type="number" name="precio_minimo" min="0">
+            <input type="number" name="precio_minimo_cent" min="0" step="0.01">
             <span class="campo__ayuda">No sale en ningún sitio. Es tu límite al negociar.</span>
           </label>
         </div>
       </fieldset>
 
       <div class="barra-guardar">
-        <span class="nota">Los campos con * son obligatorios para guardar</span>
+        <span class="nota">Con * es obligatorio para guardar</span>
         <a class="boton boton--secundario" href="coches.html">Cancelar</a>
         <button class="boton" type="submit">Guardar coche</button>
       </div>

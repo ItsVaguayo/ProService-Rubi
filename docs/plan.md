@@ -63,6 +63,7 @@ Victor redacta **un solo mensaje** para el cliente con todo esto y se lo pasa a 
 | ¿Pymecar deja ampliar un mes? | Es el plan B si la migración falla | Se les pide que lo pregunten igualmente |
 | En los coches en depósito (40 de 50), ¿cómo se gana? Comisión fija, porcentaje o diferencia con lo que pide el dueño | Sin esto, el margen del 80 % del stock sale mal | Margen = PVP menos lo que se le paga al dueño |
 | Regla de REBU o IVA deducible y quién la decide en cada compra | Cambia el margen | REBU por defecto, editable por coche |
+| ¿Rellenamos los 30 coches que ya tienen en WordPress o montamos un listado nuevo? (duda A7, decide Diego) | Cambia todo el bloque de David | Sin defecto: David espera |
 | Una ficha real de un coche y un export de prueba de Pymecar | La ficha cierra el esquema. El export solo sirve para comprobar que los datos salen: la migración no se toca hasta el final | Sin defecto. Sin export no hay migración |
 | Accesos de WordPress, hosting y DNS (Francesc) | Sin ellos no se instala el plugin ni el subdominio de la API | Sin defecto |
 | ¿Cómo carga hoy la web los coches? ¿Plugin, feed de Pymecar, a mano? | Si Pymecar alimenta la web, el 31 se queda vacía | Se lo preguntamos a Francesc directamente |
@@ -109,12 +110,20 @@ Te toca que los datos sean correctos, que los otros dos no se bloqueen y que Die
 - Repasar con Diego el bloque A de `dudas.md`, redactarle el mensaje al cliente, `docs/api.md`, propuesta de servidor y GitHub Action (ver arriba).
 
 **Semana 1**
-- Esquema cerrado con la ficha real: campos obligatorios, lista cerrada de extras (navegador, cámara, sensores, techo…) y **proveedor** en la ficha (nombre y contacto; para los coches en depósito, el dueño y lo que se le paga).
-- Login y roles. Lo necesita Hafsa el miércoles 7.
-- `PUT /api/vehiculos/:id` para editar la ficha.
-- Reglas de estado: no se puede pasar a «Publicado» con menos de 15 fotos. Cada cambio queda en el historial con usuario y fecha (ya existe en `routes.js`).
-- `npm run seed` con 10 coches repartidos por estados, con usuarios de prueba de los dos roles. Son los datos con los que se trabaja hasta la migración. **Para el lunes 5 a mediodía.**
-- Función `alCambiarEstado(vehiculo, de, a)` en el módulo de vehículos, que llama a lo que registren los otros módulos. David la usa para retirar de los portales.
+
+Hecho en el **PR #1** («Cimientos de la API»), cuando se acepte:
+- ~~Login y roles~~: sesión con cookie; el comercial no recibe dinero.
+- ~~`PUT /api/vehiculos/:id`~~, con lista blanca de campos.
+- ~~Reglas de estado~~: publicar exige la ficha completa y 15 fotos; reservar exige una reserva activa.
+- ~~Gancho `alCambiarEstado`~~ para David (`registrarAlCambiarEstado` en `vehiculos/eventos.js`).
+- ~~Migraciones~~ (`api/migraciones/`), dinero en céntimos, datos del dueño en depósito y registro de cambios.
+
+Queda:
+- Aceptar el PR #1 y comprobar que los tres arrancáis con Node 22.
+- Arreglo pendiente del PR: al editar un coche publicado o reservado, volver a comprobar los obligatorios (hoy se le puede vaciar el precio y sigue publicado).
+- Cerrar el esquema con la ficha real: lista cerrada de extras (tabla nueva, en `0002_...`) y **proveedor** para los coches propios. El PR solo guarda el dueño de los que están en depósito.
+- `npm run seed` con 10 coches repartidos por estados y los dos usuarios de prueba. Son los datos con los que se trabaja hasta la migración. **Para el lunes 5 a mediodía.**
+- `docs/api.md` con el contrato real. Ojo: los importes van en céntimos (`*_cent`) y `PATCH /estado` devuelve el coche.
 
 **Semana 2**
 - Levantar el **servidor de pruebas** con HTTPS y desplegar `develop` en él. David lo necesita para probar el plugin en un WordPress de verdad.
@@ -170,7 +179,7 @@ Te toca todo lo que ve el cliente final y los portales. Tu bloque es el que quit
 - Investigar cada portal: Coches.net, Milanuncios y Wallapop. Qué vía de carga profesional tiene cada uno (XML, FTP, importador, programa homologado), qué pide, cuánto cuesta y cuánto se tarda en darla de alta. **Tabla a Victor el martes 6**. Victor añade su recomendación y Diego decide ese mismo día y se lo dice al cliente.
 
 **Semana 2**
-- Plugin de WordPress (base en `wp-plugin/proservice-stock/`): listado con los filtros de la 5.4 (marca, modelo, precio, cuota, km, año, combustible, cambio, carrocería, etiqueta, color, plazas, ubicación), ficha pública con galería y vídeo, y etiqueta «Reservado» o «Vendido».
+- **Según lo que decida Diego en la duda A7.** Si se rellenan los coches que ya tienen en WordPress, esta semana va la sincronización por la API REST de WordPress en lugar del listado nuevo. Si no, plugin de WordPress (base en `wp-plugin/proservice-stock/`): listado con los filtros de la 5.4 (marca, modelo, precio, cuota, km, año, combustible, cambio, carrocería, etiqueta, color, plazas, ubicación), ficha pública con galería y vídeo, y etiqueta «Reservado» o «Vendido».
 - Ampliar el feed `GET /api/publicacion/feed/web` con las fotos públicas y los extras. Nunca datos de compra, proveedor ni margen (ya hay un test que lo comprueba; ampliarlo con los campos nuevos).
 - Probar el plugin contra el servidor de pruebas de Victor.
 

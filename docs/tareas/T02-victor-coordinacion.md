@@ -14,7 +14,7 @@ Que Diego sepa cómo está el equipo, que el cliente reciba las preguntas que bl
 2. **Comprueba que los tres habéis terminado la T01.**
 3. **Habla con Diego (hoy o mañana).** Llévale dos cosas:
    - **El nivel del equipo.** Somos tres, sabemos HTML, CSS y Git básico, y dedicamos media jornada cada uno. El plan de cuatro semanas es muy justo. Claude monta las partes difíciles y nosotros hacemos fichas. Que Diego decida si se recorta algo o si hace falta alguien con más experiencia.
-   - **El bloque A de `docs/dudas.md`.** Seis preguntas. Apunta sus respuestas en el mismo fichero.
+   - **El bloque A de `docs/dudas.md`.** Siete preguntas (la A7, sobre la web de WordPress, bloquea a David). Apunta sus respuestas en el mismo fichero.
 4. **Mensaje al cliente.** Pídele a Claude un borrador con los bloques B y C de `docs/dudas.md` y pásaselo a Diego. Lo revisa y lo manda él.
 5. **Pídele a Diego el acceso de Francesc** (WordPress, hosting y DNS). David lo necesita la semana que viene.
 6. **Seguimiento diario.** Cada mañana, un mensaje en el canal del equipo: qué hizo cada uno ayer, qué hace hoy y si alguien está atascado. Si alguien lleva más de medio día atascado, lo ayudas o se lo pasas a Claude.
