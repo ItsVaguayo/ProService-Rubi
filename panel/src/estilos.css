@@ -9,3 +9,6 @@ h1 { margin: 0 0 16px; }
 .columna small { color: #888; }
 .tarjeta { display: flex; flex-direction: column; gap: 2px; border-left: 3px solid var(--rojo); padding: 6px 8px; margin-bottom: 6px; background: var(--fondo); border-radius: 4px; font-size: 13px; }
 .error { color: var(--rojo); }
+.entrar { display: flex; flex-direction: column; gap: 8px; max-width: 320px; margin: 10vh auto; }
+.entrar input, .entrar button { font: inherit; padding: 8px 10px; border: 1px solid var(--borde); border-radius: 6px; }
+.entrar button { background: var(--rojo); color: #fff; border: 0; cursor: pointer; }

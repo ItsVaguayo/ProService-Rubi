@@ -21,3 +21,5 @@ export function esEstadoValido(id) {
 export function visibleEnWeb(id) {
   return ESTADOS.find((e) => e.id === id)?.web ?? false;
 }
+
+export const ESTADOS_WEB = ESTADOS.filter((e) => e.web).map((e) => e.id);

@@ -3,13 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
-    "test": "node --test"
+    "dev": "node --env-file-if-exists=../.env --watch src/server.js",
+    "start": "node --env-file-if-exists=../.env src/server.js",
+    "test": "node --test \"test/**/*.test.js\"",
+    "usuario": "node --env-file-if-exists=../.env scripts/crear-usuario.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
     "cors": "^2.8.5",
     "express": "^4.21.0"
+  },
+  "engines": {
+    "node": ">=22.9"
   }
 }

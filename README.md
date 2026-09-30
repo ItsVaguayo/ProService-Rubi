@@ -15,16 +15,27 @@ docs/        Reparto, flujo de git y resumen del briefing
 
 ## Arrancar
 
-Node 18 o superior.
+Node 22 (mínimo 22.9).
 
 ```bash
 cp .env.example .env
 npm install
+npm run usuario --workspace api -- --email tu@correo.com --nombre Tu --rol gerencia
 npm run dev        # API en :3001 y panel en :5173
 npm test           # tests de la API
 ```
 
 El plugin se copia a `wp-content/plugins/` de un WordPress local y se usa con el shortcode `[proservice_stock]`.
+
+## Reglas de la API
+
+- **Sesión obligatoria** en todo salvo `/api/salud`, `/api/auth/*` y el feed público de la web. Roles `gerencia` y `comercial`.
+- **El dinero va en céntimos enteros**, con sufijo `_cent` (`pvp_cent: 1290000` son 12.900 €). Se pasa a euros solo al enseñarlo.
+- **El comercial nunca recibe dinero interno**: la API quita compra, costes, precio mínimo, régimen de IVA, datos del dueño en depósito y margen. No basta con esconderlo en el panel.
+- **Solo se escriben los campos de `api/src/modules/vehiculos/campos.js`**. Un campo que no esté ahí da 400. Para añadir uno: migración + `campos.js`.
+- **Alta con matrícula, marca y modelo.** El resto se exige al pasar a «Publicado», junto con 15 fotos (`OBLIGATORIOS_PUBLICAR` y `FOTOS_MINIMAS`).
+- **La base de datos se cambia con migraciones** numeradas en `api/migraciones/`. Se aplican solas al arrancar. Si tenías una base del antiguo `schema.sql`, bórrala (`api/data/proservice.db*`): solo tenía datos de prueba.
+- **Cada alta, edición y cambio de estado queda en `auditoria`**, con usuario y valores de antes y después.
 
 ## Documentación
 

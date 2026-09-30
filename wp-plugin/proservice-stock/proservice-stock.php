@@ -39,13 +39,13 @@ add_shortcode('proservice_stock', function () {
     foreach ($coches as $c) {
         $reservado = $c['estado'] === 'reservado' ? ' <span class="reservado">Reservado</span>' : '';
         $html .= sprintf(
-            '<article><h3>%s %s %s</h3><p>%s · %s km · %s €</p>%s</article>',
+            '<article><h3>%s %s %s</h3><p>%s · %s km · %s</p>%s</article>',
             esc_html($c['marca']),
             esc_html($c['modelo']),
             esc_html($c['version']),
             esc_html($c['anio']),
             esc_html(number_format_i18n($c['kilometros'])),
-            esc_html(number_format_i18n($c['pvp'])),
+            $c['pvp_cent'] === null ? 'Consultar' : esc_html(number_format_i18n($c['pvp_cent'] / 100) . ' €'), // la API da céntimos
             $reservado
         );
     }
