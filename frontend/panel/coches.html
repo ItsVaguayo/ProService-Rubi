@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coches · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html">ProService<span>·</span>Stock</a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <div class="menu__enlaces">
+      <a href="index.html">Tablero</a>
+      <a href="coches.html" aria-current="page">Coches</a>
+      <a href="coche-nuevo.html">Nuevo coche</a>
+      <a href="contactos.html">Contactos <span class="contador">3</span></a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <header class="cabecera">
+      <div>
+        <h1>Coches</h1>
+        <p class="nota">10 en stock · 7 de terceros en depósito</p>
+      </div>
+      <div class="cabecera__acciones">
+        <a class="boton boton--secundario" href="#">Exportar a Excel</a>
+        <a class="boton" href="coche-nuevo.html">Nuevo coche</a>
+      </div>
+    </header>
+
+    <!-- FILTROS. De momento no filtran: es solo el diseño. -->
+    <form class="filtros" role="search">
+      <label class="campo campo--ancho">
+        <span class="campo__nombre">Buscar</span>
+        <input type="search" name="q" placeholder="Matrícula, marca o modelo">
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Estado</span>
+        <select name="estado">
+          <option value="">Todos</option>
+          <option>Pendiente de recoger</option>
+          <option>En transporte</option>
+          <option>Recibido, sin revisar</option>
+          <option>En taller</option>
+          <option>Preparación y limpieza</option>
+          <option>Pendiente de fotos</option>
+          <option>Publicado</option>
+          <option>Reservado</option>
+          <option>Vendido, sin entregar</option>
+          <option>Entregado</option>
+        </select>
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Propiedad</span>
+        <select name="propiedad">
+          <option value="">Todos</option>
+          <option>Propios</option>
+          <option>En depósito</option>
+        </select>
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Dónde está</span>
+        <select name="ubicacion">
+          <option value="">Los dos sitios</option>
+          <option>Patio del taller</option>
+          <option>Parking</option>
+        </select>
+      </label>
+    </form>
+
+    <div class="tabla-caja">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Matrícula</th>
+            <th>Coche</th>
+            <th>Estado</th>
+            <th class="derecha">Km</th>
+            <th class="derecha">Precio</th>
+            <th class="derecha">Días en stock</th>
+            <th>Dónde</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="coche.html"><span class="matricula">5129 MPX</span></a></td>
+            <td><span class="coche-celda"><a href="coche.html">Volkswagen Golf 2.0 TDI Life</a><span class="nota">2021 · diésel · manual · propio</span></span></td>
+            <td><span class="estado estado--venta">Publicado</span></td>
+            <td class="derecha cifra">54.700</td>
+            <td class="derecha cifra">19.900 €</td>
+            <td class="derecha cifra"><span class="dias dias--peligro">81</span></td>
+            <td>Parking</td>
+          </tr>
+          <tr>
+            <td><a href="coche.html"><span class="matricula">4821 LKM</span></a></td>
+            <td><span class="coche-celda"><a href="coche.html">Seat Ateca 1.5 TSI Style</a><span class="nota">2020 · gasolina · manual · depósito</span></span></td>
+            <td><span class="estado estado--venta">Publicado</span></td>
+            <td class="derecha cifra">62.000</td>
+            <td class="derecha cifra">20.900 €</td>
+            <td class="derecha cifra">52</td>
+            <td>Parking</td>
+          </tr>
+          <tr>
+            <td><a href="coche.html"><span class="matricula">7309 KWT</span></a></td>
+            <td><span class="coche-celda"><a href="coche.html">Peugeot 3008 1.5 BlueHDi Allure</a><span class="nota">2019 · diésel · automático · depósito</span></span></td>
+            <td><span class="estado estado--preparacion">En taller</span></td>
+            <td class="derecha cifra">88.100</td>
+            <td class="derecha cifra">—</td>
+            <td class="derecha cifra"><span class="dias dias--aviso">26</span></td>
+            <td>Patio del taller</td>
+          </tr>
+          <tr>
+            <td><a href="coche.html"><span class="matricula">9044 JZP</span></a></td>
+            <td><span class="coche-celda"><a href="coche.html">Toyota C-HR 125H Advance</a><span class="nota">2019 · híbrido · automático · depósito</span></span></td>
+            <td><span class="estado estado--venta">Publicado</span></td>
+            <td class="derecha cifra">81.200</td>
+            <td class="derecha cifra">21.500 €</td>
+            <td class="derecha cifra">24</td>
+            <td>Parking</td>
+          </tr>
+          <tr>
+            <td><a href="coche.html"><span class="matricula">2156 MHB</span></a></td>
+            <td><span class="coche-celda"><a href="coche.html">Ford Transit Custom 2.0 TDCi 130 CV</a><span class="nota">2022 · diésel · manual · propio</span></span></td>
+            <td><span class="estado estado--preparacion">Pendiente de fotos</span></td>
+            <td class="derecha cifra">119.900</td>
+            <td class="derecha cifra">24.500 €</td>
+            <td class="derecha cifra">17</td>
+            <td>Patio del taller</td>
+          </tr>
+          <tr>
+            <td><a href="coche.html"><span class="matricula">1905 LFV</span></a></td>
+            <td><span class="coche-celda"><a href="coche.html">Renault Clio 1.0 TCe Zen</a><span class="nota">2021 · gasolina · manual · depósito</span></span></td>
+            <td><span class="estado estado--reservado">Reservado</span></td>
+            <td class="derecha cifra">45.300</td>
+            <td class="derecha cifra">13.900 €</td>
+            <td class="derecha cifra">15</td>
+            <td>Parking</td>
+          </tr>
+          <tr>
+            <td><a href="coche.html"><span class="matricula">6268 JBG</span></a></td>
+            <td><span class="coche-celda"><a href="coche.html">Mercedes Vito 114 CDI Larga</a><span class="nota">2018 · diésel · manual · depósito</span></span></td>
+            <td><span class="estado estado--vendido">Vendido, sin entregar</span></td>
+            <td class="derecha cifra">142.000</td>
+            <td class="derecha cifra">22.900 €</td>
+            <td class="derecha cifra">41</td>
+            <td>Parking</td>
+          </tr>
+          <tr>
+            <td><a href="coche.html"><span class="matricula">8471 HTS</span></a></td>
+            <td><span class="coche-celda"><a href="coche.html">Dacia Sandero Stepway 0.9 TCe</a><span class="nota">2019 · gasolina · manual · propio</span></span></td>
+            <td><span class="estado estado--preparacion">Preparación y limpieza</span></td>
+            <td class="derecha cifra">72.450</td>
+            <td class="derecha cifra">—</td>
+            <td class="derecha cifra">9</td>
+            <td>Patio del taller</td>
+          </tr>
+          <tr>
+            <td><a href="coche.html"><span class="matricula">3380 KDN</span></a></td>
+            <td><span class="coche-celda"><a href="coche.html">Citroën Berlingo 1.5 BlueHDi Talla M</a><span class="nota">2020 · diésel · manual · depósito</span></span></td>
+            <td><span class="estado estado--llegada">Recibido, sin revisar</span></td>
+            <td class="derecha cifra">131.800</td>
+            <td class="derecha cifra">—</td>
+            <td class="derecha cifra">1</td>
+            <td>Patio del taller</td>
+          </tr>
+          <tr>
+            <td><a href="coche.html"><span class="matricula">6617 LRC</span></a></td>
+            <td><span class="coche-celda"><a href="coche.html">Kia Sportage 1.6 CRDi Drive</a><span class="nota">2020 · diésel · manual · depósito</span></span></td>
+            <td><span class="estado estado--llegada">Pendiente de recoger</span></td>
+            <td class="derecha cifra">94.300</td>
+            <td class="derecha cifra">—</td>
+            <td class="derecha cifra">3</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+</body>
+</html>

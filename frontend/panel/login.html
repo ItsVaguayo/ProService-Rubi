@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<main class="login">
+  <form class="login__caja" action="index.html">
+    <span class="matricula matricula--grande">PRO SERVICE</span>
+    <h1>Entrar al stock</h1>
+
+    <!-- Mensaje de error. Se enseña solo cuando el usuario o la contraseña
+         no son correctos. Para verlo en la maqueta, quita el atributo hidden. -->
+    <p class="error" role="alert" hidden>El correo o la contraseña no son correctos. Revisa las mayúsculas.</p>
+
+    <label class="campo">
+      <span class="campo__nombre">Correo</span>
+      <input type="email" name="email" autocomplete="username" required>
+    </label>
+    <label class="campo">
+      <span class="campo__nombre">Contraseña</span>
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button class="boton" type="submit">Entrar</button>
+    <p class="nota">¿Has olvidado la contraseña? Pídele a Jaume que te la cambie.</p>
+  </form>
+</main>
+</body>
+</html>

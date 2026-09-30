@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contactos · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html">ProService<span>·</span>Stock</a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <div class="menu__enlaces">
+      <a href="index.html">Tablero</a>
+      <a href="coches.html">Coches</a>
+      <a href="coche-nuevo.html">Nuevo coche</a>
+      <a href="contactos.html" aria-current="page">Contactos <span class="contador">3</span></a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <header class="cabecera">
+      <div>
+        <h1>Contactos</h1>
+        <p class="nota">Lo que entra por los formularios de la web. Llama primero a los que llevan más tiempo esperando.</p>
+      </div>
+    </header>
+
+    <form class="filtros">
+      <label class="campo">
+        <span class="campo__nombre">Mostrar</span>
+        <select name="estado">
+          <option>Sin atender</option>
+          <option>Atendidos</option>
+          <option>Todos</option>
+        </select>
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Qué pide</span>
+        <select name="tipo">
+          <option value="">Todo</option>
+          <option>Información</option>
+          <option>Prueba de conducción</option>
+          <option>Financiación</option>
+          <option>Tasación de su coche</option>
+        </select>
+      </label>
+    </form>
+
+    <div class="tabla-caja">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Recibido</th>
+            <th>Cliente</th>
+            <th>Qué pide</th>
+            <th>Coche</th>
+            <th>Mensaje</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="dias dias--peligro">Ayer, 18:42</span></td>
+            <td><span class="coche-celda">Marta Soler<a class="nota" href="tel:+34600111222">600 111 222</a></span></td>
+            <td>Prueba de conducción</td>
+            <td><a href="coche.html"><span class="matricula">9044 JZP</span></a></td>
+            <td>¿Se puede probar el sábado por la mañana?</td>
+            <td><button class="boton boton--pequeno" type="button">Marcar atendido</button></td>
+          </tr>
+          <tr>
+            <td><span class="dias dias--peligro">Ayer, 12:05</span></td>
+            <td><span class="coche-celda">Iván Roca<a class="nota" href="tel:+34611333444">611 333 444</a></span></td>
+            <td>Financiación</td>
+            <td><a href="coche.html"><span class="matricula">5129 MPX</span></a></td>
+            <td>Quiero pagarlo en 60 meses, ¿cuánto sería al mes?</td>
+            <td><button class="boton boton--pequeno" type="button">Marcar atendido</button></td>
+          </tr>
+          <tr>
+            <td><span class="nota">Hoy, 09:20</span></td>
+            <td><span class="coche-celda">Nuria Pons<a class="nota" href="tel:+34622555666">622 555 666</a></span></td>
+            <td>Tasación de su coche</td>
+            <td><span class="nota">—</span></td>
+            <td>Opel Corsa 2016, 98.000 km. Lo daría como parte del pago.</td>
+            <td><button class="boton boton--pequeno" type="button">Marcar atendido</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+</body>
+</html>

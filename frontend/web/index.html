@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coches de ocasión en Rubí · ProService Rubí</title>
+  <meta name="description" content="Coches de ocasión revisados en nuestro taller de Rubí, con 12 meses de garantía como mínimo.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/web.css">
+</head>
+<body class="web">
+
+<!-- CABECERA. En la web real la pone su WordPress; esta es solo para la maqueta. -->
+<header class="web-cabecera">
+  <div class="envoltorio">
+    <a class="web-logo" href="index.html">ProService <span>Rubí</span></a>
+    <nav class="web-nav" aria-label="Menú">
+      <a href="#">Taller</a>
+      <a href="index.html" aria-current="page">Coches de ocasión</a>
+      <a href="#">Contacto</a>
+    </nav>
+    <a class="web-telefono" href="tel:+34000000000">93 000 00 00</a>
+  </div>
+</header>
+
+<main class="envoltorio">
+
+  <div class="listado-titulo">
+    <h1>Coches de ocasión</h1>
+    <p class="nota">Todos pasan por nuestro taller antes de venderse. 12 meses de garantía como mínimo.</p>
+  </div>
+
+  <div class="listado">
+
+    <!-- FILTROS (5.4 del briefing). En la maqueta no filtran. -->
+    <form class="filtros-web" role="search" aria-label="Filtrar coches">
+      <label class="campo">
+        <span class="campo__nombre">Marca</span>
+        <select name="marca"><option>Todas</option><option>Renault</option><option>Seat</option><option>Toyota</option><option>Volkswagen</option></select>
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Modelo</span>
+        <select name="modelo"><option>Todos</option></select>
+      </label>
+      <div class="dos">
+        <label class="campo"><span class="campo__nombre">Precio desde</span><input type="number" name="precio_min" placeholder="€"></label>
+        <label class="campo"><span class="campo__nombre">hasta</span><input type="number" name="precio_max" placeholder="€"></label>
+      </div>
+      <label class="campo">
+        <span class="campo__nombre">Cuota máxima al mes</span>
+        <input type="number" name="cuota_max" placeholder="€/mes">
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Kilómetros hasta</span>
+        <select name="km_max"><option>Sin límite</option><option>50.000</option><option>100.000</option><option>150.000</option></select>
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Año desde</span>
+        <select name="anio_min"><option>Cualquiera</option><option>2022</option><option>2020</option><option>2018</option><option>2015</option></select>
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Combustible</span>
+        <select name="combustible"><option>Todos</option><option>Gasolina</option><option>Diésel</option><option>Híbrido</option><option>Eléctrico</option></select>
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Cambio</span>
+        <select name="cambio"><option>Los dos</option><option>Manual</option><option>Automático</option></select>
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Carrocería</span>
+        <select name="carroceria"><option>Todas</option><option>Utilitario</option><option>SUV</option><option>Familiar</option><option>Furgoneta</option></select>
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Etiqueta DGT</span>
+        <select name="etiqueta"><option>Todas</option><option>0 emisiones</option><option>ECO</option><option>C</option><option>B</option></select>
+      </label>
+      <div class="dos">
+        <label class="campo"><span class="campo__nombre">Color</span><select name="color"><option>Todos</option></select></label>
+        <label class="campo"><span class="campo__nombre">Plazas</span><select name="plazas"><option>Todas</option><option>5</option><option>7</option></select></label>
+      </div>
+      <button class="boton" type="submit">Ver coches</button>
+    </form>
+
+    <section aria-label="Resultados">
+      <div class="orden">
+        <span class="nota"><strong>5</strong> coches</span>
+        <label class="campo">
+          <span class="rotulo">Ordenar</span>
+          <select name="orden"><option>Más recientes</option><option>Precio más bajo</option><option>Menos kilómetros</option></select>
+        </label>
+      </div>
+
+      <!-- TARJETAS. Cuotas de ejemplo: la calculadora espera el tipo de interés del cliente. -->
+      <div class="tarjetas">
+
+        <a class="tarjeta-coche" href="coche.html">
+          <img src="../img/coche.svg" alt="Seat Ateca gris, vista frontal">
+          <div class="tarjeta-coche__cuerpo">
+            <h2>Seat Ateca 1.5 TSI Style</h2>
+            <span class="tarjeta-coche__datos cifra">2020 · 62.000 km · Gasolina · Manual</span>
+            <div class="tarjeta-coche__precio">
+              <span class="precio cifra">20.900 €</span>
+              <span class="cuota cifra">o 329 €/mes</span>
+            </div>
+          </div>
+        </a>
+
+        <a class="tarjeta-coche" href="coche.html">
+          <img src="../img/coche.svg" alt="Toyota C-HR blanco, vista frontal">
+          <div class="tarjeta-coche__cuerpo">
+            <h2>Toyota C-HR 125H Advance</h2>
+            <span class="tarjeta-coche__datos cifra">2019 · 81.200 km · Híbrido · Automático</span>
+            <div class="tarjeta-coche__precio">
+              <span class="precio cifra">21.500 €</span>
+              <span class="cuota cifra">o 339 €/mes</span>
+            </div>
+          </div>
+        </a>
+
+        <a class="tarjeta-coche" href="coche.html">
+          <img src="../img/coche.svg" alt="Volkswagen Golf azul, vista frontal">
+          <div class="tarjeta-coche__cuerpo">
+            <h2>Volkswagen Golf 2.0 TDI Life</h2>
+            <span class="tarjeta-coche__datos cifra">2021 · 54.700 km · Diésel · Manual</span>
+            <div class="tarjeta-coche__precio">
+              <span class="precio cifra">19.900 €</span>
+              <span class="cuota cifra">o 314 €/mes</span>
+            </div>
+          </div>
+        </a>
+
+        <a class="tarjeta-coche" href="coche.html">
+          <span class="cinta">Reservado</span>
+          <img src="../img/coche.svg" alt="Renault Clio rojo, vista frontal">
+          <div class="tarjeta-coche__cuerpo">
+            <h2>Renault Clio 1.0 TCe Zen</h2>
+            <span class="tarjeta-coche__datos cifra">2021 · 45.300 km · Gasolina · Manual</span>
+            <div class="tarjeta-coche__precio">
+              <span class="precio cifra">13.900 €</span>
+              <span class="cuota cifra">o 219 €/mes</span>
+            </div>
+          </div>
+        </a>
+
+        <a class="tarjeta-coche" href="coche.html">
+          <span class="cinta cinta--vendido">Vendido</span>
+          <img src="../img/coche.svg" alt="Mercedes Vito blanca, vista frontal">
+          <div class="tarjeta-coche__cuerpo">
+            <h2>Mercedes Vito 114 CDI Larga</h2>
+            <span class="tarjeta-coche__datos cifra">2018 · 142.000 km · Diésel · Manual</span>
+            <div class="tarjeta-coche__precio">
+              <span class="precio cifra">22.900 €</span>
+              <span class="cuota cifra">o 361 €/mes</span>
+            </div>
+          </div>
+        </a>
+
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="web-pie">
+  <div class="envoltorio">ProService Rubí · Ctra. de Terrassa, 83 · 08191 Rubí</div>
+</footer>
+
+</body>
+</html>

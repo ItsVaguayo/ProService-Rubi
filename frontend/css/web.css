@@ -1,0 +1,298 @@
+/* ==========================================================================
+   web.css · Páginas públicas en proservicerubi.com
+   Van dentro de su WordPress, así que usan la letra de su web (Inter)
+   y dejan los títulos en Barlow Condensed, como el panel.
+   --------------------------------------------------------------------------
+   1. Cabecera y pie
+   2. Listado: filtros y tarjetas
+   3. Ficha del coche
+   4. Móvil
+   ========================================================================== */
+
+body.web { font-family: var(--letra-web); background: var(--blanco); }
+
+.envoltorio { max-width: 1240px; margin: 0 auto; padding: 0 var(--espacio-l); }
+
+
+/* 1. CABECERA Y PIE -------------------------------------------------------- */
+
+.web-cabecera { background: var(--asfalto); color: var(--blanco); }
+
+.web-cabecera .envoltorio {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--espacio-m);
+  min-height: 68px;
+}
+
+.web-logo {
+  font-family: var(--letra-titulo);
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.web-logo span { color: var(--rojo); }
+
+.web-nav { display: flex; gap: var(--espacio-l); font-weight: 500; }
+.web-nav a { text-decoration: none; color: #c7ccd1; }
+.web-nav a:hover,
+.web-nav a[aria-current="page"] { color: var(--blanco); }
+
+.web-telefono { font-weight: 700; text-decoration: none; }
+
+.web-pie {
+  margin-top: var(--espacio-xl);
+  padding: var(--espacio-l) 0;
+  background: var(--asfalto);
+  color: #9aa1a8;
+  font-size: .875rem;
+}
+
+
+/* 2. LISTADO --------------------------------------------------------------- */
+
+.listado-titulo { padding: var(--espacio-xl) 0 var(--espacio-l); }
+.listado-titulo h1 { font-size: 2.75rem; }
+
+.listado {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: var(--espacio-xl);
+  align-items: start;
+}
+
+.filtros-web {
+  position: sticky;
+  top: var(--espacio-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-m);
+  padding: var(--espacio-l);
+  background: var(--papel);
+  border-radius: var(--radio);
+}
+
+.filtros-web .dos { display: grid; grid-template-columns: 1fr 1fr; gap: var(--espacio-s); }
+
+.orden {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--espacio-m);
+}
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--espacio-l);
+}
+
+.tarjeta-coche {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  overflow: hidden;
+  text-decoration: none;
+  transition: box-shadow .15s, border-color .15s;
+}
+
+.tarjeta-coche:hover { border-color: var(--gris); box-shadow: var(--sombra); }
+
+.tarjeta-coche img { aspect-ratio: 4 / 3; width: 100%; object-fit: cover; }
+
+.tarjeta-coche__cuerpo { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: var(--espacio-m); }
+
+.tarjeta-coche h2 { font-size: 1.3rem; }
+
+.tarjeta-coche__datos { font-size: .875rem; color: var(--grafito); }
+
+.tarjeta-coche__precio {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: auto; /* empuja el precio abajo del todo: todas las tarjetas alineadas */
+  padding-top: var(--espacio-s);
+  border-top: 1px solid var(--linea);
+}
+
+.precio { font-family: var(--letra-titulo); font-size: 1.75rem; font-weight: 700; }
+.cuota { font-size: .875rem; color: var(--grafito); }
+
+/* Cinta de «Reservado» o «Vendido» encima de la foto */
+.cinta {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--fase-reservado);
+  color: var(--blanco);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.cinta--vendido { background: var(--asfalto); }
+
+/* Etiqueta DGT, con los colores oficiales */
+.dgt {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: 50%;
+  font-size: .6875rem;
+  font-weight: 800;
+  color: var(--asfalto);
+  background: #f1c40f;
+}
+.dgt--eco { background: linear-gradient(90deg, #2e8b57 50%, #1f5fa6 50%); color: var(--blanco); }
+.dgt--c { background: #2e8b57; color: var(--blanco); }
+.dgt--b { background: #f1c40f; }
+.dgt--cero { background: #1f5fa6; color: var(--blanco); }
+
+
+/* 3. FICHA DEL COCHE ------------------------------------------------------- */
+
+.miga { padding: var(--espacio-m) 0; font-size: .875rem; color: var(--gris); }
+
+/* En PC: galería arriba a la izquierda, resumen a la derecha y detalles debajo
+   de la galería. En móvil van en el orden del HTML: galería, resumen, detalles,
+   para que el precio y el WhatsApp salgan nada más ver las fotos. */
+.ficha-web {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-areas:
+    "galeria  resumen"
+    "detalles resumen";
+  column-gap: var(--espacio-xl);
+  align-items: start;
+}
+.ficha-web .galeria { grid-area: galeria; }
+.ficha-web .resumen { grid-area: resumen; }
+.ficha-web .detalles { grid-area: detalles; }
+
+.galeria { display: flex; flex-direction: column; gap: var(--espacio-s); }
+.galeria__grande { position: relative; }
+.galeria__grande img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radio); }
+
+.galeria__miniaturas {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--espacio-s);
+}
+.galeria__miniaturas img { aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; opacity: .75; }
+.galeria__miniaturas img:first-child { opacity: 1; outline: 2px solid var(--rojo); }
+
+/* Columna de la derecha: se queda fija al bajar */
+.resumen {
+  position: sticky;
+  top: var(--espacio-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-m);
+  padding: var(--espacio-l);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+}
+
+.resumen h1 { font-size: 2rem; }
+.resumen .precio { font-size: 2.75rem; line-height: 1; }
+
+.resumen__datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px var(--espacio-m);
+  align-items: center;
+  color: var(--grafito);
+  font-size: .9375rem;
+}
+
+.acciones { display: grid; gap: var(--espacio-s); }
+.acciones .boton { width: 100%; }
+.acciones__dos { display: grid; grid-template-columns: 1fr 1fr; gap: var(--espacio-s); }
+
+.boton--whatsapp { background: #1f8f4e; border-color: #1f8f4e; }
+.boton--whatsapp:hover { background: #17733e; border-color: #17733e; }
+
+.garantia {
+  padding: 10px 14px;
+  border-radius: var(--radio);
+  background: var(--ok-fondo);
+  color: var(--ok);
+  font-size: .875rem;
+  font-weight: 600;
+}
+
+.seccion-web { padding-top: var(--espacio-xl); }
+.seccion-web h2 { margin-bottom: var(--espacio-m); font-size: 1.75rem; }
+
+.tabla-datos { width: 100%; border-collapse: collapse; }
+.tabla-datos th,
+.tabla-datos td { padding: 10px 0; border-bottom: 1px solid var(--linea); text-align: left; }
+.tabla-datos th { width: 45%; font-weight: 500; color: var(--grafito); }
+
+.equipamiento {
+  columns: 2;
+  gap: var(--espacio-l);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.equipamiento li { padding: 6px 0 6px 24px; position: relative; break-inside: avoid; }
+.equipamiento li::before { content: "✓"; position: absolute; left: 0; color: var(--ok); font-weight: 700; }
+
+.video { aspect-ratio: 16 / 9; width: 100%; border: 0; border-radius: var(--radio); background: var(--papel); }
+
+.formulario-web {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espacio-m);
+  padding: var(--espacio-l);
+  background: var(--papel);
+  border-radius: var(--radio);
+}
+.formulario-web .campo--ancho,
+.formulario-web .casilla,
+.formulario-web .boton { grid-column: 1 / -1; }
+.formulario-web .boton { justify-self: start; }
+
+/* Botón de WhatsApp fijo abajo: solo en el móvil (ver más abajo) */
+.whatsapp-fijo { display: none; }
+
+
+/* 4. MÓVIL ----------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .listado { grid-template-columns: 1fr; }
+  .ficha-web {
+    grid-template-columns: 1fr;
+    grid-template-areas: "galeria" "resumen" "detalles";
+    row-gap: var(--espacio-l);
+  }
+  .filtros-web { position: static; }
+  .resumen { position: static; }
+}
+
+@media (max-width: 640px) {
+  .envoltorio { padding: 0 var(--espacio-m); }
+  .web-nav { display: none; }
+  .listado-titulo h1 { font-size: 2rem; }
+  .galeria__miniaturas { grid-template-columns: repeat(4, 1fr); }
+  .equipamiento { columns: 1; }
+  .formulario-web { grid-template-columns: 1fr; }
+
+  .whatsapp-fijo {
+    position: fixed;
+    right: var(--espacio-m);
+    bottom: var(--espacio-m);
+    left: var(--espacio-m);
+    display: flex;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .25);
+  }
+  body.web { padding-bottom: 80px; }
+}

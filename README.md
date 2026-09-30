@@ -2,13 +2,13 @@
 
 Plataforma de stock para Pro Service Rubí: el coche se da de alta una vez y sale en su web (WordPress) y en los portales, con costes y margen en la misma ficha.
 
-Fecha objetivo: **31 de octubre de 2026** (no renuevan Pymecar).
+Arranque: **jueves 29 de octubre de 2026**. Pymecar vence el 31 y no lo renuevan.
 
 ## Estructura
 
 ```
 api/         API Node + Express + SQLite       → Victor
-panel/       Panel interno React + Vite        → Hafsa
+frontend/    Maquetas HTML + CSS: panel y web  → los tres
 wp-plugin/   Plugin para proservicerubi.com    → David
 docs/        Reparto, flujo de git y resumen del briefing
 ```
@@ -20,7 +20,8 @@ Node 18 o superior.
 ```bash
 cp .env.example .env
 npm install
-npm run dev        # API en :3001 y panel en :5173
+npm run dev        # API en :3001 y maquetas en :5173
+npm run dev:front  # solo las maquetas
 npm test           # tests de la API
 ```
 

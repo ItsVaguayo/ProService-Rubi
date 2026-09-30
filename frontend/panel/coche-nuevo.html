@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nuevo coche · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html">ProService<span>·</span>Stock</a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <div class="menu__enlaces">
+      <a href="index.html">Tablero</a>
+      <a href="coches.html">Coches</a>
+      <a href="coche-nuevo.html" aria-current="page">Nuevo coche</a>
+      <a href="contactos.html">Contactos <span class="contador">3</span></a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <header class="cabecera">
+      <div>
+        <h1>Nuevo coche</h1>
+        <p class="nota">Con matrícula, marca, modelo y lo que te costó ya se puede guardar. El resto lo completas antes de publicarlo.</p>
+      </div>
+    </header>
+
+    <!-- IMPORTANTE: el "name" de cada campo es el nombre que espera la base de datos.
+         No lo cambiéis sin avisar a Victor. -->
+    <form class="formulario" action="coche.html">
+
+      <fieldset class="bloque">
+        <legend>Identificación</legend>
+        <div class="rejilla">
+          <label class="campo">
+            <span class="campo__nombre">Matrícula <em>*</em></span>
+            <input name="matricula" required placeholder="1234 BCD" autocomplete="off">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Bastidor</span>
+            <input name="bastidor" maxlength="17" autocomplete="off">
+            <span class="campo__ayuda">17 caracteres</span>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Marca <em>*</em></span>
+            <input name="marca" required list="marcas">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Modelo <em>*</em></span>
+            <input name="modelo" required>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Versión o acabado</span>
+            <input name="version" placeholder="1.5 TSI Style">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Año</span>
+            <input type="number" name="anio" min="1950" max="2027">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Primera matriculación</span>
+            <input type="date" name="fecha_matriculacion">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Kilómetros</span>
+            <input type="number" name="kilometros" min="0" step="1">
+          </label>
+        </div>
+        <!-- Sugerencias al escribir la marca -->
+        <datalist id="marcas">
+          <option>Audi</option><option>BMW</option><option>Citroën</option><option>Dacia</option>
+          <option>Fiat</option><option>Ford</option><option>Hyundai</option><option>Kia</option>
+          <option>Mercedes-Benz</option><option>Nissan</option><option>Opel</option><option>Peugeot</option>
+          <option>Renault</option><option>Seat</option><option>Škoda</option><option>Toyota</option>
+          <option>Volkswagen</option>
+        </datalist>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend>Propiedad y ubicación</legend>
+        <div class="rejilla">
+          <label class="campo">
+            <span class="campo__nombre">El coche es</span>
+            <select name="propiedad">
+              <option value="propio">Nuestro</option>
+              <option value="deposito">De un tercero, en depósito</option>
+            </select>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Proveedor o dueño</span>
+            <input name="proveedor">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Teléfono del proveedor o dueño</span>
+            <input type="tel" name="proveedor_telefono">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Dónde está</span>
+            <select name="ubicacion">
+              <option value="">Aún no ha llegado</option>
+              <option value="patio_taller">Patio del taller</option>
+              <option value="parking">Parking</option>
+            </select>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend>Mecánica</legend>
+        <div class="rejilla">
+          <label class="campo">
+            <span class="campo__nombre">Combustible</span>
+            <select name="combustible">
+              <option value="">Elige</option>
+              <option>Gasolina</option><option>Diésel</option><option>Híbrido</option>
+              <option>Híbrido enchufable</option><option>Eléctrico</option><option>GLP</option>
+            </select>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Cambio</span>
+            <select name="cambio">
+              <option value="">Elige</option>
+              <option value="manual">Manual</option>
+              <option value="automatico">Automático</option>
+            </select>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Potencia (CV)</span>
+            <input type="number" name="potencia_cv" min="0">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Cilindrada (cc)</span>
+            <input type="number" name="cilindrada" min="0">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Tracción</span>
+            <select name="traccion">
+              <option value="">Elige</option>
+              <option>Delantera</option><option>Trasera</option><option>Total</option>
+            </select>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Emisiones CO₂ (g/km)</span>
+            <input type="number" name="emisiones_co2" min="0">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Etiqueta DGT</span>
+            <select name="etiqueta_dgt">
+              <option value="">Elige</option>
+              <option value="0">0 emisiones</option>
+              <option value="ECO">ECO</option>
+              <option value="C">C</option>
+              <option value="B">B</option>
+              <option value="SIN">Sin etiqueta</option>
+            </select>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend>Carrocería</legend>
+        <div class="rejilla">
+          <label class="campo">
+            <span class="campo__nombre">Tipo</span>
+            <select name="carroceria">
+              <option value="">Elige</option>
+              <option>Utilitario</option><option>Berlina</option><option>Familiar</option>
+              <option>SUV</option><option>Monovolumen</option><option>Coupé</option>
+              <option>Cabrio</option><option>Furgoneta</option><option>Industrial</option>
+            </select>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Puertas</span>
+            <input type="number" name="puertas" min="2" max="6">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Plazas</span>
+            <input type="number" name="plazas" min="1" max="9">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Color exterior</span>
+            <input name="color_exterior">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Tapicería</span>
+            <input name="tapiceria" placeholder="Tela negra">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Llantas</span>
+            <input name="llantas" placeholder='18" aleación'>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend>Estado y papeles</legend>
+        <p class="nota">Nada de esto sale en la web salvo la garantía.</p>
+        <div class="rejilla">
+          <label class="campo">
+            <span class="campo__nombre">ITV válida hasta</span>
+            <input type="date" name="itv_caducidad">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Última revisión</span>
+            <input type="date" name="ultima_revision">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Garantía (meses)</span>
+            <input type="number" name="garantia_meses" min="12" value="12">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Número de llaves</span>
+            <input type="number" name="num_llaves" min="0" max="5">
+          </label>
+          <label class="campo campo--ancho">
+            <span class="campo__nombre">Daños y golpes</span>
+            <textarea name="danos" placeholder="Rayón en el paragolpes trasero, lado derecho"></textarea>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloque bloque--dinero">
+        <legend>Dinero · solo gerencia</legend>
+        <div class="rejilla">
+          <label class="campo">
+            <span class="campo__nombre">Precio de compra o pactado con el dueño <em>*</em></span>
+            <input type="number" name="precio_compra" min="0" required>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Transporte</span>
+            <input type="number" name="coste_transporte" min="0" value="0">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Taller</span>
+            <input type="number" name="coste_taller" min="0" value="0">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Preparación y limpieza</span>
+            <input type="number" name="coste_preparacion" min="0" value="0">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Impuestos y gestoría</span>
+            <input type="number" name="coste_impuestos" min="0" value="0">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Régimen de IVA</span>
+            <select name="regimen_iva">
+              <option value="REBU">REBU</option>
+              <option value="deducible">IVA deducible</option>
+            </select>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Precio de venta</span>
+            <input type="number" name="pvp" min="0">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Precio si financia</span>
+            <input type="number" name="precio_financiado" min="0">
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Precio mínimo aceptable</span>
+            <input type="number" name="precio_minimo" min="0">
+            <span class="campo__ayuda">No sale en ningún sitio. Es tu límite al negociar.</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="barra-guardar">
+        <span class="nota">Los campos con * son obligatorios para guardar</span>
+        <a class="boton boton--secundario" href="coches.html">Cancelar</a>
+        <button class="boton" type="submit">Guardar coche</button>
+      </div>
+
+    </form>
+  </main>
+</div>
+</body>
+</html>

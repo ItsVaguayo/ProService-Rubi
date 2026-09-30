@@ -6,7 +6,7 @@
 
 ## Objetivo
 
-Ver en tu navegador el tablero de coches con las columnas de estados.
+Ver en tu navegador las maquetas del panel y de la web.
 
 ## Pasos
 
@@ -36,17 +36,17 @@ Ver en tu navegador el tablero de coches con las columnas de estados.
    ```bash
    npm install
    ```
-7. **Arranca:**
+7. **Arranca las maquetas:**
    ```bash
-   npm run dev
+   npm run dev:front
    ```
    Deja esa terminal abierta. Para pararlo, `Ctrl + C`.
-8. **Abre** http://localhost:5173 en el navegador.
-9. **Abre la carpeta en VS Code** (`code .`) y da una vuelta por `docs/plan.md` y por tu parte del plan. No hace falta entenderlo todo.
+8. Se abre solo http://localhost:5173. Si no, ábrelo tú en el navegador.
+9. **Abre la carpeta en VS Code** (`code .`) y lee `frontend/README.md`. Explica cómo están hechas las maquetas.
 
 ## Cómo sé que está bien
 
-- Ves la palabra «Stock» y diez columnas: «Pendiente de recoger», «En transporte»… Estarán vacías, y es normal: tu base de datos está vacía.
+- Ves el índice «Maquetas del frontend» y puedes entrar en el tablero, la ficha de un coche y la web pública.
 - Avisas en el canal del equipo: «T01 hecha».
 
 ## Si algo falla

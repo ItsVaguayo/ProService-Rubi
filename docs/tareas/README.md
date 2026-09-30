@@ -10,9 +10,8 @@ Las piezas difíciles (login, seguridad, servidor, migración) las monta Claude.
 |---|---|---|
 | [T01 · Poner el proyecto en marcha](T01-poner-en-marcha.md) | Los tres | Jueves 1-oct |
 | [T02 · Coordinación de la semana 0](T02-victor-coordinacion.md) | Victor | Viernes 2-oct |
-| [T03 · Maqueta de la pantalla de alta](T03-hafsa-maqueta-alta.md) | Hafsa | Martes 6-oct |
+| [T03 · Ronda de mejoras del frontend](T03-ronda-mejoras-frontend.md) | Los tres, cada uno en su rama | Martes 6-oct, 14:00 |
 | [T04 · Investigar los portales](T04-david-portales.md) | David | Martes 6-oct |
-| [T05 · Maqueta de la ficha pública](T05-david-maqueta-ficha.md) | David | Viernes 9-oct |
 | [T06 · Lista de extras](T06-hafsa-extras.md) | Hafsa | Viernes 9-oct |
 
 Cuando acabéis una, se marca aquí con ✅ y Victor os da la siguiente.

@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seat Ateca 4821 LKM · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html">ProService<span>·</span>Stock</a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <div class="menu__enlaces">
+      <a href="index.html">Tablero</a>
+      <a href="coches.html" aria-current="page">Coches</a>
+      <a href="coche-nuevo.html">Nuevo coche</a>
+      <a href="contactos.html">Contactos <span class="contador">3</span></a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <p class="nota"><a href="coches.html">← Coches</a></p>
+
+    <!-- CABECERA DEL COCHE -->
+    <header class="ficha-cabecera">
+      <h1>Seat Ateca 1.5 TSI Style</h1>
+      <span class="matricula matricula--grande">4821 LKM</span>
+      <span class="estado estado--venta">Publicado</span>
+      <p class="nota">Ref. PS-00031 · En depósito · Parking · 52 días en stock</p>
+      <form class="cabecera__acciones">
+        <label class="campo">
+          <span class="rotulo">Cambiar estado</span>
+          <select name="estado">
+            <option>Publicado</option>
+            <option>Reservado</option>
+            <option>Vendido, sin entregar</option>
+            <option>En taller</option>
+          </select>
+        </label>
+        <button class="boton boton--secundario" type="submit">Cambiar</button>
+        <a class="boton boton--secundario" href="coche-nuevo.html">Editar ficha</a>
+      </form>
+    </header>
+
+    <!-- RECORRIDO: los 10 estados en orden. Clase "hecho" en los que ya ha pasado
+         y "actual" en el que está ahora. -->
+    <ol class="recorrido" aria-label="Recorrido del coche">
+      <li class="hecho">Pendiente de recoger</li>
+      <li class="hecho">En transporte</li>
+      <li class="hecho">Recibido</li>
+      <li class="hecho">En taller</li>
+      <li class="hecho">Preparación</li>
+      <li class="hecho">Fotos</li>
+      <li class="actual" aria-current="step">Publicado</li>
+      <li>Reservado</li>
+      <li>Vendido</li>
+      <li>Entregado</li>
+    </ol>
+
+    <nav class="saltos" aria-label="Ir a">
+      <a href="#datos">Datos</a>
+      <a href="#fotos">Fotos</a>
+      <a href="#equipamiento">Equipamiento</a>
+      <a href="#dinero">Dinero</a>
+      <a href="#reserva">Reserva</a>
+      <a href="#publicacion">Dónde está publicado</a>
+    </nav>
+
+    <div class="ficha">
+
+      <!-- COLUMNA PRINCIPAL -->
+      <div class="ficha__principal">
+
+        <section class="caja" id="datos">
+          <h2>Datos del coche</h2>
+          <dl class="datos">
+            <div><dt>Bastidor</dt><dd class="cifra">VSSZZZKHZLR028417</dd></div>
+            <div><dt>Año</dt><dd class="cifra">2020</dd></div>
+            <div><dt>1.ª matriculación</dt><dd class="cifra">14/02/2020</dd></div>
+            <div><dt>Kilómetros</dt><dd class="cifra">62.000</dd></div>
+            <div><dt>Combustible</dt><dd>Gasolina</dd></div>
+            <div><dt>Cambio</dt><dd>Manual</dd></div>
+            <div><dt>Potencia</dt><dd class="cifra">150 CV</dd></div>
+            <div><dt>Cilindrada</dt><dd class="cifra">1.498 cc</dd></div>
+            <div><dt>Tracción</dt><dd>Delantera</dd></div>
+            <div><dt>Emisiones</dt><dd class="cifra">136 g/km</dd></div>
+            <div><dt>Etiqueta DGT</dt><dd>C</dd></div>
+            <div><dt>Carrocería</dt><dd>SUV</dd></div>
+            <div><dt>Puertas / plazas</dt><dd class="cifra">5 / 5</dd></div>
+            <div><dt>Color</dt><dd>Gris Magnetic</dd></div>
+            <div><dt>Tapicería</dt><dd>Tela negra</dd></div>
+            <div><dt>Llantas</dt><dd>18" aleación</dd></div>
+            <div><dt>ITV hasta</dt><dd class="cifra">14/02/2028</dd></div>
+            <div><dt>Última revisión</dt><dd class="cifra">03/09/2026</dd></div>
+            <div><dt>Garantía</dt><dd class="cifra">12 meses</dd></div>
+            <div><dt>Llaves</dt><dd class="cifra">2</dd></div>
+          </dl>
+        </section>
+
+        <!-- FOTOS en el orden fijo. Mínimo 15 para poder publicar.
+             Las marcadas con «Daño» no salen en la web. -->
+        <section class="caja" id="fotos">
+          <div class="fotos-resumen">
+            <h2>Fotos</h2>
+            <span class="nota"><strong class="cifra">16</strong> fotos · 15 en la web · mínimo 15</span>
+            <a class="boton boton--pequeno" href="#">Subir fotos</a>
+          </div>
+          <ul class="fotos">
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">1 · Frontal</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">2 · 3/4 delantero izq.</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">3 · Lateral izq.</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">4 · 3/4 trasero izq.</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">5 · Trasera</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">6 · 3/4 trasero der.</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">7 · Lateral der.</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">8 · 3/4 delantero der.</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">9 · Interior delantero</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">10 · Interior trasero</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">11 · Cuadro con km</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">12 · Consola</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">13 · Maletero</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">14 · Motor</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">15 · Llanta</span></li>
+            <li class="foto"><img src="../img/coche.svg" alt=""><span class="foto__nombre">Paragolpes trasero <span class="foto__marca">Daño</span></span></li>
+            <li class="foto"><span class="foto__hueco">+ Añadir</span></li>
+          </ul>
+        </section>
+
+        <section class="caja" id="equipamiento">
+          <h2>Equipamiento</h2>
+          <ul class="extras">
+            <li>Navegador</li>
+            <li>Cámara de marcha atrás</li>
+            <li>Sensores de aparcamiento</li>
+            <li>Control de crucero adaptativo</li>
+            <li>Apple CarPlay y Android Auto</li>
+            <li>Climatizador bizona</li>
+            <li>Faros LED</li>
+            <li>Portón eléctrico</li>
+          </ul>
+        </section>
+
+      </div>
+
+      <!-- COLUMNA LATERAL -->
+      <aside class="ficha__lateral">
+
+        <!-- DINERO. Solo gerencia. El comercial no ve este bloque. -->
+        <section class="caja dinero" id="dinero">
+          <h2>Dinero <span class="rotulo">Solo gerencia</span></h2>
+          <dl class="cuentas">
+            <div><dt>Pactado con el dueño</dt><dd>17.500 €</dd></div>
+            <div><dt>Transporte</dt><dd>0 €</dd></div>
+            <div><dt>Taller</dt><dd>380 €</dd></div>
+            <div><dt>Preparación y limpieza</dt><dd>120 €</dd></div>
+            <div><dt>Impuestos y gestoría</dt><dd>0 €</dd></div>
+            <div class="total"><dt>Coste total</dt><dd>18.000 €</dd></div>
+          </dl>
+          <dl class="cuentas">
+            <div><dt>Precio de venta</dt><dd>20.900 €</dd></div>
+            <div><dt>Precio si financia</dt><dd>20.400 €</dd></div>
+            <div><dt>Mínimo aceptable</dt><dd>19.800 €</dd></div>
+            <div><dt>Régimen de IVA</dt><dd>REBU</dd></div>
+          </dl>
+          <div class="margen">
+            <span>Margen bruto</span>
+            <strong class="cifra">2.900 €</strong>
+          </div>
+        </section>
+
+        <section class="caja" id="reserva">
+          <h2>Reserva</h2>
+          <form class="pila">
+            <p class="nota">Sin reserva. Al reservar, en la web sale «Reservado».</p>
+            <label class="campo">
+              <span class="campo__nombre">Cliente <em>*</em></span>
+              <input name="cliente" required>
+            </label>
+            <label class="campo">
+              <span class="campo__nombre">Señal <em>*</em></span>
+              <input type="number" name="senal" min="300" step="50" value="300" required>
+              <span class="campo__ayuda">Mínimo 300 €</span>
+            </label>
+            <label class="campo">
+              <span class="campo__nombre">Días de reserva</span>
+              <input type="number" name="dias" min="1" value="7">
+            </label>
+            <button class="boton" type="submit">Reservar</button>
+          </form>
+        </section>
+
+        <section class="caja" id="publicacion">
+          <h2>Dónde está publicado</h2>
+          <ul class="canales">
+            <li>Web proservicerubi.com <span class="estado estado--venta">Publicado</span></li>
+            <li>Coches.net <span class="estado estado--venta">Publicado</span></li>
+            <li>Milanuncios <span class="estado estado--venta">Publicado</span></li>
+            <li>Wallapop <a class="boton boton--secundario boton--pequeno" href="#">Preparar anuncio</a></li>
+          </ul>
+        </section>
+
+        <section class="caja">
+          <h2>Historial</h2>
+          <ol class="historial" reversed>
+            <li><time datetime="2026-09-08">8 sep · 10:12</time>Publicado · Jaume</li>
+            <li><time datetime="2026-09-05">5 sep · 17:40</time>Pendiente de fotos · Jaume</li>
+            <li><time datetime="2026-09-04">4 sep · 09:05</time>Preparación y limpieza · Comercial</li>
+            <li><time datetime="2026-09-01">1 sep · 12:30</time>En taller · Jaume</li>
+            <li><time datetime="2026-08-09">9 ago · 11:00</time>Alta del coche · Jaume</li>
+          </ol>
+        </section>
+
+      </aside>
+    </div>
+
+  </main>
+</div>
+</body>
+</html>

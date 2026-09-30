@@ -1,11 +1,14 @@
 {
   "name": "proservice-rubi",
   "private": true,
-  "workspaces": ["api", "panel"],
+  "workspaces": [
+    "api",
+    "frontend"
+  ],
   "scripts": {
-    "dev": "npm run dev --workspace api & npm run dev --workspace panel",
+    "dev": "npm run dev --workspace api & npm run dev --workspace frontend",
     "dev:api": "npm run dev --workspace api",
-    "dev:panel": "npm run dev --workspace panel",
+    "dev:front": "npm run dev --workspace frontend",
     "test": "npm test --workspace api"
   }
 }
