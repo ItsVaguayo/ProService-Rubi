@@ -1,10 +1,14 @@
 /* ==========================================================================
    base.css · Lo que comparten el panel y la web
    --------------------------------------------------------------------------
+   El estilo sale de su marca: el logo (rojo #ea2d2d, gris #9aa2ab, blanco
+   sobre negro) y su web (fondo #151515, letra Inter, botones redondeados).
+
    1. Colores y medidas (variables)
    2. Reset
    3. Texto
-   4. Componentes: matrícula, botones, etiquetas de estado, formularios, tablas
+   4. Componentes: logo, barra de marca, matrícula, botones, estados,
+      formularios, tablas
    ========================================================================== */
 
 
@@ -12,38 +16,42 @@
    Para cambiar un color en todo el proyecto, cámbialo solo aquí. */
 
 :root {
-  /* Colores de la marca (sacados de proservicerubi.com) */
-  --rojo: #d42a2a;          /* acción principal: botones, enlaces activos */
-  --rojo-oscuro: #a81f1f;   /* rojo al pasar el ratón */
-  --asfalto: #1c1f22;       /* texto y menú lateral */
-  --grafito: #4a5056;       /* texto secundario */
-  --gris: #7b8187;          /* texto de apoyo, etiquetas */
-  --linea: #d9dcd8;         /* bordes y separadores */
-  --papel: #f1f2ef;         /* fondo de la página */
-  --blanco: #ffffff;        /* fondo de tarjetas y campos */
+  /* Marca (medidos en su logo y en su web) */
+  --rojo: #ea2d2d;
+  --rojo-oscuro: #c91f1f;
+  --rojo-suave: #fdecec;
+  --gris-marca: #9aa2ab;     /* la barra inclinada del logo */
+  --negro: #151515;          /* fondo de su web */
+  --negro-2: #1f2023;        /* un punto más claro, para tarjetas sobre negro */
+  --negro-3: #2a2b2f;
 
-  /* Color de la matrícula (la franja azul europea) */
+  /* Texto sobre fondo claro */
+  --tinta: #17191c;
+  --tinta-2: #4a5057;
+  --tinta-3: #767c83;
+
+  /* Fondos y bordes del panel */
+  --fondo: #f4f5f6;
+  --blanco: #ffffff;
+  --linea: #e3e5e8;
+  --linea-fuerte: #cdd1d5;
+
+  /* Estados del coche, por fase del recorrido. Tinta + fondo suave. */
+  --llegada: #5f666d;        --llegada-fondo: #eceef0;
+  --preparacion: #9a5b00;    --preparacion-fondo: #fdf1dc;
+  --venta: #17794a;          --venta-fondo: #e3f4ea;
+  --reservado: #1d56b8;      --reservado-fondo: #e6eefb;
+  --vendido: #17191c;        --vendido-fondo: #e3e5e8;
+
+  --aviso: #9a5b00;          --aviso-fondo: #fdf1dc;
+  --peligro: #c91f1f;        --peligro-fondo: #fdecec;
+  --ok: #17794a;             --ok-fondo: #e3f4ea;
+
+  /* La franja azul de la matrícula */
   --azul-matricula: #1f3fa6;
 
-  /* Colores de estado del coche, agrupados por fase del recorrido */
-  --fase-llegada: #7b8187;      /* pendiente de recoger, en transporte, recibido */
-  --fase-preparacion: #b7791f;  /* taller, limpieza, pendiente de fotos */
-  --fase-venta: #2f7d4f;        /* publicado */
-  --fase-reservado: #1f5fa6;    /* reservado con señal */
-  --fase-vendido: #1c1f22;      /* vendido, entregado */
-
-  /* Avisos */
-  --aviso: #b7791f;
-  --aviso-fondo: #fbf3e4;
-  --peligro: #d42a2a;
-  --peligro-fondo: #fbeaea;
-  --ok: #2f7d4f;
-  --ok-fondo: #e7f3ec;
-
-  /* Tipografías */
-  --letra-titulo: "Barlow Condensed", "Arial Narrow", sans-serif;
-  --letra-texto: "Barlow", system-ui, sans-serif;
-  --letra-web: "Inter", system-ui, sans-serif; /* la de su web actual */
+  /* Letra: Inter, la misma de su web */
+  --letra: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /* Espacios: úsalos en vez de inventar números sueltos */
   --espacio-xs: 4px;
@@ -52,24 +60,25 @@
   --espacio-l: 24px;
   --espacio-xl: 40px;
 
-  --radio: 6px;
-  --sombra: 0 1px 2px rgba(28, 31, 34, .06), 0 4px 12px rgba(28, 31, 34, .05);
+  --radio: 10px;            /* tarjetas y campos */
+  --radio-pequeno: 6px;
+  --radio-boton: 999px;     /* botones redondeados, como en su web */
 }
 
 
-/* 2. RESET ----------------------------------------------------------------
-   Quita los márgenes y rarezas que cada navegador pone por defecto. */
+/* 2. RESET ------------------------------------------------------------------ */
 
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--papel);
-  color: var(--asfalto);
-  font-family: var(--letra-texto);
-  font-size: 16px;
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: var(--letra);
+  font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01"; /* Inter con la «a» y el «1» más claros */
 }
 
 img { max-width: 100%; display: block; }
@@ -80,7 +89,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* Contorno visible al moverse con el teclado (Tab). No lo quitéis. */
 :focus-visible {
-  outline: 3px solid var(--azul-matricula);
+  outline: 2px solid var(--azul-matricula);
   outline-offset: 2px;
 }
 
@@ -92,55 +101,70 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* 3. TEXTO ----------------------------------------------------------------- */
 
 h1, h2, h3 {
-  font-family: var(--letra-titulo);
-  font-weight: 600;
-  line-height: 1.1;
   margin: 0;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -.02em;
 }
 
-h1 { font-size: 2.25rem; letter-spacing: -.01em; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.15rem; }
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.125rem; letter-spacing: -.01em; }
+h3 { font-size: 1rem; letter-spacing: 0; }
 
 p { margin: 0 0 var(--espacio-m); }
 
-/* Texto pequeño y gris, para aclaraciones */
-.nota { color: var(--gris); font-size: .875rem; }
+/* Texto secundario, para aclaraciones */
+.nota { color: var(--tinta-3); font-size: .875rem; }
 
 /* Cifras (km, precios, días): todas del mismo ancho para que se alineen */
 .cifra { font-variant-numeric: tabular-nums; }
 
-/* Etiqueta pequeña en mayúsculas encima de un dato */
-.rotulo {
-  display: block;
-  font-size: .75rem;
-  font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--gris);
-}
+/* Nombre pequeño encima de un dato o de un campo */
+.rotulo { display: block; font-size: .8125rem; font-weight: 500; color: var(--tinta-3); }
 
 
 /* 4. COMPONENTES ----------------------------------------------------------- */
 
+/* --- Logo ---
+   <img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí">
+   Es su logo real: blanco y rojo, pensado para ir sobre fondo negro. */
+
+.logo { height: 40px; width: auto; }
+
+
+/* --- Barra de marca ---
+   La barra gris inclinada del logo. Se usa poco, para señalar lo importante.
+   <span class="barra-marca"></span> */
+
+.barra-marca {
+  display: inline-block;
+  width: 28px;
+  height: 6px;
+  background: var(--gris-marca);
+  transform: skewX(-24deg);
+}
+.barra-marca--roja { background: var(--rojo); }
+
+
 /* --- Matrícula ---
-   Uso: <span class="matricula">4821 LKM</span>
+   <span class="matricula">4821 LKM</span>
    Grande: <span class="matricula matricula--grande">4821 LKM</span> */
 
 .matricula {
   display: inline-flex;
   align-items: stretch;
   background: var(--blanco);
-  border: 1.5px solid var(--asfalto);
+  border: 1px solid var(--linea-fuerte);
   border-radius: 4px;
-  font-family: var(--letra-titulo);
+  color: var(--tinta);
+  font-size: .8125rem;
   font-weight: 600;
-  font-size: 1rem;
-  letter-spacing: .08em;
-  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .06em;
+  line-height: 1.7;
   white-space: nowrap;
   overflow: hidden;
-  padding-right: .45em;
+  padding-right: .55em;
 }
 
 /* La franja azul con la E. Sale sola, no hay que escribirla. */
@@ -148,79 +172,73 @@ p { margin: 0 0 var(--espacio-m); }
   content: "E";
   display: flex;
   align-items: flex-end;
-  margin-right: .5em;
-  padding: 0 .35em .2em;
+  margin-right: .55em;
+  padding: 0 .35em .15em;
   background: var(--azul-matricula);
   color: var(--blanco);
-  font-size: .6em;
+  font-size: .62em;
   letter-spacing: 0;
 }
 
-.matricula--grande { font-size: 1.6rem; border-width: 2px; }
+.matricula--grande { font-size: 1.125rem; }
 
 
 /* --- Botones ---
    <a class="boton">…</a> o <button class="boton">…</button>
-   Variantes: boton--secundario, boton--peligro, boton--pequeno */
+   Variantes: boton--secundario, boton--oscuro, boton--pequeno */
 
 .boton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--espacio-s);
-  padding: 10px 18px;
-  border: 1.5px solid var(--rojo);
-  border-radius: var(--radio);
+  min-height: 40px;
+  padding: 0 20px;
+  border: 1px solid var(--rojo);
+  border-radius: var(--radio-boton);
   background: var(--rojo);
   color: var(--blanco);
+  font-size: .9375rem;
   font-weight: 600;
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background .15s, border-color .15s;
+  transition: background .15s, border-color .15s, color .15s;
 }
 
 .boton:hover { background: var(--rojo-oscuro); border-color: var(--rojo-oscuro); }
 
 .boton--secundario {
   background: var(--blanco);
-  border-color: var(--linea);
-  color: var(--asfalto);
+  border-color: var(--linea-fuerte);
+  color: var(--tinta);
 }
-.boton--secundario:hover { background: var(--papel); border-color: var(--gris); }
+.boton--secundario:hover { background: var(--fondo); border-color: var(--tinta-3); }
 
-.boton--pequeno { padding: 6px 12px; font-size: .875rem; }
+.boton--oscuro { background: var(--negro); border-color: var(--negro); }
+.boton--oscuro:hover { background: var(--negro-3); border-color: var(--negro-3); }
+
+.boton--pequeno { min-height: 32px; padding: 0 14px; font-size: .8125rem; }
 
 
-/* --- Etiqueta de estado del coche ---
+/* --- Estado del coche ---
    <span class="estado estado--venta">Publicado</span>
    Fases: llegada, preparacion, venta, reservado, vendido */
 
 .estado {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 10px 2px 8px;
-  border-radius: 999px;
-  background: var(--papel);
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radio-pequeno);
   font-size: .8125rem;
   font-weight: 600;
   white-space: nowrap;
 }
 
-/* El puntito de color delante del texto */
-.estado::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.estado--llegada     { color: var(--fase-llegada); }
-.estado--preparacion { color: var(--fase-preparacion); }
-.estado--venta       { color: var(--fase-venta); }
-.estado--reservado   { color: var(--fase-reservado); }
-.estado--vendido     { color: var(--fase-vendido); }
+.estado--llegada     { color: var(--llegada);     background: var(--llegada-fondo); }
+.estado--preparacion { color: var(--preparacion); background: var(--preparacion-fondo); }
+.estado--venta       { color: var(--venta);       background: var(--venta-fondo); }
+.estado--reservado   { color: var(--reservado);   background: var(--reservado-fondo); }
+.estado--vendido     { color: var(--vendido);     background: var(--vendido-fondo); }
 
 
 /* --- Formularios ---
@@ -231,35 +249,44 @@ p { margin: 0 0 var(--espacio-m); }
 
 .campo { display: flex; flex-direction: column; gap: 6px; }
 
-.campo__nombre { font-size: .875rem; font-weight: 600; }
+.campo__nombre { font-size: .8125rem; font-weight: 600; color: var(--tinta-2); }
 .campo__nombre em { color: var(--rojo); font-style: normal; }
 
 .campo input,
 .campo select,
 .campo textarea {
   width: 100%;
-  padding: 10px 12px;
+  min-height: 40px;
+  padding: 8px 12px;
   background: var(--blanco);
-  color: var(--asfalto); /* siempre oscuro, aunque el bloque tenga el texto blanco */
-  border: 1.5px solid var(--linea);
-  border-radius: var(--radio);
+  color: var(--tinta); /* siempre oscuro, aunque el bloque tenga el texto blanco */
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio-pequeno);
+  transition: border-color .15s, box-shadow .15s;
 }
+
+.campo input::placeholder,
+.campo textarea::placeholder { color: #a3a8ae; }
 
 .campo input:hover,
 .campo select:hover,
-.campo textarea:hover { border-color: var(--gris); }
+.campo textarea:hover { border-color: var(--tinta-3); }
 
 .campo input:focus,
 .campo select:focus,
-.campo textarea:focus { border-color: var(--azul-matricula); outline: none; }
+.campo textarea:focus {
+  border-color: var(--tinta);
+  box-shadow: 0 0 0 3px rgba(23, 25, 28, .08);
+  outline: none;
+}
 
-.campo textarea { min-height: 96px; resize: vertical; }
+.campo textarea { min-height: 88px; resize: vertical; }
 
-.campo__ayuda { font-size: .8125rem; color: var(--gris); }
+.campo__ayuda { font-size: .8125rem; color: var(--tinta-3); }
 
 /* Casilla con su texto al lado */
-.casilla { display: flex; align-items: flex-start; gap: var(--espacio-s); cursor: pointer; }
-.casilla input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--rojo); }
+.casilla { display: flex; align-items: flex-start; gap: var(--espacio-s); cursor: pointer; font-size: .9375rem; }
+.casilla input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--rojo); }
 
 
 /* --- Tablas ---
@@ -273,28 +300,54 @@ p { margin: 0 0 var(--espacio-m); }
   border-radius: var(--radio);
 }
 
-.tabla { width: 100%; border-collapse: collapse; font-size: .9375rem; }
+.tabla { width: 100%; border-collapse: collapse; font-size: .875rem; }
 
 .tabla th {
-  padding: 10px 14px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--linea);
+  background: #fafbfb;
   text-align: left;
-  font-size: .75rem;
+  font-size: .8125rem;
   font-weight: 600;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--gris);
+  color: var(--tinta-3);
   white-space: nowrap;
 }
 
 .tabla td {
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--linea);
   vertical-align: middle;
 }
 
 .tabla tr:last-child td { border-bottom: 0; }
-.tabla tbody tr:hover { background: var(--papel); }
+.tabla tbody tr:hover { background: #fafbfb; }
 
 /* Columnas de números alineadas a la derecha */
-.tabla .derecha { text-align: right; }
+.tabla .derecha { text-align: right; white-space: nowrap; }
+
+/* --- Solo para lectores de pantalla ---
+   Texto que no se ve pero que sí leen los lectores de pantalla. */
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+
+/* --- Vacío ---
+   Lo que se ve cuando no hay nada que enseñar. Siempre dice qué hacer. */
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 40px 20px;
+  border: 1px dashed var(--linea-fuerte);
+  border-radius: var(--radio);
+  text-align: center;
+}
+.vacio strong { font-size: 1rem; }
+.vacio .nota { max-width: 420px; margin: 0 0 8px; }

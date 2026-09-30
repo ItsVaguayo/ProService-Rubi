@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Foto de ejemplo">
   <!-- Imagen provisional. Se sustituye por las fotos reales del coche. -->
-  <rect width="400" height="300" fill="#dfe2de"/>
-  <rect y="210" width="400" height="90" fill="#cfd3ce"/>
-  <path d="M62 196c0-14 8-22 22-25l46-9 36-30c8-7 17-10 28-10h70c12 0 22 4 30 12l30 28 28 6c12 3 20 12 20 24v14c0 6-4 10-10 10H72c-6 0-10-4-10-10z" fill="#4a5056"/>
-  <path d="M178 136c5-4 10-6 16-6h26v36h-72zM234 130h30c8 0 14 3 20 8l24 28h-74z" fill="#9aa1a8"/>
-  <circle cx="126" cy="214" r="26" fill="#1c1f22"/>
+  <rect width="400" height="300" fill="#3a3d42"/>
+  <rect y="210" width="400" height="90" fill="#2c2e32"/>
+  <path d="M62 196c0-14 8-22 22-25l46-9 36-30c8-7 17-10 28-10h70c12 0 22 4 30 12l30 28 28 6c12 3 20 12 20 24v14c0 6-4 10-10 10H72c-6 0-10-4-10-10z" fill="#b8bec4"/>
+  <path d="M178 136c5-4 10-6 16-6h26v36h-72zM234 130h30c8 0 14 3 20 8l24 28h-74z" fill="#5e646b"/>
+  <circle cx="126" cy="214" r="26" fill="#17191c"/>
   <circle cx="126" cy="214" r="11" fill="#9aa1a8"/>
-  <circle cx="296" cy="214" r="26" fill="#1c1f22"/>
+  <circle cx="296" cy="214" r="26" fill="#17191c"/>
   <circle cx="296" cy="214" r="11" fill="#9aa1a8"/>
 </svg>

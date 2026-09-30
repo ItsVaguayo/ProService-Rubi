@@ -6,7 +6,7 @@
   <title>Stock · ProService</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/panel.css">
 </head>
@@ -16,13 +16,19 @@
   <!-- MENÚ LATERAL. Es igual en todas las páginas del panel: si lo cambias aquí,
        cámbialo en las demás. Marca la página actual con aria-current="page". -->
   <nav class="menu" aria-label="Menú principal">
-    <a class="menu__marca" href="index.html">ProService<span>·</span>Stock</a>
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
     <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
     <div class="menu__enlaces">
       <a href="index.html" aria-current="page">Tablero</a>
       <a href="coches.html">Coches</a>
       <a href="coche-nuevo.html">Nuevo coche</a>
       <a href="contactos.html">Contactos <span class="contador">3</span></a>
+      <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
+      <a class="menu__separado" href="informes.html">Informes</a>
+      <a href="usuarios.html">Usuarios</a>
     </div>
     <div class="menu__usuario">
       <strong>Jaume</strong>
@@ -42,20 +48,33 @@
       </div>
     </header>
 
-    <!-- AVISOS. Rojo = hay que hacer algo hoy. Ámbar = mirar esta semana. -->
-    <section class="avisos" aria-label="Avisos">
-      <a class="aviso aviso--peligro" href="contactos.html"><strong>2</strong> contactos sin atender desde ayer</a>
-      <a class="aviso aviso--peligro" href="coche.html"><strong>1</strong> vendido que sigue en Milanuncios</a>
-      <a class="aviso" href="coches.html"><strong>1</strong> coche con más de 60 días a la venta</a>
-      <a class="aviso" href="coches.html"><strong>1</strong> ITV que caduca antes del 30-nov</a>
+    <!-- PARA HOY. Lo que hay que mover hoy o esta semana.
+         Cifra en rojo = hoy. En ámbar = esta semana. -->
+    <section class="caja para-hoy" aria-labelledby="para-hoy">
+      <h2 id="para-hoy">Para hoy</h2>
+      <ul>
+        <li><a href="contactos.html"><span class="para-hoy__cifra para-hoy__cifra--hoy">2</span><span>Contactos de la web sin atender desde ayer</span><span class="para-hoy__ir">Llamar</span></a></li>
+        <li><a href="coche.html"><span class="para-hoy__cifra para-hoy__cifra--hoy">1</span><span>La Mercedes Vito está vendida y sigue en Milanuncios</span><span class="para-hoy__ir">Retirar</span></a></li>
+        <li><a href="coches.html"><span class="para-hoy__cifra">1</span><span>El Golf lleva 64 días a la venta</span><span class="para-hoy__ir">Revisar precio</span></a></li>
+        <li><a href="coches.html"><span class="para-hoy__cifra">1</span><span>La ITV del Berlingo caduca el 14 de noviembre</span><span class="para-hoy__ir">Ver</span></a></li>
+      </ul>
     </section>
 
     <!-- TABLERO. Una columna por estado, en el orden del recorrido del coche.
-         Días en ámbar: más de 5 en el mismo estado. En rojo: más de 14,
-         o más de 60 a la venta. -->
+         El número de cada tarjeta son los días en ese estado. En ámbar: más de 5.
+         En rojo: más de 14, o más de 60 a la venta. -->
+    <div class="tablero-cabecera">
+      <h2>Coches por estado</h2>
+      <!-- Filtro por sitio. Los entregados no salen: están en el listado de coches. -->
+      <nav class="pestanas" aria-label="Dónde está el coche">
+        <a href="index.html" aria-current="page">Todos</a>
+        <a href="#">Patio del taller</a>
+        <a href="#">Parking</a>
+      </nav>
+    </div>
     <section class="tablero" aria-label="Coches por estado">
 
-      <div class="columna">
+      <div class="columna columna--llegada">
         <h2 class="columna__titulo">Pendiente de recoger <span class="cifra">1</span></h2>
         <a class="ficha-mini" href="coche.html">
           <span class="matricula">6617 LRC</span>
@@ -64,12 +83,12 @@
         </a>
       </div>
 
-      <div class="columna">
+      <div class="columna columna--llegada">
         <h2 class="columna__titulo">En transporte <span class="cifra">0</span></h2>
         <p class="columna__vacia">Ningún coche en camino</p>
       </div>
 
-      <div class="columna">
+      <div class="columna columna--llegada">
         <h2 class="columna__titulo">Recibido, sin revisar <span class="cifra">1</span></h2>
         <a class="ficha-mini" href="coche.html">
           <span class="matricula">3380 KDN</span>
@@ -78,7 +97,7 @@
         </a>
       </div>
 
-      <div class="columna">
+      <div class="columna columna--preparacion">
         <h2 class="columna__titulo">En taller <span class="cifra">1</span></h2>
         <a class="ficha-mini" href="coche.html">
           <span class="matricula">7309 KWT</span>
@@ -87,7 +106,7 @@
         </a>
       </div>
 
-      <div class="columna">
+      <div class="columna columna--preparacion">
         <h2 class="columna__titulo">Preparación y limpieza <span class="cifra">1</span></h2>
         <a class="ficha-mini" href="coche.html">
           <span class="matricula">8471 HTS</span>
@@ -96,16 +115,16 @@
         </a>
       </div>
 
-      <div class="columna">
+      <div class="columna columna--preparacion">
         <h2 class="columna__titulo">Pendiente de fotos <span class="cifra">1</span></h2>
-        <a class="ficha-mini" href="coche.html">
+        <a class="ficha-mini" href="fotos.html">
           <span class="matricula">2156 MHB</span>
           <span class="ficha-mini__coche">Ford Transit Custom 2.0 TDCi 130 CV</span>
           <span class="ficha-mini__datos"><span class="cifra">119.900 km</span><span class="dias dias--aviso cifra">6 días</span></span>
         </a>
       </div>
 
-      <div class="columna">
+      <div class="columna columna--venta">
         <h2 class="columna__titulo">Publicado <span class="cifra">3</span></h2>
         <a class="ficha-mini" href="coche.html">
           <span class="matricula">4821 LKM</span>
@@ -124,16 +143,16 @@
         </a>
       </div>
 
-      <div class="columna">
+      <div class="columna columna--reservado">
         <h2 class="columna__titulo">Reservado <span class="cifra">1</span></h2>
-        <a class="ficha-mini" href="coche.html">
+        <a class="ficha-mini" href="coche-reservado.html">
           <span class="matricula">1905 LFV</span>
           <span class="ficha-mini__coche">Renault Clio 1.0 TCe Zen</span>
           <span class="ficha-mini__datos"><span class="cifra">45.300 km</span><span class="dias cifra">2 días</span></span>
         </a>
       </div>
 
-      <div class="columna">
+      <div class="columna columna--vendido">
         <h2 class="columna__titulo">Vendido, sin entregar <span class="cifra">1</span></h2>
         <a class="ficha-mini" href="coche.html">
           <span class="matricula">6268 JBG</span>
@@ -142,10 +161,6 @@
         </a>
       </div>
 
-      <div class="columna">
-        <h2 class="columna__titulo">Entregado <span class="cifra">0</span></h2>
-        <p class="columna__vacia">Aquí salen los entregados de los últimos 30 días</p>
-      </div>
 
     </section>
   </main>

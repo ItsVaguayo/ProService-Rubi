@@ -6,7 +6,7 @@
   <title>Coches · ProService</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/panel.css">
 </head>
@@ -14,13 +14,19 @@
 <div class="app">
 
   <nav class="menu" aria-label="Menú principal">
-    <a class="menu__marca" href="index.html">ProService<span>·</span>Stock</a>
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
     <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
     <div class="menu__enlaces">
       <a href="index.html">Tablero</a>
       <a href="coches.html" aria-current="page">Coches</a>
       <a href="coche-nuevo.html">Nuevo coche</a>
       <a href="contactos.html">Contactos <span class="contador">3</span></a>
+      <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
+      <a class="menu__separado" href="informes.html">Informes</a>
+      <a href="usuarios.html">Usuarios</a>
     </div>
     <div class="menu__usuario">
       <strong>Jaume</strong>
@@ -85,6 +91,7 @@
       <table class="tabla">
         <thead>
           <tr>
+            <th><span class="oculto">Foto</span></th>
             <th>Matrícula</th>
             <th>Coche</th>
             <th>Estado</th>
@@ -96,6 +103,7 @@
         </thead>
         <tbody>
           <tr>
+            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
             <td><a href="coche.html"><span class="matricula">5129 MPX</span></a></td>
             <td><span class="coche-celda"><a href="coche.html">Volkswagen Golf 2.0 TDI Life</a><span class="nota">2021 · diésel · manual · propio</span></span></td>
             <td><span class="estado estado--venta">Publicado</span></td>
@@ -105,6 +113,7 @@
             <td>Parking</td>
           </tr>
           <tr>
+            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
             <td><a href="coche.html"><span class="matricula">4821 LKM</span></a></td>
             <td><span class="coche-celda"><a href="coche.html">Seat Ateca 1.5 TSI Style</a><span class="nota">2020 · gasolina · manual · depósito</span></span></td>
             <td><span class="estado estado--venta">Publicado</span></td>
@@ -114,6 +123,7 @@
             <td>Parking</td>
           </tr>
           <tr>
+            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
             <td><a href="coche.html"><span class="matricula">7309 KWT</span></a></td>
             <td><span class="coche-celda"><a href="coche.html">Peugeot 3008 1.5 BlueHDi Allure</a><span class="nota">2019 · diésel · automático · depósito</span></span></td>
             <td><span class="estado estado--preparacion">En taller</span></td>
@@ -123,6 +133,7 @@
             <td>Patio del taller</td>
           </tr>
           <tr>
+            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
             <td><a href="coche.html"><span class="matricula">9044 JZP</span></a></td>
             <td><span class="coche-celda"><a href="coche.html">Toyota C-HR 125H Advance</a><span class="nota">2019 · híbrido · automático · depósito</span></span></td>
             <td><span class="estado estado--venta">Publicado</span></td>
@@ -132,6 +143,7 @@
             <td>Parking</td>
           </tr>
           <tr>
+            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
             <td><a href="coche.html"><span class="matricula">2156 MHB</span></a></td>
             <td><span class="coche-celda"><a href="coche.html">Ford Transit Custom 2.0 TDCi 130 CV</a><span class="nota">2022 · diésel · manual · propio</span></span></td>
             <td><span class="estado estado--preparacion">Pendiente de fotos</span></td>
@@ -141,8 +153,9 @@
             <td>Patio del taller</td>
           </tr>
           <tr>
-            <td><a href="coche.html"><span class="matricula">1905 LFV</span></a></td>
-            <td><span class="coche-celda"><a href="coche.html">Renault Clio 1.0 TCe Zen</a><span class="nota">2021 · gasolina · manual · depósito</span></span></td>
+            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
+            <td><a href="coche-reservado.html"><span class="matricula">1905 LFV</span></a></td>
+            <td><span class="coche-celda"><a href="coche-reservado.html">Renault Clio 1.0 TCe Zen</a><span class="nota">2021 · gasolina · manual · depósito</span></span></td>
             <td><span class="estado estado--reservado">Reservado</span></td>
             <td class="derecha cifra">45.300</td>
             <td class="derecha cifra">13.900 €</td>
@@ -150,6 +163,7 @@
             <td>Parking</td>
           </tr>
           <tr>
+            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
             <td><a href="coche.html"><span class="matricula">6268 JBG</span></a></td>
             <td><span class="coche-celda"><a href="coche.html">Mercedes Vito 114 CDI Larga</a><span class="nota">2018 · diésel · manual · depósito</span></span></td>
             <td><span class="estado estado--vendido">Vendido, sin entregar</span></td>
@@ -159,6 +173,7 @@
             <td>Parking</td>
           </tr>
           <tr>
+            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
             <td><a href="coche.html"><span class="matricula">8471 HTS</span></a></td>
             <td><span class="coche-celda"><a href="coche.html">Dacia Sandero Stepway 0.9 TCe</a><span class="nota">2019 · gasolina · manual · propio</span></span></td>
             <td><span class="estado estado--preparacion">Preparación y limpieza</span></td>
@@ -168,6 +183,7 @@
             <td>Patio del taller</td>
           </tr>
           <tr>
+            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
             <td><a href="coche.html"><span class="matricula">3380 KDN</span></a></td>
             <td><span class="coche-celda"><a href="coche.html">Citroën Berlingo 1.5 BlueHDi Talla M</a><span class="nota">2020 · diésel · manual · depósito</span></span></td>
             <td><span class="estado estado--llegada">Recibido, sin revisar</span></td>
@@ -177,6 +193,7 @@
             <td>Patio del taller</td>
           </tr>
           <tr>
+            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
             <td><a href="coche.html"><span class="matricula">6617 LRC</span></a></td>
             <td><span class="coche-celda"><a href="coche.html">Kia Sportage 1.6 CRDi Drive</a><span class="nota">2020 · diésel · manual · depósito</span></span></td>
             <td><span class="estado estado--llegada">Pendiente de recoger</span></td>
@@ -187,6 +204,17 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- SIN RESULTADOS. Se ve cuando la búsqueda o los filtros no encuentran nada.
+         Para verlo, quita hidden. -->
+    <div class="vacio" hidden>
+      <strong>Ningún coche coincide con la búsqueda</strong>
+      <p class="nota">Revisa la matrícula o quita algún filtro. Si el coche aún no está dado de alta, puedes hacerlo ahora.</p>
+      <div class="ficha-cabecera__linea">
+        <a class="boton boton--secundario" href="coches.html">Quitar filtros</a>
+        <a class="boton" href="coche-nuevo.html">Nuevo coche</a>
+      </div>
     </div>
 
   </main>

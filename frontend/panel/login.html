@@ -6,32 +6,33 @@
   <title>Entrar · ProService</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/panel.css">
 </head>
 <body>
 <main class="login">
-  <form class="login__caja" action="index.html">
-    <span class="matricula matricula--grande">PRO SERVICE</span>
-    <h1>Entrar al stock</h1>
+  <div class="login__caja">
+    <img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí">
+    <form class="login__form" action="index.html">
+      <h1>Entrar al stock</h1>
 
-    <!-- Mensaje de error. Se enseña solo cuando el usuario o la contraseña
-         no son correctos. Para verlo en la maqueta, quita el atributo hidden. -->
-    <p class="error" role="alert" hidden>El correo o la contraseña no son correctos. Revisa las mayúsculas.</p>
+      <!-- Mensaje de error. Se enseña solo cuando el correo o la contraseña
+           no son correctos. Para verlo en la maqueta, quita el atributo hidden. -->
+      <p class="error" role="alert" hidden>El correo o la contraseña no son correctos. Revisa las mayúsculas.</p>
 
-    <label class="campo">
-      <span class="campo__nombre">Correo</span>
-      <input type="email" name="email" autocomplete="username" required>
-    </label>
-    <label class="campo">
-      <span class="campo__nombre">Contraseña</span>
-      <input type="password" name="contrasena" autocomplete="current-password" minlength="10" required>
-      <span class="campo__ayuda">Al menos 10 caracteres</span>
-    </label>
-    <button class="boton" type="submit">Entrar</button>
-    <p class="nota">¿Has olvidado la contraseña? Pídele a Jaume que te la cambie.</p>
-  </form>
+      <label class="campo">
+        <span class="campo__nombre">Correo</span>
+        <input type="email" name="email" autocomplete="username" required>
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Contraseña</span>
+        <input type="password" name="contrasena" autocomplete="current-password" minlength="10" required>
+      </label>
+      <button class="boton" type="submit">Entrar</button>
+    </form>
+    <p class="login__pie">¿Has olvidado la contraseña? Pídele a Jaume que te la cambie.</p>
+  </div>
 </main>
 </body>
 </html>

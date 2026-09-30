@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Usuarios · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
+    <div class="menu__enlaces">
+      <a href="index.html">Tablero</a>
+      <a href="coches.html">Coches</a>
+      <a href="coche-nuevo.html">Nuevo coche</a>
+      <a href="contactos.html">Contactos <span class="contador">3</span></a>
+      <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
+      <a class="menu__separado" href="informes.html">Informes</a>
+      <a href="usuarios.html" aria-current="page">Usuarios</a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <header class="cabecera">
+      <div>
+        <h1>Usuarios</h1>
+        <p class="nota">Quién puede entrar al stock. Solo gerencia ve esta página.</p>
+      </div>
+    </header>
+
+    <div class="ficha">
+
+      <!-- LISTA DE USUARIOS -->
+      <div class="ficha__principal">
+        <div class="tabla-caja">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Último acceso</th>
+                <th><span class="oculto">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="coche-celda"><strong>Jaume</strong><span class="nota">jaume@proservicerubi.com</span></span></td>
+                <td>Gerencia</td>
+                <td><span class="estado estado--venta">Activo</span></td>
+                <td class="cifra">Hoy, 09:12</td>
+                <!-- Uno mismo no se puede desactivar: así el stock nunca se queda sin gerencia -->
+                <td class="derecha"><span class="nota">Eres tú</span></td>
+              </tr>
+              <tr>
+                <td><span class="coche-celda"><strong>Comercial</strong><span class="nota">comercial@proservicerubi.com</span></span></td>
+                <td>Comercial</td>
+                <td><span class="estado estado--venta">Activo</span></td>
+                <td class="cifra">Ayer, 18:40</td>
+                <td class="derecha"><button class="boton boton--secundario boton--pequeno" type="button">Desactivar</button></td>
+              </tr>
+              <tr class="fila-apagada">
+                <td><span class="coche-celda"><strong>Marc</strong><span class="nota">marc@proservicerubi.com</span></span></td>
+                <td>Comercial</td>
+                <td><span class="estado estado--llegada">Desactivado</span></td>
+                <td class="cifra">12 ago</td>
+                <td class="derecha"><button class="boton boton--secundario boton--pequeno" type="button">Reactivar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="nota">Cuando alguien deja la empresa, se desactiva: no puede entrar, pero su nombre sigue en el historial de los coches que movió. No se borra nunca.</p>
+      </div>
+
+      <!-- AÑADIR USUARIO Y CAMBIAR CONTRASEÑA -->
+      <aside class="ficha__lateral">
+        <section class="caja" id="nuevo">
+          <div class="caja__titulo"><h2>Añadir usuario</h2></div>
+          <form class="pila">
+            <label class="campo">
+              <span class="campo__nombre">Nombre <em>*</em></span>
+              <input name="nombre" autocomplete="off" required>
+            </label>
+            <label class="campo">
+              <span class="campo__nombre">Correo <em>*</em></span>
+              <input type="email" name="email" autocomplete="off" required>
+              <span class="campo__ayuda">Con este correo entrará al stock</span>
+            </label>
+            <label class="campo">
+              <span class="campo__nombre">Rol <em>*</em></span>
+              <select name="rol" required>
+                <option value="comercial">Comercial</option>
+                <option value="gerencia">Gerencia</option>
+              </select>
+              <span class="campo__ayuda">El comercial no ve compra, costes, margen, precio mínimo ni los datos del dueño de un coche en depósito.</span>
+            </label>
+            <label class="campo">
+              <span class="campo__nombre">Contraseña provisional <em>*</em></span>
+              <input type="password" name="contrasena" minlength="10" autocomplete="new-password" required>
+              <span class="campo__ayuda">Al menos 10 caracteres. Dísela en persona o por teléfono, nunca por WhatsApp.</span>
+            </label>
+            <button class="boton" type="submit">Añadir usuario</button>
+          </form>
+        </section>
+
+        <section class="caja" id="cambiar">
+          <div class="caja__titulo"><h2>Cambiar contraseña</h2></div>
+          <form class="pila">
+            <label class="campo">
+              <span class="campo__nombre">Usuario</span>
+              <select name="usuario">
+                <option>Jaume</option>
+                <option>Comercial</option>
+              </select>
+            </label>
+            <label class="campo">
+              <span class="campo__nombre">Contraseña nueva <em>*</em></span>
+              <input type="password" name="contrasena" minlength="10" autocomplete="new-password" required>
+              <span class="campo__ayuda">Al menos 10 caracteres</span>
+            </label>
+            <button class="boton boton--oscuro" type="submit">Guardar contraseña</button>
+          </form>
+        </section>
+      </aside>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>
