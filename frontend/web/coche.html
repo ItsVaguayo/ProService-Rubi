@@ -7,7 +7,7 @@
   <meta name="description" content="Seat Ateca 1.5 TSI Style de 2020 con 62.000 km. Revisado en nuestro taller de Rubí, 12 meses de garantía.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/web.css">
 </head>
@@ -15,13 +15,16 @@
 
 <header class="web-cabecera">
   <div class="envoltorio">
-    <a class="web-logo" href="index.html">ProService <span>Rubí</span></a>
+    <a href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí"></a>
     <nav class="web-nav" aria-label="Menú">
-      <a href="#">Taller</a>
-      <a href="index.html" aria-current="page">Coches de ocasión</a>
+      <a href="#">Inicio</a>
+      <a href="#">Sobre nosotros</a>
+      <a href="#">Servicios</a>
+      <a href="index.html" aria-current="page">Vehículos ocasión</a>
+      <a href="#">Compramos tu coche</a>
       <a href="#">Contacto</a>
     </nav>
-    <a class="web-telefono" href="tel:+34000000000">93 000 00 00</a>
+    <a class="boton boton--pequeno" href="#">Pide cita</a>
   </div>
 </header>
 
@@ -56,17 +59,17 @@
       </div>
       <div>
         <span class="precio cifra">20.900 €</span>
-        <p class="cuota">o desde <strong class="cifra">329 €/mes</strong>. Cuota orientativa, sujeta a aprobación.</p>
+        <p class="cuota cifra">Desde 329 €/mes<small>Cuota orientativa, sujeta a aprobación de la financiera</small></p>
       </div>
-      <p class="garantia">Revisado en nuestro taller · 12 meses de garantía</p>
+      <p class="garantia"><span class="barra-marca barra-marca--roja"></span><span><strong>Revisado en nuestro taller.</strong> 12 meses de garantía como mínimo.</span></p>
       <div class="acciones">
         <!-- Cambiar 34000000000 por el WhatsApp real (duda E1). El texto ya lleva el coche. -->
         <a class="boton boton--whatsapp" href="https://wa.me/34000000000?text=Hola%2C%20me%20interesa%20el%20Seat%20Ateca%201.5%20TSI%20Style%20de%2020.900%20%E2%82%AC">Preguntar por WhatsApp</a>
         <div class="acciones__dos">
-          <a class="boton boton--secundario" href="#contacto">Pedir prueba</a>
-          <a class="boton boton--secundario" href="#contacto">Financiarlo</a>
-          <a class="boton boton--secundario" href="#contacto">Tasar mi coche</a>
-          <a class="boton boton--secundario" href="#">Compartir</a>
+          <a class="boton boton--borde" href="#contacto">Pedir prueba</a>
+          <a class="boton boton--borde" href="#contacto">Financiarlo</a>
+          <a class="boton boton--borde" href="#contacto">Tasar mi coche</a>
+          <a class="boton boton--borde" href="#">Compartir</a>
         </div>
       </div>
     </aside>
@@ -75,7 +78,7 @@
     <div class="detalles">
 
       <section class="seccion-web">
-        <h2>Datos técnicos</h2>
+        <h2><span class="barra-marca"></span>Datos técnicos</h2>
         <table class="tabla-datos">
           <tr><th>Año</th><td class="cifra">2020</td></tr>
           <tr><th>Kilómetros</th><td class="cifra">62.000 km</td></tr>
@@ -96,7 +99,7 @@
       </section>
 
       <section class="seccion-web">
-        <h2>Equipamiento</h2>
+        <h2><span class="barra-marca"></span>Equipamiento</h2>
         <ul class="equipamiento">
           <li>Navegador</li>
           <li>Cámara de marcha atrás</li>
@@ -110,14 +113,14 @@
       </section>
 
       <section class="seccion-web">
-        <h2>Vídeo</h2>
+        <h2><span class="barra-marca"></span>Vídeo</h2>
         <!-- Aquí va el vídeo de YouTube del coche:
              <iframe class="video" src="https://www.youtube.com/embed/CODIGO" title="Vídeo del Seat Ateca" allowfullscreen></iframe> -->
         <div class="video" role="img" aria-label="Aquí irá el vídeo de YouTube"></div>
       </section>
 
       <section class="seccion-web" id="contacto">
-        <h2>Pregúntanos por este coche</h2>
+        <h2><span class="barra-marca"></span>Pregúntanos por este coche</h2>
         <form class="formulario-web">
           <label class="campo">
             <span class="campo__nombre">Nombre</span>
@@ -156,7 +159,10 @@
 <a class="boton boton--whatsapp whatsapp-fijo" href="https://wa.me/34000000000?text=Hola%2C%20me%20interesa%20el%20Seat%20Ateca%201.5%20TSI%20Style%20de%2020.900%20%E2%82%AC">Preguntar por WhatsApp</a>
 
 <footer class="web-pie">
-  <div class="envoltorio">ProService Rubí · Ctra. de Terrassa, 83 · 08191 Rubí</div>
+  <div class="envoltorio">
+    <span>Pro Service Rubí · Ctra. de Terrassa, 83 · 08191 Rubí</span>
+    <span>Taller mecánico y coches de ocasión revisados</span>
+  </div>
 </footer>
 
 </body>

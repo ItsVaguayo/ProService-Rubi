@@ -37,11 +37,16 @@ frontend/
 
 ## Cómo está pensado
 
-- **Colores y medidas, solo en `base.css`**, arriba del todo, en `:root`. Si queréis otro rojo, se cambia en una línea y cambia en todas las páginas. No escribáis colores sueltos (`#d42a2a`) dentro de las reglas: usad la variable (`var(--rojo)`).
-- **Las letras.** En el panel, Barlow para el texto y Barlow Condensed para títulos y cifras. Es la letra de las señales de tráfico y de los rótulos de taller. En la web se usa Inter, que es la de su web actual, para no desentonar dentro de su WordPress.
-- **La matrícula es el elemento propio.** Jaume reconoce los coches por la matrícula, así que en el panel sale como la placa de verdad. Se usa así: `<span class="matricula">4821 LKM</span>`. En la web pública no sale.
-- **Estados por fases.** Los 10 estados se agrupan en 5 colores: llegada, preparación, a la venta, reservado y vendido. Diez colores distintos no se distinguen.
-- **Nombres de clase en castellano** y con el formato `bloque__parte--variante`. Por ejemplo, `ficha-mini__coche` es la parte «coche» de la tarjeta pequeña y `boton--secundario` es una variante del botón.
+El estilo sale de su marca, no de una plantilla:
+
+- **Colores del logo y de su web.** Rojo `#ea2d2d` y gris `#9aa2ab`, medidos en su logo; negro `#151515`, el fondo de su web. Están todos arriba de `base.css`, en `:root`. Si queréis otro tono, se cambia en una línea. No escribáis colores sueltos dentro de las reglas: usad la variable (`var(--rojo)`).
+- **Su logo real** en `img/logo-proservice.webp`. Es blanco y rojo, así que solo funciona sobre negro: menú del panel, login y cabecera de la web.
+- **Una sola letra: Inter**, la de su web. Es también la que usan muchas herramientas de trabajo porque se lee bien en tamaños pequeños y con números.
+- **La barra inclinada del logo** (`.barra-marca`) es el único adorno. Marca la página activa del menú y los títulos de la web. No la pongáis en más sitios o deja de significar algo.
+- **Panel en claro, web en negro.** El panel es una herramienta para usar horas seguidas, así que el contenido va en claro y solo el menú es negro, como su cabecera. La web pública copia su web: fondo negro, títulos en mayúsculas con una palabra en rojo, precio grande en rojo y botones redondeados.
+- **La matrícula** se dibuja como la placa (`<span class="matricula">4821 LKM</span>`). Jaume reconoce los coches por la matrícula. En la web pública no sale.
+- **Estados por fases.** Los 10 estados van en 5 colores: llegada (gris), preparación (ámbar), a la venta (verde), reservado (azul) y vendido (negro). Diez colores distintos no se distinguen.
+- **Nombres de clase en castellano**, con el formato `bloque__parte--variante`. Por ejemplo, `ficha-mini__coche` es la parte «coche» de la tarjeta pequeña y `boton--secundario` es una variante del botón.
 - **El menú del panel se repite** en cada página. Si lo cambiáis, cambiadlo en las seis.
 - **Móvil.** Todas las páginas se adaptan. Lo de móvil está al final de cada CSS, dentro de `@media`. Probadlo con F12 → icono del móvil.
 
