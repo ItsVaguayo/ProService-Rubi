@@ -1,6 +1,6 @@
 # Flujo de ramas
 
-- `main`: lo que está en producción. Solo entra desde `develop` y lo mergea Victor.
+- `main`: lo que está en producción. Solo entra desde `develop`, lo mergea Victor y solo con el OK de Diego.
 - `develop`: integración. Aquí se juntan los tres bloques.
 - `feat/core-api` (Victor), `feat/panel-fotos` (Hafsa), `feat/web-portales` (David).
 

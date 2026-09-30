@@ -34,11 +34,26 @@ Fuera de la primera versión (Parte B del briefing): CRM con reparto de clientes
 | 3 | 19 a 23 oct | Reservas, avisos, formularios, portales, photocall |
 | 4 | 26 a 30 oct | Pruebas con Jaume, migración y arranque |
 
+## Quién decide qué
+
+**Las decisiones importantes las toma Diego.** Victor es el jefe de equipo (becario): coordina, reparte, revisa el código y prepara cada decisión para que Diego solo tenga que elegir.
+
+| Decide Diego | Decide Victor | Decide cada uno |
+|---|---|---|
+| Alcance, precio y todo lo que se le promete al cliente | Cómo se reparte el trabajo y en qué orden dentro de la semana | Cómo resuelve su bloque, dentro del contrato de la API |
+| Todo lo que se le envía al cliente (Victor lo redacta, Diego lo revisa y lo manda o da el OK) | Diseño técnico: esquema, contrato de la API, estructura del código | |
+| Gastos: servidor, photocall, servicios de carga en portales | Aprobar los PR a `develop` | |
+| Qué se aplaza si vamos tarde | Pedir ayuda a Diego cuando algo se atasca más de un día | |
+| Vía para cada portal (con la tabla de David) | | |
+| Subir a producción, el corte y la migración real | | |
+
+Cómo se le pide una decisión a Diego: un mensaje corto con el problema, dos o tres opciones con lo que cuesta cada una y la que recomienda Victor. Si Diego no contesta en un día y bloquea a alguien, se le recuerda; no se decide por él.
+
 ## Semana 0: lo que hay que cerrar antes del viernes 2-oct
 
 La lista completa de dudas, con las de fases posteriores, está en [dudas.md](dudas.md). Aquí van solo las que bloquean.
 
-Victor manda **un solo mensaje** al cliente por el canal del Chat, coordinado con Diego, con todo esto. Lo que no conteste el cliente antes del lunes 5 lo decidimos nosotros con la opción por defecto, y así se lo decimos en el mensaje.
+Victor redacta **un solo mensaje** para el cliente con todo esto y se lo pasa a Diego, que lo revisa y lo envía por el canal del Chat. Lo que no conteste el cliente antes del lunes 5 se hace con la opción por defecto, y así se lo decimos en el mensaje. Antes, Diego resuelve el bloque A de `dudas.md`.
 
 | Pregunta | Por qué bloquea | Si no contestan |
 |---|---|---|
@@ -58,7 +73,7 @@ Victor manda **un solo mensaje** al cliente por el canal del Chat, coordinado co
 Además, en la semana 0:
 
 - **Victor** escribe `docs/api.md`: cada endpoint con lo que recibe y lo que devuelve. Es el contrato. Hafsa y David trabajan contra ese documento aunque el endpoint aún no exista, y un cambio en el contrato se avisa en el canal del equipo.
-- **Victor** decide dónde vive la API (propuesta: un VPS con subdominio `stock.proservicerubi.com`) y quién paga el servidor.
+- **Victor** propone dónde vive la API (por ejemplo, un VPS con subdominio `stock.proservicerubi.com`) con su coste mensual, y **Diego** decide dónde y quién lo paga.
 - **Victor** añade una GitHub Action que pase `npm test` en cada PR.
 - **Cada uno** clona, arranca con `npm run dev` y confirma en el canal que le funciona.
 
@@ -69,7 +84,7 @@ Además, en la semana 0:
 - **Cada uno en su módulo**: `api/src/modules/vehiculos` (Victor), `modules/fotos` (Hafsa), `modules/publicacion` y `modules/contactos` (David). Si tu módulo necesita reaccionar a algo de otro módulo, el dueño de ese módulo expone una función y tú la usas. No se edita el módulo de otro.
 - **Ramas**: `main` (producción), `develop` (integración), `feat/core-api`, `feat/panel-fotos` y `feat/web-portales`. Se trae `develop` a la rama propia cada mañana. PR a `develop` con tests en verde. Victor revisa en menos de un día. `main` solo se toca para desplegar.
 - **Seguimiento**: 10 minutos al empezar el día en el canal del equipo: qué hice, qué hago y qué me bloquea. Un bloqueo de más de medio día se dice, no se espera.
-- **Con el cliente habla solo Victor**, coordinado con Diego. Nadie más le escribe, para que no reciba tres mensajes distintos.
+- **Con el cliente habla Diego.** Victor le prepara los mensajes y las preguntas; Hafsa y David no escriben al cliente. Si necesitan algo de Jaume o de Francesc, se lo piden a Victor.
 
 ## Arquitectura (ya montada en la plantilla)
 
@@ -86,10 +101,10 @@ Portales (exportación) ◄┘       única dueña de los datos     (lee el feed
 
 ## Victor · jefe de equipo · `feat/core-api`
 
-Te toca que los datos sean correctos, que los otros dos no se bloqueen y que el cliente sepa en todo momento qué recibe.
+Te toca que los datos sean correctos, que los otros dos no se bloqueen y que Diego tenga cada decisión preparada a tiempo.
 
 **Semana 0**
-- Mensaje al cliente, `docs/api.md`, decisión del servidor y GitHub Action (ver arriba).
+- Repasar con Diego el bloque A de `dudas.md`, redactarle el mensaje al cliente, `docs/api.md`, propuesta de servidor y GitHub Action (ver arriba).
 
 **Semana 1**
 - Esquema cerrado con la ficha real: campos obligatorios, lista cerrada de extras (navegador, cámara, sensores, techo…) y **proveedor** en la ficha (nombre y contacto; para los coches en depósito, el dueño y lo que se le paga).
@@ -111,10 +126,10 @@ Te toca que los datos sean correctos, que los otros dos no se bloqueen y que el 
 - Exportación de ventas en CSV para el gestor y para lo que facture.
 
 **Semana 4**
-- **Lunes 26**: producción montada, copias diarias comprobadas (restaurar una vez para ver que funciona).
+- **Lunes 26**: producción montada (con el OK de Diego), copias diarias comprobadas (restaurar una vez para ver que funciona).
 - **Migración, lo último de todo**, con la plataforma ya cerrada:
   - Lunes 26 y martes 27: script desde el export de Pymecar y ensayo sobre una copia. Se revisan con Jaume 5 coches al azar.
-  - **Martes 27 por la tarde: corte.** Desde ese momento no se da de alta nada en Pymecar.
+  - **Martes 27 por la tarde: corte**, si Diego da el OK tras ver el ensayo. Desde ese momento no se da de alta nada en Pymecar.
   - **Miércoles 28**: export final y carga real: los coches vivos, los clientes y 5 años de ventas (el histórico entra sin fotos).
 - **Jueves 29**: arranque. **Viernes 30**: fallos.
 - Si la migración falla el miércoles, el plan B es el mes extra de Pymecar pedido en la semana 0.
@@ -131,11 +146,11 @@ Te toca lo que Jaume va a usar cada día. Si el panel es lento o le pide datos d
 **Semana 2**
 - Ficha del coche: ver y editar, historial de estados, coste total y margen (solo gerencia).
 - Subida de fotos desde el ordenador: arrastrar varias a la vez, ordenarlas arrastrando, marcar las de daños y decidir si se ven en la web. En la API, `POST /api/fotos/:vehiculoId` con `multer`: reducir, guardar en `api/data/uploads` y devolver la URL. Borrar una foto y reordenar también.
-- **Prueba del photocall**, sin meterlo aún en el flujo: tres fotos reales de Jaume con dos servicios de recorte de fondo y el fondo del cliente. Anotar calidad, segundos por foto y precio por foto. El viernes 16 se enseña a Victor, y Victor pide al cliente el OK del coste (unos 12 coches × 20 fotos al mes).
+- **Prueba del photocall**, sin meterlo aún en el flujo: tres fotos reales de Jaume con dos servicios de recorte de fondo y el fondo del cliente. Anotar calidad, segundos por foto y precio por foto. El viernes 16 se enseña a Victor, que se lo pasa a Diego con el coste (unos 12 coches × 20 fotos al mes). Diego decide y pide el OK al cliente.
 
 **Semana 3**
 - Reservas desde la ficha: cliente, señal (mínimo 300 €) y días; botón para cancelar.
-- Photocall en el flujo, si el cliente dio el OK: al subir, la foto se procesa en segundo plano y se guarda en `ruta_photocall`. Si falla o tarda, se usa la original y se marca para reintentar. Un interruptor por foto para usar la original.
+- Photocall en el flujo, si Diego y el cliente dieron el OK: al subir, la foto se procesa en segundo plano y se guarda en `ruta_photocall`. Si falla o tarda, se usa la original y se marca para reintentar. Un interruptor por foto para usar la original.
 - Campo de vídeo de YouTube en la ficha.
 - Lista de contactos que llegan de la web (de David), con un botón de «atendido».
 
@@ -148,9 +163,9 @@ Te toca lo que Jaume va a usar cada día. Si el panel es lento o le pide datos d
 Te toca todo lo que ve el cliente final y los portales. Tu bloque es el que quita el trabajo que más les duele.
 
 **Semana 0 y semana 1**
-- Con los accesos que consiga Victor, averiguar cómo carga hoy la web los coches y qué URLs de fichas existen. Si hay fichas indexadas en Google, se redirigen al listado nuevo para no perder visitas.
+- Con los accesos que consiga Diego a través de Victor, averiguar cómo carga hoy la web los coches y qué URLs de fichas existen. Si hay fichas indexadas en Google, se redirigen al listado nuevo para no perder visitas.
 - Montar un WordPress local con una copia de la web.
-- Investigar cada portal: Coches.net, Milanuncios y Wallapop. Qué vía de carga profesional tiene cada uno (XML, FTP, importador, programa homologado), qué pide, cuánto cuesta y cuánto se tarda en darla de alta. **Tabla a Victor el martes 6**. Victor decide ese día y se lo dice al cliente.
+- Investigar cada portal: Coches.net, Milanuncios y Wallapop. Qué vía de carga profesional tiene cada uno (XML, FTP, importador, programa homologado), qué pide, cuánto cuesta y cuánto se tarda en darla de alta. **Tabla a Victor el martes 6**. Victor añade su recomendación y Diego decide ese mismo día y se lo dice al cliente.
 
 **Semana 2**
 - Plugin de WordPress (base en `wp-plugin/proservice-stock/`): listado con los filtros de la 5.4 (marca, modelo, precio, cuota, km, año, combustible, cambio, carrocería, etiqueta, color, plazas, ubicación), ficha pública con galería y vídeo, y etiqueta «Reservado» o «Vendido».
@@ -170,7 +185,7 @@ Te toca todo lo que ve el cliente final y los portales. Tu bloque es el que quit
 
 ## Si vamos tarde, se cae en este orden
 
-Lo primero de la lista es lo primero que se aplaza a noviembre:
+Es una propuesta: la decisión de aplazar algo la toma Diego, y Victor le avisa en cuanto vea que no llegamos. Lo primero de la lista es lo primero que se aplaza a noviembre:
 
 1. Informes (los números se pueden sacar de la exportación CSV).
 2. Calculadora de cuota y formulario de tasación.

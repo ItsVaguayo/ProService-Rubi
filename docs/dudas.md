@@ -2,7 +2,7 @@
 
 Lo que el briefing deja sin contestar, contesta a medias o contradice. Cada duda lleva la referencia del briefing, por qué importa, qué hacemos si no contestan y quién la tiene que resolver.
 
-Victor lo manda al cliente en **un solo mensaje**, coordinado con Diego, antes del **viernes 2-oct**. Lo que no esté contestado el **lunes 5** se hace con la opción por defecto y así se les avisa en el mismo mensaje. El bloque A es interno: lo resolvemos con Diego antes de escribir al cliente.
+Victor lo redacta en **un solo mensaje** y Diego lo revisa y lo envía antes del **viernes 2-oct**. Lo que no esté contestado el **lunes 5** se hace con la opción por defecto y así se les avisa en el mismo mensaje. El bloque A es interno: lo resolvemos con Diego antes de escribir al cliente.
 
 Cuando una duda se cierre, se marca con ✅, se anota la respuesta y la fecha, y se actualiza `docs/plan.md` si cambia algo.
 
@@ -15,7 +15,7 @@ Cuando una duda se cierre, se marca con ✅, se anota la respuesta y la fecha, y
 | A1 | ¿Hay propuesta firmada con alcance, plazo y precio? El briefing promete «alcance cerrado, plazo y precio» antes de arrancar. | Sin alcance firmado, cada cosa que pidan a mitad de obra entra gratis. |
 | A2 | En SaaSFlow hay un trabajo de Pro Service de 2.500 € + IVA con entrega el 31-dic. ¿Es este proyecto? | Si lo es, el plan de cuatro semanas para tres personas no cuadra con el precio, y la fecha tampoco coincide con el 31-oct. |
 | A3 | ¿Quién paga el servidor, el servicio de photocall y la carga en los portales si tiene coste? | Son gastos mensuales. Tienen que estar en la propuesta o el cliente los asume aparte. |
-| A4 | ¿Quién habla con el cliente: Victor, Diego o los dos? ¿Por el canal `proservice-plataforma-coches` del Chat? | Evitar que el cliente reciba mensajes cruzados. |
+| A4 | Con el cliente habla Diego. ¿Por el canal `proservice-plataforma-coches` del Chat? ¿Jaume y Francesc pueden preguntar dudas técnicas directamente a Victor? | Evitar que el cliente reciba mensajes cruzados y que Diego haga de intermediario en cada detalle. |
 | A5 | ¿La reparación de la web de la 5.2 («ya hemos quedado que se repara») la hacemos nosotros? ¿Quién y cuándo? | Si otra persona toca la web a la vez que David instala el plugin, se pisan. |
 | A6 | ¿Dedicación de Hafsa y David? ¿Jornada completa hasta el 30-oct? | El plan está hecho suponiendo que sí. |
 
