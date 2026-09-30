@@ -196,3 +196,59 @@ test('JSON roto y rutas que no existen responden con error claro', () =>
     assert.equal(roto.status, 400);
     assert.equal((await pide('/no-existe')).status, 404);
   }));
+
+test('el feed lleva las fotos públicas en orden, sin daños ni internas, y los extras', () =>
+  conServidor(async ({ db, pide }) => {
+    const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    meterFotos(db, id, 15);
+    db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original, es_dano) VALUES (?, 16, 'golpe.jpg', 1)").run(id);
+    db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original, publica) VALUES (?, 17, 'interna.jpg', 0)").run(id);
+    db.prepare("INSERT INTO extras (nombre) VALUES ('Navegador')").run();
+    db.prepare('INSERT INTO vehiculo_extras VALUES (?, 1)').run(id);
+    await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } });
+
+    const [v] = (await pide('/publicacion/feed/web', { como: null })).json;
+    assert.equal(v.fotos.length, 15);
+    assert.deepEqual(v.fotos.map((f) => f.orden), [...Array(15)].map((_, i) => i + 1));
+    assert.match(v.fotos[0].url, /^http:\/\/localhost:\d+\/media\/foto-1\.jpg$/);
+    assert.ok(!v.fotos.some((f) => /golpe|interna/.test(f.url)), 'ni daños ni fotos internas');
+    assert.deepEqual(v.extras, ['Navegador']);
+  }));
+
+test('reservar y cancelar desde la API: estado, historial y una sola reserva', () =>
+  conServidor(async ({ db, pide }) => {
+    const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    const antes = await pide(`/vehiculos/${id}/reserva`, { method: 'POST', body: { cliente: 'Marta', senal_cent: 50000 } });
+    assert.equal(antes.status, 400, 'solo se reserva un coche publicado');
+
+    meterFotos(db, id, 15);
+    await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } });
+    assert.equal((await pide(`/vehiculos/${id}/reserva`, { method: 'POST', body: { cliente: 'Marta', senal_cent: 29999 } })).status, 400);
+
+    const ok = await pide(`/vehiculos/${id}/reserva`, { method: 'POST', body: { cliente: 'Marta', senal_cent: 50000, dias: 5 }, como: 'comercial' });
+    assert.equal(ok.status, 201);
+    assert.equal(ok.json.usuario, 'Comercial');
+    assert.equal((await pide(`/vehiculos/${id}`)).json.estado, 'reservado');
+    assert.equal((await pide(`/vehiculos/${id}/reserva`, { method: 'POST', body: { cliente: 'Otro', senal_cent: 50000 } })).status, 400, 'no hay segunda reserva');
+
+    assert.equal((await pide(`/vehiculos/${id}/reserva`, { method: 'DELETE' })).status, 200);
+    assert.equal((await pide(`/vehiculos/${id}`)).json.estado, 'publicado');
+    assert.equal((await pide(`/vehiculos/${id}/reserva`)).json, null);
+
+    const historial = (await pide(`/vehiculos/${id}/historial`)).json;
+    assert.deepEqual(historial.slice(0, 3).map((h) => h.a), ['publicado', 'reservado', 'publicado']);
+    const ficha = (await pide(`/vehiculos/${id}`)).json;
+    assert.equal(ficha.n_fotos, 15);
+    assert.equal(ficha.foto_portada, 'foto-1.jpg');
+    assert.ok(ficha.en_estado_desde);
+  }));
+
+test('extras: se sustituye la lista y se crean los que no existían', () =>
+  conServidor(async ({ pide }) => {
+    const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    assert.equal((await pide(`/vehiculos/${id}/extras`, { method: 'PUT', body: { extras: ['Navegador', 'Faros LED', 'Navegador'] } })).status, 200);
+    assert.deepEqual((await pide(`/vehiculos/${id}/extras`)).json, ['Faros LED', 'Navegador']);
+    await pide(`/vehiculos/${id}/extras`, { method: 'PUT', body: { extras: ['Techo solar'] } });
+    assert.deepEqual((await pide(`/vehiculos/${id}/extras`)).json, ['Techo solar']);
+    assert.equal((await pide(`/vehiculos/${id}/extras`, { method: 'PUT', body: { extras: 'Navegador' } })).status, 400);
+  }));

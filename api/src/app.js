@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { resolve } from 'node:path';
 import { rutasAuth } from './modules/auth/routes.js';
 import { requiereSesion } from './modules/auth/sesiones.js';
 import { rutasVehiculos } from './modules/vehiculos/routes.js';
@@ -17,6 +18,15 @@ export function crearApp(db) {
   if (origenes.length) app.use(cors({ origin: origenes, credentials: true }));
 
   app.use(express.json({ limit: '100kb' }));
+
+  // Fotos subidas. Solo lectura, sin listar carpetas.
+  app.use('/media', express.static(resolve(process.env.UPLOADS_PATH || './data/uploads'), { index: false, dotfiles: 'deny' }));
+
+  // Solo para el sistema de pruebas: servir las maquetas de frontend/ en el mismo origen que la API,
+  // así el panel usa la cookie de sesión sin CORS. En producción el panel se sirve aparte.
+  if (process.env.SERVIR_FRONTEND) {
+    app.use(express.static(resolve(process.env.SERVIR_FRONTEND), { index: 'index.html' }));
+  }
 
   // Público
   app.get('/api/salud', (_req, res) => res.json({ ok: true }));

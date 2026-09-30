@@ -17,16 +17,105 @@ export function serializar(v, usuario) {
 
 export function rutasVehiculos(db) {
   const r = Router();
-  const leer = db.prepare('SELECT * FROM vehiculos WHERE id = ?');
+  // Lo que el panel necesita además de la ficha: desde cuándo está en su estado, la foto de portada
+  // y cuántas fotos tiene. Se calcula, no se guarda.
+  const SELECT = `SELECT v.*,
+      (SELECT MAX(h.fecha) FROM historial_estados h WHERE h.vehiculo_id = v.id AND h.a = v.estado) AS en_estado_desde,
+      (SELECT f.ruta_original FROM fotos f WHERE f.vehiculo_id = v.id AND f.es_dano = 0 ORDER BY f.orden LIMIT 1) AS foto_portada,
+      (SELECT COUNT(*) FROM fotos f WHERE f.vehiculo_id = v.id) AS n_fotos
+    FROM vehiculos v`;
+  const leer = db.prepare(`${SELECT} WHERE v.id = ?`);
 
   r.get('/estados', (_req, res) => res.json(ESTADOS));
 
   r.get('/', (req, res) => {
     const { estado } = req.query;
     const filas = estado
-      ? db.prepare('SELECT * FROM vehiculos WHERE estado = ? ORDER BY id DESC').all(estado)
-      : db.prepare('SELECT * FROM vehiculos ORDER BY id DESC').all();
+      ? db.prepare(`${SELECT} WHERE v.estado = ? ORDER BY v.id DESC`).all(estado)
+      : db.prepare(`${SELECT} ORDER BY v.id DESC`).all();
     res.json(filas.map((v) => serializar(v, req.usuario)));
+  });
+
+  r.get('/:id/historial', (req, res) => {
+    if (!leer.get(req.params.id)) return res.status(404).json({ error: 'No existe' });
+    res.json(db.prepare(`SELECT h.de, h.a, h.fecha, u.nombre AS usuario FROM historial_estados h
+                           LEFT JOIN usuarios u ON u.id = h.usuario_id WHERE h.vehiculo_id = ? ORDER BY h.fecha DESC, h.id DESC`)
+      .all(req.params.id));
+  });
+
+  // 3.7 Equipamiento: lista cerrada. PUT sustituye la lista entera por la que llega (por nombre).
+  r.get('/:id/extras', (req, res) => {
+    if (!leer.get(req.params.id)) return res.status(404).json({ error: 'No existe' });
+    res.json(db.prepare('SELECT e.nombre FROM vehiculo_extras ve JOIN extras e ON e.id = ve.extra_id WHERE ve.vehiculo_id = ? ORDER BY e.nombre')
+      .all(req.params.id).map((e) => e.nombre));
+  });
+
+  r.put('/:id/extras', (req, res) => {
+    const v = leer.get(req.params.id);
+    if (!v) return res.status(404).json({ error: 'No existe' });
+    const nombres = req.body?.extras;
+    if (!Array.isArray(nombres) || nombres.some((n) => typeof n !== 'string' || !n.trim() || n.length > 80)) {
+      return res.status(400).json({ error: 'extras tiene que ser una lista de nombres' });
+    }
+    db.transaction(() => {
+      db.prepare('DELETE FROM vehiculo_extras WHERE vehiculo_id = ?').run(v.id);
+      for (const nombre of new Set(nombres.map((n) => n.trim()))) {
+        db.prepare('INSERT INTO extras (nombre) VALUES (?) ON CONFLICT (nombre) DO NOTHING').run(nombre);
+        db.prepare('INSERT INTO vehiculo_extras (vehiculo_id, extra_id) SELECT ?, id FROM extras WHERE nombre = ?').run(v.id, nombre);
+      }
+      registrar(db, { usuarioId: req.usuario.id, entidad: 'vehiculo', entidadId: v.id, accion: 'extras', despues: { extras: nombres } });
+    })();
+    res.json({ ok: true });
+  });
+
+  // 2.4 Reservas. Reservar pasa el coche a «Reservado»; cancelar lo devuelve a «Publicado».
+  const reservaActiva = db.prepare(`SELECT r.*, u.nombre AS usuario FROM reservas r
+                                      LEFT JOIN auditoria a ON a.entidad = 'reserva' AND a.entidad_id = r.id AND a.accion = 'alta'
+                                      LEFT JOIN usuarios u ON u.id = a.usuario_id
+                                     WHERE r.vehiculo_id = ? AND r.activa = 1`);
+
+  r.get('/:id/reserva', (req, res) => {
+    if (!leer.get(req.params.id)) return res.status(404).json({ error: 'No existe' });
+    res.json(reservaActiva.get(req.params.id) ?? null);
+  });
+
+  r.post('/:id/reserva', (req, res) => {
+    const v = leer.get(req.params.id);
+    if (!v) return res.status(404).json({ error: 'No existe' });
+    const { cliente, senal_cent, dias = 7 } = req.body ?? {};
+    const errores = [];
+    if (typeof cliente !== 'string' || !cliente.trim()) errores.push('Falta el cliente');
+    if (!Number.isInteger(senal_cent) || senal_cent < 30000) errores.push('La señal es de 300 € como mínimo');
+    if (!Number.isInteger(dias) || dias < 1 || dias > 60) errores.push('Los días de reserva van de 1 a 60');
+    if (v.estado !== 'publicado') errores.push('Solo se reserva un coche publicado');
+    if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
+
+    db.transaction(() => {
+      const idReserva = Number(db.prepare(`INSERT INTO reservas (vehiculo_id, cliente, senal_cent, caduca_en)
+                                           VALUES (?, ?, ?, datetime('now', ?))`).run(v.id, cliente.trim(), senal_cent, `+${dias} days`).lastInsertRowid);
+      registrar(db, { usuarioId: req.usuario.id, entidad: 'reserva', entidadId: idReserva, accion: 'alta', despues: { vehiculo: v.id, cliente, senal_cent, dias } });
+      db.prepare("UPDATE vehiculos SET estado = 'reservado', actualizado_en = datetime('now') WHERE id = ?").run(v.id);
+      db.prepare('INSERT INTO historial_estados (vehiculo_id, de, a, usuario_id) VALUES (?,?,?,?)').run(v.id, v.estado, 'reservado', req.usuario.id);
+      emitirCambioEstado(db, { vehiculo: v, de: v.estado, a: 'reservado', usuario: req.usuario });
+    })();
+    res.status(201).json(reservaActiva.get(v.id));
+  });
+
+  r.delete('/:id/reserva', (req, res) => {
+    const v = leer.get(req.params.id);
+    if (!v) return res.status(404).json({ error: 'No existe' });
+    const reserva = reservaActiva.get(v.id);
+    if (!reserva) return res.status(404).json({ error: 'Este coche no tiene reserva activa' });
+    db.transaction(() => {
+      db.prepare('UPDATE reservas SET activa = 0 WHERE id = ?').run(reserva.id);
+      registrar(db, { usuarioId: req.usuario.id, entidad: 'reserva', entidadId: reserva.id, accion: 'cancelacion' });
+      if (v.estado === 'reservado') {
+        db.prepare("UPDATE vehiculos SET estado = 'publicado', actualizado_en = datetime('now') WHERE id = ?").run(v.id);
+        db.prepare('INSERT INTO historial_estados (vehiculo_id, de, a, usuario_id) VALUES (?,?,?,?)').run(v.id, 'reservado', 'publicado', req.usuario.id);
+        emitirCambioEstado(db, { vehiculo: v, de: 'reservado', a: 'publicado', usuario: req.usuario });
+      }
+    })();
+    res.json({ ok: true });
   });
 
   r.get('/:id', (req, res) => {
