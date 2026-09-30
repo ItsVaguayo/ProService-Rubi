@@ -38,7 +38,7 @@
     <header class="cabecera">
       <div>
         <h1>Usuarios</h1>
-        <p class="nota">Quién puede entrar al stock y qué ve cada uno. Solo gerencia puede ver esta página.</p>
+        <p class="nota">Quién puede entrar al stock. Solo gerencia ve esta página.</p>
       </div>
     </header>
 
@@ -84,27 +84,6 @@
           </table>
         </div>
 
-        <!-- QUÉ VE CADA ROL. Si el cliente cambia los permisos (duda F4 de docs/dudas.md),
-             se cambia aquí y en la API. -->
-        <section class="caja">
-          <div class="caja__titulo"><h2>Qué ve cada rol</h2></div>
-          <div class="tabla-caja">
-            <table class="tabla">
-              <thead>
-                <tr><th></th><th>Gerencia</th><th>Comercial</th></tr>
-              </thead>
-              <tbody>
-                <tr><td>Coches, fotos, estados y reservas</td><td>Sí</td><td>Sí</td></tr>
-                <tr><td>Precio de venta y precio si financia</td><td>Sí</td><td>Sí</td></tr>
-                <tr><td>Contactos de la web</td><td>Sí</td><td>Sí</td></tr>
-                <tr><td>Compra, costes, margen y precio mínimo</td><td>Sí</td><td>No</td></tr>
-                <tr><td>Datos del dueño de un coche en depósito</td><td>Sí</td><td>No</td></tr>
-                <tr><td>Usuarios</td><td>Sí</td><td>No</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
         <p class="nota">Cuando alguien deja la empresa, se desactiva: no puede entrar, pero su nombre sigue en el historial de los coches que movió. No se borra nunca.</p>
       </div>
 
@@ -128,6 +107,7 @@
                 <option value="comercial">Comercial: no ve el dinero</option>
                 <option value="gerencia">Gerencia: lo ve todo</option>
               </select>
+              <span class="campo__ayuda">El comercial no ve compra, costes, margen, precio mínimo ni los datos del dueño de un coche en depósito.</span>
             </label>
             <label class="campo">
               <span class="campo__nombre">Contraseña provisional <em>*</em></span>
