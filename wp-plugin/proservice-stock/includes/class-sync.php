@@ -220,6 +220,8 @@ class ProService_Sync
                 return is_numeric($valor) ? (int) $valor : null;
             case 'euros':
                 return is_numeric($valor) ? (int) round($valor / 100) : null;
+            case 'lista':
+                return is_array($valor) ? array_values(array_map('sanitize_text_field', array_filter($valor, 'is_scalar'))) : null;
             default:
                 return is_scalar($valor) ? sanitize_text_field((string) $valor) : null;
         }

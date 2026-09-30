@@ -91,10 +91,22 @@ class ProService_Admin
                         <td><input id="ps-wa" name="whatsapp" class="regular-text" inputmode="numeric" value="<?php echo esc_attr($a['whatsapp']); ?>" placeholder="34600000000"></td>
                     </tr>
                     <tr>
+                        <th scope="row">Ficha del coche</th>
+                        <td>
+                            <label><input name="ficha_propia" type="checkbox" value="1" <?php checked($a['ficha_propia']); ?>> Usar la ficha del plugin (diseño de frontend/web)</label>
+                            <p class="description">Apagado, cada coche se ve con la plantilla del tema, como hoy en proservicerubi.com.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="ps-listado">Página del listado</label></th>
+                        <td><input id="ps-listado" name="pagina_listado" type="url" class="regular-text" value="<?php echo esc_attr($a['pagina_listado']); ?>" placeholder="<?php echo esc_attr(home_url('/coches-de-ocasion/')); ?>">
+                            <p class="description">Donde está el <code>[proservice_buscador]</code>. La usa la miga de pan de la ficha y el 301 de los coches retirados.</p></td>
+                    </tr>
+                    <tr>
                         <th scope="row"><label for="ps-mapa">Mapa de campos</label></th>
                         <td>
                             <textarea id="ps-mapa" name="mapa" rows="16" class="large-text code"><?php echo esc_textarea(wp_json_encode($a['mapa'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?></textarea>
-                            <p class="description">Dato del feed → campo de WordPress. Formatos: <code>texto</code>, <code>entero</code>, <code>euros</code> (el feed da céntimos) y <code>galeria</code>.</p>
+                            <p class="description">Dato del feed → campo de WordPress. Formatos: <code>texto</code>, <code>entero</code>, <code>euros</code> (el feed da céntimos), <code>lista</code> y <code>galeria</code>.</p>
                         </td>
                     </tr>
                 </table>
@@ -148,6 +160,8 @@ class ProService_Admin
             'tipo_post' => sanitize_key(wp_unslash($_POST['tipo_post'] ?? 'coches')),
             'taxonomia' => sanitize_key(wp_unslash($_POST['taxonomia'] ?? 'marca')),
             'whatsapp'  => preg_replace('/\D/', '', wp_unslash($_POST['whatsapp'] ?? '')),
+            'ficha_propia'   => !empty($_POST['ficha_propia']),
+            'pagina_listado' => esc_url_raw(wp_unslash($_POST['pagina_listado'] ?? ''), ['http', 'https']),
             'mapa'      => $mapa,
         ];
         if (!defined('PROSERVICE_API_URL') && isset($_POST['api_url'])) {

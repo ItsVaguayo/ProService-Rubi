@@ -64,7 +64,7 @@ function buscar(array $get)
     $_GET = $get;
     $html = do_shortcode('[proservice_buscador por_pagina="48"]');
     $_GET = [];
-    preg_match_all('/<h2>([^<]+)<\/h2>/', $html, $m);
+    preg_match_all('/<a class="tarjeta-coche".*?<h2>([^<]+)<\/h2>/s', $html, $m);
     return $m[1];
 }
 function coche($id, array $cambios = [])
@@ -152,8 +152,9 @@ $orden = buscar(['orden' => 'precio']);
 afirmar(array_slice($orden, 0, 2) === ['VOLKSWAGEN GOLF TDI 105CV FAMILIAR', 'Seat Ibiza FR Plus'], 'ordenado por precio');
 $_GET = [];
 $html = do_shortcode('[proservice_buscador]');
-afirmar(strpos($html, 'ps-cinta">Reservado') !== false, 'cinta de reservado');
-afirmar(strpos($html, 'ps-precio">12.500 €') !== false && strpos($html, '60.000 km') !== false, 'precio y km en formato español, con punto (aunque WordPress esté en inglés)');
+afirmar(strpos($html, 'class="cinta">Reservado') !== false, 'cinta de reservado');
+afirmar(strpos($html, '<div class="ps-web">') !== false && wp_style_is('proservice-web', 'enqueued'), 'todo dentro de .ps-web y con la hoja web.css generada');
+afirmar(strpos($html, 'precio cifra">12.500 €') !== false && strpos($html, '60.000 km') !== false, 'precio y km en formato español, con punto (aunque WordPress esté en inglés)');
 afirmar(ProService_Buscador::cifra(1234567) === '1.234.567' && ProService_Buscador::cifra(900) === '900', 'separador de miles con punto');
 afirmar(strpos($html, '<option value="hibrido">Híbrido</option>') !== false, 'opciones con nombre legible');
 $_GET = ['marca' => '"><script>alert(1)</script>'];
@@ -221,6 +222,22 @@ list($mapa, $errores) = ProService_Ajustes::validar_mapa('{"pvp_cent":{"meta":"p
 afirmar($mapa === null && $errores, 'rechaza un formato desconocido');
 list($mapa, $errores) = ProService_Ajustes::validar_mapa('no es json');
 afirmar($mapa === null && $errores, 'rechaza un JSON roto');
+
+// --- 10. Equipamiento y ficha del plugin -------------------------------------------------------------
+echo "10. Equipamiento y ficha pública\n";
+feed([coche(4, ['marca' => 'Volkswagen', 'modelo' => 'Golf', 'version' => 'TDI 105CV Familiar', 'etiqueta_dgt' => 'ECO', 'extras' => ['Navegador', 'Faros LED'], 'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'fotos' => [foto(1, 1), foto(2, 2)]])]);
+sync(true);
+afirmar(get_post_meta($manual->ID, 'equipamiento', true) === ['Navegador', 'Faros LED'], 'extras guardados como lista');
+ProService_Ajustes::guardar(['whatsapp' => '34600000000', 'pagina_listado' => home_url('/coches-de-ocasion/')]);
+$f = ProService_Ficha::datos($manual->ID);
+afirmar($f['precio'] === '12.900 €' && $f['financiado'] === '11.900 €', 'ficha: precio y financiado con punto');
+afirmar(count($f['fotos']) === 2 && strpos($f['fotos'][0]['grande'], '/wp-content/uploads/') !== false, 'ficha: galería con las fotos descargadas');
+afirmar($f['etiqueta'] === ['eco', 'ECO'] && $f['video'] === 'dQw4w9WgXcQ', 'ficha: etiqueta DGT y vídeo de YouTube');
+afirmar(strpos($f['whatsapp'], 'https://wa.me/34600000000?text=Hola%2C%20me%20interesa%20el%20Volkswagen%20Golf') === 0, 'ficha: WhatsApp con el coche y el precio en el mensaje');
+afirmar(isset($f['tecnicos']['Kilómetros']) && $f['tecnicos']['Kilómetros'] === '60.000 km' && !isset($f['tecnicos']['Llaves']), 'ficha: datos técnicos, sin datos internos');
+afirmar(ProService_Ficha::youtube('https://youtu.be/dQw4w9WgXcQ') === 'dQw4w9WgXcQ' && ProService_Ficha::youtube('https://vimeo.com/1') === null, 'reconoce enlaces de YouTube y nada más');
+ProService_Ajustes::guardar(['ficha_propia' => false]);
+afirmar(apply_filters('template_include', 'tema.php') === 'tema.php', 'con el ajuste apagado manda la plantilla del tema');
 
 // --- Limpieza del estado de la API falsa -------------------------------------------------------------
 modo('ok');

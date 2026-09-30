@@ -23,12 +23,21 @@ class ProService_Buscador
 
     public static function iniciar()
     {
-        add_action('wp_enqueue_scripts', function () {
-            wp_register_style('proservice-buscador', PROSERVICE_URL . 'assets/buscador.css', [], PROSERVICE_VERSION);
-        });
         add_shortcode('proservice_buscador', [__CLASS__, 'shortcode']);
         add_shortcode('proservice_stock', [__CLASS__, 'shortcode']); // nombre antiguo de la plantilla
         add_action('save_post_' . ProService_Ajustes::get('tipo_post'), [__CLASS__, 'olvidar_opciones']);
+    }
+
+    /**
+     * Carga la hoja con el diseño de frontend/web (acotado a .ps-web por wp-plugin/construir-css.py).
+     * Se registra aquí y no en wp_enqueue_scripts para que funcione aunque ese gancho ya haya pasado.
+     */
+    public static function encolar_css()
+    {
+        if (!wp_style_is('proservice-web', 'registered')) {
+            wp_register_style('proservice-web', PROSERVICE_URL . 'assets/web.css', [], PROSERVICE_VERSION);
+        }
+        wp_enqueue_style('proservice-web');
     }
 
     /**
@@ -129,8 +138,8 @@ class ProService_Buscador
 
     public static function shortcode($atts)
     {
-        $atts = shortcode_atts(['por_pagina' => 12], $atts, 'proservice_buscador');
-        wp_enqueue_style('proservice-buscador');
+        $atts = shortcode_atts(['por_pagina' => 12, 'cabecera' => 'no'], $atts, 'proservice_buscador');
+        self::encolar_css();
 
         $f = self::filtros();
         $consulta = new WP_Query(self::argumentos($f, max(1, min(48, (int) $atts['por_pagina']))));
@@ -138,36 +147,69 @@ class ProService_Buscador
 
         ob_start();
         ?>
-        <div class="ps-buscador">
-            <?php self::pintar_filtros($f, $opciones); ?>
-            <section aria-label="Resultados">
-                <div class="ps-orden">
-                    <span class="ps-nota" aria-live="polite"><strong><?php echo (int) $consulta->found_posts; ?></strong> <?php echo $consulta->found_posts === 1 ? 'coche' : 'coches'; ?></span>
+        <div class="ps-web">
+            <?php if ($atts['cabecera'] === 'si') : ?>
+                <div class="listado-titulo">
+                    <span class="antetitulo"><span class="barra-marca barra-marca--roja"></span>Revisados en nuestro taller de Rubí</span>
+                    <h1 class="titulo-marca">Coches de <span>ocasión</span></h1>
+                    <p>Cada coche pasa por nuestro taller antes de salir a la venta. Garantía mínima de 12 meses y financiación a tu medida.</p>
                 </div>
-                <?php if ($consulta->have_posts()) : ?>
-                    <div class="ps-tarjetas">
-                        <?php
-                        while ($consulta->have_posts()) {
-                            $consulta->the_post();
-                            self::pintar_tarjeta(get_the_ID());
-                        }
-                        wp_reset_postdata();
-                        ?>
+            <?php endif; ?>
+            <div class="listado">
+                <?php self::pintar_filtros($f, $opciones); ?>
+                <section aria-label="Resultados">
+                    <div class="orden">
+                        <span class="nota" aria-live="polite"><strong><?php echo (int) $consulta->found_posts; ?></strong> <?php echo $consulta->found_posts === 1 ? 'coche disponible' : 'coches disponibles'; ?></span>
+                        <label class="campo">
+                            <span class="rotulo">Ordenar</span>
+                            <select name="orden" form="ps-filtros" onchange="this.form.requestSubmit()">
+                                <?php foreach (['recientes' => 'Más recientes', 'precio' => 'Precio más bajo', 'km' => 'Menos kilómetros'] as $valor => $texto) : ?>
+                                    <option value="<?php echo esc_attr($valor); ?>"<?php selected($f['orden'], $valor); ?>><?php echo esc_html($texto); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
                     </div>
-                    <?php self::pintar_paginas($consulta, $f); ?>
-                <?php else : ?>
-                    <p class="ps-vacio">No hay coches con esos filtros. <a href="<?php echo esc_url(self::url_base()); ?>">Ver todos</a></p>
-                <?php endif; ?>
-            </section>
+                    <?php if ($consulta->have_posts()) : ?>
+                        <div class="tarjetas">
+                            <?php
+                            while ($consulta->have_posts()) {
+                                $consulta->the_post();
+                                self::pintar_tarjeta(get_the_ID());
+                            }
+                            wp_reset_postdata();
+                            ?>
+                        </div>
+                        <?php self::pintar_paginas($consulta, $f); ?>
+                    <?php else : ?>
+                        <div class="vacio">
+                            <strong>Ahora mismo no tenemos ningún coche así</strong>
+                            <p class="nota">Quita algún filtro o dinos qué buscas: entran coches nuevos cada semana y te avisamos.</p>
+                            <div class="acciones__dos">
+                                <a class="boton boton--borde" href="<?php echo esc_url(self::url_base()); ?>">Quitar filtros</a>
+                                <?php if (ProService_Ajustes::get('whatsapp')) : ?>
+                                    <a class="boton boton--whatsapp" href="<?php echo esc_url(self::whatsapp('Hola, busco un coche')); ?>">Dinos qué buscas</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </section>
+            </div>
         </div>
         <?php
         return ob_get_clean();
     }
 
+    /** Enlace de WhatsApp con el mensaje ya escrito. Vacío si no hay número en los ajustes. */
+    public static function whatsapp($mensaje)
+    {
+        $numero = ProService_Ajustes::get('whatsapp');
+        return $numero ? 'https://wa.me/' . rawurlencode($numero) . '?text=' . rawurlencode($mensaje) : '';
+    }
+
     private static function pintar_filtros(array $f, array $o)
     {
         $select = function ($nombre, $etiqueta, $valores, $actual, $todos) {
-            echo '<label class="ps-campo"><span class="ps-campo__nombre">' . esc_html($etiqueta) . '</span>';
+            echo '<label class="campo"><span class="campo__nombre">' . esc_html($etiqueta) . '</span>';
             echo '<select name="' . esc_attr($nombre) . '"><option value="">' . esc_html($todos) . '</option>';
             foreach ($valores as $valor => $texto) {
                 printf('<option value="%s"%s>%s</option>', esc_attr($valor), selected((string) $actual, (string) $valor, false), esc_html($texto));
@@ -176,16 +218,17 @@ class ProService_Buscador
         };
         $numero = function ($nombre, $etiqueta, $actual, $marcador) {
             printf(
-                '<label class="ps-campo"><span class="ps-campo__nombre">%s</span><input type="number" min="0" inputmode="numeric" name="%s" value="%s" placeholder="%s"></label>',
+                '<label class="campo"><span class="campo__nombre">%s</span><input type="number" min="0" inputmode="numeric" name="%s" value="%s" placeholder="%s"></label>',
                 esc_html($etiqueta), esc_attr($nombre), esc_attr($actual === null ? '' : $actual), esc_attr($marcador)
             );
         };
         ?>
-        <form class="ps-filtros" method="get" action="<?php echo esc_url(self::url_base()); ?>" role="search" aria-label="Filtrar coches">
+        <form class="filtros-web" id="ps-filtros" method="get" action="<?php echo esc_url(self::url_base()); ?>" role="search" aria-label="Filtrar coches">
+            <h2>Filtrar</h2>
             <?php
             $select('marca', 'Marca', $o['marca'], $f['marca'], 'Todas');
             $select('modelo', 'Modelo', $o['modelo'], $f['modelo'], 'Todos');
-            echo '<div class="ps-dos">';
+            echo '<div class="dos">';
             $numero('precio_min', 'Precio desde', $f['precio_min'], '€');
             $numero('precio_max', 'hasta', $f['precio_max'], '€');
             echo '</div>';
@@ -196,39 +239,51 @@ class ProService_Buscador
             $select('cambio', 'Cambio', $o['cambio'], $f['cambio'], 'Los dos');
             $select('carroceria', 'Carrocería', $o['carroceria'], $f['carroceria'], 'Todas');
             $select('etiqueta', 'Etiqueta DGT', $o['etiqueta'], $f['etiqueta'], 'Todas');
-            echo '<div class="ps-dos">';
+            echo '<div class="dos">';
             $select('color', 'Color', $o['color'], $f['color'], 'Todos');
             $select('plazas', 'Plazas', $o['plazas'], $f['plazas'], 'Todas');
             echo '</div>';
-            $select('orden', 'Ordenar', ['precio' => 'Precio más bajo', 'km' => 'Menos kilómetros'], $f['orden'], 'Más recientes');
             ?>
-            <button class="ps-boton" type="submit">Ver coches</button>
-            <a class="ps-limpiar" href="<?php echo esc_url(self::url_base()); ?>">Quitar filtros</a>
+            <button class="boton" type="submit">Ver coches</button>
         </form>
         <?php
     }
 
+    /** Lee un dato del coche a través del mapa de campos. */
+    public static function dato($post_id, $campo_api)
+    {
+        $clave = ProService_Ajustes::meta_de($campo_api);
+        return $clave ? get_post_meta($post_id, $clave, true) : '';
+    }
+
+    public static function nombre_combustible($v)
+    {
+        return self::COMBUSTIBLES[$v] ?? ucfirst((string) $v);
+    }
+
+    public static function nombre_cambio($v)
+    {
+        return self::CAMBIOS[$v] ?? ucfirst((string) $v);
+    }
+
     private static function pintar_tarjeta($post_id)
     {
-        $m = function ($campo_api) use ($post_id) {
-            $clave = ProService_Ajustes::meta_de($campo_api);
-            return $clave ? get_post_meta($post_id, $clave, true) : '';
-        };
         $titulo = get_the_title($post_id);
-        $estado = $m('estado');
+        $estado = self::dato($post_id, 'estado');
+        $km = self::dato($post_id, 'kilometros');
         $datos = array_filter([
-            $m('anio'),
-            $m('kilometros') !== '' ? self::cifra($m('kilometros')) . ' km' : '',
-            self::COMBUSTIBLES[$m('combustible')] ?? ucfirst((string) $m('combustible')),
-            self::CAMBIOS[$m('cambio')] ?? ucfirst((string) $m('cambio')),
+            self::dato($post_id, 'anio'),
+            $km !== '' ? self::cifra($km) . ' km' : '',
+            self::dato($post_id, 'combustible') !== '' ? self::nombre_combustible(self::dato($post_id, 'combustible')) : '',
+            self::dato($post_id, 'cambio') !== '' ? self::nombre_cambio(self::dato($post_id, 'cambio')) : '',
         ]);
-        $precio = $m('pvp_cent');
+        $precio = self::dato($post_id, 'pvp_cent');
         ?>
-        <a class="ps-tarjeta" href="<?php echo esc_url(get_permalink($post_id)); ?>">
+        <a class="tarjeta-coche" href="<?php echo esc_url(get_permalink($post_id)); ?>">
             <?php if ($estado === 'reservado') : ?>
-                <span class="ps-cinta">Reservado</span>
+                <span class="cinta">Reservado</span>
             <?php elseif ($estado === 'vendido') : ?>
-                <span class="ps-cinta ps-cinta--vendido">Vendido</span>
+                <span class="cinta cinta--vendido">Vendido</span>
             <?php endif; ?>
             <?php
             if (has_post_thumbnail($post_id)) {
@@ -237,11 +292,11 @@ class ProService_Buscador
                 printf('<img src="%s" alt="" loading="lazy">', esc_url(PROSERVICE_URL . 'assets/coche.svg'));
             }
             ?>
-            <div class="ps-tarjeta__cuerpo">
+            <div class="tarjeta-coche__cuerpo">
                 <h2><?php echo esc_html($titulo); ?></h2>
-                <span class="ps-tarjeta__datos"><?php echo esc_html(implode(' · ', $datos)); ?></span>
-                <div class="ps-tarjeta__precio">
-                    <span class="ps-precio"><?php echo $precio !== '' ? esc_html(self::cifra($precio) . ' €') : 'Consultar'; ?></span>
+                <ul class="tarjeta-coche__datos cifra"><?php foreach ($datos as $d) : ?><li><?php echo esc_html($d); ?></li><?php endforeach; ?></ul>
+                <div class="tarjeta-coche__precio">
+                    <span class="precio cifra"><?php echo $precio !== '' ? esc_html(self::cifra($precio) . ' €') : 'Consultar'; ?></span>
                 </div>
             </div>
         </a>
@@ -250,21 +305,29 @@ class ProService_Buscador
 
     private static function pintar_paginas(WP_Query $consulta, array $f)
     {
-        if ($consulta->max_num_pages < 2) {
+        $total = (int) $consulta->max_num_pages;
+        if ($total < 2) {
             return;
         }
         $filtros = array_filter($f, function ($v, $k) {
             return $v !== null && $k !== 'pagina' && !($k === 'orden' && $v === 'recientes');
         }, ARRAY_FILTER_USE_BOTH);
-        $enlaces = paginate_links([
-            'base'      => add_query_arg('pagina', '%#%', add_query_arg($filtros, self::url_base())),
-            'format'    => '',
-            'current'   => $f['pagina'],
-            'total'     => $consulta->max_num_pages,
-            'prev_text' => 'Anterior',
-            'next_text' => 'Siguiente',
-        ]);
-        echo '<nav class="ps-paginas" aria-label="Páginas">' . wp_kses_post($enlaces) . '</nav>';
+        $url = function ($n) use ($filtros) {
+            return add_query_arg(array_merge($filtros, $n > 1 ? ['pagina' => $n] : []), self::url_base());
+        };
+        echo '<nav class="paginas" aria-label="Páginas">';
+        if ($f['pagina'] > 1) {
+            printf('<a class="paginas__siguiente" href="%s">Anterior</a>', esc_url($url($f['pagina'] - 1)));
+        }
+        for ($n = 1; $n <= $total; $n++) {
+            $n === $f['pagina']
+                ? printf('<a class="paginas__actual" href="%s" aria-current="page">%d</a>', esc_url($url($n)), $n)
+                : printf('<a href="%s">%d</a>', esc_url($url($n)), $n);
+        }
+        if ($f['pagina'] < $total) {
+            printf('<a class="paginas__siguiente" href="%s">Siguiente</a>', esc_url($url($f['pagina'] + 1)));
+        }
+        echo '</nav>';
     }
 
     private static function url_base()

@@ -15,7 +15,7 @@ class ProService_Ajustes
 {
     const OPCION = 'proservice_ajustes';
 
-    // Formatos: texto, entero, euros (céntimos → euros enteros), galeria (lista de ids de adjuntos)
+    // Formatos: texto, entero, euros (céntimos → euros enteros), lista (de textos), galeria (lista de ids de adjuntos)
     const MAPA_POR_DEFECTO = [
         'pvp_cent'               => ['meta' => 'precio', 'formato' => 'euros'],
         'precio_financiado_cent' => ['meta' => 'precio_financiado', 'formato' => 'euros'],
@@ -40,9 +40,10 @@ class ProService_Ajustes
         'video_url'              => ['meta' => 'video', 'formato' => 'texto'],
         'estado'                 => ['meta' => 'estado_venta', 'formato' => 'texto'],
         'fotos'                  => ['meta' => 'galeria', 'formato' => 'galeria'],
+        'extras'                 => ['meta' => 'equipamiento', 'formato' => 'lista'],
     ];
 
-    const FORMATOS = ['texto', 'entero', 'euros', 'galeria'];
+    const FORMATOS = ['texto', 'entero', 'euros', 'lista', 'galeria'];
 
     public static function todos()
     {
@@ -53,6 +54,9 @@ class ProService_Ajustes
             'taxonomia'  => 'marca',
             'mapa'       => self::MAPA_POR_DEFECTO,
             'whatsapp'   => '',
+            // Ficha pública con el diseño de frontend/web. En proservicerubi.com manda su plantilla: va apagada.
+            'ficha_propia'   => false,
+            'pagina_listado' => '',
         ];
         $ajustes = array_merge($por_defecto, is_array($guardado) ? $guardado : []);
         // Una constante en wp-config.php manda sobre lo guardado: así cada entorno apunta a su API.

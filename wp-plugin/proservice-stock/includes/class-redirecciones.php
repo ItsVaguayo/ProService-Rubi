@@ -33,7 +33,7 @@ class ProService_Redirecciones
         if (!$retirados) {
             return;
         }
-        $destino = get_post_type_archive_link($tipo) ?: home_url('/');
+        $destino = ProService_Ajustes::get('pagina_listado') ?: get_post_type_archive_link($tipo) ?: home_url('/');
         wp_safe_redirect($destino, 301, 'Pro Service Stock');
         exit;
     }
