@@ -1,5 +1,7 @@
 # Plan de trabajo · Plataforma de stock Pro Service Rubí
 
+> **Cómo se trabaja (actualizado el 30-sep).** El equipo empieza desde HTML, CSS y Git básico, a media jornada. Las piezas técnicas de este plan (API, login, seguridad, servidor y migración) las monta Claude. Victor, Hafsa y David trabajan con fichas paso a paso en [docs/tareas](tareas/README.md), empezando por maquetas, datos e investigación. Diego tiene que decidir si, con este equipo, se mantiene todo el alcance para el 29-oct.
+
 ## Contexto
 
 Pro Service Rubí es una compraventa de coches de ocasión en Rubí, con taller propio. Tienen unos 50 coches en stock (10 suyos y 40 de terceros en depósito) y mueven unos 12 al mes. Trabajan dos personas: Jaume y el comercial. Francesc lleva la web.

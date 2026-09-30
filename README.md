@@ -28,6 +28,8 @@ El plugin se copia a `wp-content/plugins/` de un WordPress local y se usa con el
 
 ## Documentación
 
+- **[Fichas de tareas: empezad por aquí](docs/tareas/README.md)**
+
 - [Plan de trabajo](docs/plan.md) y [reparto resumido](docs/reparto.md)
 - [Dudas abiertas con el cliente](docs/dudas.md)
 - [Flujo de ramas](docs/flujo-git.md)
