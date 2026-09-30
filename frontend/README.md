@@ -47,8 +47,8 @@ frontend/
 
 ## Reglas para no romper nada
 
-1. **No cambiéis los `name` de los campos** de `coche-nuevo.html`. Son los nombres de la base de datos. Si hace falta uno nuevo, avisad a Victor.
-2. **Nada de dinero fuera del bloque de gerencia.** Compra, costes, margen, mínimo y proveedor solo salen en el bloque oscuro de `coche.html` y de `coche-nuevo.html`. En `web/` no aparecen nunca.
+1. **No cambiéis los `name` de los campos** de `coche-nuevo.html`, `coche.html` y `login.html`. Son los que espera la API (la lista está en `api/src/modules/vehiculos/campos.js`). Los importes acaban en `_cent` porque la API guarda céntimos, pero en pantalla se escriben euros. Si hace falta un campo nuevo, avisad a Victor.
+2. **Nada de dinero fuera del bloque de gerencia.** Compra, costes, margen, precio mínimo, régimen de IVA y los datos del dueño de un coche en depósito solo salen en el bloque oscuro de `coche.html` y de `coche-nuevo.html`, porque el comercial no los recibe. El precio de venta y el financiado sí los ve todo el mundo. En `web/` no aparece nada interno.
 3. **Nada de colores ni tamaños sueltos.** Si os falta una variable, añadidla en `base.css`.
 4. **Cada campo con su `<label>`** y cada imagen con su `alt`. Así funciona con teclado y con lector de pantalla.
 

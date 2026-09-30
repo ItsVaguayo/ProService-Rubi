@@ -18,6 +18,7 @@ Cuando una duda se cierre, se marca con ✅, se anota la respuesta y la fecha, y
 | A4 | Con el cliente habla Diego. ¿Por el canal `proservice-plataforma-coches` del Chat? ¿Jaume y Francesc pueden preguntar dudas técnicas directamente a Victor? | Evitar que el cliente reciba mensajes cruzados y que Diego haga de intermediario en cada detalle. |
 | A5 | ¿La reparación de la web de la 5.2 («ya hemos quedado que se repara») la hacemos nosotros? ¿Quién y cuándo? | Si otra persona toca la web a la vez que David instala el plugin, se pisan. |
 | A6 | ¿Dedicación de Hafsa y David? ¿Jornada completa hasta el 30-oct? | El plan está hecho suponiendo que sí. |
+| A7 | Su web ya tiene 30 coches en WordPress, cada uno con su página en `proservicerubi.com/coches/...` (tipo de contenido `coches` con campos ACF, visto el 30-sep en `/wp-json/wp/v2/coches`). ¿La plataforma **rellena y actualiza esos mismos coches** de WordPress, o montamos **un listado nuevo** con nuestro plugin? | Con un listado nuevo, las 30 páginas actuales quedan duplicadas o huérfanas y se pierde lo que ya tengan en Google. Rellenar las suyas conserva su diseño y sus URLs, pero hace falta el acceso de administrador de Francesc para ver los campos. Hasta que se decida, David no avanza el plugin. |
 
 ---
 
@@ -33,7 +34,7 @@ Cuando una duda se cierre, se marca con ✅, se anota la respuesta y la fecha, y
 | B6 | Una ficha real de un coche con todos los datos que metéis hoy. | 3.9 (en blanco) | Es lo que cierra los campos de la ficha. | Sin defecto: la necesitamos. | Jaume |
 | B7 | Un export de prueba de Pymecar (coches y clientes). Solo para comprobar que los datos salen. La migración va al final. | 13.2, 13.6 | Si Pymecar no deja sacar algo, hay que saberlo ahora y no el 28. | Sin defecto: sin export no hay migración. | Jaume |
 | B8 | Usuario de administrador de WordPress, acceso al hosting y al DNS del dominio. | 5.3 | Sin ellos no se instala el plugin ni se crea el subdominio de la API. | Sin defecto. | Francesc |
-| B9 | ¿Cómo salen hoy los coches en la web? ¿Plugin, feed de Pymecar, a mano? | 5.1, 4.5 | Si los carga Pymecar, la web se queda vacía el 31. | Se lo preguntamos a Francesc directamente. | Francesc |
+| B9 | Hemos visto que los coches de la web están en WordPress (30 publicados, con campos ACF). ¿Quién los da de alta hoy y cómo: a mano, con un plugin o los manda Pymecar? | 5.1, 4.5 | Si los manda Pymecar, la web se queda vacía el 31. | Se lo preguntamos a Francesc directamente. | Francesc |
 | B10 | ¿Francesc es de la empresa o externo? ¿Tiene que entrar al panel? ¿Con qué permisos? | 5.3, 11.3, 14.6 | Permisos y a quién se le pregunta cada cosa. | Sin acceso al panel, solo a WordPress. | Jaume |
 
 ---
@@ -42,7 +43,7 @@ Cuando una duda se cierre, se marca con ✅, se anota la respuesta y la fecha, y
 
 | # | Pregunta al cliente | Ref. | Por qué importa | Si no contestan |
 |---|---|---|---|---|
-| C1 | Habéis marcado como obligatorio casi todo, incluidos los costes. Pero cuando un coche está «Pendiente de recoger» todavía no sabéis los kilómetros exactos ni lo que costará el taller. ¿Obligatorio para darlo de alta o para publicarlo? | 3.1 a 3.5 | Si es para el alta, no podréis apuntar un coche hasta tenerlo todo y seguiréis con el Excel. | Para darlo de alta: matrícula, marca, modelo y precio de compra. El resto es obligatorio para publicar. |
+| C1 | Habéis marcado como obligatorio casi todo, incluidos los costes. Pero cuando un coche está «Pendiente de recoger» todavía no sabéis los kilómetros exactos ni lo que costará el taller. ¿Obligatorio para darlo de alta o para publicarlo? | 3.1 a 3.5 | Si es para el alta, no podréis apuntar un coche hasta tenerlo todo y seguiréis con el Excel. | Para darlo de alta: matrícula, marca y modelo. El resto es obligatorio para publicar. (El precio de compra no se exige al dar de alta porque el comercial no puede escribir datos de dinero.) |
 | C2 | En el bloque 3.4 hay dos columnas marcadas y no se sabe cuáles. ¿Algún campo de estado y documentación sale en la web? | 3.4 | Es lo que se ve o no en la ficha pública. | Ninguno sale en la web salvo la garantía. |
 | C3 | En la 5.5 respondéis «ya lo hemos respondido», pero no está. ¿Precio siempre visible o «consultar»? ¿Teléfono? ¿Ubicación exacta? ¿Bastidor? ¿Número de propietarios? | 5.5 | La ficha pública. | Precio siempre visible y teléfono sí. Ubicación solo «Rubí». Bastidor y propietarios no. |
 | C4 | ¿Un coche puede saltarse estados? Por ejemplo, uno que llega limpio y va directo a fotos. ¿Y volver atrás? | 2.2 | Si el sistema obliga a pasar por todos, lo saltaréis a mano. | Se puede mover a cualquier estado, y queda apuntado quién y cuándo. |

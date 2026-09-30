@@ -12,12 +12,12 @@ Ver en tu navegador las maquetas del panel y de la web.
 
 1. **Instala lo necesario** (si ya lo tienes, sáltatelo):
    - Git: https://git-scm.com
-   - Node.js, la versión que pone **LTS**: https://nodejs.org
+   - Node.js **22 o más**, la versión que pone **LTS**: https://nodejs.org
    - VS Code: https://code.visualstudio.com
 2. **Comprueba** que se han instalado. Abre una terminal y escribe estos dos comandos. Cada uno tiene que devolver un número de versión:
    ```bash
    git --version
-   node --version     # tiene que ser 18 o más
+   node --version     # tiene que ser 22.9 o más
    ```
 3. **Acepta la invitación** de GitHub que te ha mandado Victor. Llega por correo.
 4. **Bájate el proyecto:**
@@ -51,4 +51,4 @@ Ver en tu navegador las maquetas del panel y de la web.
 
 ## Si algo falla
 
-Copia el error entero y pregúntale a Claude. Los errores más típicos son la versión de Node, la clave SSH y que el puerto 5173 ya esté ocupado.
+Copia el error entero y pregúntale a Claude. Los errores más típicos son la versión de Node (con la 18 o la 20 no arranca la API), la clave SSH y que el puerto 5173 ya esté ocupado.

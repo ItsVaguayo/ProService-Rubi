@@ -53,6 +53,16 @@
       </form>
     </header>
 
+    <!-- ERROR AL CAMBIAR DE ESTADO. La API contesta con la lista de lo que falta.
+         Para verlo en la maqueta, quita el atributo hidden. -->
+    <div class="error error--lista" role="alert" hidden>
+      <strong>No se puede publicar todavía:</strong>
+      <ul>
+        <li>Faltan datos: bastidor, tapicería, precio de venta</li>
+        <li>Tiene 11 fotos y hacen falta al menos 15</li>
+      </ul>
+    </div>
+
     <!-- RECORRIDO: los 10 estados en orden. Clase "hecho" en los que ya ha pasado
          y "actual" en el que está ahora. -->
     <ol class="recorrido" aria-label="Recorrido del coche">
@@ -189,8 +199,8 @@
             </label>
             <label class="campo">
               <span class="campo__nombre">Señal <em>*</em></span>
-              <input type="number" name="senal" min="300" step="50" value="300" required>
-              <span class="campo__ayuda">Mínimo 300 €</span>
+              <input type="number" name="senal_cent" min="300" step="50" value="300" required>
+              <span class="campo__ayuda">En euros. Mínimo 300 €</span>
             </label>
             <label class="campo">
               <span class="campo__nombre">Días de reserva</span>

@@ -240,6 +240,7 @@ p { margin: 0 0 var(--espacio-m); }
   width: 100%;
   padding: 10px 12px;
   background: var(--blanco);
+  color: var(--asfalto); /* siempre oscuro, aunque el bloque tenga el texto blanco */
   border: 1.5px solid var(--linea);
   border-radius: var(--radio);
 }
