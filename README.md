@@ -43,6 +43,16 @@ npm run dev:front  # solo las maquetas
 npm test           # tests de la API
 ```
 
+Para trabajar con datos de prueba sin tocar la base real:
+
+```bash
+npm run seed         # crea api/data/pruebas.db: 12 coches, fotos, una reserva, contactos y dos usuarios
+npm run dev:pruebas  # API con esa base y el panel en http://localhost:3001/panel/login.html
+                     # jaume@pruebas.local (gerencia) o comercial@pruebas.local, contraseña pruebas-local-123
+```
+
+Todas las rutas de la API, con quién puede usarlas y sus errores: [docs/api.md](docs/api.md).
+
 Publicar en la web (con `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION` en el `.env`):
 
 ```bash
@@ -52,9 +62,9 @@ npm run wordpress --workspace api -- sincronizar   # publica, actualiza y retira
 
 ## Reglas de la API
 
-- **Sesión obligatoria** en todo salvo `/api/salud` y `/api/auth/*`. Roles `gerencia` y `comercial`. Las rutas de publicación en la web (`/api/wordpress/*`) son solo de gerencia.
+- **Sesión obligatoria** en todo salvo `/api/salud`, `/api/auth/*` y `POST /api/contactos` (el formulario de la web). Roles `gerencia` y `comercial`. Usuarios (`/api/usuarios`) y publicación en la web (`/api/wordpress/*`) son solo de gerencia.
 - **El dinero va en céntimos enteros**, con sufijo `_cent` (`pvp_cent: 1290000` son 12.900 €). Se pasa a euros solo al enseñarlo.
-- **El comercial nunca recibe dinero interno**: la API quita compra, costes, precio mínimo, régimen de IVA, datos del dueño en depósito y margen. No basta con esconderlo en el panel.
+- **El comercial nunca recibe dinero interno**: la API quita compra, costes, precio mínimo, régimen de IVA, datos del dueño en depósito, proveedor y margen. No basta con esconderlo en el panel.
 - **Solo se escriben los campos de `api/src/modules/vehiculos/campos.js`**. Un campo que no esté ahí da 400. Para añadir uno: migración + `campos.js`.
 - **Alta con matrícula, marca y modelo.** El resto se exige al pasar a «Publicado», junto con 15 fotos (`OBLIGATORIOS_PUBLICAR` y `FOTOS_MINIMAS`).
 - **La base de datos se cambia con migraciones** numeradas en `api/migraciones/`. Se aplican solas al arrancar. Si tenías una base del antiguo `schema.sql`, bórrala (`api/data/proservice.db*`): solo tenía datos de prueba.
