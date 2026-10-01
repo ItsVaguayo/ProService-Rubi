@@ -4,12 +4,17 @@ import { OBLIGATORIOS_PUBLICAR } from './campos.js';
 
 export const FOTOS_MINIMAS = Number(process.env.FOTOS_MINIMAS || 15); // 4.1: mínimo 15
 
+// Datos obligatorios para estar en la web que el coche no tiene.
+export function faltanParaPublicar(vehiculo) {
+  return OBLIGATORIOS_PUBLICAR.filter((c) => vehiculo[c] == null || vehiculo[c] === '');
+}
+
 // Devuelve la lista de motivos por los que no se puede pasar a `destino`. Vacía = se puede.
 export function motivosParaNoEntrar(db, vehiculo, destino) {
   const motivos = [];
 
   if (destino === 'publicado') {
-    const faltan = OBLIGATORIOS_PUBLICAR.filter((c) => vehiculo[c] == null || vehiculo[c] === '');
+    const faltan = faltanParaPublicar(vehiculo);
     if (faltan.length) motivos.push(`Faltan datos para publicar: ${faltan.join(', ')}`);
 
     const { n } = db

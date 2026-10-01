@@ -240,3 +240,26 @@ test('extras: un nombre que no está en el catálogo da 400, no se guarda nada y
     assert.equal(db.prepare('SELECT COUNT(*) AS n FROM extras').get().n, catalogo, 'el catálogo no crece');
     assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auditoria WHERE accion = 'extras'").get().n, 1, 'el intento fallido no deja rastro de cambio');
   }));
+
+test('un coche publicado no se puede quedar sin los datos de publicar al editarlo', () =>
+  conServidor(async ({ db, pide }) => {
+    const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+
+    // Sin publicar se puede vaciar lo que sea (salvo matrícula, marca y modelo)
+    assert.equal((await pide(`/vehiculos/${id}`, { method: 'PUT', body: { pvp_cent: null } })).status, 200);
+    assert.equal((await pide(`/vehiculos/${id}`, { method: 'PUT', body: { pvp_cent: 1290000 } })).status, 200);
+
+    meterFotos(db, id, 15);
+    assert.equal((await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } })).status, 200);
+
+    const vaciar = await pide(`/vehiculos/${id}`, { method: 'PUT', body: { pvp_cent: null, tapiceria: '' } });
+    assert.equal(vaciar.status, 409);
+    assert.match(vaciar.json.error, /pvp_cent/);
+    assert.match(vaciar.json.error, /tapiceria/);
+    assert.equal((await pide(`/vehiculos/${id}`)).json.pvp_cent, 1290000, 'no se ha guardado nada');
+
+    // Cambiar un dato sin vaciar ninguno sigue funcionando
+    const bajar = await pide(`/vehiculos/${id}`, { method: 'PUT', body: { pvp_cent: 1250000 } });
+    assert.equal(bajar.status, 200);
+    assert.equal(bajar.json.pvp_cent, 1250000);
+  }));

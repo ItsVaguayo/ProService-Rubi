@@ -1,10 +1,10 @@
 // Dueño: Victor. Alta, ficha, estados y reservas.
 import { Router } from 'express';
-import { ESTADOS, esEstadoValido } from '../estados.js';
+import { ESTADOS, ESTADOS_WEB, esEstadoValido } from '../estados.js';
 import { costeTotal, margenBruto } from '../margen.js';
 import { registrar } from '../auditoria.js';
 import { limpiarDatos, quitarDinero } from './campos.js';
-import { motivosParaNoEntrar } from './reglas.js';
+import { motivosParaNoEntrar, faltanParaPublicar } from './reglas.js';
 import { emitirCambioEstado } from './eventos.js';
 
 const esGerencia = (usuario) => usuario?.rol === 'gerencia';
@@ -163,6 +163,16 @@ export function rutasVehiculos(db) {
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
     const columnas = Object.keys(datos);
     if (!columnas.length) return res.status(400).json({ error: 'Sin cambios' });
+
+    // Un coche que sale en la web (publicado, reservado o vendido) no puede quedarse sin los datos
+    // que se exigieron para publicarlo: por ejemplo, sin precio.
+    if (ESTADOS_WEB.includes(antes.estado)) {
+      const faltan = faltanParaPublicar({ ...antes, ...datos });
+      if (faltan.length) {
+        const motivo = `El coche sale en la web y no puede quedarse sin: ${faltan.join(', ')}`;
+        return res.status(409).json({ error: motivo, motivos: [motivo] });
+      }
+    }
 
     db.transaction(() => {
       db.prepare(
