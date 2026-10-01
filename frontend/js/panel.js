@@ -265,7 +265,7 @@ async function paginaListado() {
         <td class="derecha cifra">${cifra(v.kilometros)}</td>
         <td class="derecha cifra">${euros(v.pvp_cent)}</td>
         <td class="derecha cifra"><span class="${claseDias({ estado: 'publicado' }, dias)}">${dias}</span></td>
-        <td>${v.ubicacion ? nombre(v.ubicacion) : '—'}</td>
+        <td>${v.ubicacion ? esc(nombre(v.ubicacion)) : '—'}</td>
       </tr>`;
     }).join('');
     $('.tabla-caja').hidden = !lista.length;
@@ -357,7 +357,7 @@ async function paginaFicha(usuario) {
   const enWeb = fotos.filter((f) => f.publica && !f.es_dano).length;
   $('#fotos .caja__titulo .nota').innerHTML = `<strong class="cifra">${fotos.length}</strong> fotos · ${enWeb} en la web · mínimo 15`;
   $('#fotos .fotos').innerHTML = fotos.map((f) => `<li class="foto"><img src="${media(f.ruta_photocall || f.ruta_original)}" alt="" loading="lazy"><span class="foto__nombre">${f.es_dano
-    ? `Daño <span class="foto__marca">Daño</span>` : `${f.orden} · ${esc(HUECOS[f.orden - 1] ?? 'Extra')}`}</span></li>`).join('')
+    ? `Daño <span class="foto__marca">Daño</span>` : `${esc(f.orden)} · ${esc(HUECOS[f.orden - 1] ?? 'Extra')}`}</span></li>`).join('')
     + '<li class="foto"><a class="foto__hueco" href="fotos.html">+ Añadir</a></li>';
 
   // Equipamiento

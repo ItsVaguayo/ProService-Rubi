@@ -44,6 +44,7 @@ export function rutasVehiculos(db) {
   });
 
   // 3.7 Equipamiento: lista cerrada. PUT sustituye la lista entera por la que llega (por nombre).
+  // Solo vale lo que hay en la tabla extras (catálogo por migración): un nombre desconocido es un 400.
   r.get('/:id/extras', (req, res) => {
     if (!leer.get(req.params.id)) return res.status(404).json({ error: 'No existe' });
     res.json(db.prepare('SELECT e.nombre FROM vehiculo_extras ve JOIN extras e ON e.id = ve.extra_id WHERE ve.vehiculo_id = ? ORDER BY e.nombre')
@@ -57,14 +58,24 @@ export function rutasVehiculos(db) {
     if (!Array.isArray(nombres) || nombres.some((n) => typeof n !== 'string' || !n.trim() || n.length > 80)) {
       return res.status(400).json({ error: 'extras tiene que ser una lista de nombres' });
     }
-    db.transaction(() => {
-      db.prepare('DELETE FROM vehiculo_extras WHERE vehiculo_id = ?').run(v.id);
+    const idDeExtra = db.prepare('SELECT id FROM extras WHERE nombre = ?');
+    const desconocidos = db.transaction(() => {
+      const ids = [];
+      const fuera = [];
       for (const nombre of new Set(nombres.map((n) => n.trim()))) {
-        db.prepare('INSERT INTO extras (nombre) VALUES (?) ON CONFLICT (nombre) DO NOTHING').run(nombre);
-        db.prepare('INSERT INTO vehiculo_extras (vehiculo_id, extra_id) SELECT ?, id FROM extras WHERE nombre = ?').run(v.id, nombre);
+        const extra = idDeExtra.get(nombre);
+        extra ? ids.push(extra.id) : fuera.push(nombre);
       }
+      if (fuera.length) return fuera; // no se toca nada
+      db.prepare('DELETE FROM vehiculo_extras WHERE vehiculo_id = ?').run(v.id);
+      const insertar = db.prepare('INSERT INTO vehiculo_extras (vehiculo_id, extra_id) VALUES (?, ?)');
+      for (const id of ids) insertar.run(v.id, id);
       registrar(db, { usuarioId: req.usuario.id, entidad: 'vehiculo', entidadId: v.id, accion: 'extras', despues: { extras: nombres } });
+      return [];
     })();
+    if (desconocidos.length) {
+      return res.status(400).json({ error: `Extras que no están en el catálogo: ${desconocidos.join(', ')}`, desconocidos });
+    }
     res.json({ ok: true });
   });
 

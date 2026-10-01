@@ -217,7 +217,7 @@ test('reservar y cancelar desde la API: estado, historial y una sola reserva', (
     assert.ok(ficha.en_estado_desde);
   }));
 
-test('extras: se sustituye la lista y se crean los que no existían', () =>
+test('extras: se sustituye la lista con nombres del catálogo', () =>
   conServidor(async ({ pide }) => {
     const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
     assert.equal((await pide(`/vehiculos/${id}/extras`, { method: 'PUT', body: { extras: ['Navegador', 'Faros LED', 'Navegador'] } })).status, 200);
@@ -225,4 +225,18 @@ test('extras: se sustituye la lista y se crean los que no existían', () =>
     await pide(`/vehiculos/${id}/extras`, { method: 'PUT', body: { extras: ['Techo solar'] } });
     assert.deepEqual((await pide(`/vehiculos/${id}/extras`)).json, ['Techo solar']);
     assert.equal((await pide(`/vehiculos/${id}/extras`, { method: 'PUT', body: { extras: 'Navegador' } })).status, 400);
+  }));
+
+test('extras: un nombre que no está en el catálogo da 400, no se guarda nada y no se crea', () =>
+  conServidor(async ({ db, pide }) => {
+    const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    await pide(`/vehiculos/${id}/extras`, { method: 'PUT', body: { extras: ['Navegador', 'Faros LED'] } });
+    const catalogo = db.prepare('SELECT COUNT(*) AS n FROM extras').get().n;
+
+    const r = await pide(`/vehiculos/${id}/extras`, { method: 'PUT', body: { extras: ['Techo solar', 'navegador GPS', 'Asiento masaje'] }, como: 'comercial' });
+    assert.equal(r.status, 400);
+    assert.deepEqual(r.json.desconocidos, ['navegador GPS', 'Asiento masaje']);
+    assert.deepEqual((await pide(`/vehiculos/${id}/extras`)).json, ['Faros LED', 'Navegador'], 'los extras del coche no cambian');
+    assert.equal(db.prepare('SELECT COUNT(*) AS n FROM extras').get().n, catalogo, 'el catálogo no crece');
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auditoria WHERE accion = 'extras'").get().n, 1, 'el intento fallido no deja rastro de cambio');
   }));

@@ -84,9 +84,14 @@ db.transaction(() => {
   const jaume = crearUsuario(db, { email: 'jaume@pruebas.local', nombre: 'Jaume', rol: 'gerencia', contrasena: CONTRASENA });
   crearUsuario(db, { email: 'comercial@pruebas.local', nombre: 'Comercial', rol: 'comercial', contrasena: CONTRASENA });
 
-  const extras = ['Navegador', 'Cámara trasera', 'Sensores de aparcamiento', 'Control de crucero', 'Apple CarPlay y Android Auto', 'Climatizador', 'Faros LED', 'Llantas de aleación'];
-  const insExtra = db.prepare('INSERT INTO extras (nombre) VALUES (?)');
-  extras.forEach((e) => insExtra.run(e));
+  // Extras del catálogo cerrado (migración 0003): aquí no se crean, solo se marcan.
+  const idDeExtra = db.prepare('SELECT id FROM extras WHERE nombre = ?');
+  const extras = ['Navegador', 'Cámara de marcha atrás', 'Sensores de aparcamiento traseros', 'Control de crucero', 'Apple CarPlay', 'Climatizador', 'Faros LED', 'Llantas de aleación']
+    .map((nombre) => {
+      const extra = idDeExtra.get(nombre);
+      if (!extra) throw new Error(`El extra «${nombre}» no está en el catálogo`);
+      return extra.id;
+    });
 
   COCHES.forEach((c, i) => {
     const datos = { ...tecnica, ...c.d };
@@ -115,7 +120,7 @@ db.transaction(() => {
       db.prepare('INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (?, ?, ?)').run(id, f, relativa);
     }
 
-    extras.slice(0, 3 + (i % 5)).forEach((_, e) => db.prepare('INSERT INTO vehiculo_extras VALUES (?, ?)').run(id, e + 1));
+    extras.slice(0, 3 + (i % 5)).forEach((extra) => db.prepare('INSERT INTO vehiculo_extras VALUES (?, ?)').run(id, extra));
 
     if (c.reserva) {
       db.prepare(`INSERT INTO reservas (vehiculo_id, cliente, senal_cent, fecha, caduca_en) VALUES (?, ?, ?, ${haceDias(2)}, datetime('now', '+5 days'))`)
