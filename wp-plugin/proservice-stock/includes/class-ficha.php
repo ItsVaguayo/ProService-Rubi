@@ -3,8 +3,7 @@
  * Ficha pública del coche con el diseño de frontend/web/coche.html.
  *
  * Solo se usa si está activado en los ajustes («Usar la ficha del plugin»). En proservicerubi.com
- * manda la plantilla del tema hijo y esto va apagado; sirve para el sistema de pruebas y por si
- * algún día se quiere sustituir.
+ * manda la plantilla del tema hijo y esto va apagado; queda por si algún día se quiere sustituir.
  */
 
 if (!defined('ABSPATH')) {

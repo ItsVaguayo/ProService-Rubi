@@ -98,13 +98,6 @@ class ProService_Admin
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row">Página completa</th>
-                        <td>
-                            <label><input name="diseno_completo" type="checkbox" value="1" <?php checked($a['diseno_completo']); ?>> Listado y ficha con la cabecera, el pie y el ancho de frontend/web</label>
-                            <p class="description">Para el sistema de pruebas. En proservicerubi.com va apagado: la cabecera y el pie los pone su tema.</p>
-                        </td>
-                    </tr>
-                    <tr>
                         <th scope="row"><label for="ps-listado">Página del listado</label></th>
                         <td><input id="ps-listado" name="pagina_listado" type="url" class="regular-text" value="<?php echo esc_attr($a['pagina_listado']); ?>" placeholder="<?php echo esc_attr(home_url('/coches-de-ocasion/')); ?>">
                             <p class="description">Donde está el <code>[proservice_buscador]</code>. La usa la miga de pan de la ficha y el 301 de los coches retirados.</p></td>
@@ -168,7 +161,6 @@ class ProService_Admin
             'taxonomia' => sanitize_key(wp_unslash($_POST['taxonomia'] ?? 'marca')),
             'whatsapp'  => preg_replace('/\D/', '', wp_unslash($_POST['whatsapp'] ?? '')),
             'ficha_propia'   => !empty($_POST['ficha_propia']),
-            'diseno_completo' => !empty($_POST['diseno_completo']),
             'pagina_listado' => esc_url_raw(wp_unslash($_POST['pagina_listado'] ?? ''), ['http', 'https']),
             'mapa'      => $mapa,
         ];

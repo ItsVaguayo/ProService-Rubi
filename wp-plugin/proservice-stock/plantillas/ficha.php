@@ -1,14 +1,14 @@
 <?php
 /**
  * Ficha pública del coche. Marcado de frontend/web/coche.html con los datos del post.
- * La cabecera y el pie son los del tema o, en modo «página completa», los de la maqueta.
+ * La cabecera y el pie son los del tema (get_header / get_footer).
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-ProService_Diseno::cabecera();
+get_header();
 the_post();
 $c = ProService_Ficha::datos(get_the_ID());
 $marca_modelo = trim(get_the_title());
@@ -141,4 +141,4 @@ document.querySelectorAll('.ps-web .galeria__miniaturas img').forEach(function (
 });
 </script>
 <?php
-ProService_Diseno::pie();
+get_footer();

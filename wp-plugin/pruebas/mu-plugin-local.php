@@ -31,6 +31,5 @@ add_filter('http_request_host_is_external', function ($externo, $host) {
 }, 10, 2);
 add_filter('http_allowed_safe_ports', function ($puertos) {
     $puertos[] = 3998; // API falsa de wp-plugin/pruebas
-    $puertos[] = 3001; // API de pruebas (api-pruebas/arrancar.sh)
     return $puertos;
 });
