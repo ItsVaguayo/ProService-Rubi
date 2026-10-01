@@ -1,10 +1,23 @@
 import { abrirDb } from './db.js';
 import { crearApp } from './app.js';
 import { configDesdeEntorno, sincronizar } from './modules/publicacion/wordpress.js';
+import { caducarReservas } from './modules/vehiculos/reservas.js';
 
 const port = process.env.PORT || 3001;
 const db = abrirDb();
 crearApp(db).listen(port, () => console.log(`API en http://localhost:${port}`));
+
+// Reservas que caducan solas: al arrancar y cada 10 minutos. Un fallo no tumba la API.
+const revisarReservas = () => {
+  try {
+    const n = caducarReservas(db);
+    if (n) console.log(`[reservas] ${n} caducada${n === 1 ? '' : 's'}: el coche vuelve a «Publicado»`);
+  } catch (e) {
+    console.error(`[reservas] ${e.message}`);
+  }
+};
+revisarReservas();
+setInterval(revisarReservas, 10 * 60 * 1000).unref();
 
 // Publicación en WordPress cada WP_SINCRONIZAR_MINUTOS (si hay credenciales). Un fallo no tumba la API.
 const wp = configDesdeEntorno();

@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { conServidor, coche, meterFotos } from './ayuda.js';
 import { ESTADOS } from '../src/modules/estados.js';
+import { caducarReservas } from '../src/modules/vehiculos/reservas.js';
 
 test('recorrido: alta, margen y publicar con fotos', () =>
   conServidor(async ({ db, pide }) => {
@@ -274,4 +275,28 @@ test('proveedor: lo guarda y lo ve gerencia; el comercial ni lo ve ni lo escribe
     const comercial = (await pide(`/vehiculos/${id}`, { como: 'comercial' })).json;
     assert.ok(!('proveedor_nombre' in comercial) && !('proveedor_telefono' in comercial));
     assert.equal((await pide(`/vehiculos/${id}`, { method: 'PUT', body: { proveedor_nombre: 'Otro' }, como: 'comercial' })).status, 400);
+  }));
+
+test('una reserva caducada se libera sola y el coche vuelve a «Publicado»', () =>
+  conServidor(async ({ db, pide }) => {
+    const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    meterFotos(db, id, 15);
+    await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } });
+    assert.equal((await pide(`/vehiculos/${id}/reserva`, { method: 'POST', body: { cliente: 'Ana', senal_cent: 30000, dias: 7 } })).status, 201);
+
+    assert.equal(caducarReservas(db), 0, 'una reserva que no ha vencido no se toca');
+    assert.equal((await pide(`/vehiculos/${id}`)).json.estado, 'reservado');
+
+    db.prepare("UPDATE reservas SET caduca_en = datetime('now', '-1 minute') WHERE vehiculo_id = ?").run(id);
+    assert.equal(caducarReservas(db), 1);
+    assert.equal(caducarReservas(db), 0, 'solo se libera una vez');
+
+    assert.equal((await pide(`/vehiculos/${id}`)).json.estado, 'publicado');
+    assert.equal((await pide(`/vehiculos/${id}/reserva`)).json, null);
+    const ultimo = (await pide(`/vehiculos/${id}/historial`)).json[0];
+    assert.deepEqual([ultimo.de, ultimo.a, ultimo.usuario], ['reservado', 'publicado', null], 'sin usuario: caduca sola');
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auditoria WHERE entidad = 'reserva' AND accion = 'caducada'").get().n, 1);
+
+    // Se puede volver a reservar
+    assert.equal((await pide(`/vehiculos/${id}/reserva`, { method: 'POST', body: { cliente: 'Luis', senal_cent: 50000 } })).status, 201);
   }));

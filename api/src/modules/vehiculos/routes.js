@@ -6,6 +6,7 @@ import { registrar } from '../auditoria.js';
 import { limpiarDatos, quitarDinero } from './campos.js';
 import { motivosParaNoEntrar, faltanParaPublicar } from './reglas.js';
 import { emitirCambioEstado } from './eventos.js';
+import { liberarReserva } from './reservas.js';
 
 const esGerencia = (usuario) => usuario?.rol === 'gerencia';
 
@@ -118,15 +119,7 @@ export function rutasVehiculos(db) {
     if (!v) return res.status(404).json({ error: 'No existe' });
     const reserva = reservaActiva.get(v.id);
     if (!reserva) return res.status(404).json({ error: 'Este coche no tiene reserva activa' });
-    db.transaction(() => {
-      db.prepare('UPDATE reservas SET activa = 0 WHERE id = ?').run(reserva.id);
-      registrar(db, { usuarioId: req.usuario.id, entidad: 'reserva', entidadId: reserva.id, accion: 'cancelacion' });
-      if (v.estado === 'reservado') {
-        db.prepare("UPDATE vehiculos SET estado = 'publicado', actualizado_en = datetime('now') WHERE id = ?").run(v.id);
-        db.prepare('INSERT INTO historial_estados (vehiculo_id, de, a, usuario_id) VALUES (?,?,?,?)').run(v.id, 'reservado', 'publicado', req.usuario.id);
-        emitirCambioEstado(db, { vehiculo: v, de: 'reservado', a: 'publicado', usuario: req.usuario });
-      }
-    })();
+    db.transaction(() => liberarReserva(db, { reserva, vehiculo: v, usuario: req.usuario, accion: 'cancelacion' }))();
     res.json({ ok: true });
   });
 
