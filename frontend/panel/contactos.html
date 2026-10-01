@@ -22,7 +22,7 @@
     <div class="menu__enlaces">
       <a href="index.html">Tablero</a>
       <a href="coches.html">Coches</a>
-      <a href="coche-nuevo.html">Nuevo coche</a>
+      <a href="coche-nuevo.html">Alta de vehículo</a>
       <a href="contactos.html" aria-current="page">Contactos <span class="contador">3</span></a>
       <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
       <a class="menu__separado" href="informes.html">Informes</a>
@@ -36,32 +36,30 @@
 
   <main class="contenido">
 
-    <header class="cabecera">
+    <!-- CABECERA en banda negra, como el tablero -->
+    <header class="cabecera cabecera--portada">
       <div>
+        <p class="portada__antetitulo">Web</p>
         <h1>Contactos</h1>
         <p class="nota">Lo que entra por los formularios de la web. Llama primero a los que llevan más tiempo esperando.</p>
       </div>
     </header>
 
     <form class="filtros">
-      <label class="campo">
-        <span class="campo__nombre">Mostrar</span>
-        <select name="estado">
-          <option>Sin atender</option>
-          <option>Atendidos</option>
-          <option>Todos</option>
-        </select>
-      </label>
-      <label class="campo">
-        <span class="campo__nombre">Qué pide</span>
-        <select name="tipo">
-          <option value="">Todo</option>
-          <option>Información</option>
-          <option>Prueba de conducción</option>
-          <option>Financiación</option>
-          <option>Tasación de su coche</option>
-        </select>
-      </label>
+      <fieldset class="opciones opciones--pequenas">
+        <legend class="campo__nombre">Mostrar</legend>
+        <label><input type="radio" name="estado" value="Sin atender" checked><span>Sin atender</span></label>
+        <label><input type="radio" name="estado" value="Atendidos"><span>Atendidos</span></label>
+        <label><input type="radio" name="estado" value="Todos"><span>Todos</span></label>
+      </fieldset>
+      <fieldset class="opciones opciones--pequenas">
+        <legend class="campo__nombre">Qué pide</legend>
+        <label><input type="radio" name="tipo" value="" checked><span>Todo</span></label>
+        <label><input type="radio" name="tipo" value="Información"><span>Información</span></label>
+        <label><input type="radio" name="tipo" value="Prueba de conducción"><span>Prueba de conducción</span></label>
+        <label><input type="radio" name="tipo" value="Financiación"><span>Financiación</span></label>
+        <label><input type="radio" name="tipo" value="Tasación de su coche"><span>Tasación de su coche</span></label>
+      </fieldset>
     </form>
 
     <div class="tabla-caja">

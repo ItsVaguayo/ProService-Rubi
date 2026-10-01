@@ -22,7 +22,7 @@
     <div class="menu__enlaces">
       <a href="index.html">Tablero</a>
       <a href="coches.html" aria-current="page">Coches</a>
-      <a href="coche-nuevo.html">Nuevo coche</a>
+      <a href="coche-nuevo.html">Alta de vehículo</a>
       <a href="contactos.html">Contactos <span class="contador">3</span></a>
       <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
       <a class="menu__separado" href="informes.html">Informes</a>
@@ -36,18 +36,21 @@
 
   <main class="contenido">
 
-    <header class="cabecera">
+    <!-- CABECERA en banda negra, como el tablero -->
+    <header class="cabecera cabecera--portada">
       <div>
+        <p class="portada__antetitulo">Stock</p>
         <h1>Coches</h1>
         <p class="nota">10 en stock · 7 de terceros en depósito</p>
       </div>
       <div class="cabecera__acciones">
         <a class="boton boton--secundario" href="#">Exportar a Excel</a>
-        <a class="boton" href="coche-nuevo.html">Nuevo coche</a>
+        <a class="boton" href="coche-nuevo.html">Alta de vehículo</a>
       </div>
     </header>
 
     <!-- FILTROS. De momento no filtran: es solo el diseño. -->
+    <!-- Los valores del estado son los de la API: los enlaces del tablero llegan con ?estado=publicado, etc. -->
     <form class="filtros" role="search">
       <label class="campo campo--ancho">
         <span class="campo__nombre">Buscar</span>
@@ -57,34 +60,30 @@
         <span class="campo__nombre">Estado</span>
         <select name="estado">
           <option value="">Todos</option>
-          <option>Pendiente de recoger</option>
-          <option>En transporte</option>
-          <option>Recibido, sin revisar</option>
-          <option>En taller</option>
-          <option>Preparación y limpieza</option>
-          <option>Pendiente de fotos</option>
-          <option>Publicado</option>
-          <option>Reservado</option>
-          <option>Vendido, sin entregar</option>
-          <option>Entregado</option>
+          <option value="pendiente_recoger">Pendiente de recoger</option>
+          <option value="en_transporte">En transporte</option>
+          <option value="recibido">Recibido, sin revisar</option>
+          <option value="en_taller">En taller</option>
+          <option value="en_preparacion">Preparación y limpieza</option>
+          <option value="pendiente_fotos">Pendiente de fotos</option>
+          <option value="publicado">Publicado</option>
+          <option value="reservado">Reservado</option>
+          <option value="vendido">Vendido, sin entregar</option>
+          <option value="entregado">Entregado</option>
         </select>
       </label>
-      <label class="campo">
-        <span class="campo__nombre">Propiedad</span>
-        <select name="propiedad">
-          <option value="">Todos</option>
-          <option>Propios</option>
-          <option>En depósito</option>
-        </select>
-      </label>
-      <label class="campo">
-        <span class="campo__nombre">Dónde está</span>
-        <select name="ubicacion">
-          <option value="">Los dos sitios</option>
-          <option>Patio del taller</option>
-          <option>Parking</option>
-        </select>
-      </label>
+      <fieldset class="opciones opciones--pequenas">
+        <legend class="campo__nombre">Propiedad</legend>
+        <label><input type="radio" name="propiedad" value="" checked><span>Todos</span></label>
+        <label><input type="radio" name="propiedad" value="Propios"><span>Propios</span></label>
+        <label><input type="radio" name="propiedad" value="En depósito"><span>En depósito</span></label>
+      </fieldset>
+      <fieldset class="opciones opciones--pequenas">
+        <legend class="campo__nombre">Dónde está</legend>
+        <label><input type="radio" name="ubicacion" value="" checked><span>Los dos sitios</span></label>
+        <label><input type="radio" name="ubicacion" value="Patio del taller"><span>Patio del taller</span></label>
+        <label><input type="radio" name="ubicacion" value="Parking"><span>Parking</span></label>
+      </fieldset>
     </form>
 
     <div class="tabla-caja">
@@ -213,7 +212,7 @@
       <p class="nota">Revisa la matrícula o quita algún filtro. Si el coche aún no está dado de alta, puedes hacerlo ahora.</p>
       <div class="ficha-cabecera__linea">
         <a class="boton boton--secundario" href="coches.html">Quitar filtros</a>
-        <a class="boton" href="coche-nuevo.html">Nuevo coche</a>
+        <a class="boton" href="coche-nuevo.html">Alta de vehículo</a>
       </div>
     </div>
 
