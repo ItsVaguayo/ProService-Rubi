@@ -1,47 +1,38 @@
 <?php
 /**
- * Plugin Name: Pro Service Stock
- * Description: Mantiene las fichas de «coches» de proservicerubi.com al día con la plataforma de stock, y añade el buscador con filtros.
- * Version: 0.3.0
+ * Plugin Name: Pro Service Buscador
+ * Description: Buscador con filtros y ficha opcional para los coches de proservicerubi.com. Los coches los publica la plataforma de stock por la API REST de WordPress.
+ * Version: 0.4.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Equipo ECS
  * Text Domain: proservice-stock
  *
- * Cómo funciona: cada 5 minutos lee el feed público de la API y crea, actualiza o retira
- * los posts del tipo «coches» que ya usa la web. No rehace la web (5.2): su plantilla,
- * su diseño y sus URLs se quedan como están. Solo toca los posts que tiene vinculados.
+ * Qué hace: [proservice_buscador] con los filtros de la 5.4 sobre los posts «coches», y una ficha con
+ * el diseño de frontend/web que se puede activar en los ajustes. No habla con la plataforma ni escribe
+ * coches: eso lo hace la API con un usuario Editor (api/src/modules/publicacion/wordpress.js).
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PROSERVICE_VERSION', '0.3.0');
-define('PROSERVICE_ARCHIVO', __FILE__);
+define('PROSERVICE_VERSION', '0.4.0');
 define('PROSERVICE_DIR', plugin_dir_path(__FILE__));
 define('PROSERVICE_URL', plugin_dir_url(__FILE__));
 
 require_once PROSERVICE_DIR . 'includes/class-ajustes.php';
-require_once PROSERVICE_DIR . 'includes/class-api.php';
-require_once PROSERVICE_DIR . 'includes/class-sync.php';
 require_once PROSERVICE_DIR . 'includes/class-admin.php';
 require_once PROSERVICE_DIR . 'includes/class-buscador.php';
 require_once PROSERVICE_DIR . 'includes/class-ficha.php';
-require_once PROSERVICE_DIR . 'includes/class-redirecciones.php';
-
-register_activation_hook(__FILE__, ['ProService_Sync', 'programar']);
-register_deactivation_hook(__FILE__, ['ProService_Sync', 'desprogramar']);
 
 add_action('plugins_loaded', function () {
-    ProService_Sync::iniciar();
     ProService_Admin::iniciar();
     ProService_Buscador::iniciar();
     ProService_Ficha::iniciar();
-    ProService_Redirecciones::iniciar();
 
-    if (defined('WP_CLI') && WP_CLI) {
-        require_once PROSERVICE_DIR . 'includes/class-cli.php';
-        WP_CLI::add_command('proservice', 'ProService_CLI');
+    // La versión 0.3 sincronizaba cada 5 minutos: si se actualiza encima, se quita esa tarea.
+    if (wp_next_scheduled('proservice_sync')) {
+        wp_clear_scheduled_hook('proservice_sync');
     }
 });

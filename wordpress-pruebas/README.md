@@ -19,7 +19,9 @@ Los nombres de los campos ACF (`precio`, `kilometros`, `galeria`…) son una sup
 | Hoy (ACF oculto en REST) | Título, estado (publicado o borrador) y marca |
 | Si un administrador marca «Mostrar en la API REST» en el grupo de campos de ACF de «coches» | Además: precio, km, datos técnicos, estado de venta y galería de fotos |
 
-Esa casilla es la única acción de administrador que hace falta para que el precio y las fotos viajen solos. La otra opción es instalar el plugin (`wp-plugin/`), que también requiere administrador.
+Esa casilla es la única acción de administrador que hace falta para que el precio y las fotos viajen solos.
+
+El buscador con filtros es aparte: el plugin `wp-plugin/` (instalarlo sí requiere administrador una vez). No escribe coches, solo lee lo que deja la API. Hoy, con ACF oculto, solo podría filtrar por marca.
 
 ## Montarlo
 
@@ -29,6 +31,7 @@ Necesitas PHP 8 (con `sqlite3`, `curl`, `mbstring` y `xml`) y [WP-CLI](https://w
 wordpress-pruebas/montar.sh --limpiar               # monta o deja al día; borra coches y crea 3 fichas «hechas a mano»
 wordpress-pruebas/montar.sh --acf-rest si           # simula que alguien ha expuesto ACF en REST
 wordpress-pruebas/montar.sh --acf-rest no           # como la web real hoy
+wordpress-pruebas/montar.sh --con-buscador          # instala el plugin buscador y la página /coches-de-ocasion/
 PHP_CLI_SERVER_WORKERS=4 php -S localhost:8080 -t ~/wp-proservice/web
 ```
 

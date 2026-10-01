@@ -25,7 +25,10 @@ class ProService_Buscador
     {
         add_shortcode('proservice_buscador', [__CLASS__, 'shortcode']);
         add_shortcode('proservice_stock', [__CLASS__, 'shortcode']); // nombre antiguo de la plantilla
-        add_action('save_post_' . ProService_Ajustes::get('tipo_post'), [__CLASS__, 'olvidar_opciones']);
+        $tipo = ProService_Ajustes::get('tipo_post');
+        add_action('save_post_' . $tipo, [__CLASS__, 'olvidar_opciones']);
+        // Por REST, los campos de ACF se escriben después de guardar el post: se vuelve a vaciar entonces.
+        add_action('rest_after_insert_' . $tipo, [__CLASS__, 'olvidar_opciones']);
     }
 
     /**
@@ -209,6 +212,9 @@ class ProService_Buscador
     private static function pintar_filtros(array $f, array $o)
     {
         $select = function ($nombre, $etiqueta, $valores, $actual, $todos) {
+            if (!$valores) {
+                return; // un filtro sin opciones no ayuda: si la web no tiene ese dato, no se enseña
+            }
             echo '<label class="campo"><span class="campo__nombre">' . esc_html($etiqueta) . '</span>';
             echo '<select name="' . esc_attr($nombre) . '"><option value="">' . esc_html($todos) . '</option>';
             foreach ($valores as $valor => $texto) {
@@ -286,11 +292,10 @@ class ProService_Buscador
                 <span class="cinta cinta--vendido">Vendido</span>
             <?php endif; ?>
             <?php
-            if (has_post_thumbnail($post_id)) {
-                echo get_the_post_thumbnail($post_id, 'medium_large', ['alt' => $titulo, 'loading' => 'lazy']);
-            } else {
-                printf('<img src="%s" alt="" loading="lazy">', esc_url(PROSERVICE_URL . 'assets/coche.svg'));
-            }
+            // Por REST no se puede poner foto destacada en «coches»: la portada es la primera de la galería.
+            $portada = get_post_thumbnail_id($post_id) ?: (ProService_Ficha::ids_galeria(self::dato($post_id, 'fotos'))[0] ?? 0);
+            $imagen = $portada ? wp_get_attachment_image($portada, 'medium_large', false, ['alt' => $titulo, 'loading' => 'lazy']) : '';
+            echo $imagen ?: sprintf('<img src="%s" alt="" loading="lazy">', esc_url(PROSERVICE_URL . 'assets/coche.svg'));
             ?>
             <div class="tarjeta-coche__cuerpo">
                 <h2><?php echo esc_html($titulo); ?></h2>

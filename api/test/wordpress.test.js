@@ -141,6 +141,17 @@ test('con ACF: precio en euros, galería y fotos subidas una sola vez', () =>
     assert.equal(estado.medios, 3, 'las fotos no se vuelven a subir');
   }));
 
+test('solo se suben las fotos públicas que no son de daños', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 3);
+    db.prepare('UPDATE fotos SET es_dano = 1 WHERE orden = 2').run();
+    db.prepare('UPDATE fotos SET publica = 0 WHERE orden = 3').run();
+    await sincronizar(db, cfg);
+    const post = [...estado.posts.values()].find((p) => p.title === 'Seat Modelo Versión');
+    assert.equal(estado.medios, 1);
+    assert.equal(post.acf.galeria.split(',').length, 1);
+  }));
+
 test('fotos de más: como mucho N por pasada y la siguiente termina', () =>
   conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
     coche(1, 'Seat', 'publicado', 3);

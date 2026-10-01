@@ -1,27 +1,18 @@
 <?php
 /**
- * Pruebas del plugin contra la API falsa. Se lanzan dentro de un WordPress de pruebas:
+ * Pruebas del plugin (buscador y ficha). Se lanzan con wp-plugin/pruebas/probar.sh, que hace una
+ * copia temporal del WordPress de pruebas: este guion BORRA los coches del WordPress donde corre.
  *
- *   python3 wp-plugin/pruebas/api_falsa.py &          # API falsa en 127.0.0.1:3998
- *   wp eval-file wp-plugin/pruebas/prueba.php
- *
- * Necesita el tipo de contenido «coches» y la taxonomía «marca» (en local los crea un mu-plugin,
- * ver wp-plugin/pruebas/README.md). BORRA los coches vinculados y sus fotos: nunca en producción.
+ * Los coches se crean como los deja la API por REST: título, marca y campos de ACF (precio en euros,
+ * galería como texto «12,13»). Uno más va solo con título, como las fichas hechas a mano de la web.
  */
 
-if (!defined('ABSPATH') || !class_exists('ProService_Sync')) {
-    fwrite(STDERR, "Lánzalo con wp eval-file y el plugin activo.\n");
+if (!defined('ABSPATH') || !class_exists('ProService_Buscador')) {
+    fwrite(STDERR, "Lánzalo con probar.sh: hace falta WordPress con el plugin activo.\n");
     exit(1);
 }
-if (strpos(home_url(), 'localhost') === false && strpos(home_url(), '127.0.0.1') === false) {
-    fwrite(STDERR, "Solo se ejecuta en un WordPress local: borra datos.\n");
-    exit(1);
-}
-
-// Dentro de wp eval-file, __DIR__ va vacío y las variables no son globales: se lanza desde la raíz del repo.
-define('PS_PRUEBAS_TMP', getenv('PS_PRUEBAS_TMP') ?: getcwd() . '/wp-plugin/pruebas/tmp');
-if (!is_dir(PS_PRUEBAS_TMP)) {
-    fwrite(STDERR, 'No encuentro ' . PS_PRUEBAS_TMP . ": lánzalo desde la raíz del repo con la API falsa en marcha.\n");
+if (!getenv('PS_COPIA_DE_PRUEBAS')) {
+    fwrite(STDERR, "Solo corre en la copia que hace probar.sh: borra los coches.\n");
     exit(1);
 }
 
@@ -34,214 +25,143 @@ class PS_Prueba
 function afirmar($condicion, $mensaje)
 {
     PS_Prueba::$total++;
-    if ($condicion) {
-        echo "  ok   {$mensaje}\n";
-    } else {
+    if (!$condicion) {
         PS_Prueba::$fallos++;
-        echo "  FALLO {$mensaje}\n";
     }
+    echo ($condicion ? '  ok   ' : '  FALLO ') . $mensaje . "\n";
 }
-function feed(array $coches)
-{
-    file_put_contents(PS_PRUEBAS_TMP . '/feed.json', wp_json_encode($coches));
-}
-function modo($m)
-{
-    file_put_contents(PS_PRUEBAS_TMP . '/modo.txt', $m);
-}
-function sync($forzar = false)
-{
-    delete_transient(ProService_Sync::BLOQUEO);
-    return ProService_Sync::ejecutar($forzar);
-}
-function post_de($api_id)
-{
-    $v = ProService_Sync::posts_vinculados('coches');
-    return isset($v[$api_id]) ? $v[$api_id]['post_id'] : 0;
-}
-function buscar(array $get)
+
+function buscar(array $get, $atts = 'por_pagina="48"')
 {
     $_GET = $get;
-    $html = do_shortcode('[proservice_buscador por_pagina="48"]');
+    $html = do_shortcode("[proservice_buscador {$atts}]");
     $_GET = [];
     preg_match_all('/<a class="tarjeta-coche".*?<h2>([^<]+)<\/h2>/s', $html, $m);
-    return $m[1];
-}
-function coche($id, array $cambios = [])
-{
-    $base = [
-        'id' => $id, 'referencia' => sprintf('PS-%05d', $id), 'estado' => 'publicado', 'marca' => 'Seat', 'modelo' => 'Ibiza',
-        'version' => 'FR', 'anio' => 2020, 'kilometros' => 60000, 'combustible' => 'gasolina', 'cambio' => 'manual',
-        'potencia_cv' => 110, 'cilindrada' => 999, 'traccion' => 'delantera', 'emisiones_co2' => 120, 'etiqueta_dgt' => 'C',
-        'carroceria' => 'utilitario', 'puertas' => 5, 'plazas' => 5, 'color_exterior' => 'blanco', 'tapiceria' => 'tela',
-        'llantas' => '16"', 'garantia_meses' => 12, 'pvp_cent' => 1290000, 'precio_financiado_cent' => 1190000, 'video_url' => null,
-    ];
-    return array_merge($base, $cambios);
-}
-function foto($n, $orden, $extra = '')
-{
-    return ['id' => $orden, 'orden' => $orden, 'url' => "http://127.0.0.1:3998/fotos/{$n}.png{$extra}"];
+    return [$m[1], $html];
 }
 
-// --- Preparación ---------------------------------------------------------------------------
+function coche($titulo, $marca, array $campos)
+{
+    $id = wp_insert_post(['post_type' => 'coches', 'post_status' => 'publish', 'post_title' => $titulo]);
+    if ($marca) {
+        wp_set_object_terms($id, $marca, 'marca');
+    }
+    foreach ($campos as $campo => $valor) {
+        update_post_meta($id, $campo, $valor);
+    }
+    return $id;
+}
+
+function foto($post_id, $color)
+{
+    // PNG de 2×2 escrito a mano: sin depender de GD
+    $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4z8DAwMDAwMAAAA0AAf8Kp6cAAAAASUVORK5CYII=');
+    $tmp = wp_tempnam("foto-{$color}.png");
+    file_put_contents($tmp, $png);
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/media.php';
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+    return media_handle_sideload(['name' => "foto-{$color}.png", 'tmp_name' => $tmp], $post_id);
+}
+
+// --- Preparación ---------------------------------------------------------------------------------
 echo "Preparando\n";
-modo('ok');
-ProService_Ajustes::guardar(['api_url' => 'http://127.0.0.1:3998/api', 'tipo_post' => 'coches', 'taxonomia' => 'marca', 'mapa' => ProService_Ajustes::MAPA_POR_DEFECTO]);
-foreach (ProService_Sync::posts_vinculados('coches') as $p) {
-    wp_delete_post($p['post_id'], true);
+foreach (get_posts(['post_type' => 'coches', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids']) as $p) {
+    wp_delete_post($p, true);
 }
-foreach (get_posts(['post_type' => 'attachment', 'post_status' => 'inherit', 'numberposts' => -1, 'fields' => 'ids', 'meta_key' => '_proservice_foto_url']) as $a) {
-    wp_delete_attachment($a, true);
-}
-$manual = get_page_by_path('volkswagen-golf-tdi-105cv-familiar', OBJECT, 'coches');
-if (!$manual) {
-    $manual = get_post(wp_insert_post(['post_type' => 'coches', 'post_status' => 'publish', 'post_title' => 'VOLKSWAGEN GOLF TDI 105CV FAMILIAR', 'post_name' => 'volkswagen-golf-tdi-105cv-familiar']));
-}
-wp_update_post(['ID' => $manual->ID, 'post_title' => 'VOLKSWAGEN GOLF TDI 105CV FAMILIAR', 'post_status' => 'publish']);
-delete_post_meta($manual->ID, '_proservice_id');
-update_post_meta($manual->ID, 'precio', 8000);
+delete_option(ProService_Ajustes::OPCION);
+ProService_Buscador::olvidar_opciones();
 
-// --- 1. Alta ---------------------------------------------------------------------------------
-echo "1. Alta de dos coches\n";
-feed([
-    coche(1, ['fotos' => [foto(2, 2), foto(1, 1), foto(3, 3)]]),
-    coche(2, ['marca' => 'Toyota', 'modelo' => 'C-HR', 'version' => '125H Advance', 'anio' => 2019, 'kilometros' => 81200, 'combustible' => 'hibrido', 'cambio' => 'automatico', 'carroceria' => 'suv', 'pvp_cent' => 2150000]),
-]);
-$r = sync();
-afirmar($r['creados'] === 2 && !$r['errores'], 'crea 2 posts sin errores');
-$p1 = post_de(1);
-afirmar(get_the_title($p1) === 'Seat Ibiza FR', 'título = marca modelo versión');
-afirmar(get_post_field('post_name', $p1) === 'seat-ibiza-fr', 'URL limpia');
-afirmar((int) get_field('precio', $p1) === 12900, 'precio en euros a partir de céntimos (campo ACF)');
-afirmar((int) get_field('kilometros', $p1) === 60000 && get_post_meta($p1, 'combustible', true) === 'gasolina', 'kilómetros y combustible');
-afirmar(get_post_meta($p1, 'precio_financiado', true) == 11900, 'campo sin ACF va como meta normal');
-afirmar(wp_get_post_terms($p1, 'marca', ['fields' => 'names']) === ['Seat'], 'marca como término');
-$galeria = get_post_meta($p1, 'galeria', true);
-afirmar(is_array($galeria) && count($galeria) === 3 && $r['fotos_descargadas'] === 3, '3 fotos descargadas a la galería');
-afirmar(is_array($galeria) && get_post_thumbnail_id($p1) === $galeria[0] && get_post_meta($galeria[0], '_proservice_foto_url', true) === 'http://127.0.0.1:3998/fotos/1.png', 'la destacada es la foto de orden 1');
-afirmar(!metadata_exists('post', post_de(2), 'galeria'), 'sin «fotos» en el feed no se toca la galería');
-afirmar(get_post($manual->ID)->post_title === 'VOLKSWAGEN GOLF TDI 105CV FAMILIAR' && (int) get_post_meta($manual->ID, 'precio', true) === 8000, 'el post hecho a mano no se toca');
+$ateca = coche('Seat Ateca 1.5 TSI Style', 'Seat', ['precio' => 20900, 'precio_financiado' => 19900, 'kilometros' => 62000, 'anio' => 2020,
+    'combustible' => 'gasolina', 'cambio' => 'manual', 'carroceria' => 'suv', 'etiqueta_dgt' => 'C', 'color' => 'gris', 'plazas' => 5,
+    'potencia' => 150, 'cilindrada' => 1498, 'estado_venta' => 'publicado', 'video' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']);
+$chr = coche('Toyota C-HR 125H Advance', 'Toyota', ['precio' => 21500, 'kilometros' => 81200, 'anio' => 2019, 'combustible' => 'hibrido',
+    'cambio' => 'automatico', 'carroceria' => 'suv', 'etiqueta_dgt' => 'ECO', 'estado_venta' => 'reservado']);
+$ibiza = coche('Seat Ibiza 1.0 TSI FR', 'Seat', ['precio' => 12500, 'kilometros' => 73500, 'anio' => 2019, 'combustible' => 'gasolina',
+    'cambio' => 'manual', 'carroceria' => 'utilitario', 'estado_venta' => 'vendido']);
+$manual = coche('VOLKSWAGEN GOLF TDI 105CV FAMILIAR', null, []);
+$f1 = foto($ateca, 'rojo');
+$f2 = foto($ateca, 'azul');
+update_post_meta($ateca, 'galeria', "{$f1},{$f2}");
+afirmar(!is_wp_error($f1) && !is_wp_error($f2), 'fotos de prueba creadas');
 
-// --- 2. Sin cambios ---------------------------------------------------------------------------
-echo "2. Segunda pasada sin cambios\n";
-$r = sync();
-afirmar($r['sin_cambios'] === 2 && $r['actualizados'] === 0 && $r['fotos_descargadas'] === 0, 'no reescribe ni vuelve a bajar fotos');
-
-// --- 3. Cambio de precio y versión ------------------------------------------------------------
-echo "3. Cambio de precio y de versión\n";
-feed([
-    coche(1, ['version' => 'FR Plus', 'pvp_cent' => 1250000, 'fotos' => [foto(1, 1), foto(2, 2), foto(3, 3)]]),
-    coche(2, ['marca' => 'Toyota', 'modelo' => 'C-HR', 'version' => '125H Advance', 'anio' => 2019, 'kilometros' => 81200, 'combustible' => 'hibrido', 'cambio' => 'automatico', 'carroceria' => 'suv', 'pvp_cent' => 2150000, 'estado' => 'reservado']),
-]);
-$r = sync();
-afirmar($r['actualizados'] === 2, 'actualiza los dos');
-afirmar((int) get_field('precio', $p1) === 12500, 'precio nuevo');
-afirmar(get_the_title($p1) === 'Seat Ibiza FR Plus' && get_post_field('post_name', $p1) === 'seat-ibiza-fr', 'cambia el título pero la URL se queda');
-afirmar($r['fotos_descargadas'] === 0, 'las mismas fotos no se vuelven a bajar');
-
-// --- 4. Buscador ------------------------------------------------------------------------------
-echo "4. Buscador\n";
-afirmar(count(buscar([])) === 3, 'sin filtros salen los 3 publicados (incluido el manual)');
-$baratos = buscar(['precio_max' => '13000']);
-sort($baratos);
-afirmar($baratos === ['Seat Ibiza FR Plus', 'VOLKSWAGEN GOLF TDI 105CV FAMILIAR'], 'precio hasta 13.000 € (el Seat y el Golf manual de 8.000 €)');
-afirmar(buscar(['marca' => 'toyota']) === ['Toyota C-HR 125H Advance'], 'por marca');
-afirmar(buscar(['combustible' => 'hibrido', 'cambio' => 'automatico']) === ['Toyota C-HR 125H Advance'], 'combustible y cambio');
-afirmar(buscar(['km_max' => '70000', 'anio_min' => '2020']) === ['Seat Ibiza FR Plus'], 'km y año');
-$orden = buscar(['orden' => 'precio']);
-afirmar(array_slice($orden, 0, 2) === ['VOLKSWAGEN GOLF TDI 105CV FAMILIAR', 'Seat Ibiza FR Plus'], 'ordenado por precio');
-$_GET = [];
-$html = do_shortcode('[proservice_buscador]');
-afirmar(strpos($html, 'class="cinta">Reservado') !== false, 'cinta de reservado');
-afirmar(strpos($html, '<div class="ps-web">') !== false && wp_style_is('proservice-web', 'enqueued'), 'todo dentro de .ps-web y con la hoja web.css generada');
-afirmar(strpos($html, 'precio cifra">12.500 €') !== false && strpos($html, '60.000 km') !== false, 'precio y km en formato español, con punto (aunque WordPress esté en inglés)');
-afirmar(ProService_Buscador::cifra(1234567) === '1.234.567' && ProService_Buscador::cifra(900) === '900', 'separador de miles con punto');
+// --- 1. Buscador -----------------------------------------------------------------------------------
+echo "1. Buscador\n";
+list($todos, $html) = buscar([]);
+afirmar(count($todos) === 4, 'sin filtros salen los 4 publicados, también la ficha hecha a mano');
+afirmar(strpos($html, 'precio cifra">Consultar') !== false, 'la ficha sin precio dice «Consultar»');
+afirmar(preg_match('/<img[^>]+src="[^"]*foto-rojo[^"]*\.png"[^>]*alt="Seat Ateca/', $html) === 1, 'sin foto destacada, la tarjeta usa la primera foto de la galería');
+afirmar(substr_count($html, 'assets/coche.svg') === 3, 'los coches sin fotos llevan la imagen genérica');
+afirmar(strpos($html, 'class="cinta">Reservado') !== false && strpos($html, 'cinta cinta--vendido">Vendido') !== false, 'cintas de reservado y vendido');
+afirmar(strpos($html, 'precio cifra">20.900 €') !== false && strpos($html, '62.000 km') !== false, 'precio y km con punto de miles');
 afirmar(strpos($html, '<option value="hibrido">Híbrido</option>') !== false, 'opciones con nombre legible');
-$_GET = ['marca' => '"><script>alert(1)</script>'];
-$html = do_shortcode('[proservice_buscador]');
-$_GET = [];
+afirmar(strpos($html, 'name="modelo"') === false, 'el filtro de modelo no sale: la web no tiene ese dato');
+afirmar(strpos($html, '<div class="ps-web">') !== false && wp_style_is('proservice-web', 'enqueued'), 'dentro de .ps-web y con la hoja generada');
+list($r) = buscar(['precio_max' => '13000']);
+afirmar($r === ['Seat Ibiza 1.0 TSI FR'], 'precio hasta 13.000 €');
+list($r) = buscar(['marca' => 'seat']);
+sort($r);
+afirmar($r === ['Seat Ateca 1.5 TSI Style', 'Seat Ibiza 1.0 TSI FR'], 'por marca');
+list($r) = buscar(['combustible' => 'hibrido', 'cambio' => 'automatico']);
+afirmar($r === ['Toyota C-HR 125H Advance'], 'combustible y cambio');
+list($r) = buscar(['km_max' => '70000', 'anio_min' => '2020']);
+afirmar($r === ['Seat Ateca 1.5 TSI Style'], 'km y año');
+list($r) = buscar(['orden' => 'precio']);
+afirmar($r === ['Seat Ibiza 1.0 TSI FR', 'Seat Ateca 1.5 TSI Style', 'Toyota C-HR 125H Advance'], 'ordenado por precio (los que tienen precio)');
+list(, $html) = buscar(['marca' => '"><script>alert(1)</script>']);
 afirmar(strpos($html, '<script>alert') === false, 'los filtros no inyectan HTML');
+list($pagina1, $html) = buscar([], 'por_pagina="2"');
+list($pagina2) = buscar(['pagina' => '2'], 'por_pagina="2"');
+afirmar(count($pagina1) === 2 && count($pagina2) === 2 && !array_intersect($pagina1, $pagina2) && strpos($html, 'paginas__siguiente') !== false, 'paginación de 2 en 2');
+list($vacio, $html) = buscar(['precio_max' => '1']);
+afirmar(!$vacio && strpos($html, 'class="vacio"') !== false, 'sin resultados sale el aviso');
 
-// --- 5. Retirada -----------------------------------------------------------------------------
-echo "5. Coche que sale del feed\n";
-feed([coche(1, ['version' => 'FR Plus', 'pvp_cent' => 1250000, 'fotos' => [foto(1, 1), foto(2, 2), foto(3, 3)]])]);
-$r = sync();
-$p2 = post_de(2);
-afirmar($r['retirados'] === 1 && get_post_status($p2) === 'draft', 'pasa a borrador, no se borra');
-afirmar((bool) get_post_meta($p2, '_proservice_retirado', true), 'marcado como retirado (para el 301)');
+// --- 2. La caché de opciones sigue a los cambios por REST -----------------------------------------
+echo "2. Cambios que llegan por REST\n";
+ProService_Buscador::opciones();
+afirmar(get_transient(ProService_Buscador::TRANSIENT_OPCIONES) !== false, 'opciones en caché');
+update_post_meta($ibiza, 'combustible', 'glp');
+do_action('rest_after_insert_coches', get_post($ibiza), null, false);
+afirmar(get_transient(ProService_Buscador::TRANSIENT_OPCIONES) === false, 'después de escribir por REST se vacía la caché');
+afirmar(isset(ProService_Buscador::opciones()['combustible']['glp']), 'y el filtro ve el dato nuevo');
 
-// --- 6. Fallos de la API ------------------------------------------------------------------------
-echo "6. La API falla o llega vacía\n";
-feed([]);
-$r = sync();
-afirmar($r['errores'] && get_post_status($p1) === 'publish', 'feed vacío: no retira nada');
-modo('caida');
-$r = sync();
-afirmar($r['errores'] && strpos($r['errores'][0], '503') !== false && get_post_status($p1) === 'publish', 'API caída: no toca nada');
-modo('ok');
-file_put_contents(PS_PRUEBAS_TMP . '/feed.json', '{"error":"algo"}');
-$r = sync();
-afirmar($r['errores'] && get_post_status($p1) === 'publish', 'respuesta que no es una lista: no toca nada');
+// --- 3. Ficha ---------------------------------------------------------------------------------------
+echo "3. Ficha\n";
+ProService_Ajustes::guardar(['whatsapp' => '34600000000', 'pagina_listado' => home_url('/coches-de-ocasion/')]);
+$f = ProService_Ficha::datos($ateca);
+afirmar($f['precio'] === '20.900 €' && $f['financiado'] === '19.900 €', 'precio y financiado con punto');
+afirmar(count($f['fotos']) === 2, 'galería leída del texto «id,id»');
+update_post_meta($ateca, 'galeria', [$f2]);
+afirmar(count(ProService_Ficha::datos($ateca)['fotos']) === 1, 'y también como lista de ids (ACF Pro)');
+afirmar($f['etiqueta'] === ['c', 'C'] && $f['video'] === 'dQw4w9WgXcQ', 'etiqueta DGT y vídeo de YouTube');
+afirmar(strpos($f['whatsapp'], 'https://wa.me/34600000000?text=Hola%2C%20me%20interesa%20el%20Seat%20Ateca') === 0, 'WhatsApp con el coche y el precio');
+afirmar($f['tecnicos']['Kilómetros'] === '62.000 km' && $f['tecnicos']['Potencia'] === '150 CV', 'datos técnicos');
+afirmar($f['extras'] === [], 'sin equipamiento en la web, la sección no sale');
+afirmar(ProService_Ficha::datos($manual)['precio'] === '', 'ficha hecha a mano: sin precio, no se inventa');
+afirmar(ProService_Ficha::youtube('https://youtu.be/dQw4w9WgXcQ') === 'dQw4w9WgXcQ' && ProService_Ficha::youtube('https://vimeo.com/1') === null, 'solo enlaces de YouTube');
 
-// --- 7. Fotos de fuera y presupuesto ---------------------------------------------------------------
-echo "7. Fotos\n";
-$muchas = [];
-for ($i = 1; $i <= 42; $i++) {
-    $muchas[] = foto(($i % 4) + 1, $i, "?v={$i}");
-}
-feed([
-    coche(1, ['version' => 'FR Plus', 'pvp_cent' => 1250000, 'fotos' => [foto(1, 1), ['orden' => 2, 'url' => 'http://otro-servidor.test/malo.png']]]),
-    coche(3, ['marca' => 'Kia', 'modelo' => 'Niro', 'version' => '', 'fotos' => $muchas]),
-]);
-$r = sync();
-afirmar((bool) array_filter($r['errores'], function ($e) { return strpos($e, 'otro-servidor.test') !== false; }), 'una foto de otro servidor se ignora');
-afirmar(count((array) get_post_meta($p1, 'galeria', true)) === 1, 'la galería queda con las fotos válidas');
-$p3 = post_de(3);
-afirmar($r['fotos_descargadas'] === ProService_Sync::FOTOS_POR_PASADA - 0 && $r['fotos_pendientes'] === 2, 'como mucho 40 fotos por pasada, 2 pendientes');
-afirmar(get_post_meta($p3, '_proservice_huella', true) === '', 'con fotos pendientes no se guarda la huella');
-$r = sync();
-afirmar($r['fotos_descargadas'] === 2 && count((array) get_post_meta($p3, 'galeria', true)) === 42, 'la siguiente pasada completa la galería');
+query_posts(['p' => $ateca, 'post_type' => 'coches']);
+ProService_Ajustes::guardar(['ficha_propia' => true]);
+afirmar(substr(apply_filters('template_include', 'tema.php'), -20) === 'plantillas/ficha.php', 'con el ajuste activo, la ficha es la del plugin');
+ProService_Ajustes::guardar(['ficha_propia' => false]);
+afirmar(apply_filters('template_include', 'tema.php') === 'tema.php', 'apagado, manda la plantilla del tema');
+wp_reset_query();
 
-// --- 8. Vincular el post hecho a mano ----------------------------------------------------------------
-echo "8. Vincular un post que ya existía\n";
-afirmar(ProService_Admin::vincular($manual->ID, 1) !== null, 'no deja vincular un coche que ya tiene post');
-afirmar(ProService_Admin::vincular($manual->ID, 4) === null, 'vincula el Golf al coche 4');
-feed([coche(4, ['marca' => 'Volkswagen', 'modelo' => 'Golf', 'version' => 'TDI 105CV Familiar', 'pvp_cent' => 790000])]);
-$r = sync(true);
-afirmar(!$r['creados'] && $r['actualizados'] === 1, 'actualiza el post existente en vez de crear otro');
-afirmar(get_post_field('post_name', $manual->ID) === 'volkswagen-golf-tdi-105cv-familiar' && (int) get_field('precio', $manual->ID) === 7900, 'conserva su URL y toma el precio de la plataforma');
-
-// --- 9. Compatibilidad y ajustes --------------------------------------------------------------------
-echo "9. Feed antiguo en euros y mapa de campos\n";
-$viejo = coche(4, ['marca' => 'Volkswagen', 'modelo' => 'Golf', 'version' => 'TDI 105CV Familiar', 'pvp' => 7500]);
-unset($viejo['pvp_cent'], $viejo['precio_financiado_cent']);
-feed([$viejo]);
-sync(true);
-afirmar((int) get_field('precio', $manual->ID) === 7500, 'lee «pvp» en euros de la API antigua');
-list($mapa, $errores) = ProService_Ajustes::validar_mapa('{"pvp_cent":{"meta":"precio","formato":"dolares"}}');
-afirmar($mapa === null && $errores, 'rechaza un formato desconocido');
+// --- 4. Ajustes y lo que queda de la 0.3 -----------------------------------------------------------
+echo "4. Ajustes\n";
+list($mapa, $errores) = ProService_Ajustes::validar_mapa('{"pvp_cent":"precio_venta"}');
+afirmar($mapa === ['pvp_cent' => 'precio_venta'] && !$errores, 'mapa {"dato": "campo"}');
+list($mapa, $errores) = ProService_Ajustes::validar_mapa('{"pvp_cent":"Precio Venta"}');
+afirmar($mapa === null && $errores, 'rechaza un nombre de campo inválido');
 list($mapa, $errores) = ProService_Ajustes::validar_mapa('no es json');
 afirmar($mapa === null && $errores, 'rechaza un JSON roto');
-
-// --- 10. Equipamiento y ficha del plugin -------------------------------------------------------------
-echo "10. Equipamiento y ficha pública\n";
-feed([coche(4, ['marca' => 'Volkswagen', 'modelo' => 'Golf', 'version' => 'TDI 105CV Familiar', 'etiqueta_dgt' => 'ECO', 'extras' => ['Navegador', 'Faros LED'], 'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'fotos' => [foto(1, 1), foto(2, 2)]])]);
-sync(true);
-afirmar(get_post_meta($manual->ID, 'equipamiento', true) === ['Navegador', 'Faros LED'], 'extras guardados como lista');
-ProService_Ajustes::guardar(['whatsapp' => '34600000000', 'pagina_listado' => home_url('/coches-de-ocasion/')]);
-$f = ProService_Ficha::datos($manual->ID);
-afirmar($f['precio'] === '12.900 €' && $f['financiado'] === '11.900 €', 'ficha: precio y financiado con punto');
-afirmar(count($f['fotos']) === 2 && strpos($f['fotos'][0]['grande'], '/wp-content/uploads/') !== false, 'ficha: galería con las fotos descargadas');
-afirmar($f['etiqueta'] === ['eco', 'ECO'] && $f['video'] === 'dQw4w9WgXcQ', 'ficha: etiqueta DGT y vídeo de YouTube');
-afirmar(strpos($f['whatsapp'], 'https://wa.me/34600000000?text=Hola%2C%20me%20interesa%20el%20Volkswagen%20Golf') === 0, 'ficha: WhatsApp con el coche y el precio en el mensaje');
-afirmar(isset($f['tecnicos']['Kilómetros']) && $f['tecnicos']['Kilómetros'] === '60.000 km' && !isset($f['tecnicos']['Llaves']), 'ficha: datos técnicos, sin datos internos');
-afirmar(ProService_Ficha::youtube('https://youtu.be/dQw4w9WgXcQ') === 'dQw4w9WgXcQ' && ProService_Ficha::youtube('https://vimeo.com/1') === null, 'reconoce enlaces de YouTube y nada más');
-ProService_Ajustes::guardar(['ficha_propia' => false]);
-afirmar(apply_filters('template_include', 'tema.php') === 'tema.php', 'con el ajuste apagado manda la plantilla del tema');
-
-// --- Limpieza del estado de la API falsa -------------------------------------------------------------
-modo('ok');
-feed([]);
+ProService_Ajustes::guardar(['mapa' => ['pvp_cent' => ['meta' => 'precio', 'formato' => 'euros']]]);
+afirmar(ProService_Ajustes::meta_de('pvp_cent') === 'precio', 'entiende el mapa guardado por la versión 0.3');
+delete_option(ProService_Ajustes::OPCION);
+wp_schedule_event(time() + 60, 'hourly', 'proservice_sync');
+do_action('plugins_loaded');
+afirmar(!wp_next_scheduled('proservice_sync'), 'quita la tarea de sincronización de la versión 0.3');
+afirmar(!class_exists('ProService_Sync'), 'la sincronización ya no existe en el plugin');
 
 echo "\n" . PS_Prueba::$total . ' comprobaciones, ' . (PS_Prueba::$total - PS_Prueba::$fallos) . ' bien, ' . PS_Prueba::$fallos . " fallos\n";
 exit(PS_Prueba::$fallos ? 1 : 0);

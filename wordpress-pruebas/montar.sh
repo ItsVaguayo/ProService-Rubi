@@ -8,6 +8,9 @@
 #   wordpress-pruebas/montar.sh --nueva-clave  genera otra contraseña de aplicación
 #   wordpress-pruebas/montar.sh --acf-rest si|no  simula que el grupo de ACF está (o no) expuesto en REST.
 #                                               La web real hoy está en «no».
+#   wordpress-pruebas/montar.sh --con-buscador  instala el plugin buscador (wp-plugin/), como haría un
+#                                               administrador en la web real, y crea la página del listado.
+#                                               Sin esta opción el plugin se quita.
 #
 # Necesita PHP 8 (sqlite3, curl, mbstring, xml) y WP-CLI. Para servirlo:
 #   PHP_CLI_SERVER_WORKERS=4 php -S localhost:8080 -t ~/wp-proservice/web
@@ -18,11 +21,12 @@ URL=${WP_PRUEBAS_URL:-http://localhost:8080}
 CREDENCIALES=${WP_PRUEBAS_CREDENCIALES:-$HOME/wp-proservice/web-credenciales.env}
 DIR=$(cd "$(dirname "$0")" && pwd)
 WP="$HOME/.local/bin/wp --path=$W"
-LIMPIAR=0; NUEVA_CLAVE=0; ACF_REST=""
+LIMPIAR=0; NUEVA_CLAVE=0; ACF_REST=""; BUSCADOR=0
 while [ $# -gt 0 ]; do
   case $1 in
     --limpiar) LIMPIAR=1 ;;
     --nueva-clave) NUEVA_CLAVE=1 ;;
+    --con-buscador) BUSCADOR=1 ;;
     --acf-rest) shift; case ${1:-} in si) ACF_REST=true ;; no) ACF_REST=false ;; *) echo "--acf-rest si|no"; exit 1 ;; esac ;;
     *) echo "Opción desconocida: $1"; exit 1 ;;
   esac
@@ -55,16 +59,26 @@ wp_ plugin activate advanced-custom-fields --quiet
 wp_ theme is-installed hello-biz || wp_ theme install hello-biz --quiet
 wp_ theme activate hello-biz --quiet
 
-echo "4/6 Separación: fuera el código de la aplicación"
-if wp_ plugin is-installed proservice-stock; then
+echo "4/6 Separación: la aplicación solo le habla por REST"
+if [ $BUSCADOR = 0 ] && wp_ plugin is-installed proservice-stock; then
   wp_ plugin deactivate proservice-stock --quiet || true
   [ -L "$W/wp-content/plugins/proservice-stock" ] && rm "$W/wp-content/plugins/proservice-stock"
 fi
 mkdir -p "$W/wp-content/mu-plugins"
 rm -f "$W/wp-content/mu-plugins/simula-proservicerubi.php"
-# La página del buscador era del plugin: sin él solo enseñaría el shortcode
+# La página del buscador es del plugin: sin él solo enseñaría el shortcode
 for p in $(wp_ post list --post_type=page --name=coches-de-ocasion --field=ID); do wp_ post delete "$p" --force --quiet; done
 cp "$DIR/imita-proservicerubi.php" "$W/wp-content/mu-plugins/"
+if [ $BUSCADOR = 1 ]; then
+  # Lo que haría un administrador en la web real: instalar el plugin y poner el shortcode en una página.
+  # Enlazado al repo para revisar siempre la última versión. El plugin no habla con la API.
+  [ -e "$W/wp-content/plugins/proservice-stock" ] || ln -s "$(dirname "$DIR")/wp-plugin/proservice-stock" "$W/wp-content/plugins/proservice-stock"
+  wp_ plugin activate proservice-stock --quiet
+  wp_ post create --post_type=page --post_status=publish --post_title="Coches de ocasión" --post_name=coches-de-ocasion \
+      --post_content='[proservice_buscador cabecera="si"]' --quiet
+  wp_ eval 'ProService_Ajustes::guardar(["whatsapp" => "34600000000", "ficha_propia" => true, "pagina_listado" => home_url("/coches-de-ocasion/")]);'
+  echo "   Plugin buscador activo · listado en $URL/coches-de-ocasion/"
+fi
 wp_ rewrite flush --quiet
 
 echo "5/6 Usuario Editor y contraseña de aplicación"

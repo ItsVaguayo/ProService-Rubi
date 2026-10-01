@@ -1,65 +1,43 @@
-# Plugin de WordPress · Pro Service Stock
+# Plugin de WordPress · Pro Service Buscador
 
-Mantiene al día las fichas de coches de proservicerubi.com con la plataforma y añade el buscador con filtros.
+Buscador con filtros y ficha opcional para los coches de proservicerubi.com.
 
-## Por qué funciona así
-
-La web ya tiene un tipo de contenido `coches`, con campos ACF y la taxonomía `marca`. Hay 30 fichas con URL `/coches/<nombre>/`, maquetadas con la plantilla del tema hijo e indexadas en Google.
-
-El plugin no rehace nada de eso (5.2 del briefing): **rellena esos mismos posts**. Así se conservan el diseño, las URLs y el SEO, y Francesc puede seguir tocando la plantilla como hasta ahora.
+**El plugin no publica coches.** Los publica la API de la plataforma por la API REST de WordPress, con un usuario Editor y una contraseña de aplicación (`api/src/modules/publicacion/wordpress.js`, guía en `wordpress-pruebas/README.md`). El plugin solo lee lo que la API deja en los posts `coches`: título, marca y campos de ACF.
 
 ```
-API  ──feed público──►  plugin (cada 5 min)  ──►  posts «coches» + campos ACF + galería
-                                                    │
-                        [proservice_buscador]  ◄────┘  (lee los posts, no la API)
+API ──REST (usuario Editor)──► posts «coches» + marca + campos ACF + fotos
+                                        │
+              [proservice_buscador] ◄───┘  y la ficha, si se activa
 ```
 
-## Reglas que cumple
+## Qué trae
 
-- **Solo toca los posts vinculados** (meta `_proservice_id`). Las fichas hechas a mano siguen igual hasta que alguien las vincula.
-- **La URL no cambia nunca** una vez creada, aunque cambien la versión o el título.
-- **Un coche que desaparece del feed pasa a borrador**, no se borra, y su URL redirige con un 301 al listado de coches.
-- **Si la API falla o el feed llega vacío, no se retira nada.** Una caída de la API no puede vaciar la web. Para retirar todo a propósito: `wp proservice sync --forzar`.
-- **Cada foto se descarga una sola vez** a la biblioteca de medios, y solo si viene del mismo servidor que la API. Como mucho baja 40 por pasada; el resto, en la siguiente.
-- **Un coche sin cambios no se reescribe.** Se compara una huella de sus datos.
-- **El buscador lee los posts, no la API**: si la API se cae, la web sigue enseñando el stock.
+- **`[proservice_buscador]`**: los filtros de la 5.4 (marca, modelo, precio, km, año, combustible, cambio, carrocería, etiqueta DGT, color, plazas), orden, cintas de «Reservado» y «Vendido», y paginación. Funciona sin JavaScript: cada búsqueda tiene su URL.
+  - Un filtro del que la web no tenga datos no se enseña.
+  - Con `cabecera="si"` pinta también el título de la maqueta.
+- **Ficha del coche** con el diseño de `frontend/web/coche.html`. Va apagada por defecto, porque en la web real manda la plantilla del tema hijo. Se activa en Ajustes.
+- **Diseño**: `assets/web.css` se genera desde `frontend/css` con `python3 wp-plugin/construir-css.py`, todo dentro de `.ps-web` para no chocar con el tema. No se edita a mano.
+- **Ajustes → Pro Service Buscador**:
+  - El **mapa de campos** (qué campo de la web tiene cada dato). Tiene que coincidir con el `WP_MAPA` de la API.
+  - La lista de campos ACF del tipo `coches`, indicando si están expuestos en la API REST.
+  - WhatsApp, página del listado y ficha propia.
 
 ## Instalación en la web
 
-1. Subir la carpeta `proservice-stock/` a `wp-content/plugins/` y activarla.
-2. En `wp-config.php`:
-   ```php
-   define('PROSERVICE_API_URL', 'https://stock.proservicerubi.com/api');
-   ```
-3. **Ajustes → Pro Service Stock.** Abajo salen los campos ACF reales de «coches». Hay que ajustar el **mapa de campos** a esos nombres. Los que trae por defecto (`precio`, `anio`, `kilometros`…) son una suposición hecha sin acceso de administrador.
-4. **Vincular las fichas actuales.** En cada coche hecho a mano, en la caja «Plataforma de stock», se pone el ID que tiene en la plataforma. También se puede hacer con `wp proservice vincular <post_id> <id>`. En la siguiente pasada el post toma los datos de la plataforma y conserva su URL.
-5. **Buscador.** El shortcode `[proservice_buscador]` va en la página del listado. Dónde exactamente (la página `/coches/` actual o una nueva) lo decide Francesc con Diego.
-6. **Cron de verdad.** WP-Cron solo se dispara cuando alguien visita la web. En el hosting, conviene poner `DISABLE_WP_CRON` y una tarea del sistema:
-   ```
-   */5 * * * * cd /ruta/a/wordpress && wp proservice sync --quiet
-   ```
+Instalar un plugin requiere **administrador** (una sola vez). La publicación de coches no: va por REST con un Editor.
 
-## Lo que necesita del feed
-
-`GET {API}/publicacion/feed/web` devuelve una lista de coches con `id`, `referencia`, `estado`, `marca`, `modelo`, `version` y los datos técnicos. El dinero va en **céntimos** (`pvp_cent`). También entiende `pvp` en euros, de la API antigua.
-
-**Pendiente en la API** (módulo `publicacion`): añadir al feed `fotos: [{ orden, url }]` con las fotos públicas y los extras. Mientras no vengan, el plugin no toca la galería que ya tenga cada post. Las URL de las fotos tienen que ir por el puerto 80, 443 u 8080: WordPress rechaza descargas de otros puertos.
-
-## Órdenes de WP-CLI
-
-```bash
-wp proservice sync [--forzar]      # sincronizar ahora
-wp proservice estado               # última pasada y coches vinculados
-wp proservice vincular 123 7       # el post 123 pasa a ser el coche 7 de la plataforma
-```
-
-## Pendiente
-
-- Nombres reales de los campos ACF y dónde guarda la plantilla la galería. Hace falta el acceso de administrador de Francesc.
-- Que la plantilla del tema enseñe la cinta de «Reservado» y «Vendido». El dato ya se guarda en el campo `estado_venta`.
-- Filtro por cuota mensual y calculadora: esperan el tipo de interés del cliente (duda E2).
-- Formularios de la ficha hacia `POST /api/contactos`, cuando exista ese endpoint.
+1. Subir `proservice-stock/` a `wp-content/plugins/` y activarlo.
+2. En **Ajustes → Pro Service Buscador**, ajustar el mapa a los nombres reales de los campos ACF.
+3. Poner `[proservice_buscador]` en la página del listado.
 
 ## Pruebas
 
-Ver [pruebas/README.md](pruebas/README.md): un WordPress local con SQLite, una API falsa y 42 comprobaciones.
+```bash
+wp-plugin/pruebas/probar.sh
+```
+
+Hace una copia temporal del WordPress de pruebas (la imitación de `wordpress-pruebas/`), le pone el plugin, crea coches como los deja la API por REST y pasa 36 comprobaciones. El WordPress de pruebas no se toca.
+
+## De la versión 0.3 a la 0.4
+
+La 0.3 leía un feed de la API cada 5 minutos y escribía ella los posts. Eso pasó a la API (vía REST), así que se han quitado la sincronización, las órdenes de WP-CLI, la caja de vincular y la redirección 301 de coches retirados. Si se actualiza encima de la 0.3, el plugin borra la tarea programada y entiende el mapa guardado.

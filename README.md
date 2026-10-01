@@ -31,7 +31,7 @@ El plugin rellena las fichas «coches» que ya tiene la web y añade el buscador
 
 ## Reglas de la API
 
-- **Sesión obligatoria** en todo salvo `/api/salud`, `/api/auth/*` y el feed público de la web. Roles `gerencia` y `comercial`.
+- **Sesión obligatoria** en todo salvo `/api/salud` y `/api/auth/*`. La web recibe los coches por su API REST (`/api/wordpress`, ver `wordpress-pruebas/README.md`). Roles `gerencia` y `comercial`.
 - **El dinero va en céntimos enteros**, con sufijo `_cent` (`pvp_cent: 1290000` son 12.900 €). Se pasa a euros solo al enseñarlo.
 - **El comercial nunca recibe dinero interno**: la API quita compra, costes, precio mínimo, régimen de IVA, datos del dueño en depósito y margen. No basta con esconderlo en el panel.
 - **Solo se escriben los campos de `api/src/modules/vehiculos/campos.js`**. Un campo que no esté ahí da 400. Para añadir uno: migración + `campos.js`.

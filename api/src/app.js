@@ -5,7 +5,6 @@ import { rutasAuth } from './modules/auth/routes.js';
 import { requiereSesion, requiereRol } from './modules/auth/sesiones.js';
 import { rutasVehiculos } from './modules/vehiculos/routes.js';
 import { rutasFotos } from './modules/fotos/routes.js';
-import { rutasPublicacion } from './modules/publicacion/routes.js';
 import { rutasWordPress } from './modules/publicacion/rutas-wordpress.js';
 
 export function crearApp(db) {
@@ -32,7 +31,6 @@ export function crearApp(db) {
   // Público
   app.get('/api/salud', (_req, res) => res.json({ ok: true }));
   app.use('/api/auth', rutasAuth(db));
-  app.use('/api/publicacion', rutasPublicacion(db)); // el feed de la web; lo interno de David irá con sesión
 
   // Con sesión
   const conSesion = requiereSesion(db);

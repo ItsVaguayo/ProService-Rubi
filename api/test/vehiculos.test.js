@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { conServidor, coche, meterFotos } from './ayuda.js';
 import { ESTADOS } from '../src/modules/estados.js';
 
-test('recorrido: alta, margen, publicar con fotos y feed web', () =>
+test('recorrido: alta, margen y publicar con fotos', () =>
   conServidor(async ({ db, pide }) => {
     const alta = await pide('/vehiculos', { method: 'POST', body: coche });
     assert.equal(alta.status, 201);
@@ -16,19 +16,10 @@ test('recorrido: alta, margen, publicar con fotos y feed web', () =>
     assert.equal(ficha.coste_total_cent, 950000);
     assert.equal(ficha.margen_cent, 340000);
 
-    let feed = (await pide('/publicacion/feed/web', { como: null })).json;
-    assert.equal(feed.length, 0);
-
     meterFotos(db, id, 15);
     const cambio = await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } });
     assert.equal(cambio.status, 200);
-
-    feed = (await pide('/publicacion/feed/web', { como: null })).json;
-    assert.equal(feed.length, 1);
-    assert.equal(feed[0].pvp_cent, 1290000);
-    for (const interno of ['precio_compra_cent', 'precio_minimo_cent', 'regimen_iva', 'pago_propietario_cent', 'propietario_nombre', 'margen_cent']) {
-      assert.equal(feed[0][interno], undefined, `el feed no puede llevar ${interno}`);
-    }
+    assert.equal(cambio.json.estado, 'publicado');
 
     const historial = db.prepare('SELECT de, a, usuario_id FROM historial_estados WHERE vehiculo_id = ? ORDER BY id').all(id);
     assert.deepEqual(historial.map((h) => h.a), ['pendiente_recoger', 'publicado']);
@@ -40,6 +31,7 @@ test('sin sesión no se ve ni se toca nada interno', () =>
     assert.equal((await pide('/vehiculos', { como: null })).status, 401);
     assert.equal((await pide('/vehiculos', { method: 'POST', body: coche, como: null })).status, 401);
     assert.equal((await pide('/fotos/1', { como: null })).status, 401);
+    assert.equal((await pide('/wordpress/estado', { como: null })).status, 401);
     assert.equal((await pide('/salud', { como: null })).status, 200);
   }));
 
@@ -195,24 +187,6 @@ test('JSON roto y rutas que no existen responden con error claro', () =>
     const roto = await fetch(`${base}/auth/entrar`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{' });
     assert.equal(roto.status, 400);
     assert.equal((await pide('/no-existe')).status, 404);
-  }));
-
-test('el feed lleva las fotos públicas en orden, sin daños ni internas, y los extras', () =>
-  conServidor(async ({ db, pide }) => {
-    const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
-    meterFotos(db, id, 15);
-    db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original, es_dano) VALUES (?, 16, 'golpe.jpg', 1)").run(id);
-    db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original, publica) VALUES (?, 17, 'interna.jpg', 0)").run(id);
-    db.prepare("INSERT INTO extras (nombre) VALUES ('Navegador')").run();
-    db.prepare('INSERT INTO vehiculo_extras VALUES (?, 1)').run(id);
-    await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } });
-
-    const [v] = (await pide('/publicacion/feed/web', { como: null })).json;
-    assert.equal(v.fotos.length, 15);
-    assert.deepEqual(v.fotos.map((f) => f.orden), [...Array(15)].map((_, i) => i + 1));
-    assert.match(v.fotos[0].url, /^http:\/\/localhost:\d+\/media\/foto-1\.jpg$/);
-    assert.ok(!v.fotos.some((f) => /golpe|interna/.test(f.url)), 'ni daños ni fotos internas');
-    assert.deepEqual(v.extras, ['Navegador']);
   }));
 
 test('reservar y cancelar desde la API: estado, historial y una sola reserva', () =>

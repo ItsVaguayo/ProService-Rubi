@@ -39,7 +39,7 @@ class ProService_Ficha
         $precio_texto = $precio !== '' ? ProService_Buscador::cifra($precio) . ' €' : '';
 
         $fotos = [];
-        foreach ((array) $d('fotos') as $id) {
+        foreach (self::ids_galeria($d('fotos')) as $id) {
             $grande = wp_get_attachment_image_url((int) $id, 'large');
             if ($grande) {
                 $fotos[] = ['grande' => $grande, 'mini' => wp_get_attachment_image_url((int) $id, 'medium') ?: $grande];
@@ -87,6 +87,18 @@ class ProService_Ficha
             'compartir'   => 'https://wa.me/?text=' . rawurlencode($titulo . ' ' . get_permalink($post_id)),
             'listado'     => ProService_Ajustes::get('pagina_listado') ?: get_post_type_archive_link(ProService_Ajustes::get('tipo_post')) ?: home_url('/'),
         ];
+    }
+
+    /**
+     * Ids de la galería. ACF Pro la guarda como lista de ids; si el campo es de texto, viene
+     * como «12,13,14». Se aceptan las dos formas.
+     */
+    public static function ids_galeria($valor)
+    {
+        if (is_string($valor)) {
+            $valor = explode(',', $valor);
+        }
+        return array_values(array_filter(array_map('intval', (array) $valor)));
     }
 
     /** Id de un vídeo de YouTube a partir de su URL, o null. */

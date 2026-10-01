@@ -2,9 +2,10 @@
 /**
  * Ajustes del plugin, guardados en la opción «proservice_ajustes».
  *
- * El mapa de campos dice en qué campo de WordPress (ACF o meta) se escribe cada dato del feed.
- * Los nombres por defecto son una suposición: se ajustan en Ajustes → Pro Service Stock en cuanto
- * se vean los campos ACF reales de la web (la propia página los lista).
+ * El plugin no escribe datos: los coches los publica la plataforma por la API REST de WordPress.
+ * El mapa dice en qué campo de la web (ACF o meta) está cada dato, para poder filtrar y pintar.
+ * Tiene que coincidir con el WP_MAPA del conector de la API. Los nombres por defecto son una
+ * suposición hasta ver los campos ACF reales (la página de ajustes los lista).
  */
 
 if (!defined('ABSPATH')) {
@@ -15,55 +16,53 @@ class ProService_Ajustes
 {
     const OPCION = 'proservice_ajustes';
 
-    // Formatos: texto, entero, euros (céntimos → euros enteros), lista (de textos), galeria (lista de ids de adjuntos)
+    // Dato → campo de la web. Los precios están en euros (el conector ya convierte los céntimos).
+    // «fotos» es la galería: lista de ids de adjuntos, o texto con los ids separados por comas.
     const MAPA_POR_DEFECTO = [
-        'pvp_cent'               => ['meta' => 'precio', 'formato' => 'euros'],
-        'precio_financiado_cent' => ['meta' => 'precio_financiado', 'formato' => 'euros'],
-        'modelo'                 => ['meta' => 'modelo', 'formato' => 'texto'],
-        'version'                => ['meta' => 'version', 'formato' => 'texto'],
-        'anio'                   => ['meta' => 'anio', 'formato' => 'entero'],
-        'kilometros'             => ['meta' => 'kilometros', 'formato' => 'entero'],
-        'combustible'            => ['meta' => 'combustible', 'formato' => 'texto'],
-        'cambio'                 => ['meta' => 'cambio', 'formato' => 'texto'],
-        'potencia_cv'            => ['meta' => 'potencia', 'formato' => 'entero'],
-        'cilindrada'             => ['meta' => 'cilindrada', 'formato' => 'entero'],
-        'traccion'               => ['meta' => 'traccion', 'formato' => 'texto'],
-        'emisiones_co2'          => ['meta' => 'emisiones_co2', 'formato' => 'entero'],
-        'etiqueta_dgt'           => ['meta' => 'etiqueta_dgt', 'formato' => 'texto'],
-        'carroceria'             => ['meta' => 'carroceria', 'formato' => 'texto'],
-        'puertas'                => ['meta' => 'puertas', 'formato' => 'entero'],
-        'plazas'                 => ['meta' => 'plazas', 'formato' => 'entero'],
-        'color_exterior'         => ['meta' => 'color', 'formato' => 'texto'],
-        'tapiceria'              => ['meta' => 'tapiceria', 'formato' => 'texto'],
-        'llantas'                => ['meta' => 'llantas', 'formato' => 'texto'],
-        'garantia_meses'         => ['meta' => 'garantia_meses', 'formato' => 'entero'],
-        'video_url'              => ['meta' => 'video', 'formato' => 'texto'],
-        'estado'                 => ['meta' => 'estado_venta', 'formato' => 'texto'],
-        'fotos'                  => ['meta' => 'galeria', 'formato' => 'galeria'],
-        'extras'                 => ['meta' => 'equipamiento', 'formato' => 'lista'],
+        'pvp_cent'               => 'precio',
+        'precio_financiado_cent' => 'precio_financiado',
+        'modelo'                 => 'modelo',
+        'anio'                   => 'anio',
+        'kilometros'             => 'kilometros',
+        'combustible'            => 'combustible',
+        'cambio'                 => 'cambio',
+        'potencia_cv'            => 'potencia',
+        'cilindrada'             => 'cilindrada',
+        'traccion'               => 'traccion',
+        'emisiones_co2'          => 'emisiones_co2',
+        'etiqueta_dgt'           => 'etiqueta_dgt',
+        'carroceria'             => 'carroceria',
+        'puertas'                => 'puertas',
+        'plazas'                 => 'plazas',
+        'color_exterior'         => 'color',
+        'tapiceria'              => 'tapiceria',
+        'llantas'                => 'llantas',
+        'garantia_meses'         => 'garantia_meses',
+        'video_url'              => 'video',
+        'estado'                 => 'estado_venta',
+        'fotos'                  => 'galeria',
+        'extras'                 => 'equipamiento',
     ];
-
-    const FORMATOS = ['texto', 'entero', 'euros', 'lista', 'galeria'];
 
     public static function todos()
     {
         $guardado = get_option(self::OPCION, []);
         $por_defecto = [
-            'api_url'    => defined('PROSERVICE_API_URL') ? PROSERVICE_API_URL : 'http://localhost:3001/api',
-            'tipo_post'  => 'coches',
-            'taxonomia'  => 'marca',
-            'mapa'       => self::MAPA_POR_DEFECTO,
-            'whatsapp'   => '',
+            'tipo_post'      => 'coches',
+            'taxonomia'      => 'marca',
+            'mapa'           => self::MAPA_POR_DEFECTO,
+            'whatsapp'       => '',
             // Ficha pública con el diseño de frontend/web. En proservicerubi.com manda su plantilla: va apagada.
             'ficha_propia'   => false,
             'pagina_listado' => '',
         ];
         $ajustes = array_merge($por_defecto, is_array($guardado) ? $guardado : []);
-        // Una constante en wp-config.php manda sobre lo guardado: así cada entorno apunta a su API.
-        if (defined('PROSERVICE_API_URL')) {
-            $ajustes['api_url'] = PROSERVICE_API_URL;
+        // Mapas guardados por la versión 0.3 (con «meta» y «formato»): se quedan con el nombre del campo.
+        foreach ($ajustes['mapa'] as $dato => $campo) {
+            if (is_array($campo)) {
+                $ajustes['mapa'][$dato] = $campo['meta'] ?? '';
+            }
         }
-        $ajustes['api_url'] = untrailingslashit($ajustes['api_url']);
         return $ajustes;
     }
 
@@ -78,35 +77,28 @@ class ProService_Ajustes
         update_option(self::OPCION, array_merge(get_option(self::OPCION, []) ?: [], $nuevos), false);
     }
 
-    /** Campo de WordPress donde va un dato del feed, o null si no está mapeado. */
-    public static function meta_de($campo_api)
+    /** Campo de la web donde está un dato, o null si no está mapeado. */
+    public static function meta_de($dato)
     {
         $mapa = self::get('mapa');
-        return isset($mapa[$campo_api]['meta']) ? $mapa[$campo_api]['meta'] : null;
+        return !empty($mapa[$dato]) ? $mapa[$dato] : null;
     }
 
-    /**
-     * Valida un mapa escrito a mano (JSON). Devuelve [mapa, errores].
-     */
+    /** Valida un mapa escrito a mano (JSON {"dato": "campo"}). Devuelve [mapa, errores]. */
     public static function validar_mapa($json)
     {
         $mapa = json_decode($json, true);
-        if (!is_array($mapa)) {
-            return [null, ['El mapa no es un JSON válido.']];
+        if (!is_array($mapa) || ($mapa && array_keys($mapa) === range(0, count($mapa) - 1))) {
+            return [null, ['El mapa no es un JSON válido de la forma {"dato": "campo"}.']];
         }
         $errores = [];
         $limpio = [];
-        foreach ($mapa as $campo_api => $destino) {
-            if (!is_array($destino) || empty($destino['meta']) || !is_string($destino['meta'])) {
-                $errores[] = "«{$campo_api}» necesita un «meta» con el nombre del campo.";
+        foreach ($mapa as $dato => $campo) {
+            if (!is_string($campo) || $campo === '' || sanitize_key($campo) !== $campo) {
+                $errores[] = "«{$dato}» necesita el nombre de un campo (minúsculas, números y guiones bajos).";
                 continue;
             }
-            $formato = $destino['formato'] ?? 'texto';
-            if (!in_array($formato, self::FORMATOS, true)) {
-                $errores[] = "«{$campo_api}» tiene un formato desconocido: {$formato}.";
-                continue;
-            }
-            $limpio[sanitize_key($campo_api)] = ['meta' => sanitize_key($destino['meta']), 'formato' => $formato];
+            $limpio[sanitize_key($dato)] = $campo;
         }
         return [$errores ? null : $limpio, $errores];
     }
