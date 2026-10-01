@@ -73,6 +73,17 @@ function claseDias(v, dias) {
   return 'dias';
 }
 
+/** Pone un valor en un campo, sea caja de texto, desplegable o grupo de botones de opción. */
+function fijarValor(form, nombre, valor) {
+  const campo = form.elements[nombre];
+  if (!campo) return;
+  if (campo instanceof RadioNodeList || campo.type === 'radio') {
+    form.querySelectorAll(`input[name="${nombre}"]`).forEach((r) => { r.checked = String(r.value) === String(valor ?? ''); });
+  } else {
+    campo.value = valor ?? '';
+  }
+}
+
 function mostrarErrores(caja, error, titulo) {
   if (!caja) return alert(error.message);
   caja.innerHTML = `<strong>${esc(titulo)}</strong><ul>${error.lista.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`;
@@ -139,9 +150,31 @@ async function paginaTablero() {
   const ubicacion = params.get('ubicacion');
   const enStock = todos.filter((v) => v.estado !== 'entregado' && (!ubicacion || v.ubicacion === ubicacion));
 
-  const venta = enStock.filter((v) => v.estado === 'publicado').length;
-  const reservados = enStock.filter((v) => v.estado === 'reservado').length;
-  $('.cabecera .nota').textContent = `${enStock.length} coches · ${venta} a la venta · ${reservados} ${reservados === 1 ? 'reservado' : 'reservados'}`;
+  // Portada: total, publicados, sin publicar todavía (de «Pendiente de recoger» a «Pendiente de fotos»)
+  // y con más de 60 días a la venta, que lleva el aviso solo si hay alguno.
+  const ANTES_DE_PUBLICAR = ESTADOS.slice(0, ESTADOS.findIndex((e) => e.id === 'publicado')).map((e) => e.id);
+  const portada = {
+    total: enStock.length,
+    publicados: enStock.filter((v) => v.estado === 'publicado').length,
+    sinPublicar: enStock.filter((v) => ANTES_DE_PUBLICAR.includes(v.estado)).length,
+    parados: enStock.filter((v) => v.estado === 'publicado' && diasDesde(v.en_estado_desde) > 60).length,
+  };
+  const titular = $('.portada__titular .cifra');
+  if (titular) titular.textContent = portada.total;
+  const datos = document.querySelectorAll('.portada__datos li');
+  [portada.publicados, portada.sinPublicar, portada.parados].forEach((n, i) => {
+    if (datos[i]) datos[i].querySelector('strong').textContent = n;
+  });
+  datos[2]?.classList.toggle('portada__alerta', portada.parados > 0);
+
+  // Barra de estados: cuántos hay en cada uno y qué parte del stock son (--p)
+  document.querySelectorAll('.estados__paso').forEach((paso) => {
+    const id = new URL(paso.href, location.href).searchParams.get('estado');
+    const n = todos.filter((v) => v.estado === id && (!ubicacion || v.ubicacion === ubicacion)).length;
+    paso.querySelector('.estados__n').textContent = n;
+    paso.style.setProperty('--p', todos.length ? (n / todos.length).toFixed(2) : 0);
+    paso.classList.toggle('estados__paso--vacio', n === 0);
+  });
 
   // Para hoy: lo que se puede deducir de los datos que ya hay
   const tareas = [];
@@ -193,22 +226,31 @@ async function paginaTablero() {
 async function paginaListado() {
   const todos = await api('/vehiculos');
   const form = $('form.filtros');
-  const selEstado = form.elements.estado;
-  const selPropiedad = form.elements.propiedad;
-  const selUbicacion = form.elements.ubicacion;
 
-  // Los desplegables de la maqueta solo tienen texto: se les da el valor que entiende la API
-  selEstado.innerHTML = '<option value="">Todos</option>' + ESTADOS.map((e) => `<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
-  selPropiedad.innerHTML = '<option value="">Todos</option><option value="propio">Propios</option><option value="deposito">En depósito</option>';
-  selUbicacion.innerHTML = '<option value="">Los dos sitios</option><option value="patio_taller">Patio del taller</option><option value="parking">Parking</option>';
-  for (const campo of ['q', 'estado', 'propiedad', 'ubicacion']) if (params.get(campo)) form.elements[campo].value = params.get(campo);
+  // La maqueta pone el texto visible como valor: se le da el que entiende la API.
+  // Sirve igual con desplegables que con botones de opción (el rediseño usa botones).
+  const VALORES = {
+    estado: Object.fromEntries(ESTADOS.map((e) => [e.nombre, e.id])),
+    propiedad: { Propios: 'propio', 'En depósito': 'deposito' },
+    ubicacion: { 'Patio del taller': 'patio_taller', Parking: 'parking' },
+  };
+  for (const [nombre, valores] of Object.entries(VALORES)) {
+    form.querySelectorAll(`[name="${nombre}"] option, input[name="${nombre}"]`).forEach((op) => {
+      if (valores[op.value]) op.value = valores[op.value];
+      else if (op.tagName === 'OPTION' && !op.getAttribute('value') && valores[op.textContent.trim()]) op.value = valores[op.textContent.trim()];
+    });
+  }
+  const valor = (nombre) => form.elements[nombre]?.value ?? '';
+  for (const campo of ['q', 'estado', 'propiedad', 'ubicacion']) {
+    if (params.get(campo)) fijarValor(form, campo, params.get(campo));
+  }
 
   const enStock = todos.filter((v) => v.estado !== 'entregado');
   $('.cabecera .nota').textContent = `${enStock.length} en stock · ${enStock.filter((v) => v.propiedad === 'deposito').length} de terceros en depósito`;
 
   const pintar = () => {
     const q = form.elements.q.value.trim().toLowerCase().replace(/\s/g, '');
-    const f = { estado: selEstado.value, propiedad: selPropiedad.value, ubicacion: selUbicacion.value };
+    const f = { estado: valor('estado'), propiedad: valor('propiedad'), ubicacion: valor('ubicacion') };
     const lista = todos.filter((v) =>
       (!q || `${v.matricula}${v.marca}${v.modelo}${v.version ?? ''}`.toLowerCase().replace(/\s/g, '').includes(q)) &&
       (!f.estado || v.estado === f.estado) && (!f.propiedad || v.propiedad === f.propiedad) && (!f.ubicacion || v.ubicacion === f.ubicacion));
@@ -236,6 +278,15 @@ async function paginaListado() {
 }
 
 // --- Ficha -------------------------------------------------------------------------------------
+
+// Los mismos que exige la API (api/src/modules/vehiculos/campos.js), para la barra de progreso del alta
+const OBLIGATORIOS_ALTA = ['matricula', 'marca', 'modelo'];
+const OBLIGATORIOS_PUBLICAR = [
+  'matricula', 'bastidor', 'marca', 'modelo', 'version', 'anio', 'fecha_matriculacion', 'kilometros',
+  'combustible', 'cambio', 'potencia_cv', 'cilindrada', 'traccion', 'emisiones_co2', 'etiqueta_dgt',
+  'carroceria', 'puertas', 'plazas', 'color_exterior', 'tapiceria', 'llantas', 'ubicacion', 'pvp_cent', 'regimen_iva',
+];
+const NOMBRES_CAMPO = { matricula: 'matrícula', marca: 'marca', modelo: 'modelo' };
 
 const HUECOS = ['Frontal', '3/4 delantero izq.', 'Lateral izq.', '3/4 trasero izq.', 'Trasera', '3/4 trasero der.', 'Lateral der.', '3/4 delantero der.',
   'Interior delantero', 'Interior trasero', 'Cuadro con km', 'Consola', 'Maletero', 'Motor', 'Llanta'];
@@ -399,15 +450,35 @@ async function paginaAlta(usuario) {
   if (id) {
     const [v, extras] = await Promise.all([api(`/vehiculos/${id}`), api(`/vehiculos/${id}/extras`)]);
     document.title = `Editar ${tituloCoche(v)} · ProService`;
-    $('.cabecera h1').textContent = `Editar ${tituloCoche(v)}`;
-    for (const campo of form.elements) {
-      if (!campo.name || campo.name === 'extras' || !(campo.name in v)) continue;
-      const valor = v[campo.name];
-      campo.value = valor == null ? '' : campo.name.endsWith('_cent') ? valor / 100 : valor;
+    const titulo = $('.portada__titular') || $('.cabecera h1');
+    if (titulo) titulo.textContent = `Editar ${tituloCoche(v)}`;
+    const nombres = new Set([...form.elements].map((c) => c.name).filter((n) => n && n !== 'extras' && n in v));
+    for (const nombre of nombres) {
+      const valor = v[nombre];
+      fijarValor(form, nombre, valor == null ? '' : nombre.endsWith('_cent') ? valor / 100 : valor);
     }
     casillas.forEach((c) => { c.checked = extras.includes(textoCasilla(c)); });
     form.querySelector('.barra-guardar a').href = urlCoche(v);
   }
+
+  // Barra de progreso del rediseño: qué falta para guardar y cuántos datos hay para publicar
+  const progreso = () => {
+    const lleno = (n) => { const c = form.elements[n]; return !!c && String(c.value ?? '').trim() !== ''; };
+    const faltan = OBLIGATORIOS_ALTA.filter((n) => !lleno(n));
+    const linea = form.querySelector('.barra-guardar__linea');
+    if (linea) {
+      linea.innerHTML = faltan.length
+        ? `<strong>Para guardar:</strong> faltan ${esc(faltan.map((n) => NOMBRES_CAMPO[n]).join(', ').replace(/, ([^,]*)$/, ' y $1'))}`
+        : '<strong>Listo para guardar.</strong>';
+    }
+    const hechos = OBLIGATORIOS_PUBLICAR.filter(lleno).length;
+    const cifraPublicar = form.querySelector('.barra-guardar__linea--suave .cifra');
+    if (cifraPublicar) cifraPublicar.textContent = `${hechos} de ${OBLIGATORIOS_PUBLICAR.length}`;
+    form.querySelector('.barra-guardar__barra')?.style.setProperty('--p', (hechos / OBLIGATORIOS_PUBLICAR.length).toFixed(2));
+  };
+  form.addEventListener('input', progreso);
+  form.addEventListener('change', progreso);
+  progreso();
 
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
@@ -415,6 +486,13 @@ async function paginaAlta(usuario) {
     const datos = {};
     for (const campo of form.elements) {
       if (!campo.name || campo.name === 'extras' || campo.disabled) continue;
+      if (campo.type === 'radio') {
+        if (!campo.checked) {
+          // grupo sin nada marcado: al editar, se borra el dato
+          if (id && !form.querySelector(`input[name="${campo.name}"]:checked`)) datos[campo.name] = null;
+          continue;
+        }
+      }
       const bruto = campo.value.trim();
       if (bruto === '') {
         if (id) datos[campo.name] = null; // al editar, vaciar es borrar el dato
