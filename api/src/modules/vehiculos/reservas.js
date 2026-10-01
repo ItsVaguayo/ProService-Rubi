@@ -15,15 +15,23 @@ export function liberarReserva(db, { reserva, vehiculo, usuario = null, accion }
   }
 }
 
-// Libera las reservas activas cuya fecha de caducidad ya ha pasado. Devuelve cuántas.
-// Cada una en su transacción: si una falla, las demás se quedan hechas.
+// Libera las reservas activas cuya fecha de caducidad ya ha pasado. Devuelve cuántas ha liberado.
+// Cada una en su transacción y con su propio try: si una falla (se avisa en el log), las demás
+// se liberan igual y la que falló se vuelve a intentar en la siguiente pasada.
+// Los oyentes de alCambiarEstado reciben `usuario: null`: tienen que aguantarlo.
 export function caducarReservas(db) {
   const vencidas = db
     .prepare("SELECT * FROM reservas WHERE activa = 1 AND caduca_en IS NOT NULL AND caduca_en <= datetime('now')")
     .all();
   const leerCoche = db.prepare('SELECT * FROM vehiculos WHERE id = ?');
+  let liberadas = 0;
   for (const reserva of vencidas) {
-    db.transaction(() => liberarReserva(db, { reserva, vehiculo: leerCoche.get(reserva.vehiculo_id), accion: 'caducada' }))();
+    try {
+      db.transaction(() => liberarReserva(db, { reserva, vehiculo: leerCoche.get(reserva.vehiculo_id), usuario: null, accion: 'caducada' }))();
+      liberadas++;
+    } catch (e) {
+      console.error(`[reservas] no se ha podido caducar la reserva ${reserva.id}: ${e.message}`);
+    }
   }
-  return vencidas.length;
+  return liberadas;
 }

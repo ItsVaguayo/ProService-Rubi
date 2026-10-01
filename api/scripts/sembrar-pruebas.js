@@ -18,6 +18,11 @@ if (!/prueba/i.test(RUTA_DB)) {
   console.error(`Por seguridad, la base de pruebas tiene que llevar «prueba» en el nombre: ${RUTA_DB}`);
   process.exit(1);
 }
+// --reset borra la carpeta de fotos entera: tiene que ser también de pruebas, nunca la de las fotos reales
+if (values.reset && !/prueba/i.test(DIR_FOTOS)) {
+  console.error(`Por seguridad, con --reset la carpeta de fotos tiene que llevar «prueba» en la ruta: ${DIR_FOTOS}`);
+  process.exit(1);
+}
 if (values.reset) {
   for (const sufijo of ['', '-wal', '-shm']) rmSync(RUTA_DB + sufijo, { force: true });
   rmSync(DIR_FOTOS, { recursive: true, force: true });

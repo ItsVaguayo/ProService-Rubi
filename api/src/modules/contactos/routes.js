@@ -3,6 +3,7 @@
 //   GET, PATCH           → con sesión: el panel los lista y los marca como atendidos
 import { Router } from 'express';
 import { registrar } from '../auditoria.js';
+import { ESTADOS_WEB } from '../estados.js';
 
 export const TIPOS = ['informacion', 'prueba', 'financiacion', 'tasacion'];
 const TELEFONO = /^[+\d][\d\s().-]{5,19}$/;
@@ -10,14 +11,17 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Como mucho 5 envíos por IP cada 10 minutos: suficiente para una persona, corta los robots
 const VENTANA_MS = 10 * 60 * 1000;
-const MAXIMO_POR_VENTANA = Number(process.env.CONTACTOS_POR_IP || 5);
+const MAXIMO_POR_VENTANA = Number(process.env.CONTACTOS_POR_IP) || 5;
 
 const texto = (v, max) => (typeof v === 'string' && v.trim() && v.trim().length <= max ? v.trim() : null);
 
 export function rutasContactosPublicas(db) {
   const r = Router();
   const envios = new Map(); // ip → { n, desde }
-  const cocheDe = db.prepare("SELECT id FROM vehiculos WHERE id = ? OR referencia = ?");
+  // Solo coches que salen en la web: así el formulario no sirve para averiguar qué otros coches hay
+  const enLaWeb = `estado IN (${ESTADOS_WEB.map(() => '?').join(',')})`;
+  const cocheDeId = db.prepare(`SELECT id FROM vehiculos WHERE id = ? AND ${enLaWeb}`);
+  const cocheDeReferencia = db.prepare(`SELECT id FROM vehiculos WHERE referencia = ? AND ${enLaWeb}`);
 
   r.post('/', (req, res) => {
     const ahora = Date.now();
@@ -46,12 +50,11 @@ export function rutasContactosPublicas(db) {
     if (mensaje === false) errores.push('El mensaje es demasiado largo');
     if (b.privacidad !== true) errores.push('Hay que aceptar la política de privacidad');
 
+    // El coche es opcional: el id (número) o la referencia (texto, «PS-00031»). Si no está en la web
+    // (por ejemplo, se vendió mientras la persona escribía), el contacto se guarda igual, sin coche.
     let vehiculoId = null;
-    if (b.coche != null && b.coche !== '') {
-      const coche = cocheDe.get(Number.isInteger(b.coche) ? b.coche : -1, String(b.coche));
-      if (!coche) errores.push('Ese coche no existe');
-      else vehiculoId = coche.id;
-    }
+    if (Number.isInteger(b.coche)) vehiculoId = cocheDeId.get(b.coche, ...ESTADOS_WEB)?.id ?? null;
+    else if (typeof b.coche === 'string' && b.coche.trim()) vehiculoId = cocheDeReferencia.get(b.coche.trim().toUpperCase(), ...ESTADOS_WEB)?.id ?? null;
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
 
     db.prepare('INSERT INTO contactos (nombre, telefono, email, tipo, vehiculo_id, mensaje) VALUES (?, ?, ?, ?, ?, ?)')

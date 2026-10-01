@@ -157,10 +157,12 @@ export function rutasVehiculos(db) {
     const columnas = Object.keys(datos);
     if (!columnas.length) return res.status(400).json({ error: 'Sin cambios' });
 
-    // Un coche que sale en la web (publicado, reservado o vendido) no puede quedarse sin los datos
-    // que se exigieron para publicarlo: por ejemplo, sin precio.
+    // Un coche que sale en la web (publicado, reservado o vendido) no puede perder, en esta edición,
+    // un dato de los que hacen falta para publicar: por ejemplo, el precio. Solo cuenta lo que esta
+    // petición vacía; si ya le faltaba algo de antes, se le deja editar lo demás (y arreglarlo).
     if (ESTADOS_WEB.includes(antes.estado)) {
-      const faltan = faltanParaPublicar({ ...antes, ...datos });
+      const faltaban = new Set(faltanParaPublicar(antes));
+      const faltan = faltanParaPublicar({ ...antes, ...datos }).filter((c) => !faltaban.has(c));
       if (faltan.length) {
         const motivo = `El coche sale en la web y no puede quedarse sin: ${faltan.join(', ')}`;
         return res.status(409).json({ error: motivo, motivos: [motivo] });

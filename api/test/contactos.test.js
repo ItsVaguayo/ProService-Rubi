@@ -1,12 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { conServidor, coche } from './ayuda.js';
+import { conServidor, coche, meterFotos } from './ayuda.js';
 
 const contacto = { nombre: 'Marta Soler', telefono: '600 111 222', tipo: 'prueba', mensaje: '¿Se puede probar el sábado?', privacidad: true };
 
 test('contactos: la web los manda sin sesión y el panel los ve', () =>
-  conServidor(async ({ pide }) => {
+  conServidor(async ({ db, pide }) => {
     const { id, referencia } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    meterFotos(db, id, 15);
+    await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } });
 
     const r = await pide('/contactos', { method: 'POST', body: { ...contacto, coche: referencia }, como: null });
     assert.equal(r.status, 201);
@@ -45,14 +47,27 @@ test('contactos: marcar atendido y volver a pendiente', () =>
 
 test('contactos: validación, campo trampa y casilla de privacidad', () =>
   conServidor(async ({ db, pide }) => {
-    const malo = await pide('/contactos', { method: 'POST', body: { nombre: '', telefono: 'abc', email: 'no', tipo: 'otro', coche: 'PS-99999' }, como: null });
+    const malo = await pide('/contactos', { method: 'POST', body: { nombre: '', telefono: 'abc', email: 'no', tipo: 'otro' }, como: null });
     assert.equal(malo.status, 400);
-    assert.equal(malo.json.errores.length, 6, 'nombre, teléfono, correo, tipo, privacidad y coche');
+    assert.equal(malo.json.errores.length, 5, 'nombre, teléfono, correo, tipo y privacidad');
 
     // Un robot rellena el campo trampa: se le contesta bien, pero no se guarda
     const robot = await pide('/contactos', { method: 'POST', body: { ...contacto, web: 'http://spam.example' }, como: null });
     assert.equal(robot.status, 201);
     assert.equal(db.prepare('SELECT COUNT(*) AS n FROM contactos').get().n, 0);
+  }));
+
+test('contactos: el formulario no deja averiguar coches que no están en la web', () =>
+  conServidor(async ({ db, pide }) => {
+    // Un coche dado de alta pero sin publicar: para la web no existe
+    const { id, referencia } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    for (const c of [referencia, id, 'PS-99999', 99999]) {
+      const r = await pide('/contactos', { method: 'POST', body: { ...contacto, coche: c }, como: null });
+      assert.equal(r.status, 201, `misma respuesta para ${c}, exista o no`);
+    }
+    const guardados = db.prepare('SELECT vehiculo_id FROM contactos').all();
+    assert.equal(guardados.length, 4, 'los contactos se guardan igual');
+    assert.ok(guardados.every((c) => c.vehiculo_id === null), 'pero sin coche');
   }));
 
 test('contactos: como mucho 5 envíos por IP cada 10 minutos', () =>

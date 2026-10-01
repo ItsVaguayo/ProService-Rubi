@@ -29,7 +29,7 @@ Campos que se pueden escribir: los de `api/src/modules/vehiculos/campos.js` y ni
 | `GET /vehiculos?estado=publicado` | con sesión | Lista, del más nuevo al más viejo. Cada coche lleva además `en_estado_desde`, `foto_portada_id` y `n_fotos` |
 | `GET /vehiculos/:id` | con sesión | La ficha. Gerencia recibe también `coste_total_cent` y `margen_cent` |
 | `POST /vehiculos` | con sesión | Alta. Basta con `matricula`, `marca` y `modelo`. Entra en «Pendiente de recoger». 201 con la ficha |
-| `PUT /vehiculos/:id` | con sesión | Cambia solo lo que llega. **Si el coche sale en la web** (publicado, reservado o vendido), no se puede vaciar ninguno de los datos de publicar: 409 con la lista |
+| `PUT /vehiculos/:id` | con sesión | Cambia solo lo que llega. **Si el coche sale en la web** (publicado, reservado o vendido), la edición no puede vaciar ninguno de los datos de publicar que tenía: 409 con la lista. Si ya le faltaba alguno de antes, se le deja editar lo demás |
 | `PATCH /vehiculos/:id/estado` | con sesión | `{ estado }`. Para «Publicado» hacen falta todos los datos de publicar y 15 fotos públicas que no sean de daños; si no, 409 con `motivos`. Para «Reservado», una reserva activa |
 | `GET /vehiculos/:id/historial` | con sesión | Cambios de estado, del más reciente al más antiguo, con quién los hizo. `usuario: null` = lo hizo el sistema (por ejemplo, una reserva que caduca) |
 | `GET /vehiculos/:id/extras` | con sesión | Nombres de los extras marcados |
@@ -82,7 +82,7 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 }
 ```
 
-- `coche` es opcional: la referencia (`PS-00031`) o el id del coche.
+- `coche` es opcional: la referencia como texto (`"PS-00031"`) o el id como número. Solo cuenta si el coche sale en la web; si no (o no existe), el contacto se guarda igual, sin coche, y la respuesta es la misma. Así el formulario no sirve para averiguar qué otros coches hay.
 - `privacidad` tiene que ser `true`.
 - `web` es el **campo trampa**: va oculto en el formulario y la persona lo deja vacío. Si llega con algo, se contesta 201 como si nada y no se guarda.
 - Como mucho 5 envíos por IP cada 10 minutos (429). Se cambia con `CONTACTOS_POR_IP`.

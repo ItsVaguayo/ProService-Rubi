@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { conServidor, coche, meterFotos } from './ayuda.js';
 import { ESTADOS } from '../src/modules/estados.js';
 import { caducarReservas } from '../src/modules/vehiculos/reservas.js';
+import { registrarAlCambiarEstado } from '../src/modules/vehiculos/eventos.js';
 
 test('recorrido: alta, margen y publicar con fotos', () =>
   conServidor(async ({ db, pide }) => {
@@ -299,4 +300,44 @@ test('una reserva caducada se libera sola y el coche vuelve a «Publicado»', ()
 
     // Se puede volver a reservar
     assert.equal((await pide(`/vehiculos/${id}/reserva`, { method: 'POST', body: { cliente: 'Luis', senal_cent: 50000 } })).status, 201);
+  }));
+
+test('un coche en la web al que ya le faltaba un dato se puede seguir editando', () =>
+  conServidor(async ({ db, pide }) => {
+    const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    meterFotos(db, id, 15);
+    await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } });
+    // Le falta el régimen de IVA desde antes (como los de depósito de la base de pruebas)
+    db.prepare('UPDATE vehiculos SET regimen_iva = NULL WHERE id = ?').run(id);
+
+    assert.equal((await pide(`/vehiculos/${id}`, { method: 'PUT', body: { kilometros: 46000 } })).status, 200, 'cambiar otro dato deja');
+    const vaciar = await pide(`/vehiculos/${id}`, { method: 'PUT', body: { pvp_cent: null } });
+    assert.equal(vaciar.status, 409, 'vaciar un dato que sí tenía, no');
+    assert.doesNotMatch(vaciar.json.error, /regimen_iva/, 'el error habla solo de lo que se vacía ahora');
+    assert.equal((await pide(`/vehiculos/${id}`, { method: 'PUT', body: { regimen_iva: 'REBU' } })).status, 200, 'y se puede arreglar');
+  }));
+
+test('si una reserva caducada falla al liberarse, las demás se liberan igual', () =>
+  conServidor(async ({ db, pide }) => {
+    const ids = [];
+    for (const [matricula, bastidor] of [['1111 AAA', 'VF1RFB00000000111'], ['2222 FFF', 'VF1RFB00000000222']]) {
+      const { id } = (await pide('/vehiculos', { method: 'POST', body: { ...coche, matricula, bastidor } })).json;
+      meterFotos(db, id, 15);
+      await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } });
+      await pide(`/vehiculos/${id}/reserva`, { method: 'POST', body: { cliente: 'Ana', senal_cent: 30000 } });
+      ids.push(id);
+    }
+    db.prepare("UPDATE reservas SET caduca_en = datetime('now', '-1 minute')").run();
+    // Un oyente que falla solo con el primer coche
+    registrarAlCambiarEstado((_db, { vehiculo }) => { if (vehiculo.matricula === '1111AAA') throw new Error('fallo de prueba'); });
+
+    const errorOriginal = console.error;
+    console.error = () => {};
+    try {
+      assert.equal(caducarReservas(db), 1, 'libera la que puede');
+    } finally {
+      console.error = errorOriginal;
+    }
+    assert.equal((await pide(`/vehiculos/${ids[0]}`)).json.estado, 'reservado', 'la que falla se queda como estaba (su transacción se deshace)');
+    assert.equal((await pide(`/vehiculos/${ids[1]}`)).json.estado, 'publicado', 'la otra se libera');
   }));
