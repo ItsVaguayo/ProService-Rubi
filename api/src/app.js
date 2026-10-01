@@ -2,10 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import { resolve } from 'node:path';
 import { rutasAuth } from './modules/auth/routes.js';
-import { requiereSesion } from './modules/auth/sesiones.js';
+import { requiereSesion, requiereRol } from './modules/auth/sesiones.js';
 import { rutasVehiculos } from './modules/vehiculos/routes.js';
 import { rutasFotos } from './modules/fotos/routes.js';
 import { rutasPublicacion } from './modules/publicacion/routes.js';
+import { rutasWordPress } from './modules/publicacion/rutas-wordpress.js';
 
 export function crearApp(db) {
   const app = express();
@@ -37,6 +38,7 @@ export function crearApp(db) {
   const conSesion = requiereSesion(db);
   app.use('/api/vehiculos', conSesion, rutasVehiculos(db));
   app.use('/api/fotos', conSesion, rutasFotos(db));
+  app.use('/api/wordpress', conSesion, requiereRol('gerencia'), rutasWordPress(db));
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'No existe' }));
   app.use(manejarErrores);

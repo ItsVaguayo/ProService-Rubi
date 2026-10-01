@@ -10,6 +10,7 @@ Arranque: **jueves 29 de octubre de 2026**. Pymecar vence el 31 y no lo renuevan
 api/         API Node + Express + SQLite       → Victor
 frontend/    Maquetas HTML + CSS: panel y web  → los tres
 wp-plugin/   Plugin para proservicerubi.com    → David
+wordpress-pruebas/  Imitación de la web para probar la publicación por API REST
 docs/        Reparto, flujo de git y resumen del briefing
 ```
 

@@ -1,5 +1,7 @@
 # Pruebas del plugin
 
+> **Ojo (1-oct-2026):** el WordPress de `~/wp-proservice/web` ahora es la imitación de la web real de `wordpress-pruebas/`, sin el plugin. Para estas pruebas hace falta otro WordPress montado como se explica abajo, o volver a enlazar el plugin y copiar `mu-plugin-local.php` en ese.
+
 Un WordPress local con SQLite (sin MySQL), una API falsa y un guion con 42 comprobaciones: alta, sin cambios, cambio de precio con URL fija, buscador y filtros, retirada con 301, API caída o vacía, fotos de otro servidor, límite de fotos por pasada, vincular fichas existentes y compatibilidad con la API antigua.
 
 **El guion borra los coches vinculados y sus fotos.** Solo arranca si la web es `localhost` o `127.0.0.1`.
