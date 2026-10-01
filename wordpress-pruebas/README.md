@@ -23,6 +23,8 @@ Esa casilla es la única acción de administrador que hace falta para que el pre
 
 El buscador con filtros es aparte: el plugin `wp-plugin/` (instalarlo sí requiere administrador una vez). No escribe coches, solo lee lo que deja la API. Hoy, con ACF oculto, solo podría filtrar por marca.
 
+**Coches retirados.** Al vender o entregar un coche, la API pasa su post a borrador (nunca lo borra). Con el plugin instalado, su URL redirige con un 301 al listado. Sin el plugin daría 404.
+
 ## Montarlo
 
 Necesitas PHP 8 (con `sqlite3`, `curl`, `mbstring` y `xml`) y [WP-CLI](https://wp-cli.org/).
@@ -61,5 +63,5 @@ Desde el panel (solo gerencia): `GET /api/wordpress/diagnostico`, `POST /api/wor
 1. Francesc crea un usuario con rol **Editor** (o nos da uno) y, desde su perfil, una contraseña de aplicación.
 2. Se ponen `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION` en el `.env` de la API.
 3. `npm run wordpress -- diagnostico`. Dice qué se puede escribir y qué campos del mapa existen. Si los nombres de ACF no coinciden, se ajusta `WP_MAPA`.
-4. Se vinculan las 30 fichas que ya existen con sus coches (`vincular`) **antes** de la primera sincronización, para no duplicarlas.
+4. Se vinculan las 30 fichas que ya existen con sus coches (`vincular`) **antes** de la primera sincronización, para no duplicarlas y conservar sus URLs.
 5. `sincronizar`.

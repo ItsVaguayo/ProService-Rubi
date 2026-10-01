@@ -7,12 +7,27 @@ Arranque: **jueves 29 de octubre de 2026**. Pymecar vence el 31 y no lo renuevan
 ## Estructura
 
 ```
-api/         API Node + Express + SQLite       → Victor
-frontend/    Maquetas HTML + CSS: panel y web  → los tres
-wp-plugin/   Plugin para proservicerubi.com    → David
-wordpress-pruebas/  Imitación de la web para probar la publicación por API REST
-docs/        Reparto, flujo de git y resumen del briefing
+api/                API Node + Express + SQLite; publica en la web por su API REST  → Victor y David
+frontend/           Panel y web en HTML + CSS (panel.js lo conecta a la API)         → los tres
+wp-plugin/          Plugin buscador para proservicerubi.com                         → David
+wordpress-pruebas/  Imitación de proservicerubi.com para probar la publicación      → David
+docs/               Reparto, flujo de git, dudas y resumen del briefing
 ```
+
+## Cómo llegan los coches a la web
+
+```
+Panel ──► API (única dueña de los datos) ──REST, usuario Editor──► WordPress de la web
+                                                                    · posts «coches»: título, estado, marca
+                                                                    · campos ACF: precio, datos, galería (*)
+                                                                    · plugin buscador: filtros, ficha y 301
+```
+
+- **La API publica en WordPress por su API REST** con un usuario Editor y una contraseña de aplicación. No hace falta administrador para publicar. Código en `api/src/modules/publicacion/wordpress.js`; guía completa en [wordpress-pruebas/README.md](wordpress-pruebas/README.md).
+- **(*) Los campos de ACF** solo viajan si el grupo de campos está expuesto en la API REST. En proservicerubi.com hoy no lo está: hace falta que un administrador marque «Mostrar en la API REST» una vez. Mientras, llegan título, estado y marca.
+- **Un coche vendido o entregado pasa a borrador**, nunca se borra. Su URL redirige con un 301 al listado gracias al plugin.
+- **El plugin buscador** (`wp-plugin/`) no escribe coches: añade `[proservice_buscador]`, la ficha con el diseño de la maqueta (opcional) y el 301. Instalarlo sí requiere administrador una vez. Detalles en [wp-plugin/README.md](wp-plugin/README.md).
+- **Para probarlo sin la web real**: `wordpress-pruebas/montar.sh` monta una imitación con el mismo esquema REST.
 
 ## Arrancar
 
@@ -27,17 +42,23 @@ npm run dev:front  # solo las maquetas
 npm test           # tests de la API
 ```
 
-El plugin rellena las fichas «coches» que ya tiene la web y añade el buscador `[proservice_buscador]`. Instalación, ajustes y pruebas en [wp-plugin/README.md](wp-plugin/README.md).
+Publicar en la web (con `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION` en el `.env`):
+
+```bash
+npm run wordpress --workspace api -- diagnostico   # qué deja hacer la web, sin escribir nada
+npm run wordpress --workspace api -- sincronizar   # publica, actualiza y retira
+```
 
 ## Reglas de la API
 
-- **Sesión obligatoria** en todo salvo `/api/salud` y `/api/auth/*`. La web recibe los coches por su API REST (`/api/wordpress`, ver `wordpress-pruebas/README.md`). Roles `gerencia` y `comercial`.
+- **Sesión obligatoria** en todo salvo `/api/salud` y `/api/auth/*`. Roles `gerencia` y `comercial`. Las rutas de publicación en la web (`/api/wordpress/*`) son solo de gerencia.
 - **El dinero va en céntimos enteros**, con sufijo `_cent` (`pvp_cent: 1290000` son 12.900 €). Se pasa a euros solo al enseñarlo.
 - **El comercial nunca recibe dinero interno**: la API quita compra, costes, precio mínimo, régimen de IVA, datos del dueño en depósito y margen. No basta con esconderlo en el panel.
 - **Solo se escriben los campos de `api/src/modules/vehiculos/campos.js`**. Un campo que no esté ahí da 400. Para añadir uno: migración + `campos.js`.
 - **Alta con matrícula, marca y modelo.** El resto se exige al pasar a «Publicado», junto con 15 fotos (`OBLIGATORIOS_PUBLICAR` y `FOTOS_MINIMAS`).
 - **La base de datos se cambia con migraciones** numeradas en `api/migraciones/`. Se aplican solas al arrancar. Si tenías una base del antiguo `schema.sql`, bórrala (`api/data/proservice.db*`): solo tenía datos de prueba.
 - **Cada alta, edición y cambio de estado queda en `auditoria`**, con usuario y valores de antes y después.
+- **Qué post de WordPress es cada coche** se guarda en `wp_posts`, y qué foto subida en `wp_medios`: cada foto se sube una vez y un coche sin cambios no se reenvía.
 
 ## Documentación
 

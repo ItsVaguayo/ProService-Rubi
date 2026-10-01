@@ -147,8 +147,24 @@ ProService_Ajustes::guardar(['ficha_propia' => false]);
 afirmar(apply_filters('template_include', 'tema.php') === 'tema.php', 'apagado, manda la plantilla del tema');
 wp_reset_query();
 
-// --- 4. Ajustes y lo que queda de la 0.3 -----------------------------------------------------------
-echo "4. Ajustes\n";
+// --- 4. Coches retirados: 301 al listado ------------------------------------------------------------
+echo "4. Coches retirados\n";
+$listado = home_url('/coches-de-ocasion/');
+ProService_Ajustes::guardar(['pagina_listado' => $listado]);
+$slug_ibiza = get_post_field('post_name', $ibiza);
+afirmar(ProService_Redirecciones::destino("coches/{$slug_ibiza}") === null, 'un coche publicado no se redirige');
+wp_update_post(['ID' => $ibiza, 'post_status' => 'draft']); // lo que hace la API al venderlo
+afirmar(ProService_Redirecciones::destino("coches/{$slug_ibiza}/") === $listado, 'retirado (borrador): 301 a la página del listado');
+afirmar(ProService_Redirecciones::destino('coches/no-ha-existido-nunca') === null, 'una URL que nunca existió sigue dando 404');
+afirmar(ProService_Redirecciones::destino("otra-cosa/{$slug_ibiza}") === null, 'solo dentro de /coches/');
+afirmar(ProService_Redirecciones::destino("coches/{$slug_ibiza}/page/2") === null, 'rutas raras no se tocan');
+ProService_Ajustes::guardar(['pagina_listado' => '']);
+afirmar(ProService_Redirecciones::destino("coches/{$slug_ibiza}") === get_post_type_archive_link('coches'), 'sin página de listado configurada, va al archivo de coches');
+wp_delete_post($ibiza, true);
+afirmar(ProService_Redirecciones::destino("coches/{$slug_ibiza}") === null, 'un coche borrado a mano en WordPress da 404');
+
+// --- 5. Ajustes y lo que queda de la 0.3 -----------------------------------------------------------
+echo "5. Ajustes\n";
 list($mapa, $errores) = ProService_Ajustes::validar_mapa('{"pvp_cent":"precio_venta"}');
 afirmar($mapa === ['pvp_cent' => 'precio_venta'] && !$errores, 'mapa {"dato": "campo"}');
 list($mapa, $errores) = ProService_Ajustes::validar_mapa('{"pvp_cent":"Precio Venta"}');
