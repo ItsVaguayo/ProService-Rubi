@@ -73,7 +73,8 @@ class ProService_Ficha
 
         return [
             'titulo'      => $titulo,
-            'estado'      => $d('estado'),
+            'estado'      => ProService_Buscador::estado($post_id),
+            'cuota'       => $d('cuota') !== '' ? ProService_Buscador::cifra($d('cuota')) . ' €/mes' : '',
             'precio'      => $precio_texto,
             'financiado'  => $d('precio_financiado_cent') !== '' ? ProService_Buscador::cifra($d('precio_financiado_cent')) . ' €' : '',
             'resumen'     => array_values(array_filter([$d('anio'), $tecnicos['Kilómetros'] ?? '', $tecnicos['Combustible'] ?? '', $tecnicos['Cambio'] ?? ''])),
@@ -81,7 +82,7 @@ class ProService_Ficha
             'garantia'    => $d('garantia_meses') ?: 12,
             'fotos'       => $fotos,
             'tecnicos'    => $tecnicos,
-            'extras'      => array_filter((array) $d('extras')),
+            'extras'      => self::lista($d('extras')),
             'video'       => self::youtube($d('video_url')),
             'whatsapp'    => ProService_Buscador::whatsapp(trim("Hola, me interesa el {$titulo}" . ($precio_texto ? " de {$precio_texto}" : ''))),
             'compartir'   => 'https://wa.me/?text=' . rawurlencode($titulo . ' ' . get_permalink($post_id)),
@@ -99,6 +100,15 @@ class ProService_Ficha
             $valor = explode(',', $valor);
         }
         return array_values(array_filter(array_map('intval', (array) $valor)));
+    }
+
+    /** Equipamiento: lista, o texto con un elemento por línea o separado por comas. */
+    public static function lista($valor)
+    {
+        if (is_string($valor)) {
+            $valor = preg_split('/[\r\n,]+/', $valor);
+        }
+        return array_values(array_filter(array_map('trim', (array) $valor), 'strlen'));
     }
 
     /** Id de un vídeo de YouTube a partir de su URL, o null. */

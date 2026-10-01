@@ -69,14 +69,19 @@ rm -f "$W/wp-content/mu-plugins/simula-proservicerubi.php"
 # La página del buscador es del plugin: sin él solo enseñaría el shortcode
 for p in $(wp_ post list --post_type=page --name=coches-de-ocasion --field=ID); do wp_ post delete "$p" --force --quiet; done
 cp "$DIR/imita-proservicerubi.php" "$W/wp-content/mu-plugins/"
+# Réplica de sus plantillas de coches (replica/, partes fijas bajadas de su web con extraer.py)
+rm -rf "$W/wp-content/mu-plugins/imita-proservicerubi"
+mkdir -p "$W/wp-content/mu-plugins/imita-proservicerubi"
+cp "$DIR"/replica/*.php "$DIR"/replica/*.css "$DIR"/replica/*.js "$DIR"/replica/*.html "$W/wp-content/mu-plugins/imita-proservicerubi/"
 if [ $BUSCADOR = 1 ]; then
   # Lo que haría un administrador en la web real: instalar el plugin y poner el shortcode en una página.
+  # El mapa se deja en el de por defecto (los nombres de la réplica): un mapa viejo guardado mandaría.
   # Enlazado al repo para revisar siempre la última versión. El plugin no habla con la API.
   [ -e "$W/wp-content/plugins/proservice-stock" ] || ln -s "$(dirname "$DIR")/wp-plugin/proservice-stock" "$W/wp-content/plugins/proservice-stock"
   wp_ plugin activate proservice-stock --quiet
   wp_ post create --post_type=page --post_status=publish --post_title="Coches de ocasión" --post_name=coches-de-ocasion \
       --post_content='[proservice_buscador cabecera="si"]' --quiet
-  wp_ eval 'ProService_Ajustes::guardar(["whatsapp" => "34600000000", "ficha_propia" => true, "pagina_listado" => home_url("/coches-de-ocasion/")]);'
+  wp_ eval 'ProService_Ajustes::guardar(["whatsapp" => "34600000000", "ficha_propia" => false, "pagina_listado" => home_url("/coches-de-ocasion/"), "mapa" => ProService_Ajustes::MAPA_POR_DEFECTO]); ProService_Buscador::olvidar_opciones();'
   echo "   Plugin buscador activo · listado en $URL/coches-de-ocasion/"
 fi
 wp_ rewrite flush --quiet

@@ -16,11 +16,14 @@ class ProService_Ajustes
 {
     const OPCION = 'proservice_ajustes';
 
-    // Dato → campo de la web. Los precios están en euros (el conector ya convierte los céntimos).
+    // Dato → campo de la web, con los nombres de la réplica de proservicerubi.com (wordpress-pruebas/).
+    // Los precios están en euros (el conector ya convierte los céntimos). El estado guarda el texto de
+    // su web: «En venta», «Reservado» o «Vendido».
     // «fotos» es la galería: lista de ids de adjuntos, o texto con los ids separados por comas.
     const MAPA_POR_DEFECTO = [
         'pvp_cent'               => 'precio',
         'precio_financiado_cent' => 'precio_financiado',
+        'cuota'                  => 'cuota',
         'modelo'                 => 'modelo',
         'anio'                   => 'anio',
         'kilometros'             => 'kilometros',
@@ -39,9 +42,9 @@ class ProService_Ajustes
         'llantas'                => 'llantas',
         'garantia_meses'         => 'garantia_meses',
         'video_url'              => 'video',
-        'estado'                 => 'estado_venta',
+        'estado'                 => 'estado',
         'fotos'                  => 'galeria',
-        'extras'                 => 'equipamiento',
+        'extras'                 => 'extras',
     ];
 
     public static function todos()

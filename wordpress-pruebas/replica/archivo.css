@@ -1,0 +1,728 @@
+/* CSS de su listado · copiado de https://proservicerubi.com el 01-10-2026 por extraer.py · no editar a mano */
+
+/* ===============================
+   VARIABLES GLOBALES
+=============================== */
+:root {
+  --brand: #ff0000;       /* rojo puro */
+  --dark: #0f0f0f;
+  --card: #151515;
+  --text: #ffffff;
+  --muted: #b5b5b5;
+  --bg-section: #0b0b0b;
+  --bg-light: #f9f9f9;
+}
+
+/* ===============================
+   CONTAINER FULL WIDTH
+=============================== */
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  width: 100%;
+}
+
+/* ===============================
+   HERO MODERNO IMAGEN
+=============================== */
+.hero-modern {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  padding: clamp(80px, 10vw, 140px) 18px;
+  overflow: hidden;
+  background: url("https://proservicerubi.com/wp-content/uploads/2026/01/hero_proservicerubi_vo.jpeg")
+    center / cover no-repeat;
+}
+
+/* OVERLAY PREMIUM */
+.hero-modern::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(900px 600px at 80% -20%, rgba(255,0,0,.35), transparent 60%),
+    linear-gradient(
+      180deg,
+      rgba(0,0,0,.75) 0%,
+      rgba(0,0,0,.55) 55%,
+      rgba(0,0,0,.9) 100%
+    );
+  z-index: 1;
+}
+
+/* CONTENIDO */
+.hero-modern-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  display: grid;
+  gap: 48px;
+  position: relative;
+  z-index: 2;
+}
+
+/* TEXTO */
+.hero-modern-eyebrow {
+  font-size: 12px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.65);
+  margin-bottom: 14px;
+}
+
+.hero-modern-title {
+  font-size: clamp(34px, 7vw, 64px);
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  margin-bottom: 24px;
+}
+
+.hero-modern-title span {
+  color: var(--brand);
+}
+
+.hero-modern-text {
+  font-size: clamp(15px, 4vw, 18px);
+  line-height: 1.7;
+  max-width: 560px;
+  color: rgba(255,255,255,.85);
+}
+
+/* CTA */
+.hero-modern-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.hero-modern-primary {
+  padding: 16px 34px;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 18px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 14px 40px rgba(255,0,0,.45);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.hero-modern-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 55px rgba(255,0,0,.6);
+}
+
+.hero-modern-secondary {
+  padding: 15px 34px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.35);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  background: rgba(255,255,255,.1);
+}
+
+/* TARJETA INFO */
+.hero-modern-card {
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,.08),
+    rgba(255,255,255,.02)
+  );
+  border-radius: 26px;
+  padding: 28px;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+.hero-modern-card h3 {
+  color: var(--brand);
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.hero-modern-card p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255,255,255,.9);
+}
+
+/* ===============================
+   DESKTOP
+=============================== */
+@media (min-width: 1024px) {
+  .hero-modern-inner {
+    grid-template-columns: 1.2fr 0.8fr;
+    align-items: center;
+  }
+}
+
+/* ===============================
+   MOBILE
+=============================== */
+@media (max-width: 768px) {
+  .hero-modern-actions {
+    flex-direction: column;
+  }
+
+  .hero-modern-primary,
+  .hero-modern-secondary {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+
+/* ===============================
+   SECCIONES FULL WIDTH
+=============================== */
+.section-full {
+  width: 100%;
+  padding: 4rem 2rem;
+}
+.section-dark {
+  background: var(--bg-section);
+  color: #fff;
+}
+.section-light {
+  background: var(--bg-light);
+  color: #111;
+}
+.section-light h2 {
+  color: #0f0f0f;
+}
+
+/* ===============================
+   FILTROS
+=============================== */
+.coches-filters {
+  background: #111;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 2.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+.coches-filters label {
+  font-size: .75rem;
+  color: var(--muted);
+}
+.coches-filters input,
+.coches-filters select {
+  width: 100%;
+  padding: .6rem .7rem;
+  background: #1a1a1a;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+}
+.coches-filters button {
+  grid-column: 1/-1;
+  padding: .9rem;
+  background: var(--brand);
+  border: 0;
+  border-radius: 50px;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ===============================
+   GRILLA DE COCHES
+=============================== */
+.coches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 2rem;
+}
+
+/* ===============================
+   TARJETA COCHES PREMIUM
+=============================== */
+.coche-card {
+  background: var(--card);
+  border-radius: 18px;
+  overflow: hidden;
+  transition: transform .35s ease, box-shadow .35s ease;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeSlideIn 0.6s forwards;
+  position: relative;
+}
+@keyframes fadeSlideIn {
+  to { opacity:1; transform: translateY(0); }
+}
+@media(min-width:798px){
+  .coche-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 40px 80px rgba(255,0,0,0.35), 0 0 15px rgba(255,0,0,0.1);
+  }
+}
+
+.coche-img {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 2px solid rgba(255,255,255,0.05);
+}
+.coche-img img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+.coche-card:hover .coche-img img {
+  transform: scale(1.05);
+}
+
+.estado {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: var(--brand);
+  color: #fff;
+  padding: .4rem .8rem;
+  font-size: .75rem;
+  border-radius: 50px;
+  font-weight: 700;
+  z-index: 3;
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.coche-card:hover .estado {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.coche-thumbs {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: .4rem;
+  opacity: 0;
+  transition: .3s ease;
+  z-index: 2;
+}
+@media(min-width:769px){
+  .coche-card:hover .coche-thumbs { opacity: 1; }
+}
+.coche-thumbs img {
+  width: 46px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  opacity: .7;
+  transition: .25s ease, transform .25s ease;
+}
+.coche-thumbs img:hover,
+.coche-thumbs img.active {
+  opacity: 1;
+  border-color: var(--brand);
+  transform: scale(1.05);
+}
+
+.coche-core {
+  padding: 1.2rem 1.4rem .8rem;
+}
+.coche-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 .3rem;
+  transition: color .3s ease;
+}
+.coche-title a {
+  color: #fff;
+  text-decoration: none;
+}
+.coche-card:hover .coche-title a {
+  color: var(--brand);
+}
+.coche-precio {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--brand);
+}
+
+.coche-financed {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+/* DETAILS PREMIUM */
+.coche-details {
+  padding: 0 1.4rem;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: max-height .45s ease, opacity .3s ease, transform .45s ease, padding-bottom .3s ease;
+}
+@media(min-width:769px){
+  .coche-card:hover .coche-details {
+    max-height: 900px;
+    opacity: 1;
+    padding-bottom: 1.4rem;
+    transform: translateY(0);
+  }
+}
+.coche-meta {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: .6rem;
+  margin: .8rem 0;
+  font-size: .85rem;
+  color: var(--muted);
+}
+.coche-meta span strong {
+  display: block;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* FEATURES PREMIUM */
+.coche-extra-list,
+.coche-color-list,
+.coche-seguridad-list {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin: .6rem 0;
+  opacity: 0;
+  transform: translateY(15px);
+  transition: opacity .4s ease, transform .4s ease, background .3s ease;
+}
+.coche-card:hover .coche-extra-list,
+.coche-card:hover .coche-color-list,
+.coche-card:hover .coche-seguridad-list {
+  opacity: 1;
+  transform: translateY(0);
+}
+.coche-extra-list span,
+.coche-color-list span,
+.coche-seguridad-list span {
+  background: rgba(255,255,255,.08);
+  padding: .4rem .7rem;
+  border-radius: 6px;
+  font-size: .8rem;
+  color: #fff;
+  transition: background .3s ease, color .3s ease, transform .3s ease;
+}
+.coche-card:hover .coche-extra-list span,
+.coche-card:hover .coche-color-list span,
+.coche-card:hover .coche-seguridad-list span {
+  background: rgba(255,0,0,.15); /* rojo puro */
+  transform: translateY(-2px);
+}
+
+/* CTA COCHES */
+.coche-cta {
+  margin-top: 1rem;
+  opacity: 0;
+  transform: translateY(15px);
+  transition: opacity .4s ease, transform .4s ease;
+}
+.coche-card:hover .coche-cta {
+  opacity: 1;
+  transform: translateY(0);
+}
+.coche-cta a {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .8rem 1.5rem;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 50px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: .3s ease, transform .3s ease, box-shadow .3s ease;
+}
+.coche-cta a:hover {
+  transform: translateY(-3px) scale(1.02);
+  opacity: .95;
+  box-shadow: 0 5px 15px rgba(255,0,0,0.5);
+}
+
+/* ===============================
+   TARJETAS "POR QUÉ ELEGIRNOS"
+=============================== */
+.choose-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  width: 100%;
+  margin: 3rem auto;
+}
+.choose-card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  transition: transform .35s ease, box-shadow .35s ease;
+}
+.choose-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 30px 70px rgba(255,0,0,0.4);
+}
+.choose-card h3 {
+  color: var(--brand);
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 900;
+  position: relative;
+}
+.choose-card h3::after {
+  content: '';
+  display: block;
+  width: 50px;
+  height: 3px;
+  background: var(--brand);
+  border-radius: 2px;
+  margin-top: 0.5rem;
+}
+.choose-card p {
+  color: #ddd;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
+}
+.choose-card .btn {
+  width: 100%;
+  max-width: 280px;
+  text-align: center;
+  align-self: center;
+  padding: .9rem 1.5rem;
+  border-radius: 50px;
+  font-weight: 800;
+  font-size: 1rem;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  transition: all .3s ease;
+}
+.choose-card .btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 0 20px rgba(255,0,0,0.6), 0 0 40px rgba(255,0,0,0.2);
+}
+
+/* ===============================
+   BANNER FORMULARIO
+=============================== */
+.banner-cta {
+  text-align: center;
+  background: linear-gradient(135deg, #111 0%, #222 100%);
+  color: #fff;
+  padding: 6rem 2rem;
+}
+.banner-cta .badge {
+  display: inline-block;
+  padding: .4rem .9rem;
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  background: rgba(255,255,255,.15);
+  margin-bottom: 1rem;
+}
+.banner-cta h2 {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  margin-bottom: 1rem;
+}
+.banner-cta p {
+  max-width: 680px;
+  margin: 0 auto 2rem;
+  font-size: 1.05rem;
+  color: #ddd;
+}
+.banner-cta form {
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.banner-cta input,
+.banner-cta select,
+.banner-cta button {
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  border: 0;
+  font-size: 1rem;
+}
+.banner-cta input,
+.banner-cta select {
+  flex: 1 1 200px;
+  background: #222;
+  color: #fff;
+}
+.banner-cta button {
+  flex: 1 1 150px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  transition: .3s;
+}
+.banner-cta button:hover {
+  opacity: .9;
+}
+
+/* ===============================
+   RESPONSIVE UNIFICADO
+=============================== */
+@media(max-width:1024px){
+  .hero-banner-full { min-height: 500px; }
+  .hero-content p { font-size: 1rem; }
+}
+
+@media(max-width:768px){
+
+  /* HERO */
+  .hero-banner-full { min-height: 400px; padding: 1rem; }
+  .hero-content h1 { font-size: clamp(1.5rem,6vw,2rem); }
+  .hero-content p { font-size: .95rem; line-height: 1.5; margin-bottom: 1.5rem; }
+  .hero-buttons { flex-direction: column; gap: .75rem; }
+  .hero-buttons .btn { width: 100%; text-align: center; }
+
+  /* CONTENEDOR */
+  .container { padding: 0.2rem; }
+
+  /* OCULTAR FILTROS EN MÓVIL */
+  .coches-filters { display: none; }
+
+  /* G DE COCHES COMO CARRUSEL HORIZONTAL */
+  .coches-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 100%; 
+    gap: 0.75rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 0.5rem 0 1.5rem;
+  }
+  .coches-grid::-webkit-scrollbar { display: none; }
+
+  /* TARJETA COCHES */
+  .coche-card {
+    scroll-snap-align: start;
+    width: 100%;
+    border-radius: 12px;
+    margin: 0;
+    opacity: 1; 
+    transform: none;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* IMAGEN MÁS ALTA Y ANCHA */
+  .coche-img img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    border-bottom: 2px solid rgba(255,255,255,0.05);
+  }
+
+  /* INFO PRINCIPAL VISIBLE: título, precio, meta */
+  .coche-core {
+    padding: 1rem 0.8rem 0.6rem;
+  }
+  .coche-title { font-size: 1.3rem; }
+  .coche-precio { font-size: 1.55rem; }
+
+  /* METADATA: Año, Kilómetros, Potencia, etc. siempre visible */
+  .coche-details {
+    max-height: none; /* mostrar info básica */
+    opacity: 1;
+    overflow: visible;
+    padding: 0 0.8rem 0.6rem;
+    transform: none;
+    transition: none;
+  }
+
+  .coche-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* más compacto para móvil */
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  /* Extras y CTA ocultos */
+  .coche-extra-list,
+  .coche-color-list,
+  .coche-seguridad-list,
+  .coche-cta {
+    display: none; 
+  }
+
+  /* Thumbnails ocultos */
+  .coche-thumbs { display: none !important; }
+}
+
+/* ===== NAVEGACIÓN CARRUSEL MÓVIL ===== */
+
+.coches-mobile-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.nav-arrow {
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-arrow:active {
+  transform: scale(0.95);
+}
+
+.nav-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-dots span {
+  width: 8px;
+  height: 8px;
+  background: #666;
+  border-radius: 50%;
+  transition: .3s ease;
+}
+
+.nav-dots span.active {
+  background: var(--brand);
+  transform: scale(1.3);
+}

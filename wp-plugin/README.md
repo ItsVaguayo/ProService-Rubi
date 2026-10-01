@@ -2,6 +2,8 @@
 
 Buscador con filtros y ficha opcional para los coches de proservicerubi.com.
 
+Ojo: su web ya tiene listado y filtro propios en `/coches/` (precio máximo, potencia mínima y estado), pintados por su tema hijo. Este plugin es opcional: añade un buscador con todos los filtros de la 5.4, la ficha con el diseño de la maqueta y el 301 de los coches retirados. Lo del 301 no lo tiene su tema.
+
 **El plugin no publica coches.** Los publica la API de la plataforma por la API REST de WordPress, con un usuario Editor y una contraseña de aplicación (`api/src/modules/publicacion/wordpress.js`, guía en `wordpress-pruebas/README.md`). El plugin solo lee lo que la API deja en los posts `coches`: título, marca y campos de ACF.
 
 ```
@@ -19,7 +21,7 @@ API ──REST (usuario Editor)──► posts «coches» + marca + campos ACF +
 - **Ficha del coche** con el diseño de `frontend/web/coche.html`. Va apagada por defecto, porque en la web real manda la plantilla del tema hijo. Se activa en Ajustes.
 - **Diseño**: `assets/web.css` se genera desde `frontend/css` con `python3 wp-plugin/construir-css.py`, todo dentro de `.ps-web` para no chocar con el tema. No se edita a mano.
 - **Ajustes → Pro Service Buscador**:
-  - El **mapa de campos** (qué campo de la web tiene cada dato). Tiene que coincidir con el `WP_MAPA` de la API.
+  - El **mapa de campos** (qué campo de la web tiene cada dato). Tiene que coincidir con el `WP_MAPA` de la API. Por defecto usa los nombres de la réplica de su web; el estado guarda su texto («En venta», «Reservado», «Vendido») y la cuota sale como «Desde X €/mes».
   - La lista de campos ACF del tipo `coches`, indicando si están expuestos en la API REST.
   - WhatsApp, página del listado (destino del 301 y de la miga de pan) y ficha propia.
 

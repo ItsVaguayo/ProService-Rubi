@@ -262,6 +262,12 @@ class ProService_Buscador
         return $clave ? get_post_meta($post_id, $clave, true) : '';
     }
 
+    /** «reservado», «vendido» o lo que haya, en minúsculas: su web guarda «Reservado» y «Vendido». */
+    public static function estado($post_id)
+    {
+        return mb_strtolower(trim((string) self::dato($post_id, 'estado')));
+    }
+
     public static function nombre_combustible($v)
     {
         return self::COMBUSTIBLES[$v] ?? ucfirst((string) $v);
@@ -275,7 +281,8 @@ class ProService_Buscador
     private static function pintar_tarjeta($post_id)
     {
         $titulo = get_the_title($post_id);
-        $estado = self::dato($post_id, 'estado');
+        $estado = self::estado($post_id);
+        $cuota = self::dato($post_id, 'cuota');
         $km = self::dato($post_id, 'kilometros');
         $datos = array_filter([
             self::dato($post_id, 'anio'),
@@ -302,6 +309,7 @@ class ProService_Buscador
                 <ul class="tarjeta-coche__datos cifra"><?php foreach ($datos as $d) : ?><li><?php echo esc_html($d); ?></li><?php endforeach; ?></ul>
                 <div class="tarjeta-coche__precio">
                     <span class="precio cifra"><?php echo $precio !== '' ? esc_html(self::cifra($precio) . ' €') : 'Consultar'; ?></span>
+                    <?php if ($cuota !== '') : ?><span class="cuota cifra">o <?php echo esc_html(self::cifra($cuota)); ?> €/mes</span><?php endif; ?>
                 </div>
             </div>
         </a>

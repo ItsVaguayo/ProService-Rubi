@@ -5,12 +5,12 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { abrirDb } from '../src/db.js';
-import { adaptar, diagnosticar, sincronizar, vincular, MAPA_POR_DEFECTO } from '../src/modules/publicacion/wordpress.js';
+import { adaptar, convertir, diagnosticar, sincronizar, vincular, MAPA_POR_DEFECTO } from '../src/modules/publicacion/wordpress.js';
 
 // --- WordPress simulado: lo justo de la API REST que usa el conector ---------------------------------
 function wordpressFalso({ acfExpuesto = false } = {}) {
   const estado = { posts: new Map([[500, { id: 500, title: 'VOLKSWAGEN GOLF A MANO', status: 'publish' }]]), terminos: [], medios: 0, siguiente: 1000, peticiones: [] };
-  const ACF = { precio: { type: ['number', 'null'] }, kilometros: { type: ['number', 'null'] }, estado_venta: { type: ['string', 'null'] }, galeria: { type: ['string', 'null'] } };
+  const ACF = { precio: { type: ['number', 'null'] }, kilometros: { type: ['number', 'null'] }, estado: { type: ['string', 'null'] }, combustible: { type: ['string', 'null'] }, galeria: { type: ['string', 'null'] } };
   const servidor = createServer((req, res) => {
     let cuerpo = [];
     req.on('data', (t) => cuerpo.push(t));
@@ -64,8 +64,8 @@ async function conEscenario(opciones, fn) {
   const db = abrirDb(':memory:');
   const cfg = { url: `http://127.0.0.1:${servidor.address().port}`, usuario: 'editor', clave: 'clave buena', tipo: 'coches', taxonomia: 'marca', mapa: MAPA_POR_DEFECTO, uploads, fotosPorPasada: 40 };
   const coche = (id, marca, estadoCoche = 'publicado', fotos = 0) => {
-    db.prepare(`INSERT INTO vehiculos (id, matricula, marca, modelo, version, estado, kilometros, pvp_cent, precio_compra_cent)
-                VALUES (?, ?, ?, 'Modelo', 'Versión', ?, 50000, 1290000, 900000)`).run(id, `M${id}`, marca, estadoCoche);
+    db.prepare(`INSERT INTO vehiculos (id, matricula, marca, modelo, version, estado, kilometros, combustible, pvp_cent, precio_compra_cent)
+                VALUES (?, ?, ?, 'Modelo', 'Versión', ?, 50000, 'diesel', 1290000, 900000)`).run(id, `M${id}`, marca, estadoCoche);
     db.prepare("UPDATE vehiculos SET referencia = printf('PS-%05d', id) WHERE id = ?").run(id);
     for (let f = 1; f <= fotos; f++) {
       mkdirSync(join(uploads, `vehiculos/${id}`), { recursive: true });
@@ -129,7 +129,8 @@ test('con ACF: precio en euros, galería y fotos subidas una sola vez', () =>
     const post = [...estado.posts.values()].find((p) => p.title === 'Seat Modelo Versión');
     assert.equal(post.acf.precio, 12900);
     assert.equal(post.acf.kilometros, 50000);
-    assert.equal(post.acf.estado_venta, 'publicado');
+    assert.equal(post.acf.estado, 'En venta', 'el estado con el texto de su web');
+    assert.equal(post.acf.combustible, 'Diésel', 'el combustible con su mayúscula y su acento');
     assert.equal(post.acf.galeria.split(',').length, 3, 'galería como texto porque el esquema dice string');
     assert.equal(post.acf.precio_compra, undefined);
     assert.equal(estado.medios, 3);
@@ -216,6 +217,15 @@ test('WordPress caído o feed vacío: no se toca nada', () =>
     await assert.rejects(sincronizar(db, cfg), /No se puede publicar/);
     assert.equal(db.prepare('SELECT estado FROM wp_posts').get().estado, 'publicado');
   }));
+
+test('convertir: traduce valores, euros y mayúsculas', () => {
+  assert.equal(convertir('reservado', MAPA_POR_DEFECTO.estado), 'Reservado');
+  assert.equal(convertir('vendido', MAPA_POR_DEFECTO.estado), 'Vendido');
+  assert.equal(convertir('otro', MAPA_POR_DEFECTO.estado), 'otro', 'un valor sin traducción pasa tal cual');
+  assert.equal(convertir(1290000, MAPA_POR_DEFECTO.pvp_cent), 12900);
+  assert.equal(convertir('negro', MAPA_POR_DEFECTO.color_exterior), 'Negro');
+  assert.equal(convertir(null, MAPA_POR_DEFECTO.estado), null);
+});
 
 test('adaptar: el valor sigue al tipo que anuncia la web', () => {
   assert.equal(adaptar(12900, { type: ['string', 'null'] }), '12900');

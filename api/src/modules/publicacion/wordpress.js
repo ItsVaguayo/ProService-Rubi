@@ -11,21 +11,22 @@ import { createHash } from 'node:crypto';
 import { extname, resolve, sep } from 'node:path';
 import { ESTADOS_WEB } from '../estados.js';
 
-// Dato nuestro → campo ACF de la web. Los nombres son una suposición hasta ver los reales:
-// el diagnóstico dice cuáles existen. Se puede cambiar con WP_MAPA (JSON con la misma forma).
+// Dato nuestro → campo ACF de la web, con los nombres que sugieren sus plantillas (1-oct-2026: etiquetas
+// de su ficha y parámetros de su filtro). Los reales se confirman con el diagnóstico. «valores» traduce
+// lo nuestro al texto que guarda su web. Se puede cambiar entero con WP_MAPA (JSON con la misma forma).
 export const MAPA_POR_DEFECTO = {
+  modelo: { acf: 'modelo', formato: 'texto' },
   pvp_cent: { acf: 'precio', formato: 'euros' },
-  precio_financiado_cent: { acf: 'precio_financiado', formato: 'euros' },
   anio: { acf: 'anio', formato: 'numero' },
   kilometros: { acf: 'kilometros', formato: 'numero' },
-  combustible: { acf: 'combustible', formato: 'texto' },
-  cambio: { acf: 'cambio', formato: 'texto' },
+  combustible: {
+    acf: 'combustible', formato: 'texto',
+    valores: { gasolina: 'Gasolina', diesel: 'Diésel', hibrido: 'Híbrido', hibrido_enchufable: 'Híbrido enchufable', electrico: 'Eléctrico', glp: 'GLP' },
+  },
   potencia_cv: { acf: 'potencia', formato: 'numero' },
   cilindrada: { acf: 'cilindrada', formato: 'numero' },
-  color_exterior: { acf: 'color', formato: 'texto' },
-  etiqueta_dgt: { acf: 'etiqueta_dgt', formato: 'texto' },
-  carroceria: { acf: 'carroceria', formato: 'texto' },
-  estado: { acf: 'estado_venta', formato: 'texto' },
+  color_exterior: { acf: 'color', formato: 'capitalizar' },
+  estado: { acf: 'estado', formato: 'texto', valores: { publicado: 'En venta', reservado: 'Reservado', vendido: 'Vendido' } },
   video_url: { acf: 'video', formato: 'texto' },
   fotos: { acf: 'galeria', formato: 'galeria' },
 };
@@ -150,10 +151,12 @@ export async function diagnosticar(cfg, fetchImpl = fetch) {
 
 // --- Sincronización ------------------------------------------------------------------------------
 
-function convertir(valor, formato) {
+export function convertir(valor, { formato, valores } = {}) {
   if (valor === null || valor === undefined || valor === '') return null;
+  if (valores && Object.hasOwn(valores, valor)) return valores[valor];
   if (formato === 'euros') return Math.round(valor / 100);
   if (formato === 'numero') return Number(valor);
+  if (formato === 'capitalizar') return String(valor).charAt(0).toLocaleUpperCase('es') + String(valor).slice(1);
   return String(valor);
 }
 
@@ -238,7 +241,7 @@ async function publicarCoche(ctx, v, vinculo) {
         if (ids === null) { fotosCompletas = false; continue; }
         acf[destino.acf] = adaptar(ids, esquema);
       } else {
-        acf[destino.acf] = adaptar(convertir(v[campo], destino.formato), esquema);
+        acf[destino.acf] = adaptar(convertir(v[campo], destino), esquema);
       }
     }
     if (Object.keys(acf).length) cuerpo.acf = acf;

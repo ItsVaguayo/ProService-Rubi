@@ -3,8 +3,8 @@
  * Pruebas del plugin (buscador y ficha). Se lanzan con wp-plugin/pruebas/probar.sh, que hace una
  * copia temporal del WordPress de pruebas: este guion BORRA los coches del WordPress donde corre.
  *
- * Los coches se crean como los deja la API por REST: título, marca y campos de ACF (precio en euros,
- * galería como texto «12,13»). Uno más va solo con título, como las fichas hechas a mano de la web.
+ * Los coches se crean como los deja la API por REST en la réplica de su web: título, marca y campos de
+ * ACF (precio en euros, estado «En venta» / «Reservado» / «Vendido», galería como texto «12,13»). Uno más va solo con título, como las fichas hechas a mano de la web.
  */
 
 if (!defined('ABSPATH') || !class_exists('ProService_Buscador')) {
@@ -74,11 +74,12 @@ ProService_Buscador::olvidar_opciones();
 
 $ateca = coche('Seat Ateca 1.5 TSI Style', 'Seat', ['precio' => 20900, 'precio_financiado' => 19900, 'kilometros' => 62000, 'anio' => 2020,
     'combustible' => 'gasolina', 'cambio' => 'manual', 'carroceria' => 'suv', 'etiqueta_dgt' => 'C', 'color' => 'gris', 'plazas' => 5,
-    'potencia' => 150, 'cilindrada' => 1498, 'estado_venta' => 'publicado', 'video' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']);
+    'potencia' => 150, 'cilindrada' => 1498, 'estado' => 'En venta', 'video' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']);
 $chr = coche('Toyota C-HR 125H Advance', 'Toyota', ['precio' => 21500, 'kilometros' => 81200, 'anio' => 2019, 'combustible' => 'hibrido',
-    'cambio' => 'automatico', 'carroceria' => 'suv', 'etiqueta_dgt' => 'ECO', 'estado_venta' => 'reservado']);
+    'cambio' => 'automatico', 'carroceria' => 'suv', 'etiqueta_dgt' => 'ECO', 'estado' => 'Reservado', 'cuota' => 244,
+    'extras' => "Navegador\nFaros LED, Cámara trasera"]);
 $ibiza = coche('Seat Ibiza 1.0 TSI FR', 'Seat', ['precio' => 12500, 'kilometros' => 73500, 'anio' => 2019, 'combustible' => 'gasolina',
-    'cambio' => 'manual', 'carroceria' => 'utilitario', 'estado_venta' => 'vendido']);
+    'cambio' => 'manual', 'carroceria' => 'utilitario', 'estado' => 'Vendido']);
 $manual = coche('VOLKSWAGEN GOLF TDI 105CV FAMILIAR', null, []);
 $f1 = foto($ateca, 'rojo');
 $f2 = foto($ateca, 'azul');
@@ -94,6 +95,7 @@ afirmar(preg_match('/<img[^>]+src="[^"]*foto-rojo[^"]*\.png"[^>]*alt="Seat Ateca
 afirmar(substr_count($html, 'assets/coche.svg') === 3, 'los coches sin fotos llevan la imagen genérica');
 afirmar(strpos($html, 'class="cinta">Reservado') !== false && strpos($html, 'cinta cinta--vendido">Vendido') !== false, 'cintas de reservado y vendido');
 afirmar(strpos($html, 'precio cifra">20.900 €') !== false && strpos($html, '62.000 km') !== false, 'precio y km con punto de miles');
+afirmar(strpos($html, 'cuota cifra">o 244 €/mes') !== false, 'la cuota «Desde X €/mes» de su web sale en la tarjeta');
 afirmar(strpos($html, '<option value="hibrido">Híbrido</option>') !== false, 'opciones con nombre legible');
 afirmar(strpos($html, 'name="modelo"') === false, 'el filtro de modelo no sale: la web no tiene ese dato');
 afirmar(strpos($html, '<div class="ps-web">') !== false && wp_style_is('proservice-web', 'enqueued'), 'dentro de .ps-web y con la hoja generada');
@@ -137,6 +139,9 @@ afirmar($f['etiqueta'] === ['c', 'C'] && $f['video'] === 'dQw4w9WgXcQ', 'etiquet
 afirmar(strpos($f['whatsapp'], 'https://wa.me/34600000000?text=Hola%2C%20me%20interesa%20el%20Seat%20Ateca') === 0, 'WhatsApp con el coche y el precio');
 afirmar($f['tecnicos']['Kilómetros'] === '62.000 km' && $f['tecnicos']['Potencia'] === '150 CV', 'datos técnicos');
 afirmar($f['extras'] === [], 'sin equipamiento en la web, la sección no sale');
+$chr_ficha = ProService_Ficha::datos($chr);
+afirmar($chr_ficha['cuota'] === '244 €/mes' && $chr_ficha['estado'] === 'reservado', 'ficha: cuota y estado «Reservado» de su web');
+afirmar($chr_ficha['extras'] === ['Navegador', 'Faros LED', 'Cámara trasera'], 'equipamiento escrito como texto, por líneas o comas');
 afirmar(ProService_Ficha::datos($manual)['precio'] === '', 'ficha hecha a mano: sin precio, no se inventa');
 afirmar(ProService_Ficha::youtube('https://youtu.be/dQw4w9WgXcQ') === 'dQw4w9WgXcQ' && ProService_Ficha::youtube('https://vimeo.com/1') === null, 'solo enlaces de YouTube');
 
@@ -144,7 +149,7 @@ query_posts(['p' => $ateca, 'post_type' => 'coches']);
 ProService_Ajustes::guardar(['ficha_propia' => true]);
 afirmar(substr(apply_filters('template_include', 'tema.php'), -20) === 'plantillas/ficha.php', 'con el ajuste activo, la ficha es la del plugin');
 ProService_Ajustes::guardar(['ficha_propia' => false]);
-afirmar(apply_filters('template_include', 'tema.php') === 'tema.php', 'apagado, manda la plantilla del tema');
+afirmar(strpos(apply_filters('template_include', 'tema.php'), 'proservice-stock/plantillas/ficha.php') === false, 'apagado, no impone su ficha: manda la del tema (en la réplica, la de su web)');
 wp_reset_query();
 
 // --- 4. Coches retirados: 301 al listado ------------------------------------------------------------

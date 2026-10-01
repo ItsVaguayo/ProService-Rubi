@@ -179,13 +179,14 @@ Te toca todo lo que ve el cliente final y los portales. Tu bloque es el que quit
 
 **Semana 0 y semana 1**
 - Con los accesos que consiga Diego a través de Victor, averiguar cómo carga hoy la web los coches y qué URLs de fichas existen. Si hay fichas indexadas en Google, se redirigen al listado nuevo para no perder visitas.
-- ~~Montar un WordPress local con una copia de la web.~~ Hecho: `wordpress-pruebas/` imita la web real tal como se ve desde su API REST (`montar.sh`).
+- ~~Montar un WordPress local con una copia de la web.~~ Hecho: `wordpress-pruebas/` imita la web real, su API REST y sus plantillas de `/coches/` y de la ficha, con su filtro y su formulario (`montar.sh`, réplica en `replica/`). Lo que se vio en su web está en las dudas B12 a B15.
 - Investigar cada portal: Coches.net, Milanuncios y Wallapop. Qué vía de carga profesional tiene cada uno (XML, FTP, importador, programa homologado), qué pide, cuánto cuesta y cuánto se tarda en darla de alta. **Tabla a Victor el martes 6**. Victor añade su recomendación y Diego decide ese mismo día y se lo dice al cliente.
 
 **Semana 2**
 - **Duda A7 decidida (1-oct): se rellenan sus coches por la API REST.** Ya hecho y probado contra `wordpress-pruebas/`:
   - Publicación desde la API (`api/src/modules/publicacion/wordpress.js`): diagnóstico, sincronizar, vincular las fichas que ya existen y retirar. Nunca datos de compra, proveedor ni margen.
-  - Plugin buscador (`wp-plugin/proservice-stock/`): listado con los filtros de la 5.4, ficha con galería y vídeo (opcional), cintas «Reservado» y «Vendido», y 301 de los coches retirados.
+  - Su web ya tiene listado y filtro propios (precio, potencia y estado), que funcionan con lo que manda la API si coinciden los campos.
+  - Plugin buscador opcional (`wp-plugin/proservice-stock/`): más filtros (los de la 5.4), ficha con el diseño de la maqueta (apagada por defecto), cintas «Reservado» y «Vendido», y 301 de los coches retirados.
 - Pendiente para cerrar con la web real: usuario Editor (B8), «Mostrar en la API REST» en el grupo de ACF (B11) y los nombres reales de los campos para ajustar `WP_MAPA`.
 
 **Semana 3**

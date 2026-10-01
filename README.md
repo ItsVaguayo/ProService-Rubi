@@ -26,8 +26,9 @@ Panel ──► API (única dueña de los datos) ──REST, usuario Editor─�
 - **La API publica en WordPress por su API REST** con un usuario Editor y una contraseña de aplicación. No hace falta administrador para publicar. Código en `api/src/modules/publicacion/wordpress.js`; guía completa en [wordpress-pruebas/README.md](wordpress-pruebas/README.md).
 - **(*) Los campos de ACF** solo viajan si el grupo de campos está expuesto en la API REST. En proservicerubi.com hoy no lo está: hace falta que un administrador marque «Mostrar en la API REST» una vez. Mientras, llegan título, estado y marca.
 - **Un coche vendido o entregado pasa a borrador**, nunca se borra. Su URL redirige con un 301 al listado gracias al plugin.
-- **El plugin buscador** (`wp-plugin/`) no escribe coches: añade `[proservice_buscador]`, la ficha con el diseño de la maqueta (opcional) y el 301. Instalarlo sí requiere administrador una vez. Detalles en [wp-plugin/README.md](wp-plugin/README.md).
-- **Para probarlo sin la web real**: `wordpress-pruebas/montar.sh` monta una imitación con el mismo esquema REST.
+- **Su web ya tiene listado, filtro y ficha propios** en su tema hijo, que pintan los campos que deja la API. El valor del estado va con su texto («En venta», «Reservado», «Vendido»): la API lo traduce.
+- **El plugin buscador** (`wp-plugin/`) es opcional y no escribe coches: añade `[proservice_buscador]` con más filtros, la ficha con el diseño de la maqueta y el 301. Instalarlo requiere administrador una vez. Detalles en [wp-plugin/README.md](wp-plugin/README.md).
+- **Para probarlo sin la web real**: `wordpress-pruebas/montar.sh` monta una réplica con el mismo esquema REST y las mismas plantillas de coches.
 
 ## Arrancar
 

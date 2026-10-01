@@ -1,17 +1,23 @@
 <?php
 /**
  * Plugin Name: Imitación de proservicerubi.com
- * Description: Solo para el WordPress de pruebas. Reproduce lo que la web real expone por su API REST.
+ * Description: Solo para el WordPress de pruebas. Reproduce la web real: su API REST y sus plantillas de coches.
  *
- * Comprobado contra https://proservicerubi.com/wp-json el 1-oct-2026:
- *  - Tipo «coches» (rest_base coches) que en REST solo admite título, slug, estado, plantilla y «marca».
- *    No tiene contenido, foto destacada ni campos personalizados.
- *  - Clave «acf» presente pero sin campos: el grupo de campos no está expuesto en REST.
- *  - Contraseñas de aplicación activas.
+ * Comprobado contra https://proservicerubi.com el 1-oct-2026:
+ *  - API REST: tipo «coches» (rest_base coches) que solo admite título, slug, estado, plantilla y «marca».
+ *    Sin contenido, foto destacada ni campos personalizados. Clave «acf» presente pero vacía (el grupo
+ *    de campos no está expuesto en REST). Contraseñas de aplicación activas.
+ *  - Plantillas propias del tema hijo para /coches/ y la ficha (réplica en replica/, ver replica.php).
+ *  - Datos que pintan esas plantillas: precio, cuota («Desde X €/mes»), estado (En venta, Reservado,
+ *    Vendido), kilómetros, combustible (Gasolina, Diésel, Híbrido…), potencia, cilindrada, uso anterior,
+ *    color, año y galería.
  *
- * Interruptor: define('PS_ACF_EN_REST', true) en wp-config.php simula que alguien con administrador
- * ha marcado «Mostrar en la API REST» en el grupo de campos de ACF.
- * Los nombres de los campos son una suposición hasta ver los reales.
+ * Los NOMBRES de los campos ACF son una suposición sacada de sus etiquetas y de los parámetros de su
+ * filtro (precio_max, potencia_min, estado). Los reales solo se ven con acceso de administrador o
+ * cuando el grupo esté expuesto en REST.
+ *
+ * Interruptor: define('PS_ACF_EN_REST', true) en wp-config.php simula que un administrador ha marcado
+ * «Mostrar en la API REST» en el grupo de campos de ACF.
  */
 
 if (!defined('ABSPATH')) {
@@ -34,17 +40,31 @@ add_action('acf/include_fields', function () {
     if (!function_exists('acf_add_local_field_group')) {
         return;
     }
-    // ACF gratuito no trae el campo «galería»: aquí es un texto con los ids separados por comas.
-    // El conector mira el tipo que anuncia el esquema REST y adapta el valor.
+    $opciones = function (array $valores) {
+        return array_combine($valores, $valores);
+    };
+    // ACF gratuito no trae el campo «galería» (su web usa ACF Pro o similar): aquí es texto con los ids
+    // separados por comas. El conector de la API mira el tipo que anuncia el esquema REST y se adapta.
     $campos = [
-        'precio' => 'number', 'precio_financiado' => 'number', 'anio' => 'number', 'kilometros' => 'number',
-        'combustible' => 'text', 'cambio' => 'text', 'potencia' => 'number', 'cilindrada' => 'number',
-        'color' => 'text', 'etiqueta_dgt' => 'text', 'carroceria' => 'text', 'estado_venta' => 'text',
-        'video' => 'url', 'galeria' => 'text', 'uso_anterior' => 'text',
+        'precio'       => ['type' => 'number', 'label' => 'Precio (€)'],
+        'cuota'        => ['type' => 'number', 'label' => 'Cuota desde (€/mes)'],
+        'modelo'       => ['type' => 'text', 'label' => 'Modelo (título de la ficha)'],
+        'anio'         => ['type' => 'number', 'label' => 'Año'],
+        'combustible'  => ['type' => 'select', 'label' => 'Combustible', 'choices' => $opciones(['Gasolina', 'Diésel', 'Híbrido', 'Híbrido enchufable', 'Eléctrico', 'GLP'])],
+        'kilometros'   => ['type' => 'number', 'label' => 'Kilómetros'],
+        'potencia'     => ['type' => 'number', 'label' => 'Potencia (CV)'],
+        'cilindrada'   => ['type' => 'number', 'label' => 'Cilindrada (cc)'],
+        'uso_anterior' => ['type' => 'select', 'label' => 'Uso anterior', 'choices' => $opciones(['Particular', 'Empresa', 'Renting', 'Rent a car'])],
+        'color'        => ['type' => 'text', 'label' => 'Color'],
+        'estado'       => ['type' => 'select', 'label' => 'Estado', 'choices' => $opciones(['En venta', 'Reservado', 'Vendido']), 'default_value' => 'En venta'],
+        'galeria'      => ['type' => 'text', 'label' => 'Galería (ids)'],
+        'video'        => ['type' => 'url', 'label' => 'Vídeo'],
+        'extras'       => ['type' => 'textarea', 'label' => 'Extras'],
+        'seguridad'    => ['type' => 'textarea', 'label' => 'Seguridad'],
     ];
     $fields = [];
-    foreach ($campos as $nombre => $tipo) {
-        $fields[] = ['key' => "field_ps_$nombre", 'label' => $nombre, 'name' => $nombre, 'type' => $tipo];
+    foreach ($campos as $nombre => $campo) {
+        $fields[] = array_merge(['key' => "field_ps_$nombre", 'name' => $nombre, 'allow_null' => 1], $campo);
     }
     acf_add_local_field_group([
         'key'          => 'group_ps_coches',
@@ -55,25 +75,5 @@ add_action('acf/include_fields', function () {
     ]);
 });
 
-// Ficha mínima para ver en el navegador qué ha llegado por REST (la real la pinta el tema hijo).
-add_filter('the_content', function ($contenido) {
-    if (!is_singular('coches') || !in_the_loop() || !function_exists('get_fields')) {
-        return $contenido;
-    }
-    $campos = get_fields(get_the_ID()) ?: [];
-    $salida = '<div class="ficha-imitacion">';
-    $ids = array_filter(array_map('intval', explode(',', (string) ($campos['galeria'] ?? ''))));
-    foreach (array_slice($ids, 0, 6) as $id) {
-        $salida .= wp_get_attachment_image($id, 'medium', false, ['style' => 'display:inline-block;margin:4px']);
-    }
-    unset($campos['galeria']);
-    $salida .= '<table>';
-    foreach ($campos as $nombre => $valor) {
-        $salida .= '<tr><th>' . esc_html($nombre) . '</th><td>' . esc_html(is_scalar($valor) ? $valor : wp_json_encode($valor)) . '</td></tr>';
-    }
-    if (!$campos) {
-        $salida .= '<tr><td>Sin datos de ACF (el grupo no está expuesto en REST o no se han enviado).</td></tr>';
-    }
-    return $salida . '</table></div>' . $contenido;
-});
-
+// Sus plantillas de /coches/ y de la ficha
+require_once __DIR__ . '/imita-proservicerubi/replica.php';
