@@ -200,8 +200,17 @@ async function paginaTablero() {
       hoy(`La ITV del ${coche} caduca el ${fechaCorta(v.itv_caducidad)}`, v, 'Ver', true);
     }
   }
+  // Contactos de la web sin atender: en rojo si alguno lleva más de un día esperando
+  const pendientes = await api('/contactos').catch(() => []);
+  if (pendientes.length) {
+    const viejos = pendientes.filter((c) => Date.now() - fechaSql(c.recibido_en) > 86400000).length;
+    tareas.push({
+      texto: viejos ? `Contactos de la web sin atender, ${viejos} desde hace más de un día` : 'Contactos de la web sin atender',
+      url: 'contactos.html', ir: 'Llamar', urgente: viejos > 0, n: pendientes.length,
+    });
+  }
   $('.para-hoy ul').innerHTML = tareas.length
-    ? tareas.sort((a, b) => b.urgente - a.urgente).map((t) => `<li><a href="${t.url}"><span class="para-hoy__cifra${t.urgente ? ' para-hoy__cifra--hoy' : ''}">1</span><span>${esc(t.texto)}</span><span class="para-hoy__ir">${esc(t.ir)}</span></a></li>`).join('')
+    ? tareas.sort((a, b) => b.urgente - a.urgente).map((t) => `<li><a href="${t.url}"><span class="para-hoy__cifra${t.urgente ? ' para-hoy__cifra--hoy' : ''}">${t.n ?? 1}</span><span>${esc(t.texto)}</span><span class="para-hoy__ir">${esc(t.ir)}</span></a></li>`).join('')
     : '<li><span class="nota">Nada urgente hoy.</span></li>';
 
   // Pestañas de ubicación
