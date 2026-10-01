@@ -540,6 +540,94 @@ async function paginaAlta(usuario) {
   });
 }
 
+// --- Usuarios (solo gerencia) ------------------------------------------------------------------
+
+// Una caja de error dentro de cada formulario, para no usar alert()
+function cajaErrorEn(form) {
+  let caja = $('.error--lista', form);
+  if (!caja) {
+    caja = document.createElement('div');
+    caja.className = 'error error--lista';
+    caja.setAttribute('role', 'alert');
+    caja.hidden = true;
+    form.prepend(caja);
+  }
+  return caja;
+}
+
+async function paginaUsuarios(yo) {
+  const cuerpo = $('.tabla tbody');
+  const formNuevo = $('#nuevo form');
+  const formClave = $('#cambiar form');
+  let usuarios = [];
+
+  const pintar = () => {
+    cuerpo.innerHTML = usuarios.map((u) => {
+      const accion = u.id === yo.id
+        ? '<span class="nota">Eres tú</span>'
+        : `<button class="boton boton--secundario boton--pequeno" type="button" data-activar="${u.id}" data-valor="${u.activo ? 'false' : 'true'}">${u.activo ? 'Desactivar' : 'Reactivar'}</button>`;
+      return `<tr${u.activo ? '' : ' class="fila-apagada"'}>
+        <td><span class="coche-celda"><strong>${esc(u.nombre)}</strong><span class="nota">${esc(u.email)}</span></span></td>
+        <td>${u.rol === 'gerencia' ? 'Gerencia' : 'Comercial'}</td>
+        <td>${u.activo ? '<span class="estado estado--venta">Activo</span>' : '<span class="estado estado--llegada">Desactivado</span>'}</td>
+        <td class="cifra">${u.ultimo_acceso ? esc(fechaHora(u.ultimo_acceso)) : '—'}</td>
+        <td class="derecha">${accion}</td>
+      </tr>`;
+    }).join('');
+    formClave.elements.usuario.innerHTML = usuarios.filter((u) => u.activo)
+      .map((u) => `<option value="${u.id}"${u.id === yo.id ? ' selected' : ''}>${esc(u.nombre)}${u.id === yo.id ? ' (tú)' : ''}</option>`).join('');
+  };
+  const cargar = async () => { usuarios = await api('/usuarios'); pintar(); };
+
+  cuerpo.addEventListener('click', async (ev) => {
+    const boton = ev.target.closest('[data-activar]');
+    if (!boton) return;
+    boton.disabled = true;
+    try {
+      await api(`/usuarios/${boton.dataset.activar}`, { method: 'PATCH', body: { activo: boton.dataset.valor === 'true' } });
+      await cargar();
+    } catch (e) {
+      mostrarErrores(cajaErrorEn(formNuevo), e, 'No se ha podido cambiar:');
+      boton.disabled = false;
+    }
+  });
+
+  formNuevo.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const caja = cajaErrorEn(formNuevo);
+    caja.hidden = true;
+    const datos = Object.fromEntries(new FormData(formNuevo));
+    try {
+      await api('/usuarios', { method: 'POST', body: datos });
+      formNuevo.reset();
+      await cargar();
+    } catch (e) {
+      mostrarErrores(caja, e, 'No se ha podido añadir:');
+    }
+  });
+
+  formClave.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const caja = cajaErrorEn(formClave);
+    caja.hidden = true;
+    const { usuario, contrasena } = Object.fromEntries(new FormData(formClave));
+    try {
+      await api(`/usuarios/${usuario}`, { method: 'PATCH', body: { contrasena } });
+      formClave.reset();
+      await cargar();
+      const hecho = document.createElement('p');
+      hecho.className = 'nota';
+      hecho.textContent = 'Contraseña cambiada. Si tenía la sesión abierta en otro sitio, tendrá que volver a entrar.';
+      formClave.append(hecho);
+      setTimeout(() => hecho.remove(), 6000);
+    } catch (e) {
+      mostrarErrores(caja, e, 'No se ha podido cambiar:');
+    }
+  });
+
+  await cargar();
+}
+
 // --- Arranque ----------------------------------------------------------------------------------
 
 const PAGINAS = {
@@ -549,6 +637,7 @@ const PAGINAS = {
   'coche-reservado.html': paginaFicha,
   'coche-nuevo.html': paginaAlta,
   'fotos.html': async () => {}, // la rellena fotos.js; aquí solo el menú
+  'usuarios.html': paginaUsuarios,
 };
 
 (async () => {

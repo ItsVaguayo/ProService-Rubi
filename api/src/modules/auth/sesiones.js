@@ -17,6 +17,11 @@ export function crearUsuario(db, { email, nombre, rol, contrasena }) {
   return Number(info.lastInsertRowid);
 }
 
+export function cambiarContrasena(db, usuarioId, contrasena) {
+  if (!contrasena || contrasena.length < 10) throw new Error('La contraseña necesita al menos 10 caracteres');
+  db.prepare('UPDATE usuarios SET hash = ? WHERE id = ?').run(hashContrasena(contrasena), usuarioId);
+}
+
 export function abrirSesion(db, usuarioId) {
   const token = randomBytes(32).toString('base64url');
   db.prepare(`INSERT INTO sesiones (token_hash, usuario_id, caduca_en) VALUES (?, ?, datetime('now', ?))`).run(
@@ -29,6 +34,11 @@ export function abrirSesion(db, usuarioId) {
 
 export function cerrarSesion(db, token) {
   if (token) db.prepare('DELETE FROM sesiones WHERE token_hash = ?').run(sha256(token));
+}
+
+// Cierra todas las sesiones de un usuario, salvo (si se pasa) la del token `menos`.
+export function cerrarSesionesDe(db, usuarioId, { menos = null } = {}) {
+  db.prepare('DELETE FROM sesiones WHERE usuario_id = ? AND token_hash != ?').run(usuarioId, menos ? sha256(menos) : '');
 }
 
 export function usuarioDeSesion(db, token) {
@@ -53,6 +63,9 @@ export function leerCookie(req, nombre) {
   }
   return null;
 }
+
+// El token de la sesión con la que llega la petición.
+export const tokenDe = (req) => leerCookie(req, COOKIE);
 
 // Middleware: sin sesión válida, 401. Deja el usuario en req.usuario.
 export function requiereSesion(db) {

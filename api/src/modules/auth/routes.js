@@ -38,6 +38,7 @@ export function rutasAuth(db) {
       return res.status(401).json({ error: 'Email o contraseña incorrectos' });
     }
     fallos.delete(ip);
+    db.prepare("UPDATE usuarios SET ultimo_acceso = datetime('now') WHERE id = ?").run(usuario.id);
 
     const { token, maxAge } = abrirSesion(db, usuario.id);
     res.cookie(COOKIE, token, {
