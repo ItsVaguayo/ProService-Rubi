@@ -123,7 +123,7 @@ Hecho en el **PR #1** («Cimientos de la API»), cuando se acepte:
 
 Queda:
 - Aceptar el PR #1 y comprobar que los tres arrancáis con Node 22.
-- Arreglo pendiente del PR: al editar un coche publicado o reservado, volver a comprobar los obligatorios (hoy se le puede vaciar el precio y sigue publicado).
+- ~~Arreglo pendiente del PR: al editar un coche publicado o reservado, volver a comprobar los obligatorios~~. Hecho en `fix/estados-reservas`, junto con el mínimo de fotos y el cierre y la caducidad de las reservas.
 - Cerrar el esquema con la ficha real: lista cerrada de extras (tabla nueva, en `0002_...`) y **proveedor** para los coches propios. El PR solo guarda el dueño de los que están en depósito.
 - `npm run seed` con 10 coches repartidos por estados y los dos usuarios de prueba. Son los datos con los que se trabaja hasta la migración. **Para el lunes 5 a mediodía.**
 - `docs/api.md` con el contrato real. Ojo: los importes van en céntimos (`*_cent`) y `PATCH /estado` devuelve el coche.
