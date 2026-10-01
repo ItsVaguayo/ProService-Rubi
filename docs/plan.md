@@ -92,14 +92,17 @@ Además, en la semana 0:
 ## Arquitectura (ya montada en la plantilla)
 
 ```
-Panel (HTML y CSS) ────┐
-                       ├──►  API (Express + SQLite)  ◄── Plugin WordPress
-Portales (exportación) ◄┘       única dueña de los datos     (lee el feed y envía contactos)
+Panel (HTML y CSS) ────┐                                  ┌──► WordPress de la web (API REST, usuario Editor)
+                       ├──►  API (Express + SQLite)  ─────┤      posts «coches» + campos ACF + fotos
+Portales (exportación) ◄┘       única dueña de los datos  │      plugin buscador: filtros, ficha y 301
+                                                          └◄── formularios de la web (contactos)
 ```
 
+- **Web (duda A7, decidida el 1-oct)**: la API publica los coches en los posts «coches» que ya tiene la web, por la API REST de WordPress, con un usuario Editor y una contraseña de aplicación. Sin administrador. El plugin no escribe coches: es el buscador, la ficha opcional y el 301 de los retirados. Detalle en `wordpress-pruebas/README.md`.
+
 - **Login**: sesión con cookie en el panel. Dos roles: `gerencia` (Jaume, ve todo) y `comercial` (no ve dinero). El dinero se quita en la respuesta de la API, no solo se esconde en el panel.
-- **Público**: el feed de la web y el envío de formularios no llevan login. El envío de formularios lleva un campo trampa contra spam y límite de peticiones por IP.
-- **Fotos**: la API las guarda reducidas (lado largo 1.600 px, JPG) y las sirve con una URL pública que usan la web y los portales.
+- **Público**: el envío de formularios no lleva login. El envío de formularios lleva un campo trampa contra spam y límite de peticiones por IP.
+- **Fotos**: la API las guarda reducidas (lado largo 1.600 px, JPG). A la web las sube ella misma por REST, una sola vez cada una. Los portales usarán su URL pública.
 - **Copias**: base de datos y fotos, una vez al día, fuera del servidor.
 
 ## Victor · jefe de equipo · `feat/core-api`
@@ -176,13 +179,15 @@ Te toca todo lo que ve el cliente final y los portales. Tu bloque es el que quit
 
 **Semana 0 y semana 1**
 - Con los accesos que consiga Diego a través de Victor, averiguar cómo carga hoy la web los coches y qué URLs de fichas existen. Si hay fichas indexadas en Google, se redirigen al listado nuevo para no perder visitas.
-- Montar un WordPress local con una copia de la web.
+- ~~Montar un WordPress local con una copia de la web.~~ Hecho: `wordpress-pruebas/` imita la web real, su API REST y sus plantillas de `/coches/` y de la ficha, con su filtro y su formulario (`montar.sh`, réplica en `replica/`). Lo que se vio en su web está en las dudas B12 a B15.
 - Investigar cada portal: Coches.net, Milanuncios y Wallapop. Qué vía de carga profesional tiene cada uno (XML, FTP, importador, programa homologado), qué pide, cuánto cuesta y cuánto se tarda en darla de alta. **Tabla a Victor el martes 6**. Victor añade su recomendación y Diego decide ese mismo día y se lo dice al cliente.
 
 **Semana 2**
-- **Según lo que decida Diego en la duda A7.** Si se rellenan los coches que ya tienen en WordPress, esta semana va la sincronización por la API REST de WordPress en lugar del listado nuevo. Si no, plugin de WordPress (base en `wp-plugin/proservice-stock/`): listado con los filtros de la 5.4 (marca, modelo, precio, cuota, km, año, combustible, cambio, carrocería, etiqueta, color, plazas, ubicación), ficha pública con galería y vídeo, y etiqueta «Reservado» o «Vendido».
-- Ampliar el feed `GET /api/publicacion/feed/web` con las fotos públicas y los extras. Nunca datos de compra, proveedor ni margen (ya hay un test que lo comprueba; ampliarlo con los campos nuevos).
-- Probar el plugin contra el servidor de pruebas de Victor.
+- **Duda A7 decidida (1-oct): se rellenan sus coches por la API REST.** Ya hecho y probado contra `wordpress-pruebas/`:
+  - Publicación desde la API (`api/src/modules/publicacion/wordpress.js`): diagnóstico, sincronizar, vincular las fichas que ya existen y retirar. Nunca datos de compra, proveedor ni margen.
+  - Su web ya tiene listado y filtro propios (precio, potencia y estado), que funcionan con lo que manda la API si coinciden los campos.
+  - Plugin buscador opcional (`wp-plugin/proservice-stock/`): más filtros (los de la 5.4), ficha con el diseño de la maqueta (apagada por defecto), cintas «Reservado» y «Vendido», y 301 de los coches retirados.
+- Pendiente para cerrar con la web real: usuario Editor (B8), «Mostrar en la API REST» en el grupo de ACF (B11) y los nombres reales de los campos para ajustar `WP_MAPA`.
 
 **Semana 3**
 - En la ficha pública: formulario, WhatsApp con el coche ya escrito en el mensaje, pedir prueba, calculadora de cuota orientativa, pedir financiación, tasar su coche y compartir.
@@ -191,9 +196,10 @@ Te toca todo lo que ve el cliente final y los portales. Tu bloque es el que quit
 - Retirada al vender: con `alCambiarEstado`, cuando un coche pasa a «Vendido» o «Entregado», sus publicaciones quedan en «retirar». El panel lo enseña hasta que alguien confirme la baja en cada portal (hoy se les olvida). Si hay carga automática, se retira solo.
 
 **Semana 4**
-- Lunes 26 y martes 27: instalar el plugin en la web real con Francesc, sin enlazarlo aún en el menú, y probarlo en móvil.
-- Jueves 29, con la migración hecha: enlazar el listado nuevo en el menú y activar las redirecciones.
-- Comprobar que un coche dado de alta en el panel sale en la web en menos de cinco minutos.
+- Lunes 26 y martes 27: con Francesc, instalar el plugin buscador en la web real (sin enlazarlo aún en el menú), lanzar el diagnóstico y probarlo en móvil.
+- Antes de la primera sincronización: vincular las 30 fichas que ya existen con sus coches, para conservar sus URLs.
+- Jueves 29, con la migración hecha: primera sincronización y enlazar el listado en el menú. Los coches retirados redirigen solos con 301.
+- Comprobar que un coche dado de alta en el panel sale en la web en menos de cinco minutos (`WP_SINCRONIZAR_MINUTOS`).
 
 ## Si vamos tarde, se cae en este orden
 

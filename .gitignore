@@ -3,3 +3,5 @@ dist/
 .env
 api/data/
 .DS_Store
+wp-plugin/pruebas/tmp/
+__pycache__/

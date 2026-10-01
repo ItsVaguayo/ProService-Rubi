@@ -1,0 +1,71 @@
+<!-- copiado de https://proservicerubi.com el 01-10-2026 por extraer.py · no editar a mano -->
+<main>
+
+ <section class="hero-modern">
+
+  <div class="hero-modern-inner container">
+
+    <div>
+      <div class="hero-modern-eyebrow">Vehículos de ocasión · Rubí</div>
+
+      <h1 class="hero-modern-title">
+        Vehículos de ocasión <br>
+        revisados y con <span>garantía real</span>
+      </h1>
+
+      <p class="hero-modern-text">
+        En <strong>ProService Rubí</strong> te ofrecemos una selección exclusiva
+        de coches de segunda mano revisados por profesionales, con garantía mínima
+        de 12 meses y total transparencia.
+      </p>
+
+      <div class="hero-modern-actions">
+        <a href="#resultado-coches" class="hero-modern-primary">
+          Ver vehículos disponibles
+        </a>
+        <a href="#form" class="hero-modern-secondary">
+          Solicitar prueba gratuita
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-modern-card">
+      <h3>Compra con tranquilidad</h3>
+      <p>
+        Todos nuestros vehículos han sido revisados en mecánica,
+        seguridad y estado general para que conduzcas sin sorpresas.
+      </p>
+    </div>
+
+  </div>
+
+</section>
+
+  <!-- FILTRO DE COCHES -->
+  <section class="section-full section-dark">
+    <div class="container">
+      <form id="filtro-coches" class="coches-filters">
+        <div>
+          <label>Precio máximo</label>
+          <input type="number" name="precio_max">
+        </div>
+        <div>
+          <label>Potencia mínima (CV)</label>
+          <input type="number" name="potencia_min">
+        </div>
+        <div>
+          <label>Estado</label>
+          <select name="estado">
+            <option value="">Todos</option>
+            <option value="En venta">En venta</option>
+            <option value="Reservado">Reservado</option>
+            <option value="Vendido">Vendido</option>
+          </select>
+        </div>
+        <button type="submit">Filtrar coches</button>
+      </form>
+
+      <!-- G DE COCHES -->
+      <div id="resultado-coches" class="coches-grid">
+
+                
