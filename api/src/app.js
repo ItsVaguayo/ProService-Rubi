@@ -7,6 +7,7 @@ import { rutasVehiculos } from './modules/vehiculos/routes.js';
 import { rutasFotos } from './modules/fotos/routes.js';
 import { rutasWordPress } from './modules/publicacion/rutas-wordpress.js';
 import { rutasUsuarios } from './modules/usuarios/routes.js';
+import { rutasContactos, rutasContactosPublicas } from './modules/contactos/routes.js';
 
 export function crearApp(db) {
   const app = express();
@@ -32,6 +33,7 @@ export function crearApp(db) {
   // Público
   app.get('/api/salud', (_req, res) => res.json({ ok: true }));
   app.use('/api/auth', rutasAuth(db));
+  app.use('/api/contactos', rutasContactosPublicas(db)); // solo POST: el formulario de la web
 
   // Con sesión
   const conSesion = requiereSesion(db);
@@ -39,6 +41,7 @@ export function crearApp(db) {
   app.use('/api/fotos', conSesion, rutasFotos(db));
   app.use('/api/wordpress', conSesion, requiereRol('gerencia'), rutasWordPress(db));
   app.use('/api/usuarios', conSesion, requiereRol('gerencia'), rutasUsuarios(db));
+  app.use('/api/contactos', conSesion, rutasContactos(db));
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'No existe' }));
   app.use(manejarErrores);

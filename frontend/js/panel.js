@@ -116,8 +116,7 @@ function prepararMenu(usuario) {
       location.href = 'login.html';
     });
   }
-  // Contactos aún no tiene endpoint: el contador de la maqueta es inventado
-  document.querySelectorAll('.menu__enlaces .contador').forEach((c) => c.remove());
+  actualizarContadorContactos();
   if (usuario.rol !== 'gerencia') {
     document.querySelectorAll('a[href="informes.html"], a[href="usuarios.html"]').forEach((a) => a.remove());
   }
@@ -628,6 +627,68 @@ async function paginaUsuarios(yo) {
   await cargar();
 }
 
+// --- Contactos de la web ----------------------------------------------------------------------
+
+const TIPOS_CONTACTO = { informacion: 'Información', prueba: 'Prueba de conducción', financiacion: 'Financiación', tasacion: 'Tasación de su coche' };
+
+// El número rojo del menú: contactos sin atender. Sin ninguno, no sale.
+async function actualizarContadorContactos() {
+  const enlace = $('.menu__enlaces a[href="contactos.html"]');
+  if (!enlace) return;
+  const { total } = await api('/contactos/sin-atender').catch(() => ({ total: 0 }));
+  let contador = $('.contador', enlace);
+  if (!total) return contador?.remove();
+  if (!contador) enlace.append(' ', contador = Object.assign(document.createElement('span'), { className: 'contador' }));
+  contador.textContent = total;
+}
+
+async function paginaContactos() {
+  const form = $('form.filtros');
+  const cuerpo = $('.tabla tbody');
+  const vacio = $('.vacio');
+
+  const pintar = async () => {
+    const { estado, tipo } = Object.fromEntries(new FormData(form));
+    const lista = await api(`/contactos?estado=${encodeURIComponent(estado)}${tipo ? `&tipo=${encodeURIComponent(tipo)}` : ''}`);
+    cuerpo.innerHTML = lista.map((c) => {
+      // Sin atender más de 24 horas: en rojo (es uno de los avisos que pidieron)
+      const horas = (Date.now() - fechaSql(c.recibido_en)) / 3600000;
+      const recibido = `<span class="${!c.atendido_en && horas > 24 ? 'dias dias--peligro' : 'nota'}">${esc(fechaHora(c.recibido_en))}</span>`;
+      const telefono = `<a class="nota" href="tel:${esc(c.telefono.replace(/[^\d+]/g, ''))}">${esc(c.telefono)}</a>`;
+      const coche = c.vehiculo_id ? `<a href="coche.html?id=${c.vehiculo_id}"><span class="matricula">${matricula(c.matricula)}</span></a>` : '<span class="nota">—</span>';
+      const boton = c.atendido_en
+        ? `<button class="boton boton--secundario boton--pequeno" type="button" data-atendido="${c.id}" data-valor="false">Volver a pendiente</button><span class="nota"> ${esc(c.atendido_por_nombre ?? '')}</span>`
+        : `<button class="boton boton--pequeno" type="button" data-atendido="${c.id}" data-valor="true">Marcar atendido</button>`;
+      return `<tr>
+        <td>${recibido}</td>
+        <td><span class="coche-celda">${esc(c.nombre)}${telefono}${c.email ? `<a class="nota" href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}</span></td>
+        <td>${esc(TIPOS_CONTACTO[c.tipo] ?? c.tipo)}</td>
+        <td>${coche}</td>
+        <td>${esc(c.mensaje ?? '')}</td>
+        <td>${boton}</td>
+      </tr>`;
+    }).join('');
+    $('.tabla-caja').hidden = !lista.length;
+    vacio.hidden = !!lista.length;
+    $('strong', vacio).textContent = estado === 'sin_atender' ? 'Todo atendido' : 'No hay contactos con estos filtros';
+  };
+
+  cuerpo.addEventListener('click', async (ev) => {
+    const boton = ev.target.closest('[data-atendido]');
+    if (!boton) return;
+    boton.disabled = true;
+    try {
+      await api(`/contactos/${boton.dataset.atendido}`, { method: 'PATCH', body: { atendido: boton.dataset.valor === 'true' } });
+      await Promise.all([pintar(), actualizarContadorContactos()]);
+    } catch (e) {
+      boton.disabled = false;
+      mostrarErrores($('.error--lista') ?? cajaErrorEn(form), e, 'No se ha podido cambiar:');
+    }
+  });
+  form.addEventListener('change', pintar);
+  await pintar();
+}
+
 // --- Arranque ----------------------------------------------------------------------------------
 
 const PAGINAS = {
@@ -638,6 +699,7 @@ const PAGINAS = {
   'coche-nuevo.html': paginaAlta,
   'fotos.html': async () => {}, // la rellena fotos.js; aquí solo el menú
   'usuarios.html': paginaUsuarios,
+  'contactos.html': paginaContactos,
 };
 
 (async () => {

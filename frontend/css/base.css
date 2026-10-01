@@ -70,6 +70,9 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Lo que lleva hidden no se ve nunca, aunque su clase le ponga display (p. ej. .vacio) */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--fondo);
