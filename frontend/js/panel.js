@@ -16,7 +16,8 @@ async function api(ruta, { method = 'GET', body } = {}) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (res.status === 401 && PAGINA !== 'login.html') {
-    location.href = 'login.html';
+    // Al entrar se vuelve a esta misma página (ver destinoTrasEntrar)
+    location.href = `login.html?volver=${encodeURIComponent(PAGINA + location.search)}`;
     throw new Error('Sin sesión');
   }
   const datos = await res.json().catch(() => null);
@@ -36,7 +37,8 @@ const fechaSql = (s) => (s ? new Date(`${s.replace(' ', 'T')}Z`) : null);
 const diasDesde = (s) => (s ? Math.max(0, Math.floor((Date.now() - fechaSql(s)) / 86400000)) : null);
 const fechaCorta = (s) => (s ? new Date(`${s}T00:00:00`).toLocaleDateString('es-ES') : '—');
 const fechaHora = (s) => fechaSql(s).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-const media = (ruta) => (ruta ? `/media/${ruta.split('/').map(encodeURIComponent).join('/')}` : '../img/coche.svg');
+// Las fotos se piden a la API con sesión (las de daños y las de coches sin publicar no son públicas)
+const portada = (v) => (v.foto_portada_id ? `/api/fotos/${v.id}/${v.foto_portada_id}/archivo` : '../img/coche.svg');
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 
 // Nombres cortos y fase (color) de cada estado, como en la maqueta
@@ -121,10 +123,17 @@ function prepararMenu(usuario) {
 
 // --- Entrar ------------------------------------------------------------------------------------
 
+// Tras entrar se vuelve a la página que pidió la sesión (?volver=fotos.html?id=3). Solo vale una página
+// del panel: un nombre .html, sin barras ni protocolo, para que nadie pueda mandar a otra web.
+function destinoTrasEntrar() {
+  const volver = params.get('volver') ?? '';
+  return /^[\w-]+\.html(\?[\w=&%.-]*)?$/.test(volver) && !volver.startsWith('login.html') ? volver : 'index.html';
+}
+
 async function paginaLogin() {
   try {
     await api('/auth/yo');
-    location.href = 'index.html';
+    location.href = destinoTrasEntrar();
     return;
   } catch { /* sin sesión: se queda aquí */ }
   const form = $('.login__form');
@@ -135,7 +144,7 @@ async function paginaLogin() {
     const datos = Object.fromEntries(new FormData(form));
     try {
       await api('/auth/entrar', { method: 'POST', body: { email: datos.email, contrasena: datos.contrasena } });
-      location.href = 'index.html';
+      location.href = destinoTrasEntrar();
     } catch (e) {
       error.textContent = e.status === 429 ? e.message : 'El correo o la contraseña no son correctos. Revisa las mayúsculas.';
       error.hidden = false;
@@ -258,7 +267,7 @@ async function paginaListado() {
     $('.tabla tbody').innerHTML = lista.map((v) => {
       const dias = diasDesde(v.creado_en);
       return `<tr>
-        <td><img class="miniatura" src="${media(v.foto_portada)}" alt=""></td>
+        <td><img class="miniatura" src="${portada(v)}" alt=""></td>
         <td><a href="${urlCoche(v)}"><span class="matricula">${matricula(v.matricula)}</span></a></td>
         <td><span class="coche-celda"><a href="${urlCoche(v)}">${esc(tituloCoche(v))}</a><span class="nota">${esc([v.anio, v.combustible && nombre(v.combustible).toLowerCase(), v.cambio && nombre(v.cambio).toLowerCase(), v.propiedad === 'deposito' ? 'depósito' : 'propio'].filter(Boolean).join(' · '))}</span></span></td>
         <td>${etiquetaEstado(v.estado)}</td>
@@ -303,7 +312,7 @@ async function paginaFicha(usuario) {
   document.title = `${tituloCoche(v)} · ProService`;
 
   // Cabecera
-  $('.ficha-cabecera__foto').src = media(v.foto_portada);
+  $('.ficha-cabecera__foto').src = portada(v);
   $('.ficha-cabecera__foto').alt = `${v.marca} ${v.modelo}, foto frontal`;
   $('.ficha-cabecera__linea').innerHTML = `<span class="matricula matricula--grande">${matricula(v.matricula)}</span>${etiquetaEstado(v.estado)}`;
   $('.ficha-cabecera__info h1').textContent = tituloCoche(v);
@@ -356,9 +365,10 @@ async function paginaFicha(usuario) {
   // Fotos
   const enWeb = fotos.filter((f) => f.publica && !f.es_dano).length;
   $('#fotos .caja__titulo .nota').innerHTML = `<strong class="cifra">${fotos.length}</strong> fotos · ${enWeb} en la web · mínimo 15`;
-  $('#fotos .fotos').innerHTML = fotos.map((f) => `<li class="foto"><img src="${media(f.ruta_photocall || f.ruta_original)}" alt="" loading="lazy"><span class="foto__nombre">${f.es_dano
+  $('#fotos .fotos').innerHTML = fotos.map((f) => `<li class="foto"><img src="${esc(f.url)}" alt="" loading="lazy"><span class="foto__nombre">${f.es_dano
     ? `Daño <span class="foto__marca">Daño</span>` : `${esc(f.orden)} · ${esc(HUECOS[f.orden - 1] ?? 'Extra')}`}</span></li>`).join('')
-    + '<li class="foto"><a class="foto__hueco" href="fotos.html">+ Añadir</a></li>';
+    + `<li class="foto"><a class="foto__hueco" href="fotos.html?id=${id}">+ Añadir</a></li>`;
+  $('#fotos .caja__titulo a[href="fotos.html"]')?.setAttribute('href', `fotos.html?id=${id}`);
 
   // Equipamiento
   $('#equipamiento .extras').innerHTML = extras.length ? extras.map((e) => `<li>${esc(e)}</li>`).join('') : '<li class="nota">Sin equipamiento apuntado</li>';
@@ -520,6 +530,7 @@ const PAGINAS = {
   'coche.html': paginaFicha,
   'coche-reservado.html': paginaFicha,
   'coche-nuevo.html': paginaAlta,
+  'fotos.html': async () => {}, // la rellena fotos.js; aquí solo el menú
 };
 
 (async () => {

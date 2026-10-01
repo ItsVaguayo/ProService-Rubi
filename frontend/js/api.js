@@ -1,9 +1,11 @@
-// Llamadas a la API desde el panel. La sesión va en una cookie que pone la API al entrar.
+// Llamadas a la API desde fotos.js. La sesión va en una cookie que pone la API al entrar.
+// Hace lo mismo que api() de panel.js (misma ruta /api y mismo 401); panel.js no exporta nada
+// y por eso está aparte. Si algún día panel.js exporta su api(), esto sobra.
 
-// Sin sesión, a la pantalla de entrar. Al entrar se vuelve a la página en la que estaba.
+// Sin sesión, a la pantalla de entrar. Al entrar, panel.js vuelve a esta página.
 export function irAEntrar() {
-  const volver = encodeURIComponent(location.pathname + location.search);
-  location.href = `login.html?volver=${volver}`;
+  const pagina = location.pathname.split('/').pop() || 'index.html';
+  location.href = `login.html?volver=${encodeURIComponent(pagina + location.search)}`;
 }
 
 // pide('/fotos/3') o pide('/fotos/3', { method: 'PUT', body: {...} }).

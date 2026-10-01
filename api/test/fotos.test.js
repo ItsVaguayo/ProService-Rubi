@@ -8,7 +8,7 @@ import { conServidor, coche, CONTRASENA } from './ayuda.js';
 
 // Cada ejecución guarda las fotos en una carpeta temporal que se borra al final
 const carpeta = mkdtempSync(join(tmpdir(), 'proservice-fotos-'));
-process.env.UPLOADS_DIR = carpeta;
+process.env.UPLOADS_PATH = carpeta;
 after(() => rmSync(carpeta, { recursive: true, force: true }));
 
 // Una «foto de móvil» de 4000 × 3000 para comprobar que se reduce
@@ -108,6 +108,28 @@ test('dos subidas a la vez no dejan dos fotos en el mismo hueco', () =>
     assert.equal(b.status, 201);
     const ordenes = (await pide(`/fotos/${id}`)).json.map((f) => f.orden);
     assert.deepEqual(ordenes, [1, 2, 3, 4, 5, 6]);
+  }));
+
+test('las fotos HEIC del iPhone se rechazan con un aviso claro', () =>
+  conServidor(async ({ base, pide }) => {
+    const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    const cookie = await cookieDe(base);
+    const enviar = async (tipo, nombre) => {
+      const form = new FormData();
+      form.append('fotos', new Blob([Buffer.from('ftypheic')], { type: tipo }), nombre);
+      const res = await fetch(`${base}/fotos/${id}`, { method: 'POST', headers: { cookie }, body: form });
+      return { status: res.status, json: await res.json() };
+    };
+
+    // Con su tipo, como la manda un Mac
+    const conTipo = await enviar('image/heic', 'IMG_0001.HEIC');
+    assert.equal(conTipo.status, 415);
+    assert.match(conTipo.json.error, /HEIC.*JPG/);
+
+    // Sin tipo, como suele llegar desde Windows: se reconoce por la extensión
+    const sinTipo = await enviar('', 'IMG_0002.heic');
+    assert.equal(sinTipo.status, 415);
+    assert.equal((await pide(`/fotos/${id}`)).json.length, 0);
   }));
 
 test('peticiones mal hechas', () =>

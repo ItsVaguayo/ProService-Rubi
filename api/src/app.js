@@ -19,8 +19,8 @@ export function crearApp(db) {
 
   app.use(express.json({ limit: '100kb' }));
 
-  // Fotos subidas. Solo lectura, sin listar carpetas.
-  app.use('/media', express.static(resolve(process.env.UPLOADS_PATH || './data/uploads'), { index: false, dotfiles: 'deny' }));
+  // Las fotos subidas no se sirven sueltas: el panel las pide con sesión en /api/fotos/:id/:fotoId/archivo
+  // (incluidas las de daños y las de coches sin publicar). WordPress las recibe del conector, que lee del disco.
 
   // Solo para el sistema de pruebas: servir las maquetas de frontend/ en el mismo origen que la API,
   // así el panel usa la cookie de sesión sin CORS. En producción el panel se sirve aparte.

@@ -144,7 +144,8 @@ const unir = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', '
 // --- Acciones ---------------------------------------------------------------
 
 function subir(ficheros) {
-  const imagenes = [...ficheros].filter((f) => f.type.startsWith('image/'));
+  // Las HEIC del iPhone pasan aunque el navegador no sepa su tipo: la API contesta qué hacer con ellas
+  const imagenes = [...ficheros].filter((f) => f.type.startsWith('image/') || /\.hei[cf]$/i.test(f.name));
   if (!imagenes.length) return avisar('Elige fotos en JPG o PNG.');
   const form = new FormData();
   for (const f of imagenes) form.append('fotos', f);

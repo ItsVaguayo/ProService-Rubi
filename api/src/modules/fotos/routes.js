@@ -15,6 +15,12 @@ export const FOTOS_MAXIMAS = 25; // 4.1: como mucho 25
 const ANCHO_MAXIMO = 1600; // px: de sobra para la web y los portales
 const CALIDAD_JPEG = 82;
 const MB = 1024 * 1024;
+const MB_POR_FOTO = 15;
+
+// El sharp que se instala con npm no abre HEIC, el formato de las fotos del iPhone
+const esHeic = (f) => /^image\/hei[cf]/.test(f.mimetype) || /\.hei[cf]$/i.test(f.originalname);
+const AVISO_HEIC =
+  'Las fotos HEIC del iPhone no se pueden subir desde el ordenador: súbelas desde el móvil o expórtalas como JPG';
 
 // Lo que devuelve la API de cada foto. `url` es lo que el panel pone en <img src>.
 const conUrl = (f) => ({ ...f, url: `/api/fotos/${f.vehiculo_id}/${f.id}/archivo` });
@@ -23,12 +29,14 @@ const esEntero = (v) => Number.isInteger(v) && v > 0;
 
 export function rutasFotos(db) {
   const r = Router();
-  const carpeta = resolve(process.env.UPLOADS_DIR || './data/uploads');
+  const carpeta = resolve(process.env.UPLOADS_PATH || './data/uploads');
 
+  // HEIC entra aunque el navegador no sepa su tipo (en Windows suele llegar sin él), para poder
+  // contestar con un error que diga qué pasa en vez de ignorarla.
   const subida = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 20 * MB, files: FOTOS_MAXIMAS },
-    fileFilter: (_req, file, cb) => cb(null, file.mimetype.startsWith('image/')),
+    limits: { fileSize: MB_POR_FOTO * MB, files: FOTOS_MAXIMAS },
+    fileFilter: (_req, file, cb) => cb(null, file.mimetype.startsWith('image/') || esHeic(file)),
   }).array('fotos', FOTOS_MAXIMAS);
 
   const existeCoche = db.prepare('SELECT 1 FROM vehiculos WHERE id = ?');
@@ -63,6 +71,7 @@ export function rutasFotos(db) {
     if (!esEntero(vehiculoId) || !existeCoche.get(vehiculoId)) return res.status(404).json({ error: 'No existe' });
     const ficheros = req.files ?? [];
     if (!ficheros.length) return res.status(400).json({ error: 'No ha llegado ninguna imagen' });
+    if (ficheros.some(esHeic)) return res.status(415).json({ error: AVISO_HEIC });
 
     const noCaben = (libres) => `Caben ${libres} fotos más y has mandado ${ficheros.length}. El máximo es ${FOTOS_MAXIMAS}`;
     // Primer aviso rápido, antes de reducir nada. Los huecos de verdad se eligen dentro de la transacción.
@@ -70,17 +79,20 @@ export function rutasFotos(db) {
     if (ficheros.length > libresAhora) return res.status(409).json({ error: noCaben(libresAhora) });
 
     // Primero se reducen todas: si una no es una imagen de verdad, no se guarda ninguna.
-    let reducidas;
+    // De una en una y soltando el original de cada una, para no tener todas a la vez en memoria
+    // ni todas pasando por sharp al mismo tiempo (en un servidor pequeño tumbaría la API).
+    const reducidas = [];
     try {
-      reducidas = await Promise.all(
-        ficheros.map((f) =>
-          sharp(f.buffer)
+      for (const f of ficheros) {
+        reducidas.push(
+          await sharp(f.buffer)
             .rotate() // endereza según el EXIF del móvil
             .resize({ width: ANCHO_MAXIMO, height: ANCHO_MAXIMO, fit: 'inside', withoutEnlargement: true })
             .jpeg({ quality: CALIDAD_JPEG, mozjpeg: true })
             .toBuffer(),
-        ),
-      );
+        );
+        f.buffer = null;
+      }
     } catch {
       return res.status(400).json({ error: 'Alguno de los ficheros no es una imagen que se pueda abrir' });
     }
@@ -88,7 +100,7 @@ export function rutasFotos(db) {
     const rutas = reducidas.map(() => `${vehiculoId}/${randomUUID()}.jpg`);
     try {
       await mkdir(join(carpeta, String(vehiculoId)), { recursive: true });
-      await Promise.all(rutas.map((ruta, i) => writeFile(join(carpeta, ruta), reducidas[i])));
+      for (const [i, ruta] of rutas.entries()) await writeFile(join(carpeta, ruta), reducidas[i]);
 
       // Los huecos se eligen aquí dentro y no antes: mientras se reducían las fotos ha podido
       // entrar otra subida del mismo coche, y dos fotos no pueden quedarse con el mismo hueco.
@@ -207,7 +219,7 @@ function recibir(subida) {
   return (req, res, next) =>
     subida(req, res, (err) => {
       if (!err) return next();
-      if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: 'Una de las fotos pasa de 20 MB' });
+      if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: `Una de las fotos pasa de ${MB_POR_FOTO} MB` });
       if (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE') {
         return res.status(400).json({ error: `Como mucho ${FOTOS_MAXIMAS} fotos, en el campo «fotos»` });
       }
