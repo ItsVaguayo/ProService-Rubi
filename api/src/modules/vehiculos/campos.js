@@ -47,6 +47,10 @@ export const CAMPOS = {
   propietario_telefono: { tipo: 'texto', dinero: true },
   pago_propietario_cent: { tipo: 'cent', dinero: true },
 
+  // Coches propios: a quién se le compró (migración 0004)
+  proveedor_nombre: { tipo: 'texto', dinero: true },
+  proveedor_telefono: { tipo: 'texto', dinero: true },
+
   // 3.5 Dinero
   precio_compra_cent: { tipo: 'cent', dinero: true },
   coste_transporte_cent: { tipo: 'cent', dinero: true },

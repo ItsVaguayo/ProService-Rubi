@@ -383,12 +383,14 @@ async function paginaFicha(usuario) {
     const deposito = v.propiedad === 'deposito';
     const cuentas = document.querySelectorAll('#dinero .cuentas');
     const linea = (dt, cent, total) => `<div${total ? ' class="total"' : ''}><dt>${dt}</dt><dd>${euros(cent)}</dd></div>`;
+    const persona = (dt, nombre, tel) => `<div><dt>${dt}</dt><dd>${esc(nombre)}${tel ? ` · <a href="tel:${esc(tel)}">${esc(tel)}</a>` : ''}</dd></div>`;
     cuentas[0].innerHTML = [deposito ? linea('Pactado con el dueño', v.pago_propietario_cent) : linea('Precio de compra', v.precio_compra_cent),
       linea('Transporte', v.coste_transporte_cent), linea('Taller', v.coste_taller_cent), linea('Preparación y limpieza', v.coste_preparacion_cent),
       linea('Impuestos y gestoría', v.coste_impuestos_cent), linea('Coste total', v.coste_total_cent, true)].join('');
     cuentas[1].innerHTML = [linea('Precio de venta', v.pvp_cent), linea('Precio si financia', v.precio_financiado_cent), linea('Mínimo aceptable', v.precio_minimo_cent),
       `<div><dt>Régimen de IVA</dt><dd>${esc(v.regimen_iva ?? (deposito ? 'Depósito' : '—'))}</dd></div>`].join('')
-      + (deposito && v.propietario_nombre ? `<div><dt>Dueño</dt><dd>${esc(v.propietario_nombre)}${v.propietario_telefono ? ` · <a href="tel:${esc(v.propietario_telefono)}">${esc(v.propietario_telefono)}</a>` : ''}</dd></div>` : '');
+      + (deposito && v.propietario_nombre ? persona('Dueño', v.propietario_nombre, v.propietario_telefono) : '')
+      + (!deposito && v.proveedor_nombre ? persona('Proveedor', v.proveedor_nombre, v.proveedor_telefono) : '');
     $('#dinero .margen strong').textContent = v.margen_cent == null ? 'Falta un dato' : euros(v.margen_cent);
   }
 

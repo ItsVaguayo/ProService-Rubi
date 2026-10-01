@@ -263,3 +263,15 @@ test('un coche publicado no se puede quedar sin los datos de publicar al editarl
     assert.equal(bajar.status, 200);
     assert.equal(bajar.json.pvp_cent, 1250000);
   }));
+
+test('proveedor: lo guarda y lo ve gerencia; el comercial ni lo ve ni lo escribe', () =>
+  conServidor(async ({ pide }) => {
+    const { id } = (await pide('/vehiculos', { method: 'POST', body: { ...coche, proveedor_nombre: 'Subastas BCN', proveedor_telefono: '600111222' } })).json;
+    const gerencia = (await pide(`/vehiculos/${id}`)).json;
+    assert.equal(gerencia.proveedor_nombre, 'Subastas BCN');
+    assert.equal(gerencia.proveedor_telefono, '600111222');
+
+    const comercial = (await pide(`/vehiculos/${id}`, { como: 'comercial' })).json;
+    assert.ok(!('proveedor_nombre' in comercial) && !('proveedor_telefono' in comercial));
+    assert.equal((await pide(`/vehiculos/${id}`, { method: 'PUT', body: { proveedor_nombre: 'Otro' }, como: 'comercial' })).status, 400);
+  }));
