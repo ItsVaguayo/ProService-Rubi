@@ -5,6 +5,6 @@ export async function api(ruta, opciones = {}) {
     ...opciones,
     body: opciones.body ? JSON.stringify(opciones.body) : undefined,
   });
-  if (!res.ok) throw new Error((await res.json()).error || res.statusText);
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `${res.status} ${res.statusText}`);
   return res.json();
 }

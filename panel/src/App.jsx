@@ -1,42 +1,37 @@
-// Dueña: Hafsa. Tablero de stock por estado. Pendiente: alta de coche, ficha y fotos.
-import { useEffect, useState } from 'react';
-import { api } from './api.js';
+// Dueña: Hafsa. Layout y rutas del panel.
+import { useMemo, useState } from 'react';
+import Cabecera from './components/Cabecera.jsx';
+import Toasts from './components/Toasts.jsx';
+import Stock from './pages/Stock.jsx';
+import FichaCoche from './pages/FichaCoche.jsx';
+import Alta from './pages/Alta.jsx';
+import Catalogo from './pages/Catalogo.jsx';
+import FichaPublica from './pages/FichaPublica.jsx';
+import { useRuta } from './lib/router.js';
+import { RolContext, rolGuardado, guardarRol } from './lib/rol.js';
 
 export default function App() {
-  const [estados, setEstados] = useState([]);
-  const [coches, setCoches] = useState([]);
-  const [error, setError] = useState(null);
+  const { pagina, id } = useRuta();
+  const [rol, setRolEstado] = useState(rolGuardado);
+  const valorRol = useMemo(() => ({ rol, setRol: (r) => { setRolEstado(r); guardarRol(r); } }), [rol]);
 
-  useEffect(() => {
-    Promise.all([api('/vehiculos/estados'), api('/vehiculos')])
-      .then(([e, c]) => { setEstados(e); setCoches(c); })
-      .catch((e) => setError(e.message));
-  }, []);
-
-  if (error) return <p className="error">No conecta con la API: {error}</p>;
+  let contenido;
+  if (pagina === 'coche' && id) contenido = <FichaCoche id={id} />;
+  else if (pagina === 'alta') contenido = <Alta />;
+  else if (pagina === 'catalogo' && id) contenido = <FichaPublica id={id} />;
+  else if (pagina === 'catalogo') contenido = <Catalogo />;
+  else contenido = <Stock />;
 
   return (
-    <main>
-      <header>
-        <h1>Stock</h1>
-        <span>{coches.length} coches</span>
-      </header>
-      <section className="tablero">
-        {estados.map((e) => {
-          const lista = coches.filter((c) => c.estado === e.id);
-          return (
-            <div key={e.id} className="columna">
-              <h2>{e.nombre} <small>{lista.length}</small></h2>
-              {lista.map((c) => (
-                <article key={c.id} className="tarjeta">
-                  <strong>{c.marca} {c.modelo}</strong>
-                  <span>{c.matricula} · {c.kilometros?.toLocaleString('es-ES')} km</span>
-                </article>
-              ))}
-            </div>
-          );
-        })}
-      </section>
-    </main>
+    <RolContext.Provider value={valorRol}>
+      <a className="saltar" href="#contenido" onClick={(e) => { e.preventDefault(); document.getElementById('contenido')?.focus(); }}>
+        Ir al contenido
+      </a>
+      <Cabecera pagina={pagina} />
+      <main id="contenido" tabIndex={-1} key={`${pagina}/${id ?? ''}`} className="entrada">
+        {contenido}
+      </main>
+      <Toasts />
+    </RolContext.Provider>
   );
 }

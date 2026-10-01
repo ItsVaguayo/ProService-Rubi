@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": ["api", "panel"],
   "scripts": {
-    "dev": "npm run dev --workspace api & npm run dev --workspace panel",
+    "dev": "node scripts/dev.mjs",
     "dev:api": "npm run dev --workspace api",
     "dev:panel": "npm run dev --workspace panel",
     "test": "npm test --workspace api"
