@@ -1,6 +1,8 @@
 # Frontend · maquetas del panel y de la web
 
-Todo es **HTML y CSS**, sin JavaScript. Los datos son de ejemplo y los botones todavía no guardan nada: primero cerramos cómo se ve y cómo se usa, y después se conecta a la API.
+Las maquetas son **HTML y CSS**. El panel se conecta a la API con un solo script, `js/panel.js`, que rellena las mismas pantallas con datos reales sin cambiar su HTML: entrar, tablero, listado, ficha (cambio de estado y reserva), alta y edición. Fotos, anuncio, contactos, informes y usuarios aún no tienen API y lo dicen con un aviso arriba.
+
+La web pública (`web/`) no se sirve desde aquí: su diseño pasa al plugin de WordPress con `wp-plugin/construir-css.py`.
 
 ## Verlo en tu ordenador
 
@@ -11,7 +13,9 @@ npm run dev:front
 
 Se abre http://localhost:5173 con el índice de todas las páginas. Al guardar un fichero, el navegador se recarga solo.
 
-Sin la terminal también vale: doble clic en `frontend/index.html`.
+Sin la terminal también vale: doble clic en `frontend/index.html` (se ven las maquetas con datos de ejemplo).
+
+**Con datos reales**: la API sirve el panel en su mismo origen si se arranca con `SERVIR_FRONTEND=../frontend`. Entonces el panel está en http://localhost:3001/panel/login.html y usa la sesión de la API.
 
 ## Qué hay
 
@@ -23,6 +27,7 @@ frontend/
 │   ├── panel.css         Solo el panel interno
 │   └── web.css           Solo la web pública
 ├── img/coche.svg         Foto provisional
+├── js/panel.js           Conecta el panel a la API (una función por página)
 ├── panel/                Lo que usan Jaume y el comercial
 │   ├── login.html
 │   ├── index.html        Tablero: «Para hoy» y los coches por estado

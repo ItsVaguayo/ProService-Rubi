@@ -1,53 +1,41 @@
 <?php
 /**
- * Plugin Name: Pro Service Stock
- * Description: Muestra en proservicerubi.com los coches publicados desde la plataforma de stock.
- * Version: 0.1.0
+ * Plugin Name: Pro Service Buscador
+ * Description: Buscador con filtros y ficha opcional para los coches de proservicerubi.com. Los coches los publica la plataforma de stock por la API REST de WordPress.
+ * Version: 0.4.1
+ * Requires at least: 6.0
+ * Requires PHP: 7.4
  * Author: Equipo ECS
+ * Text Domain: proservice-stock
  *
- * Dueño: David. Se conecta a la web actual (5.2), no la sustituye.
+ * Qué hace: [proservice_buscador] con los filtros de la 5.4 sobre los posts «coches», y una ficha con
+ * el diseño de frontend/web que se puede activar en los ajustes, y 301 al listado de los coches retirados.
+ * No habla con la plataforma ni escribe
+ * coches: eso lo hace la API con un usuario Editor (api/src/modules/publicacion/wordpress.js).
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PROSERVICE_API_URL', getenv('PROSERVICE_API_URL') ?: 'http://localhost:3001/api');
+define('PROSERVICE_VERSION', '0.4.1');
+define('PROSERVICE_DIR', plugin_dir_path(__FILE__));
+define('PROSERVICE_URL', plugin_dir_url(__FILE__));
 
-function proservice_obtener_coches() {
-    $cache = get_transient('proservice_coches');
-    if ($cache !== false) {
-        return $cache;
-    }
-    $res = wp_remote_get(PROSERVICE_API_URL . '/publicacion/feed/web', ['timeout' => 10]);
-    if (is_wp_error($res)) {
-        return [];
-    }
-    $coches = json_decode(wp_remote_retrieve_body($res), true) ?: [];
-    set_transient('proservice_coches', $coches, 5 * MINUTE_IN_SECONDS);
-    return $coches;
-}
+require_once PROSERVICE_DIR . 'includes/class-ajustes.php';
+require_once PROSERVICE_DIR . 'includes/class-admin.php';
+require_once PROSERVICE_DIR . 'includes/class-buscador.php';
+require_once PROSERVICE_DIR . 'includes/class-ficha.php';
+require_once PROSERVICE_DIR . 'includes/class-redirecciones.php';
 
-// Uso en una página: [proservice_stock]
-// TODO(David): buscador con los filtros de 5.4, ficha pública, formularios y botón de WhatsApp (5.6)
-add_shortcode('proservice_stock', function () {
-    $coches = proservice_obtener_coches();
-    if (!$coches) {
-        return '<p>No hay coches disponibles ahora mismo.</p>';
+add_action('plugins_loaded', function () {
+    ProService_Admin::iniciar();
+    ProService_Buscador::iniciar();
+    ProService_Ficha::iniciar();
+    ProService_Redirecciones::iniciar();
+
+    // La versión 0.3 sincronizaba cada 5 minutos: si se actualiza encima, se quita esa tarea.
+    if (wp_next_scheduled('proservice_sync')) {
+        wp_clear_scheduled_hook('proservice_sync');
     }
-    $html = '<div class="proservice-stock">';
-    foreach ($coches as $c) {
-        $reservado = $c['estado'] === 'reservado' ? ' <span class="reservado">Reservado</span>' : '';
-        $html .= sprintf(
-            '<article><h3>%s %s %s</h3><p>%s · %s km · %s</p>%s</article>',
-            esc_html($c['marca']),
-            esc_html($c['modelo']),
-            esc_html($c['version']),
-            esc_html($c['anio']),
-            esc_html(number_format_i18n($c['kilometros'])),
-            $c['pvp_cent'] === null ? 'Consultar' : esc_html(number_format_i18n($c['pvp_cent'] / 100) . ' €'), // la API da céntimos
-            $reservado
-        );
-    }
-    return $html . '</div>';
 });

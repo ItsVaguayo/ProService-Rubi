@@ -1,0 +1,50 @@
+<!-- copiado de https://proservicerubi.com el 01-10-2026 por extraer.py · no editar a mano -->
+
+              </div>
+      <div class="coches-mobile-nav">
+      <button class="nav-arrow nav-prev">‹</button>
+      <div class="nav-dots"></div>
+      <button class="nav-arrow nav-next">›</button>
+    </div>
+  </div>
+  </section>
+
+  <!-- TARJETAS POR QUÉ ELEGIRNOS -->
+  <section class="section-full section-light">
+    <div class="container">
+      <h2>Por qué elegir nuestros vehículos de ocasión en Rubí</h2>
+      <div class="choose-cards">
+        <div class="choose-card">
+          <h3>Garantía REAL DE MÍNIMO 12 MESES</h3>
+          <p>Todos nuestros coches incluyen una garantía de un año para que conduzcas con tranquilidad y seguridad.</p>
+          <button class="btn" onclick="goForm()">🚗 Solicita tu prueba gratuita</button>
+        </div>
+        <div class="choose-card">
+          <h3>REVISIÓN HECHA POR PROFESIONALES</h3>
+          <p>Cada vehículo pasa un control completo de mecánica, chapa, neumáticos y diagnosis, realizado por mecánicos con más de 15 años de experiencia.</p>
+          <button class="btn" onclick="goForm()">🚗 Solicita tu prueba gratuita</button>
+        </div>
+        <div class="choose-card">
+          <h3>OPCIÓN DE FINANCIACIÓN FLEXIBLE</h3>
+          <p>Te ayudamos a estrenar tu coche de ocasión con planes de financiación a medida adaptados a tus necesidades.</p>
+          <button class="btn" onclick="goForm()">🚗 Solicita tu prueba gratuita</button>
+        </div>
+      </div>
+    </div>  
+  </section>
+
+  <!-- BANNER FORMULARIO -->
+<section class="banner-cta" id="form">
+  <span class="badge">Sin compromiso</span>
+  <h2>Solicita tu prueba gratuita</h2>
+  <p>Te asesoramos de forma personalizada para que encuentres el vehículo de ocasión perfecto para ti.</p>
+  <form method="post">
+    <input type="text" name="empresa" style="display:none">
+    {{FORMULARIO_TOKEN}}    <input type="text" name="nombre" placeholder="Nombre completo" required>
+    <input type="email" name="email" placeholder="Correo electrónico" required>
+    <input type="tel" name="telefono" placeholder="Teléfono" required>
+    <button type="submit">Enviar solicitud</button>
+  </form>
+  </section>
+
+</main>

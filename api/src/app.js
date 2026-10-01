@@ -1,10 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+import { resolve } from 'node:path';
 import { rutasAuth } from './modules/auth/routes.js';
-import { requiereSesion } from './modules/auth/sesiones.js';
+import { requiereSesion, requiereRol } from './modules/auth/sesiones.js';
 import { rutasVehiculos } from './modules/vehiculos/routes.js';
 import { rutasFotos } from './modules/fotos/routes.js';
-import { rutasPublicacion } from './modules/publicacion/routes.js';
+import { rutasWordPress } from './modules/publicacion/rutas-wordpress.js';
 
 export function crearApp(db) {
   const app = express();
@@ -18,15 +19,24 @@ export function crearApp(db) {
 
   app.use(express.json({ limit: '100kb' }));
 
+  // Fotos subidas. Solo lectura, sin listar carpetas.
+  app.use('/media', express.static(resolve(process.env.UPLOADS_PATH || './data/uploads'), { index: false, dotfiles: 'deny' }));
+
+  // Solo para el sistema de pruebas: servir las maquetas de frontend/ en el mismo origen que la API,
+  // así el panel usa la cookie de sesión sin CORS. En producción el panel se sirve aparte.
+  if (process.env.SERVIR_FRONTEND) {
+    app.use(express.static(resolve(process.env.SERVIR_FRONTEND), { index: 'index.html' }));
+  }
+
   // Público
   app.get('/api/salud', (_req, res) => res.json({ ok: true }));
   app.use('/api/auth', rutasAuth(db));
-  app.use('/api/publicacion', rutasPublicacion(db)); // el feed de la web; lo interno de David irá con sesión
 
   // Con sesión
   const conSesion = requiereSesion(db);
   app.use('/api/vehiculos', conSesion, rutasVehiculos(db));
   app.use('/api/fotos', conSesion, rutasFotos(db));
+  app.use('/api/wordpress', conSesion, requiereRol('gerencia'), rutasWordPress(db));
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'No existe' }));
   app.use(manejarErrores);
