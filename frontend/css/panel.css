@@ -686,6 +686,13 @@
 .subida:hover,
 .subida:focus-within { border-color: var(--tinta); background: #fafbfb; }
 .subida__titulo { font-weight: 700; }
+/* Con fotos arrastradas encima */
+.subida--encima { border-color: var(--rojo); background: var(--rojo-suave); }
+/* Con 25 fotos ya no se enseña (el display: flex de arriba taparía el hidden) */
+.subida[hidden] { display: none; }
+/* Mientras se guarda un cambio de fotos, la lista no acepta más clics */
+.ocupado .fotos-orden,
+.ocupado .subida { opacity: .6; pointer-events: none; }
 
 /* Lista de fotos en su orden fijo */
 .fotos-orden {

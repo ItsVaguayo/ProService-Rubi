@@ -22,6 +22,7 @@ export function rutasVehiculos(db) {
   const SELECT = `SELECT v.*,
       (SELECT MAX(h.fecha) FROM historial_estados h WHERE h.vehiculo_id = v.id AND h.a = v.estado) AS en_estado_desde,
       (SELECT f.ruta_original FROM fotos f WHERE f.vehiculo_id = v.id AND f.es_dano = 0 ORDER BY f.orden LIMIT 1) AS foto_portada,
+      (SELECT f.id FROM fotos f WHERE f.vehiculo_id = v.id AND f.es_dano = 0 ORDER BY f.orden LIMIT 1) AS foto_portada_id,
       (SELECT COUNT(*) FROM fotos f WHERE f.vehiculo_id = v.id) AS n_fotos
     FROM vehiculos v`;
   const leer = db.prepare(`${SELECT} WHERE v.id = ?`);
