@@ -52,13 +52,50 @@
       </div>
     </header>
 
-    <!-- PROGRESO: cuántas lleva de las 15 obligatorias -->
+    <!-- PROGRESO: cuántas lleva de las 15 obligatorias.
+         El medidor tiene una casilla por hueco, de la 1 a la 25, en el mismo orden que
+         la lista de abajo. Así se ve cuáles faltan, no solo cuántas. La línea después de
+         la 15 marca desde dónde se puede publicar.
+         Clases: --subida (tiene foto), --falta (obligatoria sin foto), --dano (foto de daño).
+         Sin clase: hueco libre de la 16 a la 25. -->
     <section class="progreso" aria-label="Fotos subidas">
       <div class="progreso__texto">
         <strong class="cifra">11 de 15</strong>
         <span class="nota">Faltan 4 para poder publicar: cuadro con km, maletero, motor y llanta</span>
       </div>
-      <div class="progreso__barra"><span style="width: 73%"></span></div>
+      <ol class="medidor" aria-hidden="true">
+        <li class="medidor__hueco medidor__hueco--subida"></li>
+        <li class="medidor__hueco medidor__hueco--subida"></li>
+        <li class="medidor__hueco medidor__hueco--subida"></li>
+        <li class="medidor__hueco medidor__hueco--subida"></li>
+        <li class="medidor__hueco medidor__hueco--subida"></li>
+        <li class="medidor__hueco medidor__hueco--subida"></li>
+        <li class="medidor__hueco medidor__hueco--subida"></li>
+        <li class="medidor__hueco medidor__hueco--subida"></li>
+        <li class="medidor__hueco medidor__hueco--subida"></li>
+        <li class="medidor__hueco medidor__hueco--subida"></li>
+        <li class="medidor__hueco medidor__hueco--falta"></li>
+        <li class="medidor__hueco medidor__hueco--subida"></li>
+        <li class="medidor__hueco medidor__hueco--falta"></li>
+        <li class="medidor__hueco medidor__hueco--falta"></li>
+        <li class="medidor__hueco medidor__hueco--falta"></li>
+        <li class="medidor__hueco medidor__hueco--dano"></li>
+        <li class="medidor__hueco"></li>
+        <li class="medidor__hueco"></li>
+        <li class="medidor__hueco"></li>
+        <li class="medidor__hueco"></li>
+        <li class="medidor__hueco"></li>
+        <li class="medidor__hueco"></li>
+        <li class="medidor__hueco"></li>
+        <li class="medidor__hueco"></li>
+        <li class="medidor__hueco"></li>
+      </ol>
+      <ul class="medidor__leyenda">
+        <li><i class="medidor__hueco medidor__hueco--subida"></i>Subida</li>
+        <li><i class="medidor__hueco medidor__hueco--falta"></i>Falta para publicar</li>
+        <li><i class="medidor__hueco medidor__hueco--dano"></i>Daño</li>
+        <li><i class="medidor__hueco"></i>Libre, hasta 25</li>
+      </ul>
     </section>
 
     <!-- ZONA DE SUBIDA. Sin JavaScript abre el selector de archivos; al conectar,

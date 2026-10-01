@@ -55,9 +55,27 @@
       </ul>
     </div>
 
+    <div class="alta">
+
+    <!-- ÍNDICE. Se queda fijo al bajar y lleva a cada bloque. Al conectar, la
+         clase indice-alta__pendiente marca los bloques con campos obligatorios vacíos.
+         En pantallas estrechas no sale. -->
+    <nav class="indice-alta" aria-label="Bloques del alta">
+      <ol>
+        <li><a class="indice-alta__pendiente" href="#identificacion">Identificación</a></li>
+        <li><a href="#propiedad">Propiedad y ubicación</a></li>
+        <li><a href="#mecanica">Mecánica</a></li>
+        <li><a href="#carroceria">Carrocería</a></li>
+        <li><a href="#equipamiento">Equipamiento</a></li>
+        <li><a href="#papeles">Estado y papeles</a></li>
+        <li><a href="#precio">Precio de venta</a></li>
+        <li><a class="indice-alta__dinero" href="#dinero">Dinero</a></li>
+      </ol>
+    </nav>
+
     <form class="formulario" action="coche.html">
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="identificacion">
         <legend class="oculto">Identificación</legend>
         <div class="bloque__cabeza">
           <h2>Identificación</h2>
@@ -108,7 +126,7 @@
         </datalist>
       </fieldset>
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="propiedad">
         <legend class="oculto">Propiedad y ubicación</legend>
         <div class="bloque__cabeza">
           <h2>Propiedad y ubicación</h2>
@@ -133,7 +151,7 @@
         </div>
       </fieldset>
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="mecanica">
         <legend class="oculto">Mecánica</legend>
         <div class="bloque__cabeza">
           <h2>Mecánica</h2>
@@ -195,7 +213,7 @@
         </div>
       </fieldset>
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="carroceria">
         <legend class="oculto">Carrocería</legend>
         <div class="bloque__cabeza">
           <h2>Carrocería</h2>
@@ -240,7 +258,7 @@
         </div>
       </fieldset>
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="equipamiento">
         <legend class="oculto">Equipamiento</legend>
         <div class="bloque__cabeza">
           <h2>Equipamiento</h2>
@@ -295,7 +313,7 @@
         </div>
       </fieldset>
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="papeles">
         <legend class="oculto">Estado y papeles</legend>
         <div class="bloque__cabeza">
           <h2>Estado y papeles</h2>
@@ -329,7 +347,7 @@
         </div>
       </fieldset>
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="precio">
         <legend class="oculto">Precio de venta</legend>
         <div class="bloque__cabeza">
           <h2>Precio de venta</h2>
@@ -347,7 +365,7 @@
         </div>
       </fieldset>
 
-      <fieldset class="bloque bloque--dinero">
+      <fieldset class="bloque bloque--dinero" id="dinero">
         <legend class="oculto">Dinero · solo gerencia</legend>
         <div class="bloque__cabeza">
           <h2>Dinero</h2>
@@ -401,6 +419,21 @@
             <input type="number" name="precio_minimo_cent" min="0" step="0.01">
             <span class="campo__ayuda">No sale en ningún sitio. Es tu límite al negociar.</span>
           </label>
+          <!-- RESUMEN. Se rellena solo mientras Jaume escribe los importes (al conectar).
+               Coste total = compra o pactado con el dueño + transporte + taller + preparación + impuestos.
+               Margen bruto = precio de venta − coste total. Si sale negativo, añade la clase
+               resumen-margen__dato--negativo. -->
+          <div class="resumen-margen">
+            <div class="resumen-margen__dato">
+              <span>Coste total</span>
+              <output class="cifra" name="coste_total">—</output>
+            </div>
+            <div class="resumen-margen__dato">
+              <span>Margen bruto</span>
+              <output class="cifra" name="margen">—</output>
+            </div>
+            <p class="nota">El margen neto espera a la regla de REBU o IVA deducible.</p>
+          </div>
         </div>
       </fieldset>
 
@@ -411,6 +444,7 @@
       </div>
 
     </form>
+    </div>
   </main>
 </div>
 </body>

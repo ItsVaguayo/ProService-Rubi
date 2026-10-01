@@ -185,12 +185,17 @@
         <!-- DINERO. Solo gerencia. El comercial no ve este bloque. -->
         <section class="caja dinero" id="dinero">
           <div class="caja__titulo"><h2>Dinero</h2><span class="rotulo">Solo gerencia</span></div>
+          <div class="barra-costes" aria-hidden="true">
+            <span class="barra-costes__tramo barra-costes__tramo--compra" style="flex-grow: 11200"></span>
+            <span class="barra-costes__tramo barra-costes__tramo--taller" style="flex-grow: 250"></span>
+            <span class="barra-costes__tramo barra-costes__tramo--preparacion" style="flex-grow: 120"></span>
+          </div>
           <dl class="cuentas">
-            <div><dt>Pactado con el dueño</dt><dd>11.200 €</dd></div>
-            <div><dt>Transporte</dt><dd>0 €</dd></div>
-            <div><dt>Taller</dt><dd>250 €</dd></div>
-            <div><dt>Preparación y limpieza</dt><dd>120 €</dd></div>
-            <div><dt>Impuestos y gestoría</dt><dd>0 €</dd></div>
+            <div><dt><i class="barra-costes__tramo--compra"></i>Pactado con el dueño</dt><dd>11.200 €</dd></div>
+            <div><dt><i class="barra-costes__tramo--transporte"></i>Transporte</dt><dd>0 €</dd></div>
+            <div><dt><i class="barra-costes__tramo--taller"></i>Taller</dt><dd>250 €</dd></div>
+            <div><dt><i class="barra-costes__tramo--preparacion"></i>Preparación y limpieza</dt><dd>120 €</dd></div>
+            <div><dt><i class="barra-costes__tramo--impuestos"></i>Impuestos y gestoría</dt><dd>0 €</dd></div>
             <div class="total"><dt>Coste total</dt><dd>11.570 €</dd></div>
           </dl>
           <dl class="cuentas">

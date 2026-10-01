@@ -47,6 +47,13 @@
   --peligro: #c91f1f;        --peligro-fondo: #fdecec;
   --ok: #17794a;             --ok-fondo: #e3f4ea;
 
+  /* Tramos de la barra de costes (bloque de dinero, sobre negro) */
+  --coste-compra: #9aa2ab;
+  --coste-transporte: #6f9be8;
+  --coste-taller: #e0a23a;
+  --coste-preparacion: #b48ee6;
+  --coste-impuestos: #e86f6f;
+
   /* La franja azul de la matrícula */
   --azul-matricula: #1f3fa6;
 

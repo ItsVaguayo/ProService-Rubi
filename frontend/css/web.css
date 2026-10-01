@@ -199,6 +199,10 @@ body.web {
 
 .precio { color: var(--rojo); font-size: 1.625rem; font-weight: 800; letter-spacing: -.02em; }
 .cuota { color: #c9ced3; font-size: .875rem; font-weight: 600; }
+.precio-financiado { margin: 2px 0 0; color: var(--blanco); font-size: .9375rem; font-weight: 600; }
+
+/* Campo trampa del formulario: fuera de la pantalla, no se ve ni se tabula */
+.trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 
 /* Cinta de «Reservado» o «Vendido» encima de la foto */
 .cinta {

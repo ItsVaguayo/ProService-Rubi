@@ -59,6 +59,8 @@
       </div>
       <div>
         <span class="precio cifra">20.900 €</span>
+        <!-- Precio si financia (precio_financiado_cent). Si el coche no lo tiene, esta línea no sale. -->
+        <p class="precio-financiado cifra">20.400 € financiándolo con nosotros</p>
         <p class="cuota cifra">Desde 329 €/mes<small>Cuota orientativa, sujeta a aprobación de la financiera</small></p>
       </div>
       <p class="garantia"><span class="barra-marca barra-marca--roja"></span><span><strong>Revisado en nuestro taller.</strong> 12 meses de garantía como mínimo.</span></p>
@@ -142,6 +144,12 @@
           <label class="campo campo--ancho">
             <span class="campo__nombre">Mensaje</span>
             <textarea name="mensaje"></textarea>
+          </label>
+          <!-- TRAMPA CONTRA SPAM. Las personas no lo ven y lo dejan vacío; los robots lo
+               rellenan. Si llega con algo escrito, la API descarta el contacto. -->
+          <label class="trampa" aria-hidden="true">
+            Deja esto vacío
+            <input name="web" tabindex="-1" autocomplete="off">
           </label>
           <label class="casilla">
             <input type="checkbox" name="privacidad" required>

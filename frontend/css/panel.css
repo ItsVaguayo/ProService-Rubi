@@ -493,6 +493,17 @@
 .cuentas .total dt,
 .cuentas .total dd { color: var(--blanco); font-weight: 700; }
 
+/* Barra de costes: de un vistazo, qué parte del coste es la compra y qué parte el taller */
+.barra-costes { display: flex; gap: 2px; height: 10px; margin-bottom: var(--espacio-m); border-radius: var(--radio-boton); overflow: hidden; }
+.barra-costes__tramo { min-width: 4px; }
+.barra-costes__tramo--compra { background: var(--coste-compra); }
+.barra-costes__tramo--transporte { background: var(--coste-transporte); }
+.barra-costes__tramo--taller { background: var(--coste-taller); }
+.barra-costes__tramo--preparacion { background: var(--coste-preparacion); }
+.barra-costes__tramo--impuestos { background: var(--coste-impuestos); }
+/* El punto de color delante de cada concepto, como leyenda */
+.cuentas dt i { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 2px; vertical-align: 1px; }
+
 .margen {
   display: flex;
   justify-content: space-between;
@@ -558,8 +569,33 @@
 }
 .progreso__texto { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; }
 .progreso__texto strong { font-size: 1.125rem; }
-.progreso__barra { height: 8px; border-radius: var(--radio-boton); background: var(--linea); overflow: hidden; }
-.progreso__barra span { display: block; height: 100%; background: var(--rojo); border-radius: inherit; }
+/* Medidor de fotos: 25 casillas, una por hueco. Tras la 15, una línea con el mínimo. */
+.medidor {
+  display: grid;
+  grid-template-columns: repeat(25, 1fr);
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.medidor__hueco { display: block; height: 14px; border-radius: 3px; background: var(--linea); }
+.medidor__hueco--subida { background: var(--ok); }
+.medidor__hueco--falta { background: var(--peligro-fondo); box-shadow: inset 0 0 0 1px var(--peligro); }
+.medidor__hueco--dano { background: var(--aviso); }
+.medidor .medidor__hueco:nth-child(15) { position: relative; margin-right: 6px; }
+.medidor .medidor__hueco:nth-child(15)::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  right: -6px;
+  width: 2px;
+  background: var(--tinta);
+}
+
+.medidor__leyenda { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; list-style: none; color: var(--tinta-3); font-size: .8125rem; }
+.medidor__leyenda li { display: flex; align-items: center; gap: 6px; }
+.medidor__leyenda .medidor__hueco { width: 14px; height: 10px; }
 
 /* Zona para soltar o elegir las fotos */
 .subida {
@@ -712,6 +748,44 @@
 
 .formulario { display: flex; flex-direction: column; gap: var(--espacio-m); padding-bottom: 96px; max-width: 1080px; }
 
+/* Índice a la izquierda del formulario, fijo al bajar */
+.alta { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--espacio-l); align-items: start; }
+.indice-alta { position: sticky; top: var(--espacio-l); }
+.indice-alta ol { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.indice-alta a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radio-pequeno);
+  color: var(--tinta-2);
+  font-size: .875rem;
+  text-decoration: none;
+}
+.indice-alta a:hover { background: var(--blanco); color: var(--tinta); }
+/* Bloque con obligatorios vacíos: punto rojo al final */
+.indice-alta__pendiente::after { content: ""; width: 7px; height: 7px; margin-left: auto; border-radius: 50%; background: var(--rojo); }
+.indice-alta__dinero { font-weight: 600; }
+.formulario .bloque { scroll-margin-top: var(--espacio-l); }
+
+/* Coste total y margen bruto al pie del bloque de dinero */
+.rejilla .resumen-margen { grid-column: 1 / -1; }
+.resumen-margen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--espacio-m) var(--espacio-xl);
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--negro-2);
+}
+.resumen-margen__dato { display: flex; flex-direction: column; gap: 2px; }
+.resumen-margen__dato span { color: #a7adb3; font-size: .8125rem; }
+.resumen-margen__dato output { font-size: 1.375rem; font-weight: 700; letter-spacing: -.02em; }
+.resumen-margen__dato:nth-child(2) output { color: #5fd08e; }
+.resumen-margen__dato--negativo output { color: var(--rojo); }
+.resumen-margen .nota { flex-basis: 100%; margin: 0; }
+
 .bloque {
   display: grid;
   grid-template-columns: 220px 1fr;
@@ -826,6 +900,8 @@
   .cambiar-estado { grid-column: 1 / -1; }
   .recorrido { grid-template-columns: repeat(5, 1fr); row-gap: 14px; }
   .bloque { grid-template-columns: 1fr; gap: var(--espacio-m); }
+  .alta { grid-template-columns: 1fr; }
+  .indice-alta { display: none; }
 }
 
 @media (max-width: 800px) {
