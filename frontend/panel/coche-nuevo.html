@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nuevo coche · ProService</title>
+  <title>Alta de vehículo · ProService</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
@@ -22,7 +22,7 @@
     <div class="menu__enlaces">
       <a href="index.html">Tablero</a>
       <a href="coches.html">Coches</a>
-      <a href="coche-nuevo.html" aria-current="page">Nuevo coche</a>
+      <a href="coche-nuevo.html" aria-current="page">Alta de vehículo</a>
       <a href="contactos.html">Contactos <span class="contador">3</span></a>
       <!-- Solo lo ve gerencia. Al comercial no le salen estos enlaces. -->
       <a class="menu__separado" href="informes.html">Informes</a>
@@ -36,17 +36,23 @@
 
   <main class="contenido">
 
-    <header class="cabecera">
-      <div>
-        <h1>Nuevo coche</h1>
-        <p class="nota">Con matrícula, marca y modelo ya se puede guardar. El resto lo completas antes de publicarlo.</p>
-      </div>
+    <!-- PORTADA. La misma del tablero, en corto. -->
+    <header class="portada portada--corta">
+      <p class="portada__antetitulo">Stock</p>
+      <h1 class="portada__titular portada__titular--medio">Alta de vehículo</h1>
+      <p class="portada__texto">Con matrícula, marca y modelo ya se guarda y entra en «Pendiente de recoger». El resto lo completas antes de publicarlo. Las fotos se suben desde su ficha.</p>
+      <ul class="portada__leyenda">
+        <li><em>*</em> Obligatorio para guardar</li>
+        <li><i class="marca-publicar"></i> Hace falta para publicar</li>
+      </ul>
     </header>
 
     <!-- IMPORTANTE: el "name" de cada campo es el nombre que espera la API
          (api/src/modules/vehiculos/campos.js). No lo cambiéis sin avisar a Victor.
          Los importes terminan en _cent porque la API los guarda en céntimos:
-         Jaume escribe euros y al conectar el formulario se multiplican por 100. -->
+         Jaume escribe euros y al conectar el formulario se multiplican por 100.
+         Los campos con la clase campo--publicar son los de OBLIGATORIOS_PUBLICAR
+         (api/src/modules/vehiculos/reglas.js usa esa lista). Si cambia la lista, cambia la clase. -->
     <!-- ERROR AL GUARDAR. La API dice qué falla. Para verlo, quita hidden. -->
     <div class="error error--lista" role="alert" hidden>
       <strong>No se ha podido guardar:</strong>
@@ -55,47 +61,66 @@
       </ul>
     </div>
 
+    <div class="alta">
+
+      <!-- ÍNDICE. Fijo al bajar. Lleva a cada bloque.
+           El número es cuántos datos para publicar faltan en el bloque (al conectar lo
+           calcula la página). Sin datos pendientes: clase indice-alta__hecho y sin número. -->
+      <nav class="indice-alta" aria-label="Bloques del alta">
+        <ol>
+          <li><a href="#identificacion"><span class="indice-alta__n">01</span>Identificación<small>8</small></a></li>
+          <li><a href="#propiedad"><span class="indice-alta__n">02</span>Propiedad y ubicación<small>1</small></a></li>
+          <li><a href="#mecanica"><span class="indice-alta__n">03</span>Mecánica<small>7</small></a></li>
+          <li><a href="#carroceria"><span class="indice-alta__n">04</span>Carrocería<small>6</small></a></li>
+          <li><a href="#equipamiento"><span class="indice-alta__n">05</span>Equipamiento</a></li>
+          <li><a href="#papeles"><span class="indice-alta__n">06</span>Estado y papeles</a></li>
+          <li><a href="#precio"><span class="indice-alta__n">07</span>Precio de venta<small>1</small></a></li>
+          <li><a class="indice-alta__hecho" href="#dinero"><span class="indice-alta__n">08</span>Dinero</a></li>
+        </ol>
+      </nav>
+
     <form class="formulario" action="coche.html">
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="identificacion">
         <legend class="oculto">Identificación</legend>
         <div class="bloque__cabeza">
+          <span class="bloque__n">01</span>
           <h2>Identificación</h2>
           <p class="nota">Lo que pone en el permiso de circulación.</p>
         </div>
         <div class="rejilla">
-          <label class="campo">
+          <label class="campo campo--publicar campo--matricula">
             <span class="campo__nombre">Matrícula <em>*</em></span>
             <input name="matricula" required placeholder="1234 BCD" autocomplete="off">
           </label>
-          <label class="campo">
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Bastidor</span>
             <input name="bastidor" maxlength="17" autocomplete="off">
             <span class="campo__ayuda">17 caracteres</span>
           </label>
-          <label class="campo">
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Marca <em>*</em></span>
             <input name="marca" required list="marcas">
           </label>
-          <label class="campo">
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Modelo <em>*</em></span>
             <input name="modelo" required>
           </label>
-          <label class="campo">
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Versión o acabado</span>
             <input name="version" placeholder="1.5 TSI Style">
           </label>
-          <label class="campo">
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Año</span>
             <input type="number" name="anio" min="1950" max="2027">
           </label>
-          <label class="campo">
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Primera matriculación</span>
             <input type="date" name="fecha_matriculacion">
           </label>
-          <label class="campo">
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Kilómetros</span>
-            <input type="number" name="kilometros" min="0" step="1">
+            <span class="con-unidad" data-unidad="km"><input type="number" name="kilometros" min="0" step="1"></span>
           </label>
         </div>
         <!-- Sugerencias al escribir la marca -->
@@ -108,196 +133,198 @@
         </datalist>
       </fieldset>
 
-      <fieldset class="bloque">
+      <!-- OPCIONES DE UN TOQUE. Son radios: el que está marcado es el valor que se envía.
+           Ninguno marcado = campo vacío. -->
+      <fieldset class="bloque" id="propiedad">
         <legend class="oculto">Propiedad y ubicación</legend>
         <div class="bloque__cabeza">
+          <span class="bloque__n">02</span>
           <h2>Propiedad y ubicación</h2>
-          <p class="nota">Si el coche es de un tercero, sus datos van en el bloque de gerencia.</p>
+          <p class="nota">Si es de un tercero, en el bloque de dinero salen los datos del dueño.</p>
         </div>
         <div class="rejilla">
-          <label class="campo">
-            <span class="campo__nombre">El coche es</span>
-            <select name="propiedad">
-              <option value="propio">Nuestro</option>
-              <option value="deposito">De un tercero, en depósito</option>
-            </select>
-          </label>
-          <label class="campo">
-            <span class="campo__nombre">Dónde está</span>
-            <select name="ubicacion">
-              <option value="">Aún no ha llegado</option>
-              <option value="patio_taller">Patio del taller</option>
-              <option value="parking">Parking</option>
-            </select>
-          </label>
+          <fieldset class="opciones campo--doble">
+            <legend class="campo__nombre">El coche es</legend>
+            <label><input type="radio" name="propiedad" value="propio" checked><span>Nuestro</span></label>
+            <label><input type="radio" name="propiedad" value="deposito"><span>De un tercero, en depósito</span></label>
+          </fieldset>
+          <fieldset class="opciones campo--doble campo--publicar">
+            <legend class="campo__nombre">Dónde está</legend>
+            <label><input type="radio" name="ubicacion" value="" checked><span>Aún no ha llegado</span></label>
+            <label><input type="radio" name="ubicacion" value="patio_taller"><span>Patio del taller</span></label>
+            <label><input type="radio" name="ubicacion" value="parking"><span>Parking</span></label>
+          </fieldset>
         </div>
       </fieldset>
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="mecanica">
         <legend class="oculto">Mecánica</legend>
         <div class="bloque__cabeza">
+          <span class="bloque__n">03</span>
           <h2>Mecánica</h2>
           <p class="nota">Lo que pone en la ficha técnica.</p>
         </div>
         <div class="rejilla">
-          <label class="campo">
-            <span class="campo__nombre">Combustible</span>
-            <select name="combustible">
-              <option value="">Elige</option>
-              <option value="gasolina">Gasolina</option>
-              <option value="diesel">Diésel</option>
-              <option value="hibrido">Híbrido</option>
-              <option value="hibrido_enchufable">Híbrido enchufable</option>
-              <option value="electrico">Eléctrico</option>
-              <option value="glp">GLP</option>
-            </select>
+          <fieldset class="opciones campo--publicar campo--ancho">
+            <legend class="campo__nombre">Combustible</legend>
+            <label><input type="radio" name="combustible" value="gasolina"><span>Gasolina</span></label>
+            <label><input type="radio" name="combustible" value="diesel"><span>Diésel</span></label>
+            <label><input type="radio" name="combustible" value="hibrido"><span>Híbrido</span></label>
+            <label><input type="radio" name="combustible" value="hibrido_enchufable"><span>Híbrido enchufable</span></label>
+            <label><input type="radio" name="combustible" value="electrico"><span>Eléctrico</span></label>
+            <label><input type="radio" name="combustible" value="glp"><span>GLP</span></label>
+          </fieldset>
+          <fieldset class="opciones campo--publicar">
+            <legend class="campo__nombre">Cambio</legend>
+            <label><input type="radio" name="cambio" value="manual"><span>Manual</span></label>
+            <label><input type="radio" name="cambio" value="automatico"><span>Automático</span></label>
+          </fieldset>
+          <fieldset class="opciones campo--doble campo--publicar">
+            <legend class="campo__nombre">Tracción</legend>
+            <label><input type="radio" name="traccion" value="delantera"><span>Delantera</span></label>
+            <label><input type="radio" name="traccion" value="trasera"><span>Trasera</span></label>
+            <label><input type="radio" name="traccion" value="total"><span>Total</span></label>
+          </fieldset>
+          <label class="campo campo--publicar">
+            <span class="campo__nombre">Potencia</span>
+            <span class="con-unidad" data-unidad="CV"><input type="number" name="potencia_cv" min="0"></span>
           </label>
-          <label class="campo">
-            <span class="campo__nombre">Cambio</span>
-            <select name="cambio">
-              <option value="">Elige</option>
-              <option value="manual">Manual</option>
-              <option value="automatico">Automático</option>
-            </select>
+          <label class="campo campo--publicar">
+            <span class="campo__nombre">Cilindrada</span>
+            <span class="con-unidad" data-unidad="cc"><input type="number" name="cilindrada" min="0"></span>
           </label>
-          <label class="campo">
-            <span class="campo__nombre">Potencia (CV)</span>
-            <input type="number" name="potencia_cv" min="0">
+          <label class="campo campo--publicar">
+            <span class="campo__nombre">Emisiones CO₂</span>
+            <span class="con-unidad" data-unidad="g/km"><input type="number" name="emisiones_co2" min="0"></span>
           </label>
-          <label class="campo">
-            <span class="campo__nombre">Cilindrada (cc)</span>
-            <input type="number" name="cilindrada" min="0">
-          </label>
-          <label class="campo">
-            <span class="campo__nombre">Tracción</span>
-            <select name="traccion">
-              <option value="">Elige</option>
-              <option value="delantera">Delantera</option>
-              <option value="trasera">Trasera</option>
-              <option value="total">Total</option>
-            </select>
-          </label>
-          <label class="campo">
-            <span class="campo__nombre">Emisiones CO₂ (g/km)</span>
-            <input type="number" name="emisiones_co2" min="0">
-          </label>
-          <label class="campo">
-            <span class="campo__nombre">Etiqueta DGT</span>
-            <select name="etiqueta_dgt">
-              <option value="">Elige</option>
-              <option value="0">0 emisiones</option>
-              <option value="ECO">ECO</option>
-              <option value="C">C</option>
-              <option value="B">B</option>
-              <option value="SIN">Sin etiqueta</option>
-            </select>
-          </label>
+          <!-- Etiqueta DGT con los colores de la pegatina -->
+          <fieldset class="opciones opciones--dgt campo--publicar campo--ancho">
+            <legend class="campo__nombre">Etiqueta DGT</legend>
+            <label><input type="radio" name="etiqueta_dgt" value="0"><span class="dgt dgt--cero">0 emisiones</span></label>
+            <label><input type="radio" name="etiqueta_dgt" value="ECO"><span class="dgt dgt--eco">ECO</span></label>
+            <label><input type="radio" name="etiqueta_dgt" value="C"><span class="dgt dgt--c">C</span></label>
+            <label><input type="radio" name="etiqueta_dgt" value="B"><span class="dgt dgt--b">B</span></label>
+            <label><input type="radio" name="etiqueta_dgt" value="SIN"><span class="dgt">Sin etiqueta</span></label>
+          </fieldset>
         </div>
       </fieldset>
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="carroceria">
         <legend class="oculto">Carrocería</legend>
         <div class="bloque__cabeza">
+          <span class="bloque__n">04</span>
           <h2>Carrocería</h2>
           <p class="nota">Se usa para los filtros de la web.</p>
         </div>
         <div class="rejilla">
-          <label class="campo">
-            <span class="campo__nombre">Tipo</span>
-            <select name="carroceria">
-              <option value="">Elige</option>
-              <option value="utilitario">Utilitario</option>
-              <option value="berlina">Berlina</option>
-              <option value="familiar">Familiar</option>
-              <option value="suv">SUV</option>
-              <option value="monovolumen">Monovolumen</option>
-              <option value="coupe">Coupé</option>
-              <option value="cabrio">Cabrio</option>
-              <option value="furgoneta">Furgoneta</option>
-              <option value="industrial">Industrial</option>
-            </select>
-          </label>
-          <label class="campo">
+          <fieldset class="opciones campo--publicar campo--ancho">
+            <legend class="campo__nombre">Tipo</legend>
+            <label><input type="radio" name="carroceria" value="utilitario"><span>Utilitario</span></label>
+            <label><input type="radio" name="carroceria" value="berlina"><span>Berlina</span></label>
+            <label><input type="radio" name="carroceria" value="familiar"><span>Familiar</span></label>
+            <label><input type="radio" name="carroceria" value="suv"><span>SUV</span></label>
+            <label><input type="radio" name="carroceria" value="monovolumen"><span>Monovolumen</span></label>
+            <label><input type="radio" name="carroceria" value="coupe"><span>Coupé</span></label>
+            <label><input type="radio" name="carroceria" value="cabrio"><span>Cabrio</span></label>
+            <label><input type="radio" name="carroceria" value="furgoneta"><span>Furgoneta</span></label>
+            <label><input type="radio" name="carroceria" value="industrial"><span>Industrial</span></label>
+          </fieldset>
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Puertas</span>
             <input type="number" name="puertas" min="2" max="6">
           </label>
-          <label class="campo">
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Plazas</span>
             <input type="number" name="plazas" min="1" max="9">
           </label>
-          <label class="campo">
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Color exterior</span>
             <input name="color_exterior">
           </label>
-          <label class="campo">
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Tapicería</span>
             <input name="tapiceria" placeholder="Tela negra">
           </label>
-          <label class="campo">
+          <label class="campo campo--publicar">
             <span class="campo__nombre">Llantas</span>
             <input name="llantas" placeholder='18" aleación'>
           </label>
         </div>
       </fieldset>
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="equipamiento">
         <legend class="oculto">Equipamiento</legend>
         <div class="bloque__cabeza">
+          <span class="bloque__n">05</span>
           <h2>Equipamiento</h2>
-          <p class="nota">Marca lo que lleva. El cliente podrá filtrar por esto en la web.</p>
+          <p class="nota">Toca lo que lleva. El cliente podrá filtrar por esto en la web.</p>
         </div>
-        <!-- Lista provisional. La definitiva sale de la ficha T06 (docs/datos/extras.csv). -->
+        <!-- Lista provisional. La definitiva sale de la ficha T06 (docs/datos/extras.csv).
+             Cada etiqueta es una casilla: el contador de cada grupo se calcula solo con CSS. -->
         <div class="extras-rejilla">
           <div class="grupo-extras">
             <h3>Confort</h3>
-            <label class="casilla"><input type="checkbox" name="extras" value="climatizador"> Climatizador</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="climatizador_bizona"> Climatizador bizona</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="control_de_crucero"> Control de crucero</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="control_de_crucero_adaptativo"> Control de crucero adaptativo</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="asientos_calefactables"> Asientos calefactables</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="asientos_electricos"> Asientos eléctricos</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="volante_multifuncion"> Volante multifunción</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="arranque_sin_llave"> Arranque sin llave</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="porton_electrico"> Portón eléctrico</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="techo_solar"> Techo solar</label>
+            <div class="chips">
+              <label class="chip"><input type="checkbox" name="extras" value="climatizador"><span>Climatizador</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="climatizador_bizona"><span>Climatizador bizona</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="control_de_crucero"><span>Control de crucero</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="control_de_crucero_adaptativo"><span>Control de crucero adaptativo</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="asientos_calefactables"><span>Asientos calefactables</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="asientos_electricos"><span>Asientos eléctricos</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="volante_multifuncion"><span>Volante multifunción</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="arranque_sin_llave"><span>Arranque sin llave</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="porton_electrico"><span>Portón eléctrico</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="techo_solar"><span>Techo solar</span></label>
+            </div>
+            <span class="grupo-extras__n" aria-hidden="true"></span>
           </div>
           <div class="grupo-extras">
             <h3>Seguridad</h3>
-            <label class="casilla"><input type="checkbox" name="extras" value="sensores_de_aparcamiento_delanteros"> Sensores de aparcamiento delanteros</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="sensores_de_aparcamiento_traseros"> Sensores de aparcamiento traseros</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="camara_de_marcha_atras"> Cámara de marcha atrás</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="camara_360"> Cámara 360°</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="aviso_de_angulo_muerto"> Aviso de ángulo muerto</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="aviso_de_cambio_de_carril"> Aviso de cambio de carril</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="frenada_de_emergencia"> Frenada de emergencia</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="detector_de_fatiga"> Detector de fatiga</label>
+            <div class="chips">
+              <label class="chip"><input type="checkbox" name="extras" value="sensores_de_aparcamiento_delanteros"><span>Sensores de aparcamiento delanteros</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="sensores_de_aparcamiento_traseros"><span>Sensores de aparcamiento traseros</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="camara_de_marcha_atras"><span>Cámara de marcha atrás</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="camara_360"><span>Cámara 360°</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="aviso_de_angulo_muerto"><span>Aviso de ángulo muerto</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="aviso_de_cambio_de_carril"><span>Aviso de cambio de carril</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="frenada_de_emergencia"><span>Frenada de emergencia</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="detector_de_fatiga"><span>Detector de fatiga</span></label>
+            </div>
+            <span class="grupo-extras__n" aria-hidden="true"></span>
           </div>
           <div class="grupo-extras">
             <h3>Multimedia</h3>
-            <label class="casilla"><input type="checkbox" name="extras" value="navegador"> Navegador</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="apple_carplay"> Apple CarPlay</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="android_auto"> Android Auto</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="bluetooth"> Bluetooth</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="pantalla_tactil"> Pantalla táctil</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="cargador_inalambrico"> Cargador inalámbrico</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="equipo_de_sonido_premium"> Equipo de sonido premium</label>
+            <div class="chips">
+              <label class="chip"><input type="checkbox" name="extras" value="navegador"><span>Navegador</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="apple_carplay"><span>Apple CarPlay</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="android_auto"><span>Android Auto</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="bluetooth"><span>Bluetooth</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="pantalla_tactil"><span>Pantalla táctil</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="cargador_inalambrico"><span>Cargador inalámbrico</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="equipo_de_sonido_premium"><span>Equipo de sonido premium</span></label>
+            </div>
+            <span class="grupo-extras__n" aria-hidden="true"></span>
           </div>
           <div class="grupo-extras">
             <h3>Exterior</h3>
-            <label class="casilla"><input type="checkbox" name="extras" value="faros_led"> Faros LED</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="faros_de_xenon"> Faros de xenón</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="llantas_de_aleacion"> Llantas de aleación</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="barras_de_techo"> Barras de techo</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="enganche_de_remolque"> Enganche de remolque</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="lunas_tintadas"> Lunas tintadas</label>
-            <label class="casilla"><input type="checkbox" name="extras" value="retrovisores_plegables_electricos"> Retrovisores plegables eléctricos</label>
+            <div class="chips">
+              <label class="chip"><input type="checkbox" name="extras" value="faros_led"><span>Faros LED</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="faros_de_xenon"><span>Faros de xenón</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="llantas_de_aleacion"><span>Llantas de aleación</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="barras_de_techo"><span>Barras de techo</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="enganche_de_remolque"><span>Enganche de remolque</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="lunas_tintadas"><span>Lunas tintadas</span></label>
+              <label class="chip"><input type="checkbox" name="extras" value="retrovisores_plegables_electricos"><span>Retrovisores plegables eléctricos</span></label>
+            </div>
+            <span class="grupo-extras__n" aria-hidden="true"></span>
           </div>
         </div>
       </fieldset>
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="papeles">
         <legend class="oculto">Estado y papeles</legend>
         <div class="bloque__cabeza">
+          <span class="bloque__n">06</span>
           <h2>Estado y papeles</h2>
           <p class="nota">Nada de esto sale en la web salvo la garantía y el vídeo.</p>
         </div>
@@ -311,8 +338,9 @@
             <input type="date" name="ultima_revision">
           </label>
           <label class="campo">
-            <span class="campo__nombre">Garantía (meses)</span>
-            <input type="number" name="garantia_meses" min="12" value="12">
+            <span class="campo__nombre">Garantía</span>
+            <span class="con-unidad" data-unidad="meses"><input type="number" name="garantia_meses" min="12" value="12"></span>
+            <span class="campo__ayuda">12 como mínimo</span>
           </label>
           <label class="campo">
             <span class="campo__nombre">Número de llaves</span>
@@ -329,88 +357,110 @@
         </div>
       </fieldset>
 
-      <fieldset class="bloque">
+      <fieldset class="bloque" id="precio">
         <legend class="oculto">Precio de venta</legend>
         <div class="bloque__cabeza">
+          <span class="bloque__n">07</span>
           <h2>Precio de venta</h2>
-          <p class="nota">Sale en la web y en los portales. En euros.</p>
+          <p class="nota">Sale en la web y en los portales.</p>
         </div>
         <div class="rejilla">
-          <label class="campo">
+          <label class="campo campo--publicar campo--precio">
             <span class="campo__nombre">Precio de venta</span>
-            <input type="number" name="pvp_cent" min="0" step="0.01">
+            <span class="con-unidad" data-unidad="€"><input type="number" name="pvp_cent" min="0" step="0.01"></span>
           </label>
           <label class="campo">
             <span class="campo__nombre">Precio si financia</span>
-            <input type="number" name="precio_financiado_cent" min="0" step="0.01">
+            <span class="con-unidad" data-unidad="€"><input type="number" name="precio_financiado_cent" min="0" step="0.01"></span>
+            <span class="campo__ayuda">Si no tiene, déjalo vacío y no sale</span>
           </label>
         </div>
       </fieldset>
 
-      <fieldset class="bloque bloque--dinero">
+      <!-- DINERO. Solo gerencia: al comercial no le llega este bloque.
+           Según «El coche es» (bloque 02) se ve el precio de compra (nuestro) o los datos
+           del dueño (depósito). Lo hace el CSS sin JavaScript. Al conectar, se envían solo
+           los campos que se ven. -->
+      <fieldset class="bloque bloque--dinero" id="dinero">
         <legend class="oculto">Dinero · solo gerencia</legend>
         <div class="bloque__cabeza">
+          <span class="bloque__n">08</span>
           <h2>Dinero</h2>
-          <p class="nota">Solo gerencia. El comercial no ve este bloque. En euros.</p>
+          <p class="nota">Solo gerencia. El comercial no ve este bloque.</p>
         </div>
         <div class="rejilla">
-          <label class="campo">
+          <label class="campo solo-propio">
             <span class="campo__nombre">Precio de compra</span>
-            <input type="number" name="precio_compra_cent" min="0" step="0.01">
-            <span class="campo__ayuda">Si el coche es nuestro</span>
+            <span class="con-unidad" data-unidad="€"><input type="number" name="precio_compra_cent" min="0" step="0.01"></span>
           </label>
-          <label class="campo">
+          <label class="campo solo-deposito">
             <span class="campo__nombre">Dueño del coche</span>
             <input name="propietario_nombre">
-            <span class="campo__ayuda">Si está en depósito</span>
           </label>
-          <label class="campo">
+          <label class="campo solo-deposito">
             <span class="campo__nombre">Teléfono del dueño</span>
             <input type="tel" name="propietario_telefono">
           </label>
-          <label class="campo">
+          <label class="campo solo-deposito">
             <span class="campo__nombre">Pactado con el dueño</span>
-            <input type="number" name="pago_propietario_cent" min="0" step="0.01">
+            <span class="con-unidad" data-unidad="€"><input type="number" name="pago_propietario_cent" min="0" step="0.01"></span>
             <span class="campo__ayuda">Lo que se le paga cuando se vende</span>
           </label>
           <label class="campo">
             <span class="campo__nombre">Transporte</span>
-            <input type="number" name="coste_transporte_cent" min="0" step="0.01" value="0">
+            <span class="con-unidad" data-unidad="€"><input type="number" name="coste_transporte_cent" min="0" step="0.01" value="0"></span>
           </label>
           <label class="campo">
             <span class="campo__nombre">Taller</span>
-            <input type="number" name="coste_taller_cent" min="0" step="0.01" value="0">
+            <span class="con-unidad" data-unidad="€"><input type="number" name="coste_taller_cent" min="0" step="0.01" value="0"></span>
           </label>
           <label class="campo">
             <span class="campo__nombre">Preparación y limpieza</span>
-            <input type="number" name="coste_preparacion_cent" min="0" step="0.01" value="0">
+            <span class="con-unidad" data-unidad="€"><input type="number" name="coste_preparacion_cent" min="0" step="0.01" value="0"></span>
           </label>
           <label class="campo">
             <span class="campo__nombre">Impuestos y gestoría</span>
-            <input type="number" name="coste_impuestos_cent" min="0" step="0.01" value="0">
-          </label>
-          <label class="campo">
-            <span class="campo__nombre">Régimen de IVA</span>
-            <select name="regimen_iva">
-              <option value="REBU">REBU</option>
-              <option value="deducible">IVA deducible</option>
-            </select>
+            <span class="con-unidad" data-unidad="€"><input type="number" name="coste_impuestos_cent" min="0" step="0.01" value="0"></span>
           </label>
           <label class="campo">
             <span class="campo__nombre">Precio mínimo aceptable</span>
-            <input type="number" name="precio_minimo_cent" min="0" step="0.01">
+            <span class="con-unidad" data-unidad="€"><input type="number" name="precio_minimo_cent" min="0" step="0.01"></span>
             <span class="campo__ayuda">No sale en ningún sitio. Es tu límite al negociar.</span>
           </label>
+          <fieldset class="opciones campo--publicar">
+            <legend class="campo__nombre">Régimen de IVA</legend>
+            <label><input type="radio" name="regimen_iva" value="REBU" checked><span>REBU</span></label>
+            <label><input type="radio" name="regimen_iva" value="deducible"><span>IVA deducible</span></label>
+          </fieldset>
+
+          <!-- RESUMEN. Al conectar se rellena mientras Jaume escribe.
+               Coste total = compra (o pactado con el dueño) + transporte + taller + preparación + impuestos.
+               Margen bruto = precio de venta − coste total. Si sale negativo: clase resumen-dinero__dato--negativo. -->
+          <div class="resumen-dinero">
+            <div class="resumen-dinero__dato"><span>Coste total</span><output class="cifra">—</output></div>
+            <div class="resumen-dinero__dato resumen-dinero__dato--margen"><span>Margen bruto</span><output class="cifra">—</output></div>
+            <p class="nota">El margen neto espera a la regla de REBU o IVA deducible que nos tiene que dar el cliente.</p>
+          </div>
         </div>
       </fieldset>
 
+      <!-- BARRA DE GUARDAR. Siempre visible abajo.
+           Al conectar: «Para guardar» lista los obligatorios vacíos (o pone «listo»), y la barra
+           cuenta los datos para publicar rellenos de los 24 (--p = rellenos ÷ 24). -->
       <div class="barra-guardar">
-        <span class="nota">Con * es obligatorio para guardar</span>
+        <div class="barra-guardar__progreso">
+          <p class="barra-guardar__linea"><strong>Para guardar:</strong> faltan matrícula, marca y modelo</p>
+          <p class="barra-guardar__linea barra-guardar__linea--suave">
+            <span class="barra-guardar__barra" style="--p: .04" aria-hidden="true"></span>
+            Para publicar: <span class="cifra">1 de 24</span> datos, y 15 fotos desde la ficha
+          </p>
+        </div>
         <a class="boton boton--secundario" href="coches.html">Cancelar</a>
         <button class="boton" type="submit">Guardar coche</button>
       </div>
 
     </form>
+    </div>
   </main>
 </div>
 </body>
