@@ -123,17 +123,17 @@ Hecho en el **PR #1** («Cimientos de la API»), cuando se acepte:
 
 Queda:
 - Aceptar el PR #1 y comprobar que los tres arrancáis con Node 22.
-- Arreglo pendiente del PR: al editar un coche publicado o reservado, volver a comprobar los obligatorios (hoy se le puede vaciar el precio y sigue publicado).
-- Cerrar el esquema con la ficha real: lista cerrada de extras (tabla nueva, en `0002_...`) y **proveedor** para los coches propios. El PR solo guarda el dueño de los que están en depósito.
-- `npm run seed` con 10 coches repartidos por estados y los dos usuarios de prueba. Son los datos con los que se trabaja hasta la migración. **Para el lunes 5 a mediodía.**
-- `docs/api.md` con el contrato real. Ojo: los importes van en céntimos (`*_cent`) y `PATCH /estado` devuelve el coche.
+- ~~Arreglo pendiente del PR~~: un coche que sale en la web ya no se puede quedar sin los datos de publicar al editarlo (1-oct).
+- Cerrar el esquema con la ficha real. ~~Lista cerrada de extras~~ (migración `0003`, provisional hasta la T06) y ~~proveedor~~ de los coches propios (`0004`) hechos el 1-oct. Falta repasarlo con la ficha real del cliente (B6).
+- ~~`npm run seed`~~: 12 coches, fotos, una reserva, contactos y los dos usuarios en `api/data/pruebas.db`. Con `npm run dev:pruebas` se arranca el panel contra esa base.
+- ~~`docs/api.md`~~ con el contrato real.
 
 **Semana 2**
 - Levantar el **servidor de pruebas** con HTTPS y desplegar `develop` en él. David lo necesita para probar el plugin en un WordPress de verdad.
-- Reservas: crear, cancelar y caducar solas a los N días. Reservar pasa el coche a «Reservado» y cancelar lo devuelve a «Publicado». Una reserva activa por coche como máximo.
+- ~~Reservas~~: crear y cancelar (David, PR #3) y caducar solas (1-oct).
 - Margen neto con la regla de IVA del cliente y el caso depósito. Tests con los números de la ficha real.
-- Tabla `contactos` para David.
-- Rutas de usuarios para la página «Usuarios» del panel, solo para gerencia: listar, añadir, cambiar la contraseña y desactivar o reactivar (`GET/POST /api/usuarios`, `PATCH /api/usuarios/:id`). Nadie puede desactivarse a sí mismo. Hoy los usuarios solo se crean desde la terminal con `npm run usuario`.
+- ~~Tabla `contactos`~~ y `POST /api/contactos` público para los formularios de la web (1-oct). Falta que David conecte los formularios.
+- ~~Rutas de usuarios~~ y página «Usuarios» del panel conectada (1-oct).
 
 **Semana 3**
 - Avisos: coche con más de 60 y 90 días, ITV que caduca en 30 días, vendido que sigue publicado en algún canal, contacto sin atender en 24 horas. Correo diario a quien diga el cliente y la misma lista en un endpoint para el panel.
