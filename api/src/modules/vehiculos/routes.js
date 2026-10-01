@@ -4,7 +4,8 @@ import { ESTADOS, esEstadoValido } from '../estados.js';
 import { costeTotal, margenBruto } from '../margen.js';
 import { registrar } from '../auditoria.js';
 import { limpiarDatos, quitarDinero } from './campos.js';
-import { motivosParaNoEntrar } from './reglas.js';
+import { motivosParaNoEntrar, enLaWeb, datosQueFaltan, cierraLaReserva } from './reglas.js';
+import { caducarReservas, cerrarReserva } from './reservas.js';
 import { emitirCambioEstado } from './eventos.js';
 
 const esGerencia = (usuario) => usuario?.rol === 'gerencia';
@@ -26,6 +27,13 @@ export function rutasVehiculos(db) {
       (SELECT COUNT(*) FROM fotos f WHERE f.vehiculo_id = v.id) AS n_fotos
     FROM vehiculos v`;
   const leer = db.prepare(`${SELECT} WHERE v.id = ?`);
+
+  // Antes de leer o tocar un coche, las reservas vencidas se cierran: así nadie ve «Reservado»
+  // en un coche cuya reserva ya caducó, aunque el aviso horario del servidor aún no haya pasado.
+  r.use((_req, _res, next) => {
+    caducarReservas(db);
+    next();
+  });
 
   r.get('/estados', (_req, res) => res.json(ESTADOS));
 
@@ -118,9 +126,13 @@ export function rutasVehiculos(db) {
     if (!v) return res.status(404).json({ error: 'No existe' });
     const reserva = reservaActiva.get(v.id);
     if (!reserva) return res.status(404).json({ error: 'Este coche no tiene reserva activa' });
+    // Duda C6: se apunta si la señal se devolvió. Sin dato, queda sin apuntar.
+    const senalDevuelta = req.body?.senal_devuelta ?? null;
+    if (senalDevuelta !== null && typeof senalDevuelta !== 'boolean') {
+      return res.status(400).json({ error: 'senal_devuelta tiene que ser true o false' });
+    }
     db.transaction(() => {
-      db.prepare('UPDATE reservas SET activa = 0 WHERE id = ?').run(reserva.id);
-      registrar(db, { usuarioId: req.usuario.id, entidad: 'reserva', entidadId: reserva.id, accion: 'cancelacion' });
+      cerrarReserva(db, reserva, 'cancelada', { usuarioId: req.usuario.id, senalDevuelta });
       if (v.estado === 'reservado') {
         db.prepare("UPDATE vehiculos SET estado = 'publicado', actualizado_en = datetime('now') WHERE id = ?").run(v.id);
         db.prepare('INSERT INTO historial_estados (vehiculo_id, de, a, usuario_id) VALUES (?,?,?,?)').run(v.id, 'reservado', 'publicado', req.usuario.id);
@@ -164,6 +176,17 @@ export function rutasVehiculos(db) {
     const columnas = Object.keys(datos);
     if (!columnas.length) return res.status(400).json({ error: 'Sin cambios' });
 
+    // Un coche que está en la web (publicado, reservado, vendido) tiene que seguir completo.
+    if (enLaWeb(antes.estado)) {
+      const faltan = datosQueFaltan({ ...antes, ...datos });
+      if (faltan.length) {
+        return res.status(409).json({
+          error: `Está en la web: no se puede dejar sin ${faltan.join(', ')}. Para vaciarlo, sácalo antes de la web.`,
+          motivos: [`Faltan datos para estar en la web: ${faltan.join(', ')}`],
+        });
+      }
+    }
+
     db.transaction(() => {
       db.prepare(
         `UPDATE vehiculos SET ${columnas.map((c) => `${c} = ?`).join(', ')}, actualizado_en = datetime('now') WHERE id = ?`,
@@ -185,6 +208,9 @@ export function rutasVehiculos(db) {
     if (motivos.length) return res.status(409).json({ error: motivos.join('. '), motivos });
 
     db.transaction(() => {
+      // Vender un coche reservado consume su reserva
+      const reserva = reservaActiva.get(v.id);
+      if (reserva && cierraLaReserva(estado)) cerrarReserva(db, reserva, 'vendida', { usuarioId: req.usuario.id });
       db.prepare("UPDATE vehiculos SET estado = ?, actualizado_en = datetime('now') WHERE id = ?").run(estado, v.id);
       db.prepare('INSERT INTO historial_estados (vehiculo_id, de, a, usuario_id) VALUES (?,?,?,?)').run(v.id, v.estado, estado, req.usuario.id);
       registrar(db, { usuarioId: req.usuario.id, entidad: 'vehiculo', entidadId: v.id, accion: 'estado', antes: { estado: v.estado }, despues: { estado } });

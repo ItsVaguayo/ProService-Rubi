@@ -138,6 +138,8 @@ test('no se publica sin datos obligatorios ni con menos de 15 fotos', () =>
 test('reservado: hace falta la reserva y solo puede haber una activa', () =>
   conServidor(async ({ db, pide }) => {
     const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    meterFotos(db, id, 15); // solo se reserva un coche que puede estar en la web
+    await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } });
     const sinReserva = await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'reservado' } });
     assert.equal(sinReserva.status, 409);
 

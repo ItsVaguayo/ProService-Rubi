@@ -425,7 +425,9 @@ function pintarReserva(v, reserva) {
       api(`/vehiculos/${v.id}/estado`, { method: 'PATCH', body: { estado: 'vendido' } }).then(() => location.reload(), (e) => mostrarErrores($('.error--lista'), e, 'No se puede vender:')));
     $('[data-cancelar]', caja).addEventListener('click', async () => {
       if (!confirm('¿Cancelar la reserva? El coche vuelve a «Publicado».')) return;
-      await api(`/vehiculos/${v.id}/reserva`, { method: 'DELETE' }).then(() => location.reload(), (e) => mostrarErrores($('.error--lista'), e, 'No se pudo cancelar:'));
+      // Duda C6: se apunta si la señal se devolvió
+      const devuelta = confirm(`¿Se le devuelve la señal de ${euros(reserva.senal_cent)} a ${reserva.cliente}?\n\nAceptar: sí, se devuelve.\nCancelar: no se devuelve.`);
+      await api(`/vehiculos/${v.id}/reserva`, { method: 'DELETE', body: { senal_devuelta: devuelta } }).then(() => location.reload(), (e) => mostrarErrores($('.error--lista'), e, 'No se pudo cancelar:'));
     });
     return;
   }
