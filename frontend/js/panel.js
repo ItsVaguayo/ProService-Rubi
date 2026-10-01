@@ -97,7 +97,9 @@ function avisoMaqueta() {
   aviso.setAttribute('role', 'note');
   aviso.style.cssText = 'padding:10px 14px;border-radius:6px;background:var(--aviso-fondo);color:var(--aviso);font-size:.875rem;margin:0 0 16px';
   aviso.innerHTML = '<strong>Maqueta.</strong> Esta pantalla aún no está conectada a la API: los datos son de ejemplo.';
-  main.prepend(aviso);
+  // Debajo de la banda negra: encima, la banda (que sube con margen negativo) lo taparía
+  const banda = main.querySelector(':scope > .cabecera--portada, :scope > .portada, :scope > .ficha-cabecera');
+  banda ? banda.after(aviso) : main.prepend(aviso);
 }
 
 // --- Menú común --------------------------------------------------------------------------------
@@ -475,6 +477,20 @@ async function paginaAlta(usuario) {
     const cifraPublicar = form.querySelector('.barra-guardar__linea--suave .cifra');
     if (cifraPublicar) cifraPublicar.textContent = `${hechos} de ${OBLIGATORIOS_PUBLICAR.length}`;
     form.querySelector('.barra-guardar__barra')?.style.setProperty('--p', (hechos / OBLIGATORIOS_PUBLICAR.length).toFixed(2));
+
+    // Índice lateral: cuántos datos para publicar faltan en cada bloque, o el check si no falta ninguno
+    for (const enlace of document.querySelectorAll('.indice-alta a')) {
+      const bloque = form.querySelector(enlace.getAttribute('href'));
+      if (!bloque) continue;
+      const deBloque = [...new Set([...bloque.querySelectorAll('[name]')].map((c) => c.name))].filter((n) => OBLIGATORIOS_PUBLICAR.includes(n));
+      const pendientes = deBloque.filter((n) => !lleno(n)).length;
+      let cuenta = enlace.querySelector('small');
+      if (pendientes) {
+        if (!cuenta) enlace.append(cuenta = document.createElement('small'));
+        cuenta.textContent = pendientes;
+      } else cuenta?.remove();
+      enlace.classList.toggle('indice-alta__hecho', deBloque.length > 0 && !pendientes);
+    }
   };
   form.addEventListener('input', progreso);
   form.addEventListener('change', progreso);
