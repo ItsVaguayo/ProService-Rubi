@@ -20,7 +20,10 @@ class ProService_Ajustes
     // Los precios están en euros (el conector ya convierte los céntimos). El estado guarda el texto de
     // su web: «En venta», «Reservado» o «Vendido».
     // «fotos» es la galería: lista de ids de adjuntos, o texto con los ids separados por comas.
+    // «referencia» (PS-00001) la necesita el formulario de la ficha para decir a la API de qué coche
+    // se pregunta. En la web real ese campo hay que crearlo (duda B16).
     const MAPA_POR_DEFECTO = [
+        'referencia'             => 'referencia',
         'pvp_cent'               => 'precio',
         'precio_financiado_cent' => 'precio_financiado',
         'cuota'                  => 'cuota',
@@ -58,6 +61,9 @@ class ProService_Ajustes
             // Ficha pública con el diseño de frontend/web. En proservicerubi.com manda su plantilla: va apagada.
             'ficha_propia'   => false,
             'pagina_listado' => '',
+            // Dirección de la API de la plataforma (https://stock.proservicerubi.com). Sin ella, la ficha
+            // del plugin no enseña el formulario de contacto.
+            'api_url'        => '',
         ];
         $ajustes = array_merge($por_defecto, is_array($guardado) ? $guardado : []);
         // Mapas guardados por la versión 0.3 (con «meta» y «formato»): se quedan con el nombre del campo.
@@ -78,6 +84,13 @@ class ProService_Ajustes
     public static function guardar(array $nuevos)
     {
         update_option(self::OPCION, array_merge(get_option(self::OPCION, []) ?: [], $nuevos), false);
+    }
+
+    /** Dirección donde el formulario de la ficha manda los contactos, o '' si no está configurada. */
+    public static function url_contactos()
+    {
+        $base = untrailingslashit((string) self::get('api_url'));
+        return $base !== '' ? $base . '/api/contactos' : '';
     }
 
     /** Campo de la web donde está un dato, o null si no está mapeado. */

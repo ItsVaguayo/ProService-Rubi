@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Pro Service Buscador
  * Description: Buscador con filtros y ficha opcional para los coches de proservicerubi.com. Los coches los publica la plataforma de stock por la API REST de WordPress.
- * Version: 0.4.1
+ * Version: 0.5.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Equipo ECS
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PROSERVICE_VERSION', '0.4.1');
+define('PROSERVICE_VERSION', '0.5.0');
 define('PROSERVICE_DIR', plugin_dir_path(__FILE__));
 define('PROSERVICE_URL', plugin_dir_url(__FILE__));
 

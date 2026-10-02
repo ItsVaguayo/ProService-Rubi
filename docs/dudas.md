@@ -41,6 +41,7 @@ Cuando una duda se cierre, se marca con ✅, se anota la respuesta y la fecha, y
 | B13 | La cuota «Desde X €/mes» de cada coche, ¿quién la calcula hoy y con qué tipo de interés y plazo? | 5.7, E2 | Es un dato que meten a mano. La plataforma no lo calcula sin el tipo de interés, así que en los coches nuevos esa línea no saldría. | La cuota se sigue metiendo a mano en WordPress y la plataforma no la toca. | Jaume |
 | B14 | El formulario de «Solicita tu prueba gratuita» de la web, ¿adónde manda las solicitudes hoy (correo, CRM, nada)? | 5.6, 8.1, 8.6 | Es el mismo contacto que queremos que entre en la plataforma. Si ya llega a algún sitio, hay que conectarlo y no duplicarlo. | Se deja como está y los contactos de la plataforma entran por los formularios nuevos. | Francesc |
 | B15 | Aviso, no pregunta: el filtro de «Potencia mínima» de su página /coches/ no devuelve nada (con 130 CV debería salir el Kia Niro de 138 CV). El de precio funciona. | 5.4 | Un cliente que filtra por potencia ve que no hay coches. | Se lo decimos a Francesc para que lo revise. | Francesc |
+| B16 | ¿Puede Francesc crear un campo de texto `referencia` en el grupo de ACF de «coches»? La plataforma escribe ahí la referencia de cada coche (PS-00031). | 5.6, 8.1 | Con ella, un contacto que llega por el formulario de la ficha queda unido a su coche en el panel. Sin ella llega igual, con el título y la dirección del coche escritos en el mensaje. | El formulario pone el coche en el mensaje. | Francesc |
 
 ---
 

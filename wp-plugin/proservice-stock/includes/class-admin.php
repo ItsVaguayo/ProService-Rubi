@@ -61,6 +61,11 @@ class ProService_Admin
                         <td><input id="ps-wa" name="whatsapp" class="regular-text" inputmode="numeric" value="<?php echo esc_attr($a['whatsapp']); ?>" placeholder="34600000000"></td>
                     </tr>
                     <tr>
+                        <th scope="row"><label for="ps-api">Dirección de la API</label></th>
+                        <td><input id="ps-api" name="api_url" type="url" class="regular-text" value="<?php echo esc_attr($a['api_url']); ?>" placeholder="https://stock.proservicerubi.com">
+                            <p class="description">Adonde manda el formulario de la ficha («Pregúntanos por este coche»). Sin ella, la ficha del plugin no enseña el formulario. La API tiene que tener este dominio en <code>CORS_ORIGENES</code>.</p></td>
+                    </tr>
+                    <tr>
                         <th scope="row">Ficha del coche</th>
                         <td>
                             <label><input name="ficha_propia" type="checkbox" value="1" <?php checked($a['ficha_propia']); ?>> Usar la ficha del plugin (diseño de frontend/web)</label>
@@ -134,6 +139,7 @@ class ProService_Admin
             'whatsapp'       => preg_replace('/\D/', '', wp_unslash($_POST['whatsapp'] ?? '')),
             'ficha_propia'   => !empty($_POST['ficha_propia']),
             'pagina_listado' => esc_url_raw(wp_unslash($_POST['pagina_listado'] ?? ''), ['http', 'https']),
+            'api_url'        => untrailingslashit(esc_url_raw(wp_unslash($_POST['api_url'] ?? ''), ['http', 'https'])),
             'mapa'           => $mapa,
         ]);
         ProService_Buscador::olvidar_opciones();

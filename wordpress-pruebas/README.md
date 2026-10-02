@@ -18,6 +18,8 @@ Un WordPress aparte de la aplicación que se comporta como proservicerubi.com: l
 
 Los **nombres** de los campos ACF (`precio`, `cuota`, `estado`, `potencia`, `galeria`…) son una suposición sacada de sus etiquetas y de los parámetros de su filtro. Los reales se verán con el diagnóstico en cuanto haya credenciales y el grupo esté expuesto.
 
+**Un campo que su web no tiene:** `referencia` (texto, `PS-00031`). Lo añade la imitación para que el formulario de la ficha del plugin diga a la API de qué coche se pregunta. En la real hay que pedir a Francesc que lo cree en el grupo (duda B16); sin él, el conector se lo salta y el formulario pone el coche en el mensaje.
+
 ## Lo que se vio en su web y conviene saber
 
 - **El título grande de la ficha y el «Conoce el …» salen vacíos** en los coches revisados, y el **año** también. Su plantilla lee campos que hoy nadie rellena. En la réplica se supone que el título es el campo `modelo`.
@@ -83,6 +85,19 @@ npm run wordpress -- estado             # qué post es cada coche
 ```
 
 Desde el panel (solo gerencia): `GET /api/wordpress/diagnostico`, `POST /api/wordpress/sincronizar`, `GET /api/wordpress/estado` y `POST /api/wordpress/vincular`. Con `WP_SINCRONIZAR_MINUTOS=5` la API publica sola cada 5 minutos.
+
+## Probar el formulario de la ficha
+
+La ficha del plugin va apagada en la imitación (manda la de su web). Para probar su formulario contra la API de `npm run dev:pruebas`:
+
+```bash
+CORS_ORIGENES=http://localhost:8080 npm run dev:pruebas      # la API deja pasar a la réplica
+wp --path=~/wp-proservice/web eval 'ProService_Ajustes::guardar(["api_url" => "http://localhost:3001", "ficha_propia" => true]);'
+cd api && set -a && . ~/wp-proservice/web-credenciales.env && set +a
+DB_PATH=./data/pruebas.db UPLOADS_PATH=./data/uploads-pruebas npm run wordpress -- sincronizar   # hasta «pendientes 0»
+```
+
+Abre una ficha (por ejemplo http://localhost:8080/coches/volkswagen-golf-2-0-tdi-life/), envía el formulario y el contacto sale en la página Contactos del panel con su coche. La API admite 5 envíos por IP cada 10 minutos; al reiniciar `dev:pruebas` el contador vuelve a cero.
 
 ## Para la web real
 
