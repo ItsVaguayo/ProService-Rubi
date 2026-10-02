@@ -32,7 +32,7 @@ $marca_modelo = trim(get_the_title());
             <?php if (count($c['fotos']) > 1) : ?>
                 <div class="galeria__miniaturas">
                     <?php foreach ($c['fotos'] as $n => $foto) : ?>
-                        <img src="<?php echo esc_url($foto['mini']); ?>" data-grande="<?php echo esc_url($foto['grande']); ?>" alt="<?php echo esc_attr(sprintf('Foto %d de %d', $n + 1, count($c['fotos']))); ?>" loading="lazy" tabindex="0" role="button">
+                        <img<?php echo $n === 0 ? ' class="activa"' : ''; ?> src="<?php echo esc_url($foto['mini']); ?>" data-grande="<?php echo esc_url($foto['grande']); ?>" alt="<?php echo esc_attr(sprintf('Foto %d de %d', $n + 1, count($c['fotos']))); ?>" loading="lazy" tabindex="0" role="button">
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
@@ -134,12 +134,62 @@ $marca_modelo = trim(get_the_title());
 </div>
 
 <script>
-/* Galería: al pulsar una miniatura, pasa a la foto grande. Sin JavaScript se ve la primera. */
-document.querySelectorAll('.ps-web .galeria__miniaturas img').forEach(function (mini) {
-    function mostrar() { document.querySelector('.ps-web [data-ps-grande]').src = mini.dataset.grande; }
-    mini.addEventListener('click', mostrar);
-    mini.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); mostrar(); } });
-});
+/* Galería: al pulsar una miniatura, la foto grande cambia con un fundido (crossfade). Con ratón, al
+   pasar por encima de la foto grande se amplía y sigue al cursor (lupa). Sin JavaScript se ve la primera. */
+(function () {
+    var galeria = document.querySelector('.ps-web .galeria');
+    if (!galeria) return;
+    var marco = galeria.querySelector('.galeria__grande');
+    var grande = marco.querySelector('img');
+    var minis = galeria.querySelectorAll('.galeria__miniaturas img');
+    var sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var capaActual = null;
+
+    function mostrar(mini) {
+        var src = mini.getAttribute('data-grande') || mini.src;
+        minis.forEach(function (m) { m.classList.toggle('activa', m === mini); });
+        if (capaActual) { capaActual.remove(); capaActual = null; }
+        if (grande.src === new URL(src, location.href).href) return;
+        if (sinMovimiento) { grande.src = src; return; }
+
+        // La foto nueva se carga en una capa encima; cuando ya está, se funde y pasa a ser la de abajo
+        var capa = document.createElement('img');
+        capa.className = 'galeria__capa';
+        capa.alt = '';
+        capa.setAttribute('aria-hidden', 'true');
+        capaActual = capa;
+        capa.onload = function () {
+            if (capaActual !== capa) return;
+            marco.appendChild(capa);
+            capa.getBoundingClientRect(); // que el navegador pinte la capa transparente antes de fundirla
+            capa.classList.add('galeria__capa--visible');
+            setTimeout(function () {
+                if (capaActual !== capa) return;
+                grande.src = src;
+                (grande.decode ? grande.decode() : Promise.resolve()).catch(function () {}).then(function () {
+                    if (capaActual === capa) { capa.remove(); capaActual = null; }
+                });
+            }, 300);
+        };
+        capa.src = src;
+    }
+
+    minis.forEach(function (mini) {
+        mini.addEventListener('click', function () { mostrar(mini); });
+        mini.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); mostrar(mini); } });
+    });
+
+    // Lupa: solo con ratón (en el móvil, la foto se ve entera)
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        marco.addEventListener('mousemove', function (e) {
+            var r = marco.getBoundingClientRect();
+            marco.style.setProperty('--lupa-x', ((e.clientX - r.left) / r.width * 100) + '%');
+            marco.style.setProperty('--lupa-y', ((e.clientY - r.top) / r.height * 100) + '%');
+        });
+        marco.addEventListener('mouseenter', function () { marco.classList.add('galeria__grande--lupa'); });
+        marco.addEventListener('mouseleave', function () { marco.classList.remove('galeria__grande--lupa'); });
+    }
+})();
 </script>
 <?php
 get_footer();

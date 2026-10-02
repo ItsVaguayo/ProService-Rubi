@@ -35,19 +35,19 @@
   <div class="ficha-web">
 
     <!-- GALERÍA. La primera foto grande y el resto en miniatura, en el orden fijo.
-         Para que cambie la foto grande al pulsar una miniatura hará falta JavaScript. -->
+         Al pulsar una miniatura, la grande cambia con un fundido; con ratón, la grande hace de lupa. -->
     <section class="galeria" aria-label="Fotos">
       <div class="galeria__grande">
         <!-- Si el coche está reservado: <span class="cinta">Reservado</span> -->
         <img src="../img/coche.svg" alt="Seat Ateca gris, vista frontal">
       </div>
       <div class="galeria__miniaturas">
-        <img src="../img/coche.svg" alt="Frontal">
-        <img src="../img/coche.svg" alt="Tres cuartos delantero">
-        <img src="../img/coche.svg" alt="Lateral">
-        <img src="../img/coche.svg" alt="Trasera">
-        <img src="../img/coche.svg" alt="Interior">
-        <img src="../img/coche.svg" alt="Cuadro de mandos">
+        <img class="activa" src="../img/coche.svg" alt="Frontal" tabindex="0" role="button">
+        <img src="../img/coche.svg" alt="Tres cuartos delantero" tabindex="0" role="button">
+        <img src="../img/coche.svg" alt="Lateral" tabindex="0" role="button">
+        <img src="../img/coche.svg" alt="Trasera" tabindex="0" role="button">
+        <img src="../img/coche.svg" alt="Interior" tabindex="0" role="button">
+        <img src="../img/coche.svg" alt="Cuadro de mandos" tabindex="0" role="button">
       </div>
     </section>
 
@@ -165,5 +165,63 @@
   </div>
 </footer>
 
+<script>
+/* Galería: al pulsar una miniatura, la foto grande cambia con un fundido (crossfade). Con ratón, al
+   pasar por encima de la foto grande se amplía y sigue al cursor (lupa). Sin JavaScript se ve la primera. */
+(function () {
+var galeria = document.querySelector('.galeria');
+if (!galeria) return;
+var marco = galeria.querySelector('.galeria__grande');
+var grande = marco.querySelector('img');
+var minis = galeria.querySelectorAll('.galeria__miniaturas img');
+var sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var capaActual = null;
+
+function mostrar(mini) {
+    var src = mini.getAttribute('data-grande') || mini.src;
+    minis.forEach(function (m) { m.classList.toggle('activa', m === mini); });
+    if (capaActual) { capaActual.remove(); capaActual = null; }
+    if (grande.src === new URL(src, location.href).href) return;
+    if (sinMovimiento) { grande.src = src; return; }
+
+    // La foto nueva se carga en una capa encima; cuando ya está, se funde y pasa a ser la de abajo
+    var capa = document.createElement('img');
+    capa.className = 'galeria__capa';
+    capa.alt = '';
+    capa.setAttribute('aria-hidden', 'true');
+    capaActual = capa;
+    capa.onload = function () {
+        if (capaActual !== capa) return;
+        marco.appendChild(capa);
+        capa.getBoundingClientRect(); // que el navegador pinte la capa transparente antes de fundirla
+        capa.classList.add('galeria__capa--visible');
+        setTimeout(function () {
+            if (capaActual !== capa) return;
+            grande.src = src;
+            (grande.decode ? grande.decode() : Promise.resolve()).catch(function () {}).then(function () {
+                if (capaActual === capa) { capa.remove(); capaActual = null; }
+            });
+        }, 300);
+    };
+    capa.src = src;
+}
+
+minis.forEach(function (mini) {
+    mini.addEventListener('click', function () { mostrar(mini); });
+    mini.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); mostrar(mini); } });
+});
+
+// Lupa: solo con ratón (en el móvil, la foto se ve entera)
+if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    marco.addEventListener('mousemove', function (e) {
+        var r = marco.getBoundingClientRect();
+        marco.style.setProperty('--lupa-x', ((e.clientX - r.left) / r.width * 100) + '%');
+        marco.style.setProperty('--lupa-y', ((e.clientY - r.top) / r.height * 100) + '%');
+    });
+    marco.addEventListener('mouseenter', function () { marco.classList.add('galeria__grande--lupa'); });
+    marco.addEventListener('mouseleave', function () { marco.classList.remove('galeria__grande--lupa'); });
+}
+})();
+</script>
 </body>
 </html>

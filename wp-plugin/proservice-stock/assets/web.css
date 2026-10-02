@@ -554,16 +554,29 @@
 .ps-web .ficha-web .detalles { grid-area: detalles; }
 
 .ps-web .galeria { display: flex; flex-direction: column; gap: 10px; }
-.ps-web .galeria__grande { position: relative; }
+.ps-web .galeria__grande { position: relative; overflow: hidden; border-radius: var(--radio); }
 .ps-web .galeria__grande img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radio); background: #2a2b2f; }
+.ps-web .galeria__grande .cinta { z-index: 2; }
+
+/* Crossfade: la foto nueva entra por encima, fundiéndose, y después ocupa el sitio de la anterior */
+.ps-web .galeria__capa { position: absolute; inset: 0; height: 100%; opacity: 0; transition: opacity .3s ease; }
+.ps-web .galeria__capa--visible { opacity: 1; }
+
+/* Lupa: con ratón, la foto grande se amplía al pasar por encima y sigue al cursor */
+@media (hover: hover) and (pointer: fine) {
+  .ps-web .galeria__grande { cursor: zoom-in; }
+  .ps-web .galeria__grande img { transform-origin: var(--lupa-x, 50%) var(--lupa-y, 50%); transition: transform .25s ease-out, opacity .3s ease; }
+  .ps-web .galeria__grande--lupa img { transform: scale(2); }
+}
 
 .ps-web .galeria__miniaturas {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 10px;
 }
-.ps-web .galeria__miniaturas img { aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radio-pequeno); opacity: .55; background: #2a2b2f; }
-.ps-web .galeria__miniaturas img:first-child { opacity: 1; outline: 2px solid var(--rojo); outline-offset: 2px; }
+.ps-web .galeria__miniaturas img { aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radio-pequeno); opacity: .55; background: #2a2b2f; cursor: pointer; transition: opacity .2s; }
+.ps-web .galeria__miniaturas img:hover { opacity: .85; }
+.ps-web .galeria__miniaturas img.activa { opacity: 1; outline: 2px solid var(--rojo); outline-offset: 2px; }
 
 
 .ps-web .resumen {
