@@ -46,10 +46,13 @@ npm test           # tests de la API
 Para trabajar con datos de prueba sin tocar la base real:
 
 ```bash
-npm run seed         # crea api/data/pruebas.db: 12 coches, fotos, una reserva, contactos y dos usuarios
+npm run seed         # crea api/data/pruebas.db: 16 coches (4 ya vendidos, para los informes), fotos
+                     # (la portada, real: ver api/scripts/fotos-portada/CREDITOS.md), una reserva, contactos y dos usuarios
 npm run dev:pruebas  # API con esa base y el panel en http://localhost:3001/panel/login.html
-                     # jaume@pruebas.local (gerencia) o comercial@pruebas.local, contraseña pruebas-local-123
+                     # el login enseña los usuarios de prueba con un botón «Rellenar» (solo en este modo)
 ```
+
+Después de `npm run seed` hay que reiniciar `npm run dev:pruebas`: la siembra borra la base y el servidor seguiría con la vieja.
 
 Todas las rutas de la API, con quién puede usarlas y sus errores: [docs/api.md](docs/api.md).
 

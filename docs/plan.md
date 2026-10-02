@@ -125,7 +125,7 @@ Queda:
 - Aceptar el PR #1 y comprobar que los tres arrancáis con Node 22.
 - ~~Arreglo pendiente del PR~~: un coche que sale en la web ya no se puede quedar sin los datos de publicar al editarlo (1-oct).
 - Cerrar el esquema con la ficha real. ~~Lista cerrada de extras~~ (migración `0003`, provisional hasta la T06) y ~~proveedor~~ de los coches propios (`0004`) hechos el 1-oct. Falta repasarlo con la ficha real del cliente (B6).
-- ~~`npm run seed`~~: 12 coches, fotos, una reserva, contactos y los dos usuarios en `api/data/pruebas.db`. Con `npm run dev:pruebas` se arranca el panel contra esa base.
+- ~~`npm run seed`~~: 16 coches (4 ya vendidos), fotos con la portada real, una reserva, contactos y los dos usuarios en `api/data/pruebas.db`. Con `npm run dev:pruebas` se arranca el panel contra esa base.
 - ~~`docs/api.md`~~ con el contrato real.
 
 **Semana 2**
@@ -137,8 +137,8 @@ Queda:
 
 **Semana 3**
 - Avisos: coche con más de 60 y 90 días, ITV que caduca en 30 días, vendido que sigue publicado en algún canal, contacto sin atender en 24 horas. Correo diario a quien diga el cliente y la misma lista en un endpoint para el panel.
-- Informes del lunes: stock por antigüedad, días parado de cada coche, margen por coche y ventas del mes.
-- Exportación de ventas en CSV para el gestor y para lo que facture.
+- ~~Informes del lunes~~: stock por antigüedad, días parado de cada coche, margen por coche y ventas del mes (`GET /api/informes`, página conectada, 2-oct). El margen es el bruto hasta tener la regla de REBU o IVA deducible.
+- ~~Exportación de ventas en CSV~~ para el gestor y para lo que facture (`GET /api/informes/ventas.csv`, 2-oct).
 
 **Semana 4**
 - **Lunes 26**: producción montada (con el OK de Diego), copias diarias comprobadas (restaurar una vez para ver que funciona).
@@ -170,7 +170,7 @@ Te toca lo que Jaume va a usar cada día. Si el panel es lento o le pide datos d
 - Lista de contactos que llegan de la web (de David), con un botón de «atendido».
 
 **Semana 4**
-- Pantalla de avisos e informes con los datos de Victor.
+- Pantalla de avisos con los datos de Victor. ~~Informes~~: conectada el 2-oct.
 - Lunes 26: sesión de una hora con Jaume usando el panel con coches de verdad. Lo que le moleste se corrige el lunes y el martes.
 
 ## David · `feat/web-portales`
