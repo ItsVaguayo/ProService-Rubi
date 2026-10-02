@@ -24,6 +24,9 @@ export function rutasVehiculos(db) {
       (SELECT MAX(h.fecha) FROM historial_estados h WHERE h.vehiculo_id = v.id AND h.a = v.estado) AS en_estado_desde,
       (SELECT f.ruta_original FROM fotos f WHERE f.vehiculo_id = v.id AND f.es_dano = 0 ORDER BY f.orden LIMIT 1) AS foto_portada,
       (SELECT f.id FROM fotos f WHERE f.vehiculo_id = v.id AND f.es_dano = 0 ORDER BY f.orden LIMIT 1) AS foto_portada_id,
+      -- Versión de la portada para su dirección (?v=): la misma que versionFoto() en fotos/routes.js
+      (SELECT COALESCE(f.ruta_photocall, f.ruta_original) || '@' || f.creado_en FROM fotos f
+        WHERE f.vehiculo_id = v.id AND f.es_dano = 0 ORDER BY f.orden LIMIT 1) AS foto_portada_v,
       (SELECT COUNT(*) FROM fotos f WHERE f.vehiculo_id = v.id) AS n_fotos
     FROM vehiculos v`;
   const leer = db.prepare(`${SELECT} WHERE v.id = ?`);

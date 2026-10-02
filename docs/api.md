@@ -54,7 +54,7 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
 | `GET /fotos/:vehiculoId` | con sesión | Fotos en orden, cada una con su `url` |
-| `GET /fotos/:vehiculoId/:fotoId/archivo` | con sesión | El fichero (JPG) |
+| `GET /fotos/:vehiculoId/:fotoId/archivo` | con sesión | El fichero (JPG). Usad la `url` que devuelve la API: lleva `?v=…` (fichero y fecha de subida; en los coches, `foto_portada_v`), que cambia cuando cambia la foto, para que el navegador no enseñe una vieja de su caché |
 | `POST /fotos/:vehiculoId` | con sesión | Formulario `multipart` con el campo `fotos` (una o varias). Se reducen a JPG de 1.600 px y entran en el primer hueco libre (25 como mucho). 15 MB por foto (413). HEIC del iPhone desde el ordenador: 415 con el aviso. 201 |
 | `PUT /fotos/:vehiculoId/orden` | con sesión | `{ fotos: [{ id, orden }, …] }` con todas las fotos del coche, cada una en un hueco distinto del 1 al 25 |
 | `PATCH /fotos/:vehiculoId/:fotoId` | con sesión | `{ es_dano?, publica? }`, los dos `true` o `false`. Si el coche sale en la web y el cambio lo deja con menos de 15 fotos válidas, 409 |
@@ -112,7 +112,24 @@ Necesita `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION`; sin ellas, 503. Detalle
 | `GET /wordpress/estado` | gerencia | Cada coche con su post de WordPress y el último error |
 | `POST /wordpress/vincular` | gerencia | `{ vehiculo_id, wp_post_id }` une un coche con una ficha que ya existía en la web |
 
+## Informes (solo gerencia)
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `GET /informes?mes=2026-09` | gerencia | El informe del mes (sin `mes`, el actual). Ver abajo |
+| `GET /informes/ventas.csv?mes=2026-09` | gerencia | Las ventas del mes para el gestor, en CSV para Excel: `;` entre columnas, coma decimal y BOM. Una celda que empieza por `=`, `+`, `-` o `@` va con un apóstrofo delante para que Excel no la ejecute |
+
+`GET /informes` devuelve:
+
+- `mes` y `meses` (los que tienen ventas, más el actual, para el selector).
+- `resumen`: `vendidos`, `vendidos_mes_anterior`, `facturado_cent`, `margen_cent`, `margen_medio_cent`, `ventas_sin_margen` (les falta el coste o el precio, y no se inventa) y `dias_medios_venta`.
+- `ventas`: cada coche vendido con `fecha_venta`, `vendio`, `precio_venta_cent` (su PVP), `coste_total_cent`, `margen_cent` y `dias_en_stock`.
+- `stock`: `total`, `propios`, `deposito`, `tramos` (menos de 30, 30-60, 60-90 y más de 90 días) y `mas_antiguos` (los 5 que más llevan).
+
+Una venta es el último paso a «Vendido» (o a «Entregado», si se saltó ese paso) de un coche que sigue vendido o entregado: si se deshace la venta, deja de contar. Los meses van en UTC, como las fechas de la base.
+
 ## Pendiente
 
 - Margen neto con REBU o IVA deducible y el caso depósito: espera a las respuestas del cliente (dudas B3 y B5). Hoy `margen_cent` es el bruto.
-- Avisos (coches parados, ITV, contactos sin atender) e informes: semana 3.
+- Avisos (coches parados, ITV, contactos sin atender): semana 3.
+- Informes: el margen es el bruto hasta tener la regla de REBU o IVA deducible.

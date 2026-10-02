@@ -44,13 +44,14 @@ test('subir, listar, ver el fichero, marcar, ordenar y borrar', () =>
     // Listar: el GET de siempre, con la url para el <img>
     const lista = (await pide(`/fotos/${id}`)).json;
     assert.equal(lista.length, 3);
-    assert.ok(lista.every((f) => f.url === `/api/fotos/${id}/${f.id}/archivo`));
+    assert.ok(lista.every((f) => f.url === `/api/fotos/${id}/${f.id}/archivo?v=${encodeURIComponent(`${f.ruta_original}@${f.creado_en}`)}`), 'la dirección cambia si cambia el fichero o se vuelve a subir');
     assert.ok(lista.every((f) => f.publica === 1 && f.es_dano === 0 && f.ruta_photocall === null));
 
     // El fichero se guarda en disco reducido a 1600 px y se sirve con sesión
     assert.ok(existsSync(join(carpeta, lista[0].ruta_original)));
     const archivo = await fetch(`${base}/fotos/${id}/${lista[0].id}/archivo`, { headers: { cookie } });
     assert.equal(archivo.status, 200);
+    assert.match(archivo.headers.get('cache-control'), /private/, 'fotos con sesión: caché privada');
     const meta = await sharp(Buffer.from(await archivo.arrayBuffer())).metadata();
     assert.equal(meta.width, 1600);
     assert.equal(meta.format, 'jpeg');

@@ -24,7 +24,11 @@ const AVISO_HEIC =
   'Las fotos HEIC del iPhone no se pueden subir desde el ordenador: súbelas desde el móvil o expórtalas como JPG';
 
 // Lo que devuelve la API de cada foto. `url` es lo que el panel pone en <img src>.
-const conUrl = (f) => ({ ...f, url: `/api/fotos/${f.vehiculo_id}/${f.id}/archivo` });
+// La dirección lleva una versión (?v=fichero@fecha de subida): si la foto cambia (otra subida, el
+// photocall, otra siembra de pruebas con los mismos nombres), cambia la dirección y el navegador no
+// enseña la vieja que tenía guardada. Es la misma versión que «foto_portada_v» en los coches.
+export const versionFoto = (f) => `${f.ruta_photocall || f.ruta_original}@${f.creado_en ?? ''}`;
+const conUrl = (f) => ({ ...f, url: `/api/fotos/${f.vehiculo_id}/${f.id}/archivo?v=${encodeURIComponent(versionFoto(f))}` });
 
 const esEntero = (v) => Number.isInteger(v) && v > 0;
 
@@ -74,7 +78,9 @@ export function rutasFotos(db) {
     const f = leer.get(req.params.fotoId, req.params.vehiculoId);
     const ruta = f && enDisco(f.ruta_photocall || f.ruta_original);
     if (!ruta) return res.status(404).json({ error: 'No existe' });
-    res.sendFile(ruta, { maxAge: '1d' }, (err) => {
+    // Privada: son fotos que se piden con sesión (daños, coches sin publicar); no las guarda nadie por el camino
+    res.set('Cache-Control', 'private, max-age=86400');
+    res.sendFile(ruta, { cacheControl: false }, (err) => {
       if (err && !res.headersSent) res.status(404).json({ error: 'No existe' });
     });
   });

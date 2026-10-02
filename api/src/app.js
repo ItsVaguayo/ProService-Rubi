@@ -8,6 +8,7 @@ import { rutasFotos } from './modules/fotos/routes.js';
 import { rutasWordPress } from './modules/publicacion/rutas-wordpress.js';
 import { rutasUsuarios } from './modules/usuarios/routes.js';
 import { rutasContactos, rutasContactosPublicas } from './modules/contactos/routes.js';
+import { rutasInformes } from './modules/informes/routes.js';
 
 export function crearApp(db) {
   const app = express();
@@ -34,6 +35,11 @@ export function crearApp(db) {
   app.get('/api/salud', (_req, res) => res.json({ ok: true }));
   app.use('/api/auth', rutasAuth(db));
   app.use('/api/contactos', rutasContactosPublicas(db)); // solo POST: el formulario de la web
+  // Solo en el sistema de pruebas (npm run dev:pruebas): los usuarios de prueba para la nota del login
+  // (y nunca con NODE_ENV=production, aunque alguien deje ACCESO_PRUEBAS puesto por error)
+  if (process.env.ACCESO_PRUEBAS && process.env.NODE_ENV !== 'production') {
+    app.get('/api/pruebas/acceso', (_req, res) => res.json(JSON.parse(process.env.ACCESO_PRUEBAS)));
+  }
 
   // Con sesión
   const conSesion = requiereSesion(db);
@@ -42,6 +48,7 @@ export function crearApp(db) {
   app.use('/api/wordpress', conSesion, requiereRol('gerencia'), rutasWordPress(db));
   app.use('/api/usuarios', conSesion, requiereRol('gerencia'), rutasUsuarios(db));
   app.use('/api/contactos', conSesion, rutasContactos(db));
+  app.use('/api/informes', conSesion, requiereRol('gerencia'), rutasInformes(db));
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'No existe' }));
   app.use(manejarErrores);
