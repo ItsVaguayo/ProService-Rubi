@@ -36,30 +36,35 @@
 
   <main class="contenido">
 
-    <!-- CABECERA en banda negra, como el tablero -->
+    <!-- CABECERA en banda negra, como el tablero. El resumen lo rellena panel.js. -->
     <header class="cabecera cabecera--portada">
       <div>
         <p class="portada__antetitulo">Stock</p>
         <h1>Coches</h1>
-        <p class="nota">10 en stock · 7 de terceros en depósito</p>
+        <ul class="portada__datos coches-resumen">
+          <li><strong>12</strong>en stock</li>
+          <li><strong>6</strong>publicados</li>
+          <li><strong>4</strong>en depósito</li>
+        </ul>
       </div>
       <div class="cabecera__acciones">
-        <a class="boton boton--secundario" href="#">Exportar a Excel</a>
+        <button class="boton boton--secundario" type="button" data-exportar>Exportar a Excel</button>
         <a class="boton" href="coche-nuevo.html">Alta de vehículo</a>
       </div>
     </header>
 
-    <!-- FILTROS. De momento no filtran: es solo el diseño. -->
-    <!-- Los valores del estado son los de la API: los enlaces del tablero llegan con ?estado=publicado, etc. -->
-    <form class="filtros" role="search">
-      <label class="campo campo--ancho">
-        <span class="campo__nombre">Buscar</span>
-        <input type="search" name="q" placeholder="Matrícula, marca o modelo">
+    <!-- FILTROS en una fila. Los valores son los de la API: los enlaces del tablero llegan con
+         ?estado=publicado, etc. Sin estado se ven los que están en stock (no los entregados). -->
+    <form class="filtros filtros--coches" role="search">
+      <label class="buscador">
+        <span class="oculto">Buscar</span>
+        <input type="search" name="q" placeholder="Matrícula, marca o modelo" autocomplete="off">
       </label>
-      <label class="campo">
-        <span class="campo__nombre">Estado</span>
+      <label class="campo campo--compacto">
+        <span class="oculto">Estado</span>
         <select name="estado">
-          <option value="">Todos</option>
+          <option value="">En stock</option>
+          <option value="todos">Todos, también entregados</option>
           <option value="pendiente_recoger">Pendiente de recoger</option>
           <option value="en_transporte">En transporte</option>
           <option value="recibido">Recibido, sin revisar</option>
@@ -72,134 +77,43 @@
           <option value="entregado">Entregado</option>
         </select>
       </label>
-      <fieldset class="opciones opciones--pequenas">
-        <legend class="campo__nombre">Propiedad</legend>
+      <fieldset class="segmentos" aria-label="Propiedad">
         <label><input type="radio" name="propiedad" value="" checked><span>Todos</span></label>
-        <label><input type="radio" name="propiedad" value="Propios"><span>Propios</span></label>
-        <label><input type="radio" name="propiedad" value="En depósito"><span>En depósito</span></label>
+        <label><input type="radio" name="propiedad" value="propio"><span>Propios</span></label>
+        <label><input type="radio" name="propiedad" value="deposito"><span>Depósito</span></label>
       </fieldset>
-      <fieldset class="opciones opciones--pequenas">
-        <legend class="campo__nombre">Dónde está</legend>
+      <fieldset class="segmentos" aria-label="Dónde está">
         <label><input type="radio" name="ubicacion" value="" checked><span>Los dos sitios</span></label>
-        <label><input type="radio" name="ubicacion" value="Patio del taller"><span>Patio del taller</span></label>
-        <label><input type="radio" name="ubicacion" value="Parking"><span>Parking</span></label>
+        <label><input type="radio" name="ubicacion" value="patio_taller"><span>Patio</span></label>
+        <label><input type="radio" name="ubicacion" value="parking"><span>Parking</span></label>
       </fieldset>
     </form>
 
+    <p class="lista-pie"><span class="lista-pie__cuantos">12 coches</span> <button class="enlace" type="button" data-limpiar hidden>Quitar filtros</button></p>
+
+    <!-- LISTA. Pulsar en una fila abre la ficha. Las columnas con flecha ordenan. -->
     <div class="tabla-caja">
-      <table class="tabla">
+      <table class="tabla tabla--coches">
         <thead>
           <tr>
             <th><span class="oculto">Foto</span></th>
-            <th>Matrícula</th>
-            <th>Coche</th>
+            <th><button class="ordenar" type="button" data-orden="coche">Coche</button></th>
             <th>Estado</th>
-            <th class="derecha">Km</th>
-            <th class="derecha">Precio</th>
-            <th class="derecha">Días en stock</th>
+            <th class="derecha"><button class="ordenar" type="button" data-orden="km">Km</button></th>
+            <th class="derecha"><button class="ordenar" type="button" data-orden="precio">Precio</button></th>
+            <th class="derecha"><button class="ordenar" type="button" data-orden="dias">Días en stock</button></th>
             <th>Dónde</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
-            <td><a href="coche.html"><span class="matricula">5129 MPX</span></a></td>
-            <td><span class="coche-celda"><a href="coche.html">Volkswagen Golf 2.0 TDI Life</a><span class="nota">2021 · diésel · manual · propio</span></span></td>
-            <td><span class="estado estado--venta">Publicado</span></td>
-            <td class="derecha cifra">54.700</td>
-            <td class="derecha cifra">19.900 €</td>
-            <td class="derecha cifra"><span class="dias dias--peligro">81</span></td>
-            <td>Parking</td>
-          </tr>
-          <tr>
-            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
-            <td><a href="coche.html"><span class="matricula">4821 LKM</span></a></td>
-            <td><span class="coche-celda"><a href="coche.html">Seat Ateca 1.5 TSI Style</a><span class="nota">2020 · gasolina · manual · depósito</span></span></td>
-            <td><span class="estado estado--venta">Publicado</span></td>
-            <td class="derecha cifra">62.000</td>
-            <td class="derecha cifra">20.900 €</td>
-            <td class="derecha cifra">52</td>
-            <td>Parking</td>
-          </tr>
-          <tr>
-            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
-            <td><a href="coche.html"><span class="matricula">7309 KWT</span></a></td>
-            <td><span class="coche-celda"><a href="coche.html">Peugeot 3008 1.5 BlueHDi Allure</a><span class="nota">2019 · diésel · automático · depósito</span></span></td>
-            <td><span class="estado estado--preparacion">En taller</span></td>
-            <td class="derecha cifra">88.100</td>
-            <td class="derecha cifra">—</td>
-            <td class="derecha cifra"><span class="dias dias--aviso">26</span></td>
-            <td>Patio del taller</td>
-          </tr>
-          <tr>
-            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
-            <td><a href="coche.html"><span class="matricula">9044 JZP</span></a></td>
-            <td><span class="coche-celda"><a href="coche.html">Toyota C-HR 125H Advance</a><span class="nota">2019 · híbrido · automático · depósito</span></span></td>
-            <td><span class="estado estado--venta">Publicado</span></td>
-            <td class="derecha cifra">81.200</td>
-            <td class="derecha cifra">21.500 €</td>
-            <td class="derecha cifra">24</td>
-            <td>Parking</td>
-          </tr>
-          <tr>
-            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
-            <td><a href="coche.html"><span class="matricula">2156 MHB</span></a></td>
-            <td><span class="coche-celda"><a href="coche.html">Ford Transit Custom 2.0 TDCi 130 CV</a><span class="nota">2022 · diésel · manual · propio</span></span></td>
-            <td><span class="estado estado--preparacion">Pendiente de fotos</span></td>
-            <td class="derecha cifra">119.900</td>
-            <td class="derecha cifra">24.500 €</td>
-            <td class="derecha cifra">17</td>
-            <td>Patio del taller</td>
-          </tr>
-          <tr>
-            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
-            <td><a href="coche-reservado.html"><span class="matricula">1905 LFV</span></a></td>
-            <td><span class="coche-celda"><a href="coche-reservado.html">Renault Clio 1.0 TCe Zen</a><span class="nota">2021 · gasolina · manual · depósito</span></span></td>
-            <td><span class="estado estado--reservado">Reservado</span></td>
-            <td class="derecha cifra">45.300</td>
-            <td class="derecha cifra">13.900 €</td>
-            <td class="derecha cifra">15</td>
-            <td>Parking</td>
-          </tr>
-          <tr>
-            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
-            <td><a href="coche.html"><span class="matricula">6268 JBG</span></a></td>
-            <td><span class="coche-celda"><a href="coche.html">Mercedes Vito 114 CDI Larga</a><span class="nota">2018 · diésel · manual · depósito</span></span></td>
-            <td><span class="estado estado--vendido">Vendido, sin entregar</span></td>
-            <td class="derecha cifra">142.000</td>
-            <td class="derecha cifra">22.900 €</td>
-            <td class="derecha cifra">41</td>
-            <td>Parking</td>
-          </tr>
-          <tr>
-            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
-            <td><a href="coche.html"><span class="matricula">8471 HTS</span></a></td>
-            <td><span class="coche-celda"><a href="coche.html">Dacia Sandero Stepway 0.9 TCe</a><span class="nota">2019 · gasolina · manual · propio</span></span></td>
-            <td><span class="estado estado--preparacion">Preparación y limpieza</span></td>
-            <td class="derecha cifra">72.450</td>
-            <td class="derecha cifra">—</td>
-            <td class="derecha cifra">9</td>
-            <td>Patio del taller</td>
-          </tr>
-          <tr>
-            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
-            <td><a href="coche.html"><span class="matricula">3380 KDN</span></a></td>
-            <td><span class="coche-celda"><a href="coche.html">Citroën Berlingo 1.5 BlueHDi Talla M</a><span class="nota">2020 · diésel · manual · depósito</span></span></td>
-            <td><span class="estado estado--llegada">Recibido, sin revisar</span></td>
-            <td class="derecha cifra">131.800</td>
-            <td class="derecha cifra">—</td>
-            <td class="derecha cifra">1</td>
-            <td>Patio del taller</td>
-          </tr>
-          <tr>
-            <td><img class="miniatura" src="../img/coche.svg" alt=""></td>
-            <td><a href="coche.html"><span class="matricula">6617 LRC</span></a></td>
-            <td><span class="coche-celda"><a href="coche.html">Kia Sportage 1.6 CRDi Drive</a><span class="nota">2020 · diésel · manual · depósito</span></span></td>
-            <td><span class="estado estado--llegada">Pendiente de recoger</span></td>
-            <td class="derecha cifra">94.300</td>
-            <td class="derecha cifra">—</td>
-            <td class="derecha cifra">3</td>
-            <td>—</td>
+          <tr class="fila-coche">
+            <td class="c-foto"><img class="miniatura" src="../img/coche.svg" alt=""></td>
+            <td class="c-coche"><a class="fila-coche__titulo" href="coche.html">Seat Ateca 1.5 TSI Style</a><span class="fila-coche__meta"><span class="matricula">4821 LKM</span><span class="nota">2020 · gasolina · manual · propio</span></span></td>
+            <td class="c-estado"><span class="estado estado--venta">Publicado</span></td>
+            <td class="c-km derecha cifra">62.000</td>
+            <td class="c-precio derecha cifra">20.900 €</td>
+            <td class="c-dias derecha cifra"><span class="dias">34</span></td>
+            <td class="c-donde nota">Parking</td>
           </tr>
         </tbody>
       </table>

@@ -18,6 +18,29 @@
 
 /* 1. ESTRUCTURA ------------------------------------------------------------ */
 
+/* Cada página trae en el HTML datos de ejemplo (los de la maqueta) que panel.js cambia por los reales.
+   Para que no se vea el cambio, el contenido, el usuario del menú y el contador esperan ocultos hasta
+   que panel.js pone .listo en <html>, y entonces aparecen con un fundido. Si el JavaScript no llega a
+   ejecutarse (por ejemplo, al abrir la maqueta como fichero), se enseñan igual a los 1,5 s.
+   El contenido entra por partes, en cascada: panel.js marca cada bloque con .entra y su turno (--i). */
+.menu__usuario,
+.menu__enlaces .contador { transition: opacity .35s ease; }
+html:not(.listo) .contenido,
+html:not(.listo) .menu__usuario,
+html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-js 0s 1.5s forwards; }
+@keyframes mostrar-sin-js { to { opacity: 1; } }
+
+.entra { animation: entrar .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 45ms); }
+@keyframes entrar { from { opacity: 0; transform: translateY(10px); } }
+.entra--sin-mover { animation-name: aparecer; }
+@keyframes aparecer { from { opacity: 0; } }
+/* Lo fijo abajo (la barra de guardar del alta) sube desde fuera de la pantalla, al final de la cascada */
+.entra-abajo { animation: entrar-abajo .5s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 45ms); }
+@keyframes entrar-abajo { from { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .entra, .entra-abajo { animation: none; }
+}
+
 .app {
   display: grid;
   grid-template-columns: 248px 1fr;
@@ -86,6 +109,26 @@
 }
 
 /* Enlaces de administración (Usuarios), separados del trabajo diario */
+/* Resalte que se desliza entre enlaces al pasar el ratón (lo pone panel.js; sin él, el hover de siempre) */
+.menu__enlaces--resalte { position: relative; }
+.menu__resalte {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-radius: var(--radio-pequeno);
+  background: var(--negro-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .25s cubic-bezier(.2, .8, .2, 1), height .25s cubic-bezier(.2, .8, .2, 1), opacity .15s;
+}
+/* De vuelta a la página actual al sacar el ratón: más lento y suave */
+.menu__resalte--volviendo { transition: transform .5s cubic-bezier(.4, 0, .2, 1), height .5s cubic-bezier(.4, 0, .2, 1), opacity .15s; }
+.menu__enlaces--resalte a { z-index: 1; transition: color .15s, padding-left .2s ease-out; }
+.menu__enlaces--resalte a:hover,
+.menu__enlaces--resalte a[aria-current="page"] { background: transparent; }
+.menu__enlaces--resalte a:hover { padding-left: 16px; }
+
 .menu__enlaces a.menu__separado { margin-top: 12px; }
 .menu__enlaces a.menu__separado::after {
   content: "";
@@ -374,6 +417,11 @@
 
 .ficha-mini:hover { border-color: var(--linea-fuerte); box-shadow: 0 2px 8px rgba(23, 25, 28, .06); }
 
+/* Arrastrar una tarjeta a otra columna (cambia el estado) */
+.ficha-mini[draggable="true"] { cursor: grab; }
+.ficha-mini--arrastrando { opacity: .4; }
+.columna--encima { background: #dfe3e7; outline: 2px dashed var(--linea-fuerte); outline-offset: -2px; }
+
 .ficha-mini .matricula { align-self: flex-start; }
 
 .ficha-mini__coche { font-size: .875rem; font-weight: 600; line-height: 1.3; }
@@ -427,6 +475,182 @@
 /* Fila de algo desactivado: se ve, pero apagada */
 .fila-apagada td { color: var(--tinta-3); }
 .fila-apagada strong { font-weight: 500; }
+
+
+/* 5a. LISTADO DE COCHES ---------------------------------------------------- */
+
+/* Filtros en una fila: buscador, estado y los dos selectores segmentados */
+.filtros--coches { align-items: center; }
+.buscador { position: relative; flex: 1; min-width: 220px; }
+.buscador::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 12px;
+  height: 12px;
+  margin-top: -8px;
+  border: 2px solid var(--tinta-3);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.buscador::after { content: ""; position: absolute; top: 50%; left: 26px; width: 6px; height: 2px; margin-top: 4px; background: var(--tinta-3); transform: rotate(45deg); pointer-events: none; }
+.buscador input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 14px 0 40px;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio-boton);
+  background: var(--blanco);
+  font: inherit;
+  font-size: .875rem;
+}
+.buscador input:focus { outline: none; border-color: var(--tinta-3); box-shadow: 0 0 0 3px rgb(23 25 28 / .06); }
+.campo--compacto select { min-height: 40px; border-radius: var(--radio-boton); font-size: .875rem; }
+
+/* Debajo de los filtros: cuántos salen y quitar filtros */
+.lista-pie { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; color: var(--tinta-3); font-size: .8125rem; }
+.enlace { padding: 0; border: 0; background: none; color: var(--tinta-2); font: inherit; text-decoration: underline; cursor: pointer; }
+.enlace:hover { color: var(--rojo); }
+
+/* Cabeceras que ordenan, con flecha en la que manda */
+.ordenar { padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.ordenar:hover { color: var(--tinta); }
+.ordenar::after { content: "↕"; margin-left: 4px; opacity: .35; }
+.ordenar[aria-sort="ascending"]::after { content: "↑"; opacity: 1; }
+.ordenar[aria-sort="descending"]::after { content: "↓"; opacity: 1; }
+.ordenar[aria-sort] { color: var(--tinta); }
+
+/* Una fila por coche; toda la fila abre la ficha */
+.fila-coche { cursor: pointer; transition: background .12s; }
+.fila-coche:hover { background: #fafbfc; }
+.fila-coche .miniatura { display: block; width: 84px; height: 56px; }
+.fila-coche__titulo { color: var(--tinta); font-weight: 600; text-decoration: none; }
+.fila-coche:hover .fila-coche__titulo { text-decoration: underline; }
+.fila-coche__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 6px; }
+.fila-coche__meta .nota { font-size: .8125rem; }
+.fila-coche--entregado { opacity: .6; }
+.tabla--coches .c-donde { font-size: .8125rem; }
+
+/* En el móvil, cada coche es una tarjeta: foto a la izquierda, datos a la derecha */
+@media (max-width: 760px) {
+  .tabla--coches thead { display: none; }
+  .tabla--coches tbody tr {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr) auto;
+    grid-template-areas: "foto coche coche" "foto estado precio" "foto estado dias";
+    gap: 6px 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--linea);
+  }
+  .tabla--coches td { padding: 0; border: 0; }
+  .tabla--coches .c-foto { grid-area: foto; }
+  .tabla--coches .c-coche { grid-area: coche; }
+  .tabla--coches .c-estado { grid-area: estado; align-self: center; }
+  .tabla--coches .c-precio { grid-area: precio; font-weight: 600; }
+  .tabla--coches .c-dias { grid-area: dias; font-size: .8125rem; }
+  .tabla--coches .c-dias::after { content: " días"; color: var(--tinta-3); }
+  .tabla--coches .c-km,
+  .tabla--coches .c-donde { display: none; }
+  .segmentos { flex-wrap: wrap; }
+}
+
+
+/* 5b. CONTACTOS DE LA WEB ------------------------------------------------- */
+
+/* Resumen en la cabecera negra: cuántos esperan y cuántos llevan más de un día */
+.contactos-resumen { margin: 0; color: rgb(255 255 255 / .7); font-size: 1rem; }
+.contactos-resumen strong { margin-right: 4px; color: var(--blanco); font-size: 1.5rem; font-weight: 800; }
+
+/* Filtros en una fila: estado a la izquierda (selector segmentado), tipo a la derecha */
+.filtros--contactos { justify-content: space-between; align-items: center; }
+.segmentos { display: inline-flex; gap: 2px; margin: 0; padding: 3px; border: 0; border-radius: var(--radio-boton); background: var(--linea); }
+.segmentos label { position: relative; cursor: pointer; }
+.segmentos input { position: absolute; opacity: 0; pointer-events: none; }
+.segmentos span { display: inline-flex; align-items: center; min-height: 32px; padding: 0 16px; border-radius: var(--radio-boton); color: var(--tinta-2); font-size: .8125rem; font-weight: 600; transition: background .15s, color .15s, box-shadow .15s; }
+.segmentos label:hover span { color: var(--tinta); }
+.segmentos input:checked + span { background: var(--blanco); color: var(--tinta); box-shadow: 0 1px 3px rgba(23, 25, 28, .12); }
+.segmentos input:focus-visible + span { outline: 2px solid var(--rojo); outline-offset: 2px; }
+.tipos-contacto span { gap: 7px; min-height: 32px; }
+
+/* Un color por tipo de petición: el punto del filtro, la etiqueta y las iniciales */
+.punto { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.punto--informacion, .tipo--informacion { color: var(--llegada); }
+.punto--prueba, .tipo--prueba { color: var(--venta); }
+.punto--financiacion, .tipo--financiacion { color: var(--reservado); }
+.punto--tasacion, .tipo--tasacion { color: var(--aviso); }
+.tipo--informacion { background: var(--llegada-fondo); }
+.tipo--prueba { background: var(--venta-fondo); }
+.tipo--financiacion { background: var(--reservado-fondo); }
+.tipo--tasacion { background: var(--aviso-fondo); }
+
+/* Lista de tarjetas */
+.contactos { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.contacto {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 220px auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 20px;
+  background: var(--blanco);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  transition: border-color .15s, box-shadow .15s;
+}
+.contacto:hover { border-color: var(--linea-fuerte); box-shadow: 0 2px 10px rgba(23, 25, 28, .05); }
+/* Más de un día sin atender: una barra roja a la izquierda */
+.contacto--urgente::before { content: ""; position: absolute; top: 12px; bottom: 12px; left: -1px; width: 3px; border-radius: 0 3px 3px 0; background: var(--peligro); }
+
+.contacto__inicial {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: .8125rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.contacto__inicial--informacion { background: var(--llegada-fondo); color: var(--llegada); }
+.contacto__inicial--prueba { background: var(--venta-fondo); color: var(--venta); }
+.contacto__inicial--financiacion { background: var(--reservado-fondo); color: var(--reservado); }
+.contacto__inicial--tasacion { background: var(--aviso-fondo); color: var(--aviso); }
+
+.contacto__cuerpo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.contacto__linea { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0; }
+.contacto__linea strong { font-size: .9375rem; }
+.contacto__linea .dias,
+.contacto__linea .nota { font-size: .8125rem; }
+.contacto__mensaje { margin: 0; color: var(--tinta-2); font-size: .875rem; line-height: 1.45; }
+.contacto__mensaje--vacio { color: var(--tinta-3); font-style: italic; }
+.contacto__datos { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; font-size: .8125rem; }
+.contacto__datos a { color: var(--tinta-3); text-decoration: none; }
+.contacto__datos a:hover { color: var(--tinta); text-decoration: underline; }
+
+/* El coche por el que pregunta: foto, modelo y matrícula */
+.contacto__coche { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 6px; border-radius: var(--radio-pequeno); color: inherit; text-decoration: none; }
+a.contacto__coche:hover { background: var(--fondo); }
+.contacto__coche img { flex: none; width: 64px; height: 48px; object-fit: cover; border-radius: 6px; background: #2a2b2f; }
+.contacto__coche > span { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.contacto__coche b { overflow: hidden; max-width: 100%; font-size: .8125rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.contacto__coche--sin { color: var(--tinta-3); font-size: .8125rem; }
+
+.contacto__acciones { display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 150px; }
+.contacto__acciones .nota { font-size: .75rem; text-align: center; }
+
+/* Ya atendido: más apagado, sin dejar de leerse */
+.contacto--atendido { background: transparent; }
+.contacto--atendido .contacto__inicial { filter: grayscale(1); opacity: .6; }
+.contacto--atendido .contacto__linea strong,
+.contacto--atendido .contacto__mensaje { color: var(--tinta-3); }
+
+@media (max-width: 1150px) {
+  .contacto { grid-template-columns: 44px minmax(0, 1fr); }
+  .contacto__coche,
+  .contacto__acciones { grid-column: 2; }
+  .contacto__acciones { flex-direction: row; flex-wrap: wrap; min-width: 0; }
+}
 
 
 /* 6. FICHA DEL COCHE ------------------------------------------------------- */
@@ -1063,7 +1287,7 @@
 .barra-guardar__linea--suave { color: var(--tinta-3); font-size: .8125rem; }
 /* La barrita: cuántos de los 24 datos para publicar están rellenos */
 .barra-guardar__barra { position: relative; width: 120px; height: 6px; border-radius: var(--radio-boton); background: var(--linea); overflow: hidden; }
-.barra-guardar__barra::after { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--p, 0) * 100%); background: var(--aviso); }
+.barra-guardar__barra::after { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--p, 0) * 100%); background: var(--aviso); transition: width .4s cubic-bezier(.2, .8, .2, 1); }
 
 
 /* 8. LOGIN Y ERRORES ------------------------------------------------------- */
@@ -1098,6 +1322,23 @@
 .login__form h1 { font-size: 1.375rem; }
 .login__form .boton { width: 100%; margin-top: 4px; }
 .login__pie { color: #8b9097; font-size: .8125rem; text-align: center; }
+
+/* Nota de desarrollo con los usuarios de prueba (solo en npm run dev:pruebas) */
+.nota-pruebas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px dashed var(--aviso);
+  border-radius: var(--radio-pequeno);
+  background: var(--aviso-fondo);
+  color: var(--aviso);
+  font-size: .8125rem;
+}
+.nota-pruebas ul { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.nota-pruebas li { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.nota-pruebas code { font-size: .8125rem; }
+.nota-pruebas small { opacity: .8; }
 
 .error {
   padding: 10px 14px;

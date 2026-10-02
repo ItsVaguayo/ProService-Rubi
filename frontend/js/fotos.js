@@ -214,14 +214,21 @@ function preparar() {
   window.addEventListener('drop', (e) => e.preventDefault());
 }
 
+// Avisa a panel.js de que las fotos ya están pintadas, para que enseñe el contenido (ver «.listo»)
+const fotosListas = () => {
+  document.documentElement.dataset.fotosListas = '1';
+  document.dispatchEvent(new Event('fotos-listas'));
+};
+
 if (!vehiculoId) {
   avisar('Falta el coche. Abre esta página desde la ficha de un coche (fotos.html?id=…).');
   $('[data-lista]').replaceChildren();
   $('[data-subida]').hidden = true;
+  fotosListas();
 } else {
   preparar();
   accion(async () => {
     await cargarCoche();
     return pide(`/fotos/${vehiculoId}`);
-  });
+  }).finally(fotosListas);
 }

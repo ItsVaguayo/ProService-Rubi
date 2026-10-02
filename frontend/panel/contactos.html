@@ -36,74 +36,67 @@
 
   <main class="contenido">
 
-    <!-- CABECERA en banda negra, como el tablero -->
+    <!-- CABECERA en banda negra, como el tablero. El resumen lo rellena panel.js. -->
     <header class="cabecera cabecera--portada">
       <div>
         <p class="portada__antetitulo">Web</p>
         <h1>Contactos</h1>
+        <p class="contactos-resumen"><strong class="cifra">3</strong> esperando respuesta <span class="portada__alerta">· 2 desde hace más de un día</span></p>
         <p class="nota">Lo que entra por los formularios de la web. Llama primero a los que llevan más tiempo esperando.</p>
       </div>
     </header>
 
-    <form class="filtros">
-      <fieldset class="opciones opciones--pequenas">
-        <legend class="campo__nombre">Mostrar</legend>
+    <!-- FILTROS en una fila: a la izquierda qué contactos, a la derecha qué piden -->
+    <form class="filtros filtros--contactos">
+      <fieldset class="segmentos" aria-label="Mostrar">
         <label><input type="radio" name="estado" value="sin_atender" checked><span>Sin atender</span></label>
         <label><input type="radio" name="estado" value="atendidos"><span>Atendidos</span></label>
         <label><input type="radio" name="estado" value="todos"><span>Todos</span></label>
       </fieldset>
-      <fieldset class="opciones opciones--pequenas">
-        <legend class="campo__nombre">Qué pide</legend>
+      <fieldset class="opciones opciones--pequenas tipos-contacto" aria-label="Qué pide">
         <label><input type="radio" name="tipo" value="" checked><span>Todo</span></label>
-        <label><input type="radio" name="tipo" value="informacion"><span>Información</span></label>
-        <label><input type="radio" name="tipo" value="prueba"><span>Prueba de conducción</span></label>
-        <label><input type="radio" name="tipo" value="financiacion"><span>Financiación</span></label>
-        <label><input type="radio" name="tipo" value="tasacion"><span>Tasación de su coche</span></label>
+        <label><input type="radio" name="tipo" value="informacion"><span><i class="punto punto--informacion"></i>Información</span></label>
+        <label><input type="radio" name="tipo" value="prueba"><span><i class="punto punto--prueba"></i>Prueba</span></label>
+        <label><input type="radio" name="tipo" value="financiacion"><span><i class="punto punto--financiacion"></i>Financiación</span></label>
+        <label><input type="radio" name="tipo" value="tasacion"><span><i class="punto punto--tasacion"></i>Tasación</span></label>
       </fieldset>
     </form>
 
-    <div class="tabla-caja">
-      <table class="tabla">
-        <thead>
-          <tr>
-            <th>Recibido</th>
-            <th>Cliente</th>
-            <th>Qué pide</th>
-            <th>Coche</th>
-            <th>Mensaje</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="dias dias--peligro">Ayer, 18:42</span></td>
-            <td><span class="coche-celda">Marta Soler<a class="nota" href="tel:+34600111222">600 111 222</a></span></td>
-            <td>Prueba de conducción</td>
-            <td><a href="coche.html"><span class="matricula">9044 JZP</span></a></td>
-            <td>¿Se puede probar el sábado por la mañana?</td>
-            <td><button class="boton boton--pequeno" type="button">Marcar atendido</button></td>
-          </tr>
-          <tr>
-            <td><span class="dias dias--peligro">Ayer, 12:05</span></td>
-            <td><span class="coche-celda">Iván Roca<a class="nota" href="tel:+34611333444">611 333 444</a></span></td>
-            <td>Financiación</td>
-            <td><a href="coche.html"><span class="matricula">5129 MPX</span></a></td>
-            <td>Quiero pagarlo en 60 meses, ¿cuánto sería al mes?</td>
-            <td><button class="boton boton--pequeno" type="button">Marcar atendido</button></td>
-          </tr>
-          <tr>
-            <td><span class="nota">Hoy, 09:20</span></td>
-            <td><span class="coche-celda">Nuria Pons<a class="nota" href="tel:+34622555666">622 555 666</a></span></td>
-            <td>Tasación de su coche</td>
-            <td><span class="nota">—</span></td>
-            <td>Opel Corsa 2016, 98.000 km. Lo daría como parte del pago.</td>
-            <td><button class="boton boton--pequeno" type="button">Marcar atendido</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- LISTA. Una tarjeta por contacto, el que más espera primero.
+         En rojo (contacto--urgente): más de un día sin atender. -->
+    <ul class="contactos">
+      <li class="contacto contacto--urgente">
+        <span class="contacto__inicial contacto__inicial--prueba" aria-hidden="true">MS</span>
+        <div class="contacto__cuerpo">
+          <p class="contacto__linea"><strong>Marta Soler</strong> <span class="estado tipo--prueba">Prueba de conducción</span> <span class="dias dias--peligro">hace 1 día</span></p>
+          <p class="contacto__mensaje">¿Se puede probar el sábado por la mañana?</p>
+          <p class="contacto__datos"><a href="tel:+34600111222">600 111 222</a></p>
+        </div>
+        <a class="contacto__coche" href="coche.html">
+          <img src="../img/coche.svg" alt="">
+          <span><b>Seat Ateca</b><span class="matricula">4821 LKM</span></span>
+        </a>
+        <div class="contacto__acciones">
+          <a class="boton boton--secundario boton--pequeno" href="tel:+34600111222">Llamar</a>
+          <button class="boton boton--oscuro boton--pequeno" type="button">Marcar atendido</button>
+        </div>
+      </li>
+      <li class="contacto">
+        <span class="contacto__inicial contacto__inicial--tasacion" aria-hidden="true">NP</span>
+        <div class="contacto__cuerpo">
+          <p class="contacto__linea"><strong>Nuria Pons</strong> <span class="estado tipo--tasacion">Tasación de su coche</span> <span class="nota">hace 3 h</span></p>
+          <p class="contacto__mensaje">Opel Corsa 2016, 98.000 km. Lo daría como parte del pago.</p>
+          <p class="contacto__datos"><a href="tel:+34622555666">622 555 666</a></p>
+        </div>
+        <span class="contacto__coche contacto__coche--sin">Sin coche concreto</span>
+        <div class="contacto__acciones">
+          <a class="boton boton--secundario boton--pequeno" href="tel:+34622555666">Llamar</a>
+          <button class="boton boton--oscuro boton--pequeno" type="button">Marcar atendido</button>
+        </div>
+      </li>
+    </ul>
 
-    <!-- SIN CONTACTOS. Se ve cuando no queda ninguno sin atender. Para verlo, quita hidden. -->
+    <!-- SIN CONTACTOS. Se ve cuando no queda ninguno con estos filtros. -->
     <div class="vacio" hidden>
       <strong>Todo atendido</strong>
       <p class="nota">Cuando alguien escriba desde la web, aparecerá aquí y os llegará un correo.</p>

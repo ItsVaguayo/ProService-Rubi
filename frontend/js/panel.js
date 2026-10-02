@@ -38,7 +38,7 @@ const diasDesde = (s) => (s ? Math.max(0, Math.floor((Date.now() - fechaSql(s)) 
 const fechaCorta = (s) => (s ? new Date(`${s}T00:00:00`).toLocaleDateString('es-ES') : '—');
 const fechaHora = (s) => fechaSql(s).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 // Las fotos se piden a la API con sesión (las de daños y las de coches sin publicar no son públicas)
-const portada = (v) => (v.foto_portada_id ? `/api/fotos/${v.id}/${v.foto_portada_id}/archivo` : '../img/coche.svg');
+const portada = (v) => (v.foto_portada_id ? `/api/fotos/${v.id}/${v.foto_portada_id}/archivo?v=${encodeURIComponent(v.foto_portada_v ?? '')}` : '../img/coche.svg');
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 
 // Nombres cortos y fase (color) de cada estado, como en la maqueta
@@ -116,10 +116,55 @@ function prepararMenu(usuario) {
       location.href = 'login.html';
     });
   }
-  actualizarContadorContactos();
+  const contador = actualizarContadorContactos();
   if (usuario.rol !== 'gerencia') {
     document.querySelectorAll('a[href="informes.html"], a[href="usuarios.html"]').forEach((a) => a.remove());
   }
+  resalteDelMenu();
+  return contador;
+}
+
+// Menú lateral: un fondo que se desliza hasta el enlace que tiene el ratón encima y, al salir,
+// vuelve a la página en la que estás. Solo con ratón; en el móvil el menú es un desplegable.
+function resalteDelMenu() {
+  const enlaces = $('.menu__enlaces');
+  if (!enlaces || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const resalte = Object.assign(document.createElement('span'), { className: 'menu__resalte' });
+  resalte.setAttribute('aria-hidden', 'true');
+  enlaces.prepend(resalte);
+  enlaces.classList.add('menu__enlaces--resalte');
+
+  const ir = (a, { sinAnimar = false } = {}) => {
+    if (!a || !enlaces.offsetParent) return (resalte.style.opacity = '0'); // sin enlace o con el menú plegado
+    if (sinAnimar) resalte.style.transition = 'none';
+    resalte.style.transform = `translateY(${a.offsetTop}px)`;
+    resalte.style.height = `${a.offsetHeight}px`;
+    resalte.style.opacity = '1';
+    if (sinAnimar) requestAnimationFrame(() => (resalte.style.transition = ''));
+  };
+  const actual = () => $('a[aria-current="page"]', enlaces);
+
+  // Al salir no vuelve de golpe: espera un poco (por si el ratón solo se ha pasado y regresa)
+  // y después vuelve despacio a la página actual.
+  let volver = null;
+  ir(actual(), { sinAnimar: true });
+  enlaces.addEventListener('mouseover', (ev) => {
+    const a = ev.target.closest('a');
+    if (!a || !enlaces.contains(a)) return;
+    clearTimeout(volver);
+    resalte.classList.remove('menu__resalte--volviendo');
+    ir(a);
+  });
+  enlaces.addEventListener('mouseleave', () => {
+    clearTimeout(volver);
+    volver = setTimeout(() => {
+      resalte.classList.add('menu__resalte--volviendo');
+      ir(actual());
+    }, 350);
+  });
+  addEventListener('resize', () => ir(actual(), { sinAnimar: true }));
+  // En ventana estrecha los enlaces están dentro del desplegable «Menú»: al abrirlo, se coloca
+  $('.menu__movil')?.addEventListener('toggle', () => ir(actual(), { sinAnimar: true }));
 }
 
 // --- Entrar ------------------------------------------------------------------------------------
@@ -151,6 +196,30 @@ async function paginaLogin() {
       error.hidden = false;
     }
   });
+  notaDePruebas(form);
+}
+
+// Solo en el sistema de pruebas (npm run dev:pruebas) la API devuelve los usuarios de prueba: el login
+// los enseña en una nota de desarrollo, con un botón que rellena el formulario. En producción no sale.
+async function notaDePruebas(form) {
+  const usuarios = await api('/pruebas/acceso').catch(() => null);
+  if (!Array.isArray(usuarios) || !usuarios.length) return;
+  const nota = document.createElement('aside');
+  nota.className = 'nota-pruebas';
+  nota.innerHTML = `<strong>Desarrollo · usuarios de prueba</strong>
+    <ul>${usuarios.map((u, i) => `<li>
+      <span><b>${esc(u.rol === 'gerencia' ? 'Gerencia' : 'Comercial')}</b> ${esc(u.email)}<br><code>${esc(u.contrasena)}</code></span>
+      <button class="boton boton--secundario boton--pequeno" type="button" data-usuario="${i}">Rellenar</button>
+    </li>`).join('')}</ul>
+    <small>Solo sale con npm run dev:pruebas. En el servidor real no existe.</small>`;
+  nota.addEventListener('click', (ev) => {
+    const u = usuarios[ev.target.closest('[data-usuario]')?.dataset.usuario];
+    if (!u) return;
+    form.elements.email.value = u.email;
+    form.elements.contrasena.value = u.contrasena;
+    form.querySelector('button[type="submit"]').focus();
+  });
+  form.closest('.login__caja').append(nota);
 }
 
 // --- Tablero -----------------------------------------------------------------------------------
@@ -227,72 +296,204 @@ async function paginaTablero() {
     const coches = enStock.filter((v) => v.estado === e.id);
     const fichas = coches.map((v) => {
       const dias = diasDesde(v.en_estado_desde);
-      return `<a class="ficha-mini" href="${urlCoche(v)}">
+      return `<a class="ficha-mini" href="${urlCoche(v)}" draggable="true" data-id="${v.id}">
           <span class="matricula">${matricula(v.matricula)}</span>
           <span class="ficha-mini__coche">${esc(tituloCoche(v))}</span>
           <span class="ficha-mini__datos"><span class="cifra">${v.kilometros != null ? `${cifra(v.kilometros)} km` : 'Sin km'}</span><span class="${claseDias(v, dias)} cifra">${dias} ${dias === 1 ? 'día' : 'días'}</span></span>
         </a>`;
     }).join('');
-    return `<div class="columna columna--${e.fase}">
+    return `<div class="columna columna--${e.fase}" data-estado="${e.id}">
         <h2 class="columna__titulo">${esc(e.nombre)} <span class="cifra">${coches.length}</span></h2>
         ${fichas || '<p class="columna__vacia">Ningún coche</p>'}
       </div>`;
   }).join('');
+  arrastrarEnTablero(todos);
+}
+
+// Arrastrar una tarjeta a otra columna le cambia el estado. Las reglas son las de la API: si no se
+// puede (faltan fotos, tiene reserva…), la tarjeta vuelve a su sitio y se enseña el motivo.
+// Solo con ratón: en el móvil el estado se cambia desde la ficha del coche.
+function arrastrarEnTablero(todos) {
+  const tablero = $('.tablero');
+  const cajaError = $('.error--tablero');
+  const coches = new Map(todos.map((v) => [String(v.id), v]));
+  if (tablero.dataset.arrastrar) {
+    tablero.coches = coches; // al repintar solo cambian los datos, los oyentes ya están puestos
+    return;
+  }
+  tablero.dataset.arrastrar = '1';
+  tablero.coches = coches;
+  let arrastrado = null;
+
+  const columnaDe = (ev) => ev.target.closest?.('.columna');
+  const limpiar = () => tablero.querySelectorAll('.columna--encima').forEach((c) => c.classList.remove('columna--encima'));
+
+  tablero.addEventListener('dragstart', (ev) => {
+    const ficha = ev.target.closest?.('.ficha-mini');
+    if (!ficha) return;
+    arrastrado = tablero.coches.get(ficha.dataset.id);
+    ev.dataTransfer.effectAllowed = 'move';
+    ev.dataTransfer.setData('text/plain', ficha.dataset.id);
+    ficha.classList.add('ficha-mini--arrastrando');
+  });
+  tablero.addEventListener('dragend', (ev) => {
+    ev.target.closest?.('.ficha-mini')?.classList.remove('ficha-mini--arrastrando');
+    limpiar();
+    arrastrado = null;
+  });
+  tablero.addEventListener('dragover', (ev) => {
+    const columna = columnaDe(ev);
+    if (!columna || !arrastrado || columna.dataset.estado === arrastrado.estado) return;
+    ev.preventDefault(); // sin esto el navegador no deja soltar
+    ev.dataTransfer.dropEffect = 'move';
+    if (!columna.classList.contains('columna--encima')) {
+      limpiar();
+      columna.classList.add('columna--encima');
+    }
+  });
+  tablero.addEventListener('dragleave', (ev) => {
+    const columna = columnaDe(ev);
+    if (columna && !columna.contains(ev.relatedTarget)) columna.classList.remove('columna--encima');
+  });
+  tablero.addEventListener('drop', async (ev) => {
+    const columna = columnaDe(ev);
+    const v = arrastrado;
+    if (!columna || !v) return;
+    ev.preventDefault();
+    limpiar();
+    const destino = columna.dataset.estado;
+    if (destino === v.estado) return;
+    const nombre = estado(destino).nombre;
+    // Reservar pide cliente y señal: eso se rellena en la ficha
+    if (destino === 'reservado') {
+      return mostrarErrores(cajaError, { lista: [`Para reservar el ${tituloCoche(v)}, ábrelo y rellena la reserva con el cliente y la señal.`] }, 'No se puede reservar desde el tablero:');
+    }
+    try {
+      await api(`/vehiculos/${v.id}/estado`, { method: 'PATCH', body: { estado: destino } });
+      cajaError.hidden = true;
+      await paginaTablero();
+    } catch (e) {
+      mostrarErrores(cajaError, e, `El ${tituloCoche(v)} no puede pasar a «${nombre}» todavía:`);
+    }
+  });
 }
 
 // --- Listado -----------------------------------------------------------------------------------
 
-async function paginaListado() {
+async function paginaListado(usuario) {
   const todos = await api('/vehiculos');
   const form = $('form.filtros');
-
-  // La maqueta pone el texto visible como valor: se le da el que entiende la API.
-  // Sirve igual con desplegables que con botones de opción (el rediseño usa botones).
-  const VALORES = {
-    estado: Object.fromEntries(ESTADOS.map((e) => [e.nombre, e.id])),
-    propiedad: { Propios: 'propio', 'En depósito': 'deposito' },
-    ubicacion: { 'Patio del taller': 'patio_taller', Parking: 'parking' },
-  };
-  for (const [nombre, valores] of Object.entries(VALORES)) {
-    form.querySelectorAll(`[name="${nombre}"] option, input[name="${nombre}"]`).forEach((op) => {
-      if (valores[op.value]) op.value = valores[op.value];
-      else if (op.tagName === 'OPTION' && !op.getAttribute('value') && valores[op.textContent.trim()]) op.value = valores[op.textContent.trim()];
-    });
-  }
   const valor = (nombre) => form.elements[nombre]?.value ?? '';
   for (const campo of ['q', 'estado', 'propiedad', 'ubicacion']) {
     if (params.get(campo)) fijarValor(form, campo, params.get(campo));
   }
 
+  // Resumen de la cabecera. El valor a la venta (suma de PVP del stock) solo lo ve gerencia.
   const enStock = todos.filter((v) => v.estado !== 'entregado');
-  $('.cabecera .nota').textContent = `${enStock.length} en stock · ${enStock.filter((v) => v.propiedad === 'deposito').length} de terceros en depósito`;
+  const resumen = [
+    [cifra(enStock.length), 'en stock'],
+    [cifra(enStock.filter((v) => v.estado === 'publicado').length), 'publicados'],
+    [cifra(enStock.filter((v) => v.propiedad === 'deposito').length), 'en depósito'],
+  ];
+  if (usuario?.rol === 'gerencia') {
+    resumen.push([euros(enStock.reduce((suma, v) => suma + (v.pvp_cent ?? 0), 0)), 'a la venta']);
+  }
+  $('.coches-resumen').innerHTML = resumen.map(([n, texto]) => `<li><strong>${esc(n)}</strong>${esc(texto)}</li>`).join('');
 
-  const pintar = () => {
-    const q = form.elements.q.value.trim().toLowerCase().replace(/\s/g, '');
+  // Orden: por defecto, los que más días llevan primero. Los vacíos (sin precio, sin km) al final.
+  const dias = (v) => (v.estado === 'entregado' ? null : diasDesde(v.creado_en));
+  const CLAVES = { coche: (v) => tituloCoche(v).toLowerCase(), km: (v) => v.kilometros, precio: (v) => v.pvp_cent, dias };
+  const orden = { campo: 'dias', sentido: -1 };
+  const ordenar = (a, b) => {
+    const x = CLAVES[orden.campo](a);
+    const y = CLAVES[orden.campo](b);
+    if (x == null || y == null) return (x == null) - (y == null);
+    return (x < y ? -1 : x > y ? 1 : 0) * orden.sentido;
+  };
+
+  // Sin estado: los que están en stock. «todos»: también los entregados.
+  const filtrar = () => {
+    const q = valor('q').trim().toLowerCase().replace(/\s/g, '');
     const f = { estado: valor('estado'), propiedad: valor('propiedad'), ubicacion: valor('ubicacion') };
-    const lista = todos.filter((v) =>
-      (!q || `${v.matricula}${v.marca}${v.modelo}${v.version ?? ''}`.toLowerCase().replace(/\s/g, '').includes(q)) &&
-      (!f.estado || v.estado === f.estado) && (!f.propiedad || v.propiedad === f.propiedad) && (!f.ubicacion || v.ubicacion === f.ubicacion));
+    return todos.filter((v) =>
+      (!q || `${v.matricula}${v.marca}${v.modelo}${v.version ?? ''}${v.referencia ?? ''}`.toLowerCase().replace(/\s/g, '').includes(q)) &&
+      (f.estado === 'todos' || (f.estado ? v.estado === f.estado : v.estado !== 'entregado')) &&
+      (!f.propiedad || v.propiedad === f.propiedad) && (!f.ubicacion || v.ubicacion === f.ubicacion));
+  };
+  const hayFiltros = () => ['q', 'estado', 'propiedad', 'ubicacion'].some((c) => valor(c));
 
+  let lista = [];
+  const pintar = () => {
+    lista = filtrar().sort(ordenar);
     $('.tabla tbody').innerHTML = lista.map((v) => {
-      const dias = diasDesde(v.creado_en);
-      return `<tr>
-        <td><img class="miniatura" src="${portada(v)}" alt=""></td>
-        <td><a href="${urlCoche(v)}"><span class="matricula">${matricula(v.matricula)}</span></a></td>
-        <td><span class="coche-celda"><a href="${urlCoche(v)}">${esc(tituloCoche(v))}</a><span class="nota">${esc([v.anio, v.combustible && nombre(v.combustible).toLowerCase(), v.cambio && nombre(v.cambio).toLowerCase(), v.propiedad === 'deposito' ? 'depósito' : 'propio'].filter(Boolean).join(' · '))}</span></span></td>
-        <td>${etiquetaEstado(v.estado)}</td>
-        <td class="derecha cifra">${cifra(v.kilometros)}</td>
-        <td class="derecha cifra">${euros(v.pvp_cent)}</td>
-        <td class="derecha cifra"><span class="${claseDias({ estado: 'publicado' }, dias)}">${dias}</span></td>
-        <td>${v.ubicacion ? esc(nombre(v.ubicacion)) : '—'}</td>
+      const d = dias(v);
+      const meta = [v.anio, v.combustible && nombre(v.combustible).toLowerCase(), v.cambio && nombre(v.cambio).toLowerCase(), v.propiedad === 'deposito' ? 'depósito' : 'propio'];
+      return `<tr class="fila-coche${v.estado === 'entregado' ? ' fila-coche--entregado' : ''}" data-url="${esc(urlCoche(v))}">
+        <td class="c-foto"><img class="miniatura" src="${portada(v)}" alt="" loading="lazy"></td>
+        <td class="c-coche"><a class="fila-coche__titulo" href="${esc(urlCoche(v))}">${esc(tituloCoche(v))}</a>
+          <span class="fila-coche__meta"><span class="matricula">${matricula(v.matricula)}</span><span class="nota">${esc(meta.filter(Boolean).join(' · '))}</span></span></td>
+        <td class="c-estado">${etiquetaEstado(v.estado)}</td>
+        <td class="c-km derecha cifra">${v.kilometros != null ? cifra(v.kilometros) : '—'}</td>
+        <td class="c-precio derecha cifra">${euros(v.pvp_cent)}</td>
+        <td class="c-dias derecha cifra">${d == null ? '<span class="nota">—</span>' : `<span class="${claseDias(v, d)}">${d}</span>`}</td>
+        <td class="c-donde nota">${v.ubicacion ? esc(nombre(v.ubicacion)) : '—'}</td>
       </tr>`;
     }).join('');
     $('.tabla-caja').hidden = !lista.length;
     $('.vacio').hidden = !!lista.length;
+    $('.lista-pie__cuantos').textContent = `${lista.length} ${lista.length === 1 ? 'coche' : 'coches'}${hayFiltros() ? ` de ${todos.length}` : ''}`;
+    $('[data-limpiar]').hidden = !hayFiltros();
+    document.querySelectorAll('.ordenar').forEach((b) => {
+      if (b.dataset.orden === orden.campo) b.setAttribute('aria-sort', orden.sentido > 0 ? 'ascending' : 'descending');
+      else b.removeAttribute('aria-sort');
+    });
   };
 
   form.addEventListener('input', pintar);
   form.addEventListener('submit', (ev) => { ev.preventDefault(); pintar(); });
+  $('[data-limpiar]').addEventListener('click', () => {
+    form.reset();
+    history.replaceState(null, '', 'coches.html');
+    pintar();
+  });
+  // Ordenar: la misma columna invierte; otra empieza por lo más útil (más días, más caro, más km; el nombre de la A a la Z)
+  $('.tabla thead').addEventListener('click', (ev) => {
+    const boton = ev.target.closest('[data-orden]');
+    if (!boton) return;
+    const campo = boton.dataset.orden;
+    orden.sentido = orden.campo === campo ? -orden.sentido : (campo === 'coche' ? 1 : -1);
+    orden.campo = campo;
+    pintar();
+  });
+  // Toda la fila abre la ficha (los enlaces de dentro siguen funcionando solos)
+  $('.tabla tbody').addEventListener('click', (ev) => {
+    if (ev.target.closest('a')) return;
+    const fila = ev.target.closest('tr[data-url]');
+    if (fila) location.href = fila.dataset.url;
+  });
+  // Exportar lo que se está viendo, en CSV para Excel. Sin datos internos de dinero: eso va en Informes.
+  $('[data-exportar]').addEventListener('click', () => {
+    const columnas = [
+      ['Referencia', (v) => v.referencia], ['Matrícula', (v) => v.matricula], ['Marca', (v) => v.marca], ['Modelo', (v) => v.modelo],
+      ['Versión', (v) => v.version], ['Año', (v) => v.anio], ['Km', (v) => v.kilometros], ['Estado', (v) => estado(v.estado).nombre],
+      ['Precio (€)', (v) => (v.pvp_cent == null ? '' : (v.pvp_cent / 100).toFixed(2).replace('.', ','))],
+      ['Días en stock', (v) => dias(v) ?? ''], ['Propiedad', (v) => (v.propiedad === 'deposito' ? 'Depósito' : 'Propio')],
+      ['Dónde', (v) => (v.ubicacion ? nombre(v.ubicacion) : '')],
+    ];
+    const celda = (x) => {
+      let t = x == null ? '' : String(x);
+      if (/^[=+\-@]/.test(t)) t = `'${t}`;
+      return /[;"\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+    };
+    const csv = [columnas.map(([n]) => celda(n)), ...lista.map((v) => columnas.map(([, f]) => celda(f(v))))].map((l) => l.join(';')).join('\r\n');
+    const enlace = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([`\uFEFF${csv}\r\n`], { type: 'text/csv;charset=utf-8' })),
+      download: `coches-${new Date().toISOString().slice(0, 10)}.csv`,
+    });
+    enlace.click();
+    setTimeout(() => URL.revokeObjectURL(enlace.href), 1000);
+  });
+
   pintar();
 }
 
@@ -669,51 +870,155 @@ async function actualizarContadorContactos() {
   contador.textContent = total;
 }
 
+// «hace 5 min», «hace 3 h», «hace 2 días»
+function haceCuanto(fecha) {
+  const min = Math.max(0, Math.round((Date.now() - fecha) / 60000));
+  if (min < 1) return 'ahora mismo';
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.round(h / 24);
+  return `hace ${d} ${d === 1 ? 'día' : 'días'}`;
+}
+
+const iniciales = (nombre) => nombre.trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+
 async function paginaContactos() {
   const form = $('form.filtros');
-  const cuerpo = $('.tabla tbody');
+  const lista = $('.contactos');
   const vacio = $('.vacio');
+  // Los coches, para enseñar la foto y el modelo del que pregunta cada uno
+  const coches = new Map((await api('/vehiculos').catch(() => [])).map((v) => [v.id, v]));
 
-  const pintar = async () => {
-    const { estado, tipo } = Object.fromEntries(new FormData(form));
-    const lista = await api(`/contactos?estado=${encodeURIComponent(estado)}${tipo ? `&tipo=${encodeURIComponent(tipo)}` : ''}`);
-    cuerpo.innerHTML = lista.map((c) => {
-      // Sin atender más de 24 horas: en rojo (es uno de los avisos que pidieron)
-      const horas = (Date.now() - fechaSql(c.recibido_en)) / 3600000;
-      const recibido = `<span class="${!c.atendido_en && horas > 24 ? 'dias dias--peligro' : 'nota'}">${esc(fechaHora(c.recibido_en))}</span>`;
-      const telefono = `<a class="nota" href="tel:${esc(c.telefono.replace(/[^\d+]/g, ''))}">${esc(c.telefono)}</a>`;
-      const coche = c.vehiculo_id ? `<a href="coche.html?id=${c.vehiculo_id}"><span class="matricula">${matricula(c.matricula)}</span></a>` : '<span class="nota">—</span>';
-      const boton = c.atendido_en
-        ? `<button class="boton boton--secundario boton--pequeno" type="button" data-atendido="${c.id}" data-valor="false">Volver a pendiente</button><span class="nota"> ${esc(c.atendido_por_nombre ?? '')}</span>`
-        : `<button class="boton boton--pequeno" type="button" data-atendido="${c.id}" data-valor="true">Marcar atendido</button>`;
-      return `<tr>
-        <td>${recibido}</td>
-        <td><span class="coche-celda">${esc(c.nombre)}${telefono}${c.email ? `<a class="nota" href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}</span></td>
-        <td>${esc(TIPOS_CONTACTO[c.tipo] ?? c.tipo)}</td>
-        <td>${coche}</td>
-        <td>${esc(c.mensaje ?? '')}</td>
-        <td>${boton}</td>
-      </tr>`;
-    }).join('');
-    $('.tabla-caja').hidden = !lista.length;
-    vacio.hidden = !!lista.length;
-    $('strong', vacio).textContent = estado === 'sin_atender' ? 'Todo atendido' : 'No hay contactos con estos filtros';
+  // Resumen de la cabecera: siempre de los que esperan, se filtre lo que se filtre
+  const resumen = async () => {
+    const esperando = await api('/contactos?estado=sin_atender');
+    const viejos = esperando.filter((c) => Date.now() - fechaSql(c.recibido_en) > 86400000).length;
+    $('.contactos-resumen').innerHTML = esperando.length
+      ? `<strong class="cifra">${esperando.length}</strong> esperando respuesta${viejos ? ` <span class="portada__alerta">· ${viejos} desde hace más de un día</span>` : ''}`
+      : '<strong class="cifra">0</strong> esperando: todo atendido';
   };
 
-  cuerpo.addEventListener('click', async (ev) => {
+  const tarjeta = (c) => {
+    const recibido = fechaSql(c.recibido_en);
+    const urgente = !c.atendido_en && Date.now() - recibido > 86400000;
+    const tel = c.telefono.replace(/[^\d+]/g, '');
+    const v = c.vehiculo_id ? coches.get(c.vehiculo_id) : null;
+    const coche = c.vehiculo_id
+      ? `<a class="contacto__coche" href="coche.html?id=${c.vehiculo_id}">
+          <img src="${v ? portada(v) : '../img/coche.svg'}" alt="" loading="lazy">
+          <span><b>${esc([c.marca, c.modelo].filter(Boolean).join(' '))}</b><span class="matricula">${matricula(c.matricula)}</span></span>
+        </a>`
+      : '<span class="contacto__coche contacto__coche--sin">Sin coche concreto</span>';
+    const acciones = c.atendido_en
+      ? `<span class="nota">Atendido${c.atendido_por_nombre ? ` por ${esc(c.atendido_por_nombre)}` : ''} · ${esc(fechaHora(c.atendido_en))}</span>
+         <button class="boton boton--secundario boton--pequeno" type="button" data-atendido="${c.id}" data-valor="false">Volver a pendiente</button>`
+      : `<a class="boton boton--secundario boton--pequeno" href="tel:${esc(tel)}">Llamar</a>
+         <button class="boton boton--oscuro boton--pequeno" type="button" data-atendido="${c.id}" data-valor="true">Marcar atendido</button>`;
+    return `<li class="contacto${urgente ? ' contacto--urgente' : ''}${c.atendido_en ? ' contacto--atendido' : ''}">
+        <span class="contacto__inicial contacto__inicial--${esc(c.tipo)}" aria-hidden="true">${esc(iniciales(c.nombre))}</span>
+        <div class="contacto__cuerpo">
+          <p class="contacto__linea"><strong>${esc(c.nombre)}</strong>
+            <span class="estado tipo--${esc(c.tipo)}">${esc(TIPOS_CONTACTO[c.tipo] ?? c.tipo)}</span>
+            <span class="${urgente ? 'dias dias--peligro' : 'nota'}" title="${esc(fechaHora(c.recibido_en))}">${esc(haceCuanto(recibido))}</span></p>
+          <p class="contacto__mensaje${c.mensaje ? '' : ' contacto__mensaje--vacio'}">${esc(c.mensaje || 'Sin mensaje')}</p>
+          <p class="contacto__datos"><a href="tel:${esc(tel)}">${esc(c.telefono)}</a>${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}</p>
+        </div>
+        ${coche}
+        <div class="contacto__acciones">${acciones}</div>
+      </li>`;
+  };
+
+  let peticion = 0; // si se cambia de filtro deprisa, solo se pinta la respuesta del último
+  const pintar = async () => {
+    const { estado, tipo } = Object.fromEntries(new FormData(form));
+    const esta = ++peticion;
+    const contactos = await api(`/contactos?estado=${encodeURIComponent(estado)}${tipo ? `&tipo=${encodeURIComponent(tipo)}` : ''}`);
+    if (esta !== peticion) return;
+    lista.innerHTML = contactos.map(tarjeta).join('');
+    lista.hidden = !contactos.length;
+    vacio.hidden = !!contactos.length;
+    $('strong', vacio).textContent = estado === 'sin_atender' && !tipo ? 'Todo atendido' : 'No hay contactos con estos filtros';
+  };
+
+  lista.addEventListener('click', async (ev) => {
     const boton = ev.target.closest('[data-atendido]');
     if (!boton) return;
     boton.disabled = true;
     try {
       await api(`/contactos/${boton.dataset.atendido}`, { method: 'PATCH', body: { atendido: boton.dataset.valor === 'true' } });
-      await Promise.all([pintar(), actualizarContadorContactos()]);
+      await Promise.all([pintar(), resumen(), actualizarContadorContactos()]);
     } catch (e) {
       boton.disabled = false;
       mostrarErrores($('.error--lista') ?? cajaErrorEn(form), e, 'No se ha podido cambiar:');
     }
   });
   form.addEventListener('change', pintar);
-  await pintar();
+  await Promise.all([pintar(), resumen()]);
+}
+
+// --- Informes (solo gerencia) -----------------------------------------------------------------
+
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const nombreMes = (mes) => { const [a, m] = mes.split('-'); return `${MESES[m - 1]} ${a}`; };
+const mayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+async function paginaInformes() {
+  const form = $('.cabecera__acciones');
+  const selector = form.elements.mes;
+  const exportar = $('a.boton', form);
+
+  const pintar = async (mes) => {
+    const datos = await api(`/informes${mes ? `?mes=${mes}` : ''}`);
+    const { resumen: r, ventas, stock } = datos;
+    selector.innerHTML = datos.meses.map((m) => `<option value="${m}"${m === datos.mes ? ' selected' : ''}>${esc(mayuscula(nombreMes(m)))}</option>`).join('');
+    exportar.href = `/api/informes/ventas.csv?mes=${datos.mes}`;
+    exportar.setAttribute('download', `ventas-${datos.mes}.csv`);
+
+    // Las cuatro cifras de arriba
+    const comparado = r.vendidos === r.vendidos_mes_anterior ? 'Igual que el mes anterior'
+      : `${r.vendidos > r.vendidos_mes_anterior ? 'Más' : 'Menos'} que el mes anterior (${r.vendidos_mes_anterior})`;
+    const cifras = [
+      ['Coches vendidos', cifra(r.vendidos), comparado],
+      ['Margen bruto', r.margen_cent == null ? '—' : euros(r.margen_cent),
+        r.margen_medio_cent == null ? 'Sin ventas con margen' : `${euros(r.margen_medio_cent)} por coche${r.ventas_sin_margen ? ` · ${r.ventas_sin_margen} sin coste apuntado` : ''}`],
+      ['Días hasta vender', r.dias_medios_venta == null ? '—' : cifra(r.dias_medios_venta), 'Media de los vendidos este mes'],
+      ['En stock', cifra(stock.total), `${stock.deposito} en depósito, ${stock.propios} propios`],
+    ];
+    $('.cifras').innerHTML = cifras.map(([rotulo, valor, nota]) => `<div class="cifras__dato">
+        <span class="rotulo">${esc(rotulo)}</span><strong class="cifra">${esc(valor)}</strong><span class="nota">${esc(nota)}</span>
+      </div>`).join('');
+
+    // Ventas del mes
+    $('.ficha__principal .caja__titulo h2').textContent = `Ventas de ${nombreMes(datos.mes).split(' ')[0]}`;
+    $('.ficha__principal tbody').innerHTML = ventas.length
+      ? ventas.map((v) => `<tr>
+          <td class="cifra">${esc(fechaSql(v.fecha_venta).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</td>
+          <td><span class="coche-celda"><a href="coche.html?id=${v.id}">${esc([v.marca, v.modelo, v.version].filter(Boolean).join(' '))}</a><span class="matricula">${matricula(v.matricula)}</span></span></td>
+          <td>${esc(v.vendio ?? '—')}</td>
+          <td class="derecha cifra">${euros(v.precio_venta_cent)}</td>
+          <td class="derecha cifra">${euros(v.margen_cent)}</td>
+          <td class="derecha cifra">${cifra(v.dias_en_stock)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="6" class="nota">Ninguna venta este mes.</td></tr>';
+    $('.tabla-pie').textContent = ventas.length
+      ? `${ventas.length} ${ventas.length === 1 ? 'venta' : 'ventas'}. El margen es bruto: falta el ajuste de REBU o IVA deducible.`
+      : '';
+
+    // Stock por antigüedad: la barra es la parte del stock en cada tramo
+    $('.tramos').innerHTML = stock.tramos.map((t) => `<li class="${t.desde >= 90 ? 'tramos--peligro' : t.desde >= 60 ? 'tramos--aviso' : ''}">
+        <span>${esc(t.nombre)}</span><span class="tramos__barra"><span style="width: ${stock.total ? Math.round((t.n / stock.total) * 100) : 0}%"></span></span><strong class="cifra">${t.n}</strong>
+      </li>`).join('');
+
+    // Los que más llevan
+    $('.ficha__lateral .canales').innerHTML = stock.mas_antiguos.length
+      ? stock.mas_antiguos.map((v) => `<li><a href="coche.html?id=${v.id}">${esc([v.marca, v.modelo, v.version].filter(Boolean).join(' '))}</a>
+          <span class="dias cifra${v.dias > 90 ? ' dias--peligro' : v.dias > 60 ? ' dias--aviso' : ''}">${v.dias} días</span></li>`).join('')
+      : '<li class="nota">No hay coches en stock.</li>';
+  };
+
+  selector.addEventListener('change', () => pintar(selector.value));
+  await pintar(params.get('mes'));
 }
 
 // --- Arranque ----------------------------------------------------------------------------------
@@ -724,9 +1029,15 @@ const PAGINAS = {
   'coche.html': paginaFicha,
   'coche-reservado.html': paginaFicha,
   'coche-nuevo.html': paginaAlta,
-  'fotos.html': async () => {}, // la rellena fotos.js; aquí solo el menú
+  // La rellena fotos.js; aquí solo el menú y esperar a que avise (como mucho 5 s)
+  'fotos.html': () => new Promise((listo) => {
+    if (document.documentElement.dataset.fotosListas) return listo();
+    document.addEventListener('fotos-listas', listo, { once: true });
+    setTimeout(listo, 5000);
+  }),
   'usuarios.html': paginaUsuarios,
   'contactos.html': paginaContactos,
+  'informes.html': paginaInformes,
 };
 
 (async () => {
@@ -734,14 +1045,60 @@ const PAGINAS = {
   try {
     const usuario = await api('/auth/yo');
     if (usuario.rol !== 'gerencia' && ['informes.html', 'usuarios.html'].includes(PAGINA)) return (location.href = 'index.html');
-    prepararMenu(usuario);
+    const menu = prepararMenu(usuario);
     const pagina = PAGINAS[PAGINA];
     if (pagina) await pagina(usuario);
     else avisoMaqueta();
+    await menu;
   } catch (e) {
     if (e.message !== 'Sin sesión') {
       console.error(e);
       mostrarErrores($('.error--lista'), e, 'No se han podido cargar los datos:');
     }
+  } finally {
+    // Con los datos reales ya puestos, se enseña el contenido por partes (ver «.listo» en panel.css)
+    entrarPorPartes();
+    document.documentElement.classList.add('listo');
   }
 })();
+
+// Cascada al abrir una página: primero la cabecera y luego cada bloque, uno detrás de otro. Si un
+// bloque tiene piezas que también entran (las columnas del tablero, las filas de una tabla), entran
+// las piezas y el bloque no, para que no se funda dos veces. Como mucho 0,7 s de espera para la última.
+function entrarPorPartes() {
+  const PIEZAS = [
+    '.contenido > :not(template):not(script)',
+    // La cabecera negra no se mueve (dejaría ver una franja clara arriba): entra lo de dentro
+    '.contenido > header > *',
+    '.tablero > .columna',
+    '.ficha > *', '.alta > *',
+    '.tabla tbody tr:nth-child(-n+12)',
+    '.contactos > li:nth-child(-n+12)',
+    '.fotos-orden > li:nth-child(-n+12)',
+  ].join(', ');
+  const todas = [...document.querySelectorAll(PIEZAS)].filter((el) => !el.hidden && el.getClientRects().length);
+  const piezas = todas.filter((el) => el.matches('.tabla-caja') || !todas.some((otra) => otra !== el && el.contains(otra)));
+  // Lo que va fijo a la pantalla (la barra de guardar del alta) entra aparte, desde abajo. El bloque
+  // que lo contiene solo se funde: si se moviera, lo fijo se movería con él y saltaría al acabar.
+  const fijas = [...document.querySelectorAll('.barra-guardar')];
+  fijas.forEach((el) => {
+    el.style.setProperty('--i', Math.min(piezas.length, 16));
+    el.classList.add('entra-abajo');
+    el.addEventListener('animationend', function fin(ev) {
+      if (ev.target !== el) return;
+      el.classList.remove('entra-abajo');
+      el.removeEventListener('animationend', fin);
+    });
+  });
+  piezas.forEach((el, i) => {
+    el.style.setProperty('--i', Math.min(i, 16));
+    el.classList.add('entra');
+    if (fijas.some((f) => el.contains(f))) el.classList.add('entra--sin-mover');
+    const fin = (ev) => {
+      if (ev.target !== el) return; // las piezas de dentro también avisan al terminar
+      el.classList.remove('entra', 'entra--sin-mover');
+      el.removeEventListener('animationend', fin);
+    };
+    el.addEventListener('animationend', fin);
+  });
+}

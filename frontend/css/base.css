@@ -327,6 +327,7 @@ p { margin: 0 0 var(--espacio-m); }
 
 /* Columnas de números alineadas a la derecha */
 .tabla .derecha { text-align: right; white-space: nowrap; }
+.tabla td.cifra { white-space: nowrap; } /* fechas y cifras en una línea: «23 sept» no se parte */
 
 /* --- Solo para lectores de pantalla ---
    Texto que no se ve pero que sí leen los lectores de pantalla. */
