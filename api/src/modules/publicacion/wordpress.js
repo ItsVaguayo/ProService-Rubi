@@ -16,6 +16,9 @@ import { caducarReservas } from '../vehiculos/reservas.js';
 // de su ficha y parámetros de su filtro). Los reales se confirman con el diagnóstico. «valores» traduce
 // lo nuestro al texto que guarda su web. Se puede cambiar entero con WP_MAPA (JSON con la misma forma).
 export const MAPA_POR_DEFECTO = {
+  // Para el formulario de la ficha: dice a POST /api/contactos de qué coche se pregunta. Su web no tiene
+  // este campo (duda B16): mientras no exista, el conector se lo salta y el formulario lo dice en el mensaje.
+  referencia: { acf: 'referencia', formato: 'texto' },
   modelo: { acf: 'modelo', formato: 'texto' },
   pvp_cent: { acf: 'precio', formato: 'euros' },
   anio: { acf: 'anio', formato: 'numero' },

@@ -8,9 +8,11 @@ import { abrirDb } from '../src/db.js';
 import { adaptar, convertir, diagnosticar, sincronizar, vincular, MAPA_POR_DEFECTO } from '../src/modules/publicacion/wordpress.js';
 
 // --- WordPress simulado: lo justo de la API REST que usa el conector ---------------------------------
-function wordpressFalso({ acfExpuesto = false } = {}) {
+function wordpressFalso({ acfExpuesto = false, conReferencia = false } = {}) {
   const estado = { posts: new Map([[500, { id: 500, title: 'VOLKSWAGEN GOLF A MANO', status: 'publish' }]]), terminos: [], medios: 0, siguiente: 1000, peticiones: [] };
   const ACF = { precio: { type: ['number', 'null'] }, kilometros: { type: ['number', 'null'] }, estado: { type: ['string', 'null'] }, combustible: { type: ['string', 'null'] }, galeria: { type: ['string', 'null'] } };
+  // Su web no tiene el campo de la referencia (duda B16): solo se añade cuando la prueba lo pide
+  if (conReferencia) ACF.referencia = { type: ['string', 'null'] };
   const servidor = createServer((req, res) => {
     let cuerpo = [];
     req.on('data', (t) => cuerpo.push(t));
@@ -141,6 +143,22 @@ test('con ACF: precio en euros, galería y fotos subidas una sola vez', () =>
     assert.equal(post.acf.precio, 12500);
     assert.equal(estado.medios, 3, 'las fotos no se vuelven a subir');
   }));
+
+test('la referencia viaja si la web tiene su campo (formulario de la ficha); si no, se salta sin error', async () => {
+  await conEscenario({ acfExpuesto: true, conReferencia: true }, async ({ db, cfg, estado, coche }) => {
+    coche(7, 'Seat');
+    await sincronizar(db, cfg);
+    assert.equal([...estado.posts.values()].find((p) => p.title === 'Seat Modelo Versión').acf.referencia, 'PS-00007');
+  });
+  await conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(7, 'Seat');
+    const r = await sincronizar(db, cfg);
+    assert.deepEqual(r.errores, []);
+    const post = [...estado.posts.values()].find((p) => p.title === 'Seat Modelo Versión');
+    assert.equal(post.acf.referencia, undefined);
+    assert.equal(post.acf.precio, 12900, 'lo demás llega igual');
+  });
+});
 
 test('solo se suben las fotos públicas que no son de daños', () =>
   conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {

@@ -73,6 +73,9 @@ class ProService_Ficha
 
         return [
             'titulo'      => $titulo,
+            'referencia'  => (string) $d('referencia'),
+            'enlace'      => get_permalink($post_id),
+            'contactos'   => ProService_Ajustes::url_contactos(),
             'estado'      => ProService_Buscador::estado($post_id),
             'cuota'       => $d('cuota') !== '' ? ProService_Buscador::cifra($d('cuota')) . ' €/mes' : '',
             'precio'      => $precio_texto,

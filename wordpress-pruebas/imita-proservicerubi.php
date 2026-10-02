@@ -61,6 +61,9 @@ add_action('acf/include_fields', function () {
         'video'        => ['type' => 'url', 'label' => 'Vídeo'],
         'extras'       => ['type' => 'textarea', 'label' => 'Extras'],
         'seguridad'    => ['type' => 'textarea', 'label' => 'Seguridad'],
+        // NO está en su web: lo añadimos para el formulario de la ficha (el contacto llega con su coche).
+        // En la real hay que pedir a Francesc que cree este campo de texto en el grupo (duda B16).
+        'referencia'   => ['type' => 'text', 'label' => 'Referencia de la plataforma (PS-00001)'],
     ];
     $fields = [];
     foreach ($campos as $nombre => $campo) {

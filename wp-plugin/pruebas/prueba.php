@@ -145,6 +145,34 @@ afirmar($chr_ficha['extras'] === ['Navegador', 'Faros LED', 'Cámara trasera'], 
 afirmar(ProService_Ficha::datos($manual)['precio'] === '', 'ficha hecha a mano: sin precio, no se inventa');
 afirmar(ProService_Ficha::youtube('https://youtu.be/dQw4w9WgXcQ') === 'dQw4w9WgXcQ' && ProService_Ficha::youtube('https://vimeo.com/1') === null, 'solo enlaces de YouTube');
 
+// Formulario «Pregúntanos por este coche»: a la API de los ajustes, con la referencia del coche
+function pintar_ficha($post_id)
+{
+    $_SERVER['SERVER_NAME'] = $_SERVER['SERVER_NAME'] ?? 'localhost'; // get_header() lo lee; en WP-CLI no existe
+    query_posts(['p' => $post_id, 'post_type' => 'coches']);
+    ob_start();
+    include PROSERVICE_DIR . 'plantillas/ficha.php';
+    $html = ob_get_clean();
+    wp_reset_query();
+    return $html;
+}
+update_post_meta($ateca, 'referencia', 'PS-00031');
+afirmar(ProService_Ficha::datos($ateca)['referencia'] === 'PS-00031', 'la ficha lee la referencia que deja la plataforma');
+afirmar(ProService_Ajustes::url_contactos() === '' && strpos(pintar_ficha($ateca), 'class="formulario-web" data-ps-contacto') === false, 'sin dirección de la API no sale el formulario');
+afirmar(strpos(pintar_ficha($ateca), 'href="#contacto"') === false, 'ni los botones que llevan a él');
+ProService_Ajustes::guardar(['api_url' => 'https://stock.ejemplo.test/']);
+afirmar(ProService_Ajustes::url_contactos() === 'https://stock.ejemplo.test/api/contactos', 'la dirección del envío sale de los ajustes');
+$html = pintar_ficha($ateca);
+afirmar(strpos($html, 'data-api="https://stock.ejemplo.test/api/contactos"') !== false && strpos($html, 'data-coche="PS-00031"') !== false, 'el formulario lleva la API y la referencia');
+afirmar(preg_match('/<input name="web" tabindex="-1" autocomplete="off">/', $html) && preg_match('/left:-10000px[^>]*aria-hidden="true"/', $html), 'campo trampa fuera de la pantalla, sin tabulador ni autocompletar');
+afirmar(strpos($html, 'type="hidden" name="web"') === false, 'y no es type="hidden"');
+afirmar(strpos($html, 'value="prueba"') !== false && strpos($html, 'value="tasacion"') !== false && strpos($html, 'data-ps-tipo="financiacion"') !== false, 'los tipos con el valor que espera la API');
+afirmar(strpos($html, 'aún no envía') === false && strpos($html, 'type="submit" disabled') === false, 'sin la nota de «aún no envía» ni el botón desactivado');
+afirmar(strpos($html, 'onsubmit') === false, 'sin onsubmit="return false"');
+delete_post_meta($ateca, 'referencia');
+afirmar(strpos(pintar_ficha($ateca), 'data-coche=""') !== false, 'sin referencia en la web, el formulario sale igual (y dice el coche en el mensaje)');
+ProService_Ajustes::guardar(['api_url' => '']);
+
 query_posts(['p' => $ateca, 'post_type' => 'coches']);
 ProService_Ajustes::guardar(['ficha_propia' => true]);
 afirmar(substr(apply_filters('template_include', 'tema.php'), -20) === 'plantillas/ficha.php', 'con el ajuste activo, la ficha es la del plugin');
