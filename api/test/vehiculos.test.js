@@ -140,6 +140,8 @@ test('no se publica sin datos obligatorios ni con menos de 15 fotos', () =>
 test('reservado: hace falta la reserva y solo puede haber una activa', () =>
   conServidor(async ({ db, pide }) => {
     const { id } = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    meterFotos(db, id, 15); // solo se reserva un coche que puede estar en la web
+    await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } });
     const sinReserva = await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'reservado' } });
     assert.equal(sinReserva.status, 409);
 
@@ -297,6 +299,7 @@ test('una reserva caducada se libera sola y el coche vuelve a «Publicado»', ()
     const ultimo = (await pide(`/vehiculos/${id}/historial`)).json[0];
     assert.deepEqual([ultimo.de, ultimo.a, ultimo.usuario], ['reservado', 'publicado', null], 'sin usuario: caduca sola');
     assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auditoria WHERE entidad = 'reserva' AND accion = 'caducada'").get().n, 1);
+    assert.equal(db.prepare('SELECT cierre FROM reservas WHERE vehiculo_id = ?').get(id).cierre, 'caducada');
 
     // Se puede volver a reservar
     assert.equal((await pide(`/vehiculos/${id}/reserva`, { method: 'POST', body: { cliente: 'Luis', senal_cent: 50000 } })).status, 201);

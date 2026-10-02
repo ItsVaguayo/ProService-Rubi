@@ -30,7 +30,7 @@ Campos que se pueden escribir: los de `api/src/modules/vehiculos/campos.js` y ni
 | `GET /vehiculos/:id` | con sesión | La ficha. Gerencia recibe también `coste_total_cent` y `margen_cent` |
 | `POST /vehiculos` | con sesión | Alta. Basta con `matricula`, `marca` y `modelo`. Entra en «Pendiente de recoger». 201 con la ficha |
 | `PUT /vehiculos/:id` | con sesión | Cambia solo lo que llega. **Si el coche sale en la web** (publicado, reservado o vendido), la edición no puede vaciar ninguno de los datos de publicar que tenía: 409 con la lista. Si ya le faltaba alguno de antes, se le deja editar lo demás |
-| `PATCH /vehiculos/:id/estado` | con sesión | `{ estado }`. Para «Publicado» hacen falta todos los datos de publicar y 15 fotos públicas que no sean de daños; si no, 409 con `motivos`. Para «Reservado», una reserva activa |
+| `PATCH /vehiculos/:id/estado` | con sesión | `{ estado }`. Para entrar en la web desde fuera (a «Publicado», o de taller directo a «Vendido») hacen falta todos los datos de publicar y 15 fotos públicas que no sean de daños; si no, 409 con `motivos`. Para «Reservado», una reserva activa. Un coche con reserva activa solo sale de «Reservado» a «Vendido» o «Entregado», que cierran la reserva como `vendida`; para lo demás, 409: hay que cancelarla antes |
 | `GET /vehiculos/:id/historial` | con sesión | Cambios de estado, del más reciente al más antiguo, con quién los hizo. `usuario: null` = lo hizo el sistema (por ejemplo, una reserva que caduca) |
 | `GET /vehiculos/:id/extras` | con sesión | Nombres de los extras marcados |
 | `PUT /vehiculos/:id/extras` | con sesión | `{ extras: ["Navegador", …] }` sustituye la lista entera. Solo nombres del catálogo (migración `0003`): uno que no exista da 400 con `desconocidos` y no se guarda nada |
@@ -41,9 +41,11 @@ Campos que se pueden escribir: los de `api/src/modules/vehiculos/campos.js` y ni
 |---|---|---|
 | `GET /vehiculos/:id/reserva` | con sesión | La reserva activa o `null` |
 | `POST /vehiculos/:id/reserva` | con sesión | `{ cliente, senal_cent, dias = 7 }`. Solo coches publicados; señal de 300 € como mínimo; de 1 a 60 días. Pasa el coche a «Reservado». 201 |
-| `DELETE /vehiculos/:id/reserva` | con sesión | Cancela la reserva y el coche vuelve a «Publicado» |
+| `DELETE /vehiculos/:id/reserva` | con sesión | `{ senal_devuelta? }`, `true` o `false` (duda C6; sin él queda sin apuntar). Cancela la reserva y el coche vuelve a «Publicado» |
 
-**Caducan solas.** La API revisa al arrancar y cada 10 minutos: una reserva vencida se desactiva, el coche vuelve a «Publicado» y queda en el historial sin usuario.
+**Caducan solas.** La API revisa al arrancar, cada 10 minutos y antes de sincronizar con WordPress: una reserva vencida se desactiva, el coche vuelve a «Publicado» y queda en el historial sin usuario.
+
+Cada reserva cerrada guarda cómo terminó: `cierre` (`cancelada`, `caducada` o `vendida`), `cerrada_en` y `senal_devuelta` (1, 0 o `null`).
 
 ## Fotos
 
@@ -55,8 +57,8 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 | `GET /fotos/:vehiculoId/:fotoId/archivo` | con sesión | El fichero (JPG) |
 | `POST /fotos/:vehiculoId` | con sesión | Formulario `multipart` con el campo `fotos` (una o varias). Se reducen a JPG de 1.600 px y entran en el primer hueco libre (25 como mucho). 15 MB por foto (413). HEIC del iPhone desde el ordenador: 415 con el aviso. 201 |
 | `PUT /fotos/:vehiculoId/orden` | con sesión | `{ fotos: [{ id, orden }, …] }` con todas las fotos del coche, cada una en un hueco distinto del 1 al 25 |
-| `PATCH /fotos/:vehiculoId/:fotoId` | con sesión | `{ es_dano?, publica? }`, los dos `true` o `false` |
-| `DELETE /fotos/:vehiculoId/:fotoId` | con sesión | Borra la foto y su fichero. Su hueco queda libre |
+| `PATCH /fotos/:vehiculoId/:fotoId` | con sesión | `{ es_dano?, publica? }`, los dos `true` o `false`. Si el coche sale en la web y el cambio lo deja con menos de 15 fotos válidas, 409 |
+| `DELETE /fotos/:vehiculoId/:fotoId` | con sesión | Borra la foto y su fichero. Su hueco queda libre. Si el coche sale en la web y se quedaría con menos de 15 fotos válidas, 409 |
 
 ## Contactos de la web
 

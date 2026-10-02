@@ -1,14 +1,24 @@
-// Dueño: Victor. Liberar una reserva, a mano (cancelar) o sola al caducar (2.4, duda C6).
+// Dueño: Victor. Cerrar una reserva: a mano (cancelar), sola al caducar o al vender el coche (2.4, duda C6).
 // Reservar está en routes.js.
 import { registrar } from '../auditoria.js';
 import { emitirCambioEstado } from './eventos.js';
 
-// Deja la reserva inactiva y, si el coche seguía «Reservado», lo devuelve a «Publicado».
-// Va dentro de una transacción. `usuario` es null cuando caduca sola: no la libera nadie.
-export function liberarReserva(db, { reserva, vehiculo, usuario = null, accion }) {
-  db.prepare('UPDATE reservas SET activa = 0 WHERE id = ?').run(reserva.id);
-  registrar(db, { usuarioId: usuario?.id, entidad: 'reserva', entidadId: reserva.id, accion });
-  if (vehiculo.estado === 'reservado') {
+// Acción de la auditoría → cómo queda apuntado el cierre en la reserva (migración 0007).
+const CIERRES = { cancelacion: 'cancelada', caducada: 'caducada', venta: 'vendida' };
+
+// Deja la reserva inactiva con su cierre y, si se cancela o caduca con el coche aún «Reservado», lo
+// devuelve a «Publicado». En una venta el estado lo cambia quien vende. Va dentro de una transacción.
+// `usuario` es null cuando caduca sola: no la libera nadie. `senalDevuelta`: true, false o null (sin apuntar).
+export function liberarReserva(db, { reserva, vehiculo, usuario = null, accion, senalDevuelta = null }) {
+  const cierre = CIERRES[accion];
+  if (!cierre) throw new Error(`Cierre de reserva desconocido: ${accion}`);
+  db.prepare("UPDATE reservas SET activa = 0, cierre = ?, cerrada_en = datetime('now'), senal_devuelta = ? WHERE id = ?")
+    .run(cierre, senalDevuelta === null ? null : Number(senalDevuelta), reserva.id);
+  registrar(db, {
+    usuarioId: usuario?.id, entidad: 'reserva', entidadId: reserva.id, accion,
+    despues: { cierre, ...(senalDevuelta === null ? {} : { senal_devuelta: senalDevuelta }) },
+  });
+  if (accion !== 'venta' && vehiculo.estado === 'reservado') {
     db.prepare("UPDATE vehiculos SET estado = 'publicado', actualizado_en = datetime('now') WHERE id = ?").run(vehiculo.id);
     db.prepare('INSERT INTO historial_estados (vehiculo_id, de, a, usuario_id) VALUES (?,?,?,?)').run(vehiculo.id, 'reservado', 'publicado', usuario?.id ?? null);
     emitirCambioEstado(db, { vehiculo, de: 'reservado', a: 'publicado', usuario });

@@ -431,12 +431,30 @@ function pintarReserva(v, reserva) {
         <button class="boton boton--secundario" type="button" data-cancelar>Cancelar la reserva</button>
         <p class="nota">Si se cancela, el coche vuelve a «Publicado».</p>
       </div>`;
-    $('[data-vender]', caja).addEventListener('click', () =>
-      api(`/vehiculos/${v.id}/estado`, { method: 'PATCH', body: { estado: 'vendido' } }).then(() => location.reload(), (e) => mostrarErrores($('.error--lista'), e, 'No se puede vender:')));
-    $('[data-cancelar]', caja).addEventListener('click', async () => {
-      if (!confirm('¿Cancelar la reserva? El coche vuelve a «Publicado».')) return;
-      await api(`/vehiculos/${v.id}/reserva`, { method: 'DELETE' }).then(() => location.reload(), (e) => mostrarErrores($('.error--lista'), e, 'No se pudo cancelar:'));
-    });
+    const vender = () =>
+      api(`/vehiculos/${v.id}/estado`, { method: 'PATCH', body: { estado: 'vendido' } }).then(() => location.reload(), (e) => mostrarErrores($('.error--lista'), e, 'No se puede vender:'));
+    $('[data-vender]', caja).addEventListener('click', vender);
+    // Duda C6: al cancelar se apunta si se devuelve la señal. Se pregunta aquí, con botones que dicen
+    // lo que hacen, para que «echarse atrás» no se confunda con «no se devuelve».
+    const pila = $('.pila', caja);
+    const botones = pila.innerHTML;
+    const cancelar = (senal_devuelta) =>
+      api(`/vehiculos/${v.id}/reserva`, { method: 'DELETE', body: { senal_devuelta } }).then(() => location.reload(), (e) => mostrarErrores($('.error--lista'), e, 'No se pudo cancelar:'));
+    const preguntar = () => {
+      pila.innerHTML = `
+        <p class="nota">¿Se le devuelve la señal de ${euros(reserva.senal_cent)} a ${esc(reserva.cliente)}? El coche vuelve a «Publicado».</p>
+        <button class="boton boton--oscuro" type="button" data-devuelta="si">Cancelar y devolver la señal</button>
+        <button class="boton boton--oscuro" type="button" data-devuelta="no">Cancelar sin devolverla</button>
+        <button class="boton boton--secundario" type="button" data-volver>No cancelar</button>`;
+      $('[data-devuelta="si"]', pila).addEventListener('click', () => cancelar(true));
+      $('[data-devuelta="no"]', pila).addEventListener('click', () => cancelar(false));
+      $('[data-volver]', pila).addEventListener('click', () => {
+        pila.innerHTML = botones;
+        $('[data-vender]', pila).addEventListener('click', vender);
+        $('[data-cancelar]', pila).addEventListener('click', preguntar);
+      });
+    };
+    $('[data-cancelar]', caja).addEventListener('click', preguntar);
     return;
   }
   const form = $('form', caja);

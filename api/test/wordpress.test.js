@@ -153,6 +153,16 @@ test('solo se suben las fotos públicas que no son de daños', () =>
     assert.equal(post.acf.galeria.split(',').length, 1);
   }));
 
+test('una reserva vencida se cierra antes de publicar: sale «En venta», no «Reservado»', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'reservado');
+    db.prepare("INSERT INTO reservas (vehiculo_id, cliente, senal_cent, caduca_en) VALUES (1, 'Marta', 50000, datetime('now', '-1 hour'))").run();
+    await sincronizar(db, cfg);
+    const post = [...estado.posts.values()].find((p) => p.title === 'Seat Modelo Versión');
+    assert.equal(post.acf.estado, 'En venta');
+    assert.equal(db.prepare('SELECT estado FROM vehiculos WHERE id = 1').get().estado, 'publicado');
+  }));
+
 test('fotos de más: como mucho N por pasada y la siguiente termina', () =>
   conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
     coche(1, 'Seat', 'publicado', 3);

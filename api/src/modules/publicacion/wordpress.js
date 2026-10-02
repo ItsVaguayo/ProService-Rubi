@@ -10,6 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { extname, resolve, sep } from 'node:path';
 import { ESTADOS_WEB } from '../estados.js';
+import { caducarReservas } from '../vehiculos/reservas.js';
 
 // Dato nuestro → campo ACF de la web, con los nombres que sugieren sus plantillas (1-oct-2026: etiquetas
 // de su ficha y parámetros de su filtro). Los reales se confirman con el diagnóstico. «valores» traduce
@@ -177,6 +178,7 @@ export async function sincronizar(db, cfg, { forzar = false, fetchImpl = fetch }
   if (enMarcha) throw new Error('Ya hay una sincronización con WordPress en marcha');
   enMarcha = true;
   try {
+    caducarReservas(db); // que no se publique «Reservado» un coche cuya reserva ya venció
     return await sincronizarSinBloqueo(db, cfg, { forzar, fetchImpl });
   } finally {
     enMarcha = false;

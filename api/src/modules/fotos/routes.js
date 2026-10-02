@@ -10,6 +10,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { resolve, join, sep } from 'node:path';
 import { registrar } from '../auditoria.js';
+import { enLaWeb, fotosParaLaWeb, FOTOS_MINIMAS } from '../vehiculos/reglas.js';
 
 export const FOTOS_MAXIMAS = 25; // 4.1: como mucho 25
 const ANCHO_MAXIMO = 1600; // px: de sobra para la web y los portales
@@ -26,6 +27,20 @@ const AVISO_HEIC =
 const conUrl = (f) => ({ ...f, url: `/api/fotos/${f.vehiculo_id}/${f.id}/archivo` });
 
 const esEntero = (v) => Number.isInteger(v) && v > 0;
+
+// Una foto cuenta para la web si es pública y no es de daños.
+const cuentaParaLaWeb = (f) => f.publica === 1 && f.es_dano === 0;
+
+// Un coche que está en la web no puede quedarse con menos fotos válidas que el mínimo para publicar.
+// `restar` = cuántas deja de contar el cambio. Devuelve el error o null.
+function errorSiDejaSinFotos(db, vehiculoId, restar) {
+  if (restar <= 0) return null;
+  const coche = db.prepare('SELECT estado FROM vehiculos WHERE id = ?').get(vehiculoId);
+  if (!coche || !enLaWeb(coche.estado)) return null;
+  const quedarian = fotosParaLaWeb(db, vehiculoId) - restar;
+  if (quedarian >= FOTOS_MINIMAS) return null;
+  return `Está en la web y se quedaría con ${quedarian} fotos; hacen falta al menos ${FOTOS_MINIMAS}. Sube otra antes o sácalo de la web.`;
+}
 
 export function rutasFotos(db) {
   const r = Router();
@@ -163,6 +178,9 @@ export function rutasFotos(db) {
     }
     const columnas = Object.keys(cambios);
     if (!columnas.length) return res.status(400).json({ error: 'Sin cambios' });
+    const deja = cuentaParaLaWeb(f) && !cuentaParaLaWeb({ ...f, ...cambios });
+    const error = errorSiDejaSinFotos(db, f.vehiculo_id, deja ? 1 : 0);
+    if (error) return res.status(409).json({ error });
 
     db.transaction(() => {
       db.prepare(`UPDATE fotos SET ${columnas.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`).run(...columnas.map((c) => cambios[c]), f.id);
@@ -178,6 +196,8 @@ export function rutasFotos(db) {
   r.delete('/:vehiculoId/:fotoId', async (req, res) => {
     const f = leer.get(req.params.fotoId, req.params.vehiculoId);
     if (!f) return res.status(404).json({ error: 'No existe' });
+    const error = errorSiDejaSinFotos(db, f.vehiculo_id, cuentaParaLaWeb(f) ? 1 : 0);
+    if (error) return res.status(409).json({ error });
 
     db.transaction(() => {
       db.prepare('DELETE FROM fotos WHERE id = ?').run(f.id);

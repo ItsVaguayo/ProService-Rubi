@@ -4,7 +4,7 @@ import { ESTADOS, ESTADOS_WEB, esEstadoValido } from '../estados.js';
 import { costeTotal, margenBruto } from '../margen.js';
 import { registrar } from '../auditoria.js';
 import { limpiarDatos, quitarDinero } from './campos.js';
-import { motivosParaNoEntrar, faltanParaPublicar } from './reglas.js';
+import { motivosParaNoEntrar, faltanParaPublicar, cierraLaReserva } from './reglas.js';
 import { emitirCambioEstado } from './eventos.js';
 import { liberarReserva } from './reservas.js';
 
@@ -119,7 +119,12 @@ export function rutasVehiculos(db) {
     if (!v) return res.status(404).json({ error: 'No existe' });
     const reserva = reservaActiva.get(v.id);
     if (!reserva) return res.status(404).json({ error: 'Este coche no tiene reserva activa' });
-    db.transaction(() => liberarReserva(db, { reserva, vehiculo: v, usuario: req.usuario, accion: 'cancelacion' }))();
+    // Duda C6: se apunta si se devolvió la señal. Sin dato, queda sin apuntar.
+    const senalDevuelta = req.body?.senal_devuelta ?? null;
+    if (senalDevuelta !== null && typeof senalDevuelta !== 'boolean') {
+      return res.status(400).json({ error: 'senal_devuelta tiene que ser true o false' });
+    }
+    db.transaction(() => liberarReserva(db, { reserva, vehiculo: v, usuario: req.usuario, accion: 'cancelacion', senalDevuelta }))();
     res.json({ ok: true });
   });
 
@@ -190,6 +195,9 @@ export function rutasVehiculos(db) {
     if (motivos.length) return res.status(409).json({ error: motivos.join('. '), motivos });
 
     db.transaction(() => {
+      // Vender o entregar un coche reservado consume su reserva
+      const reserva = reservaActiva.get(v.id);
+      if (reserva && cierraLaReserva(estado)) liberarReserva(db, { reserva, vehiculo: v, usuario: req.usuario, accion: 'venta' });
       db.prepare("UPDATE vehiculos SET estado = ?, actualizado_en = datetime('now') WHERE id = ?").run(estado, v.id);
       db.prepare('INSERT INTO historial_estados (vehiculo_id, de, a, usuario_id) VALUES (?,?,?,?)').run(v.id, v.estado, estado, req.usuario.id);
       registrar(db, { usuarioId: req.usuario.id, entidad: 'vehiculo', entidadId: v.id, accion: 'estado', antes: { estado: v.estado }, despues: { estado } });
