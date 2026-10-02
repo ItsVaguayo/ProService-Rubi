@@ -80,6 +80,7 @@ npm run wordpress --workspace api -- sincronizar   # publica, actualiza y retira
 
 - [Plan de trabajo](docs/plan.md) y [reparto resumido](docs/reparto.md)
 - [Dudas abiertas con el cliente](docs/dudas.md)
+- [Portales: cómo publicar de forma automática](docs/portales.md) (T04)
 - [Flujo de ramas](docs/flujo-git.md)
 - [Resumen del briefing y dudas abiertas](docs/briefing.md)
 - Briefing original: `Briefing-plataforma-vehiculos-ProService-Rubi.docx`
