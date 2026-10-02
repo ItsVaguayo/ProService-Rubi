@@ -1,6 +1,8 @@
 // Dueño: David. Publicación en WordPress desde el panel (solo gerencia).
 import { Router } from 'express';
 import { configDesdeEntorno, diagnosticar, sincronizar, vincular } from './wordpress.js';
+// Engancha la retirada al vender en alCambiarEstado. Va aquí porque app.js ya carga este módulo.
+import './retirada.js';
 
 export function rutasWordPress(db) {
   const r = Router();
