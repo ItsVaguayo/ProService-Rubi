@@ -224,27 +224,39 @@ async function notaDePruebas(form) {
 
 // --- Tablero -----------------------------------------------------------------------------------
 
-async function paginaTablero() {
+// Columnas que el usuario ha desplegado con «Ver N más»: siguen abiertas al repintar tras un cambio de estado
+const columnasAbiertas = new Set();
+const VISIBLES_POR_COLUMNA = 4;
+let usuarioTablero = null; // al repintar tras soltar una tarjeta no llega el usuario: se reutiliza
+
+async function paginaTablero(usuario = usuarioTablero) {
+  usuarioTablero = usuario;
   const todos = await api('/vehiculos');
   const ubicacion = params.get('ubicacion');
-  const enStock = todos.filter((v) => v.estado !== 'entregado' && (!ubicacion || v.ubicacion === ubicacion));
+  // En el tablero salen también los vendidos sin entregar (columna y «Para hoy»), pero no cuentan
+  // como stock: ya no están a la venta. Igual que el stock de Informes.
+  const enTablero = todos.filter((v) => v.estado !== 'entregado' && (!ubicacion || v.ubicacion === ubicacion));
+  const enStock = enTablero.filter((v) => v.estado !== 'vendido');
 
   // Portada: total, publicados, sin publicar todavía (de «Pendiente de recoger» a «Pendiente de fotos»)
   // y con más de 60 días a la venta, que lleva el aviso solo si hay alguno.
   const ANTES_DE_PUBLICAR = ESTADOS.slice(0, ESTADOS.findIndex((e) => e.id === 'publicado')).map((e) => e.id);
-  const portada = {
+  const resumen = {
     total: enStock.length,
     publicados: enStock.filter((v) => v.estado === 'publicado').length,
     sinPublicar: enStock.filter((v) => ANTES_DE_PUBLICAR.includes(v.estado)).length,
     parados: enStock.filter((v) => v.estado === 'publicado' && diasDesde(v.en_estado_desde) > 60).length,
   };
   const titular = $('.portada__titular .cifra');
-  if (titular) titular.textContent = portada.total;
+  if (titular) titular.textContent = resumen.total;
   const datos = document.querySelectorAll('.portada__datos li');
-  [portada.publicados, portada.sinPublicar, portada.parados].forEach((n, i) => {
+  [resumen.publicados, resumen.sinPublicar, resumen.parados].forEach((n, i) => {
     if (datos[i]) datos[i].querySelector('strong').textContent = n;
   });
-  datos[2]?.classList.toggle('portada__alerta', portada.parados > 0);
+  datos[2]?.classList.toggle('portada__alerta', resumen.parados > 0);
+  const fecha = $('.portada__fecha');
+  if (fecha) fecha.textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  await cifrasDelMes(todos, enStock, usuario);
 
   // Barra de estados: cuántos hay en cada uno y qué parte del stock son (--p)
   document.querySelectorAll('.estados__paso').forEach((paso) => {
@@ -258,7 +270,7 @@ async function paginaTablero() {
   // Para hoy: lo que se puede deducir de los datos que ya hay
   const tareas = [];
   const hoy = (texto, v, ir, urgente) => tareas.push({ texto, url: urlCoche(v), ir, urgente });
-  for (const v of enStock) {
+  for (const v of enTablero) {
     const dias = diasDesde(v.en_estado_desde);
     const coche = `${v.marca} ${v.modelo}`;
     if (v.estado === 'vendido') hoy(`El ${coche} está vendido y falta entregarlo`, v, 'Entregar', true);
@@ -291,23 +303,178 @@ async function paginaTablero() {
     actual ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current');
   });
 
-  // Columnas: una por estado, sin «Entregado»
+  // Columnas: una por estado, sin «Entregado». Dentro, primero los que más días llevan en ese estado:
+  // son los que hay que mover. Con más de VISIBLES_POR_COLUMNA, el resto queda tras «Ver N más».
   $('.tablero').innerHTML = ESTADOS.filter((e) => e.id !== 'entregado').map((e) => {
-    const coches = enStock.filter((v) => v.estado === e.id);
-    const fichas = coches.map((v) => {
-      const dias = diasDesde(v.en_estado_desde);
-      return `<a class="ficha-mini" href="${urlCoche(v)}" draggable="true" data-id="${v.id}">
-          <span class="matricula">${matricula(v.matricula)}</span>
-          <span class="ficha-mini__coche">${esc(tituloCoche(v))}</span>
-          <span class="ficha-mini__datos"><span class="cifra">${v.kilometros != null ? `${cifra(v.kilometros)} km` : 'Sin km'}</span><span class="${claseDias(v, dias)} cifra">${dias} ${dias === 1 ? 'día' : 'días'}</span></span>
+    const coches = enTablero.filter((v) => v.estado === e.id)
+      .map((v) => ({ v, dias: diasDesde(v.en_estado_desde) }))
+      .sort((a, b) => b.dias - a.dias);
+    const fichas = coches.map(({ v, dias }, i) => {
+      const km = v.kilometros != null ? `${cifra(v.kilometros)} km` : 'Sin km';
+      const oculta = i >= VISIBLES_POR_COLUMNA ? ' ficha-mini--oculta' : '';
+      return `<a class="ficha-mini${oculta}" href="${urlCoche(v)}" draggable="true" data-id="${v.id}">
+          <img class="ficha-mini__foto" src="${portada(v)}" alt="" loading="lazy" draggable="false">
+          <span class="ficha-mini__cuerpo">
+            <span class="matricula">${matricula(v.matricula)}</span>
+            <span class="ficha-mini__coche" title="${esc(tituloCoche(v))}">${esc(tituloCoche(v))}</span>
+          </span>
+          <span class="ficha-mini__datos">
+            <span class="cifra">${km}${v.pvp_cent != null ? ` · <span class="ficha-mini__precio">${euros(v.pvp_cent)}</span>` : ''}</span>
+            <span class="${claseDias(v, dias)} cifra" title="Días en «${esc(e.nombre)}»">${dias} ${dias === 1 ? 'día' : 'días'}</span>
+          </span>
         </a>`;
     }).join('');
-    return `<div class="columna columna--${e.fase}" data-estado="${e.id}">
+    const sobran = coches.length - VISIBLES_POR_COLUMNA;
+    const abierta = columnasAbiertas.has(e.id);
+    const mas = sobran > 0
+      ? `<button class="columna__mas" type="button" aria-expanded="${abierta}" data-mas="${sobran}">${abierta ? 'Ver menos' : `Ver ${sobran} más`}</button>`
+      : '';
+    return `<div class="columna columna--${e.fase}${abierta ? ' columna--abierta' : ''}" data-estado="${e.id}">
         <h2 class="columna__titulo">${esc(e.nombre)} <span class="cifra">${coches.length}</span></h2>
         ${fichas || '<p class="columna__vacia">Ningún coche</p>'}
+        ${mas}
       </div>`;
   }).join('');
   arrastrarEnTablero(todos);
+  moverTablero();
+}
+
+// Cifras del mes en la cabecera. Gerencia: ventas, margen bruto y días para vender (de /informes).
+// Todos: coches que han entrado este mes y días medios que lleva el stock. Meses en UTC, como la base.
+async function cifrasDelMes(todos, enStock, usuario) {
+  const caja = $('.portada__mes');
+  if (!caja) return;
+  const mes = new Date().toISOString().slice(0, 7);
+  const entradas = todos.filter((v) => v.creado_en?.startsWith(mes)).length;
+  const conDias = enStock.map((v) => diasDesde(v.creado_en)).filter((d) => d != null);
+  const diasMedios = conDias.length ? Math.round(conDias.reduce((a, b) => a + b, 0) / conDias.length) : null;
+  const cifras = [];
+  if (usuario?.rol === 'gerencia') {
+    const informe = await api('/informes').catch(() => null);
+    const r = informe?.resumen;
+    if (r) {
+      const antes = r.vendidos_mes_anterior;
+      const tendencia = r.vendidos > antes ? 'sube' : r.vendidos < antes ? 'baja' : '';
+      const mesPasado = new Date(Date.UTC(+mes.slice(0, 4), +mes.slice(5) - 2, 1)).toLocaleDateString('es-ES', { month: 'long', timeZone: 'UTC' });
+      cifras.push([`Vendidos <small class="${tendencia}">${cifra(antes)} en ${mesPasado}</small>`, cifra(r.vendidos)]);
+      cifras.push(['Margen bruto', esc(euros(r.margen_cent))]);
+      cifras.push(['Días medios para vender', r.dias_medios_venta != null ? cifra(r.dias_medios_venta) : '—']);
+    }
+  }
+  cifras.push(['Coches que han entrado', cifra(entradas)]);
+  if (usuario?.rol !== 'gerencia') cifras.push(['Días medios en stock', diasMedios != null ? cifra(diasMedios) : '—']);
+  $('.portada__cifras', caja).innerHTML = cifras.map(([dt, dd]) => `<div><dt>${dt}</dt><dd class="cifra">${dd}</dd></div>`).join('');
+  caja.hidden = false;
+}
+
+// El tablero se mueve de lado sin la barra de abajo: arrastrando el fondo con el ratón (con un poco
+// de inercia al soltar), con las flechas de la cabecera o con las teclas si tiene el foco. Mientras
+// se arrastra una tarjeta, acercarla al borde mueve el tablero solo, para llegar a cualquier columna.
+function moverTablero() {
+  const tablero = $('.tablero');
+  if (!tablero || tablero.dataset.mover) return; // al repintar, los oyentes ya están puestos
+  tablero.dataset.mover = '1';
+  const marco = tablero.closest('.tablero-marco');
+  const flechas = [...document.querySelectorAll('[data-columnas]')];
+
+  // Degradado y flechas según haya más columnas a cada lado
+  const bordes = () => {
+    const max = tablero.scrollWidth - tablero.clientWidth;
+    const izq = tablero.scrollLeft > 2;
+    const der = tablero.scrollLeft < max - 2;
+    marco?.classList.toggle('tablero-marco--hay-izq', izq);
+    marco?.classList.toggle('tablero-marco--hay-der', der);
+    flechas.forEach((b) => { b.disabled = Number(b.dataset.columnas) < 0 ? !izq : !der; });
+  };
+  tablero.addEventListener('scroll', bordes, { passive: true });
+  addEventListener('resize', bordes);
+  new MutationObserver(bordes).observe(tablero, { childList: true });
+  bordes();
+
+  // «Ver N más» / «Ver menos» en las columnas largas
+  tablero.addEventListener('click', (ev) => {
+    const boton = ev.target.closest('.columna__mas');
+    if (!boton) return;
+    const columna = boton.closest('.columna');
+    const abierta = columna.classList.toggle('columna--abierta');
+    abierta ? columnasAbiertas.add(columna.dataset.estado) : columnasAbiertas.delete(columna.dataset.estado);
+    boton.setAttribute('aria-expanded', abierta);
+    boton.textContent = abierta ? 'Ver menos' : `Ver ${boton.dataset.mas} más`;
+    if (!abierta) columna.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+
+  // Flechas: dos columnas por pulsación
+  const paso = () => (tablero.querySelector('.columna')?.offsetWidth ?? 272) + 14;
+  flechas.forEach((b) => b.addEventListener('click', () => {
+    tablero.scrollBy({ left: Number(b.dataset.columnas) * paso() * 2, behavior: 'smooth' });
+  }));
+
+  // Arrastrar el fondo con el ratón. Desde una tarjeta no: eso es cambiarla de estado.
+  let mano = null;
+  let inercia = 0;
+  tablero.addEventListener('pointerdown', (ev) => {
+    if (ev.pointerType !== 'mouse' || ev.button !== 0 || ev.target.closest('.ficha-mini, a, button')) return;
+    if (tablero.scrollWidth <= tablero.clientWidth) return;
+    ev.preventDefault(); // que no empiece a seleccionar texto
+    cancelAnimationFrame(inercia);
+    mano = { x: ev.clientX, scroll: tablero.scrollLeft, movido: false, ultimaX: ev.clientX, ultimoT: ev.timeStamp, v: 0 };
+    tablero.setPointerCapture(ev.pointerId);
+  });
+  tablero.addEventListener('pointermove', (ev) => {
+    if (!mano) return;
+    const dx = ev.clientX - mano.x;
+    if (!mano.movido && Math.abs(dx) < 4) return;
+    if (!mano.movido) tablero.classList.add('tablero--moviendo');
+    mano.movido = true;
+    tablero.scrollLeft = mano.scroll - dx;
+    const dt = ev.timeStamp - mano.ultimoT;
+    if (dt > 0) mano.v = (ev.clientX - mano.ultimaX) / dt; // px por ms
+    mano.ultimaX = ev.clientX;
+    mano.ultimoT = ev.timeStamp;
+  });
+  const soltar = (ev) => {
+    if (!mano) return;
+    tablero.classList.remove('tablero--moviendo');
+    if (tablero.hasPointerCapture(ev.pointerId)) tablero.releasePointerCapture(ev.pointerId);
+    // Inercia: sigue un poco en la dirección del gesto, salvo si el ratón ya estaba parado
+    let v = ev.timeStamp - mano.ultimoT < 80 ? Math.max(-30, Math.min(30, mano.v * 16)) : 0;
+    mano = null;
+    const frenar = () => {
+      if (Math.abs(v) < 0.5) return;
+      tablero.scrollLeft -= v;
+      v *= 0.88;
+      inercia = requestAnimationFrame(frenar);
+    };
+    frenar();
+  };
+  tablero.addEventListener('pointerup', soltar);
+  tablero.addEventListener('pointercancel', soltar);
+
+  // Con una tarjeta cogida, cerca del borde el tablero avanza solo (más rápido cuanto más cerca)
+  let ratonX = null;
+  let auto = 0;
+  const avanzar = () => {
+    const caja = tablero.getBoundingClientRect();
+    const zona = 90;
+    if (ratonX != null) {
+      if (ratonX < caja.left + zona) tablero.scrollLeft -= Math.ceil((caja.left + zona - ratonX) / 6);
+      else if (ratonX > caja.right - zona) tablero.scrollLeft += Math.ceil((ratonX - (caja.right - zona)) / 6);
+    }
+    auto = requestAnimationFrame(avanzar);
+  };
+  const seguir = (ev) => { ratonX = ev.clientX; };
+  tablero.addEventListener('dragstart', () => {
+    cancelAnimationFrame(inercia);
+    document.addEventListener('dragover', seguir);
+    auto = requestAnimationFrame(avanzar);
+  });
+  const parar = () => {
+    cancelAnimationFrame(auto);
+    document.removeEventListener('dragover', seguir);
+    ratonX = null;
+  };
+  tablero.addEventListener('dragend', parar);
+  tablero.addEventListener('drop', parar);
 }
 
 // Arrastrar una tarjeta a otra columna le cambia el estado. Las reglas son las de la API: si no se
@@ -389,7 +556,7 @@ async function paginaListado(usuario) {
   }
 
   // Resumen de la cabecera. El valor a la venta (suma de PVP del stock) solo lo ve gerencia.
-  const enStock = todos.filter((v) => v.estado !== 'entregado');
+  const enStock = todos.filter((v) => !['vendido', 'entregado'].includes(v.estado)); // vendido sin entregar no es stock
   const resumen = [
     [cifra(enStock.length), 'en stock'],
     [cifra(enStock.filter((v) => v.estado === 'publicado').length), 'publicados'],

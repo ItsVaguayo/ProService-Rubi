@@ -42,14 +42,25 @@
          «Sin publicar todavía» = coches de «Pendiente de recoger» a «Pendiente de fotos».
          Si hay coches con más de 60 días a la venta, el dato lleva la clase portada__alerta. -->
     <header class="portada">
-      <p class="portada__antetitulo">Stock</p>
-      <h1 class="portada__titular"><span class="cifra">10</span> coches</h1>
-      <ul class="portada__datos">
-        <li><strong class="cifra">3</strong> publicados</li>
-        <li><strong class="cifra">5</strong> sin publicar todavía</li>
-        <li class="portada__alerta"><strong class="cifra">1</strong> con más de 60 días</li>
-      </ul>
-      <a class="boton boton--claro" href="coche-nuevo.html">Alta de vehículo</a>
+      <div class="portada__principal">
+        <p class="portada__antetitulo">Stock <span class="portada__fecha"></span></p>
+        <h1 class="portada__titular"><span class="cifra">10</span> coches</h1>
+        <ul class="portada__datos">
+          <li><strong class="cifra">3</strong> publicados</li>
+          <li><strong class="cifra">5</strong> sin publicar todavía</li>
+          <li class="portada__alerta"><strong class="cifra">1</strong> con más de 60 días</li>
+        </ul>
+        <div class="portada__acciones">
+          <a class="boton boton--claro" href="coche-nuevo.html">Alta de vehículo</a>
+          <a class="boton boton--secundario" href="coches.html">Ver el listado</a>
+        </div>
+      </div>
+      <!-- EL MES. Gerencia ve ventas y margen (de /informes); el comercial, solo entradas y días.
+           panel.js lo rellena; sin datos se queda oculto. -->
+      <section class="portada__mes" aria-label="Este mes" hidden>
+        <h2 class="portada__mes-titulo">Este mes</h2>
+        <dl class="portada__cifras"></dl>
+      </section>
     </header>
 
     <!-- ESTADOS. Los 10 en el orden del recorrido, con cuántos coches hay en cada uno.
@@ -105,16 +116,27 @@
          El número de cada tarjeta son los días en ese estado. En ámbar: más de 5.
          En rojo: más de 14, o más de 60 a la venta. -->
     <div class="tablero-cabecera">
-      <h2>Coches por estado</h2>
-      <!-- Filtro por sitio. Los entregados no salen: están en el listado de coches. -->
-      <nav class="pestanas" aria-label="Dónde está el coche">
-        <a href="index.html" aria-current="page">Todos</a>
-        <a href="#">Patio del taller</a>
-        <a href="#">Parking</a>
-      </nav>
+      <div>
+        <h2>Coches por estado</h2>
+        <p class="tablero-cabecera__pista">Arrastra el fondo para moverte de lado. Suelta una tarjeta en otra columna para cambiarle el estado.</p>
+      </div>
+      <div class="tablero-cabecera__mandos">
+        <!-- Filtro por sitio. Los entregados no salen: están en el listado de coches. -->
+        <nav class="pestanas" aria-label="Dónde está el coche">
+          <a href="index.html" aria-current="page">Todos</a>
+          <a href="#">Patio del taller</a>
+          <a href="#">Parking</a>
+        </nav>
+        <div class="tablero-flechas">
+          <button class="tablero-flecha" type="button" data-columnas="-1" aria-label="Columnas anteriores">‹</button>
+          <button class="tablero-flecha" type="button" data-columnas="1" aria-label="Columnas siguientes">›</button>
+        </div>
+      </div>
     </div>
     <div class="error error--lista error--tablero" role="alert" hidden></div>
-    <section class="tablero" aria-label="Coches por estado">
+    <!-- El marco pinta un degradado en el borde por el que el tablero sigue (clases --hay-izq / --hay-der) -->
+    <div class="tablero-marco">
+    <section class="tablero" aria-label="Coches por estado" tabindex="0">
 
       <div class="columna columna--llegada">
         <h2 class="columna__titulo">Pendiente de recoger <span class="cifra">1</span></h2>
@@ -205,6 +227,7 @@
 
 
     </section>
+    </div>
   </main>
 </div>
 <script type="module" src="../js/panel.js"></script>
