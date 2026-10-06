@@ -208,6 +208,29 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 .portada__alerta,
 .portada__alerta strong { color: #f08a8a; }
 
+/* Dos lados: el stock a la izquierda y las cifras del mes a la derecha */
+.portada { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 20px 40px; }
+.portada__principal { display: grid; justify-items: start; gap: 20px; }
+.portada__fecha { margin-left: 10px; padding-left: 12px; border-left: 1px solid rgb(255 255 255 / .2); color: rgb(255 255 255 / .55); letter-spacing: .08em; }
+.portada__acciones { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.portada__mes {
+  min-width: 340px;
+  padding: 18px 20px;
+  border: 1px solid rgb(255 255 255 / .1);
+  border-radius: var(--radio);
+  background: rgb(255 255 255 / .04);
+  backdrop-filter: blur(4px);
+}
+.portada__mes-titulo { margin: 0 0 14px; color: var(--gris-marca); font-size: .75rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.portada__cifras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; margin: 0; }
+.portada__cifras div { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 4px; } /* cifras arriba y alineadas aunque una etiqueta lleve dos líneas */
+.portada__cifras dt { color: rgb(255 255 255 / .6); font-size: .8125rem; }
+.portada__cifras dd { margin: 0; color: var(--blanco); font-size: 1.625rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+.portada__cifras small { display: block; margin-top: 2px; color: rgb(255 255 255 / .45); font-size: .75rem; }
+.portada__cifras .sube { color: #7fd6a4; }
+.portada__cifras .baja { color: #f08a8a; }
+
 .boton--claro { background: var(--blanco); border-color: var(--blanco); color: var(--tinta); }
 .boton--claro:hover { background: var(--rojo); border-color: var(--rojo); color: var(--blanco); }
 
@@ -232,8 +255,10 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 .cabecera--portada .volver:hover,
 .ficha-cabecera .volver:hover { color: var(--blanco); }
 .cabecera--portada .boton--secundario,
+.portada .boton--secundario,
 .ficha-cabecera .boton--secundario { background: transparent; border-color: rgb(255 255 255 / .35); color: var(--blanco); }
 .cabecera--portada .boton--secundario:hover,
+.portada .boton--secundario:hover,
 .ficha-cabecera .boton--secundario:hover { background: rgb(255 255 255 / .08); border-color: var(--blanco); }
 .cabecera--portada .campo__nombre { color: #d0d4d8; }
 .cabecera--portada .campo select { border-color: transparent; }
@@ -340,17 +365,21 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 
 
 /* 4. TABLERO POR ESTADOS ---------------------------------------------------
-   Una columna por estado. Si no caben, se desplaza de lado.
-   El borde de arriba de cada columna lleva el color de su fase. */
+   Una columna por estado, de ancho fijo. Si no caben, el tablero se mueve de lado:
+   arrastrando el fondo con el ratón, con las flechas de la cabecera o con la barra.
+   La raya de arriba de cada columna lleva el color de su fase. */
 
 .tablero-cabecera {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  align-items: flex-end;
+  gap: 12px 24px;
+  margin-bottom: 14px;
 }
+.tablero-cabecera h2 { margin: 0; }
+.tablero-cabecera__pista { margin: 4px 0 0; color: var(--tinta-3); font-size: .8125rem; }
+.tablero-cabecera__mandos { display: flex; align-items: center; gap: 12px; }
 
 /* Pestañas pequeñas para filtrar (Todos, Patio del taller, Parking) */
 .pestanas { display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: #e6e8ea; }
@@ -365,79 +394,176 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 .pestanas a:hover { color: var(--tinta); }
 .pestanas a[aria-current="page"] { background: var(--blanco); color: var(--tinta); font-weight: 600; box-shadow: 0 1px 2px rgba(23, 25, 28, .08); }
 
+/* Flechas para saltar columnas */
+.tablero-flechas { display: flex; gap: 6px; }
+.tablero-flecha {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0 0 2px;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: 50%;
+  background: var(--blanco);
+  color: var(--tinta);
+  font: 600 1.25rem/1 var(--letra);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, opacity .15s;
+}
+.tablero-flecha:hover:not(:disabled) { border-color: var(--tinta); }
+.tablero-flecha:disabled { opacity: .35; cursor: default; }
+
+/* El marco lleva el degradado de los bordes: avisa de que hay más columnas por ese lado */
+.tablero-marco { position: relative; }
+.tablero-marco::before,
+.tablero-marco::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: var(--espacio-m);
+  width: 56px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.tablero-marco::before { left: 0; background: linear-gradient(90deg, var(--fondo), rgb(244 245 246 / 0)); }
+.tablero-marco::after { right: 0; background: linear-gradient(270deg, var(--fondo), rgb(244 245 246 / 0)); }
+.tablero-marco--hay-izq::before,
+.tablero-marco--hay-der::after { opacity: 1; }
+
 .tablero {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(232px, 1fr);
-  gap: 12px;
+  grid-auto-columns: 272px;
+  align-items: start; /* cada columna mide lo que lleva: sin huecos grises hasta la más larga */
+  gap: 14px;
+  min-height: 320px;
   overflow-x: auto;
   padding-bottom: var(--espacio-m);
+  scrollbar-width: thin;
+  scrollbar-color: var(--linea-fuerte) transparent;
+  cursor: grab;
+  outline: 0;
 }
+.tablero:focus-visible { box-shadow: 0 0 0 2px var(--tinta); border-radius: var(--radio); }
+.tablero--moviendo { cursor: grabbing; user-select: none; }
+.tablero--moviendo .ficha-mini { pointer-events: none; }
 
 .columna {
+  --color-fase: var(--llegada);
   display: flex;
   flex-direction: column;
   gap: var(--espacio-s);
-  min-height: 280px;
-  padding: 10px;
+  min-height: 140px;
+  padding: 12px 10px 10px;
   background: #ebedef;
-  border-top: 3px solid var(--llegada);
+  border-top: 3px solid var(--color-fase);
   border-radius: 4px 4px var(--radio) var(--radio);
+  transition: background .15s, box-shadow .15s;
 }
-
-.columna--preparacion { border-top-color: #e0a23a; }
-.columna--venta { border-top-color: var(--venta); }
-.columna--reservado { border-top-color: var(--reservado); }
-.columna--vendido { border-top-color: var(--vendido); }
+.columna--preparacion { --color-fase: #e0a23a; }
+.columna--venta { --color-fase: var(--venta); }
+.columna--reservado { --color-fase: var(--reservado); }
+.columna--vendido { --color-fase: var(--vendido); }
 
 .columna__titulo {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2px 4px 4px;
+  gap: 8px;
+  padding: 0 4px 4px;
   font-size: .8125rem;
   font-weight: 600;
   letter-spacing: 0;
 }
+.columna__titulo .cifra {
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: var(--radio-boton);
+  background: var(--blanco);
+  color: var(--tinta-2);
+  font-size: .75rem;
+  font-weight: 600;
+  text-align: center;
+}
 
-.columna__titulo .cifra { color: var(--tinta-3); font-weight: 500; }
-
-/* Tarjeta de un coche en el tablero */
+/* Tarjeta de un coche en el tablero: foto a la izquierda, datos a la derecha */
 .ficha-mini {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px;
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 10px;
+  padding: 10px;
   background: var(--blanco);
   border: 1px solid var(--linea);
   border-radius: 8px;
+  color: var(--tinta);
   text-decoration: none;
-  transition: border-color .15s, box-shadow .15s;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
 }
+.ficha-mini:hover { border-color: var(--linea-fuerte); box-shadow: 0 4px 14px rgba(23, 25, 28, .08); transform: translateY(-1px); }
+/* Las tarjetas de la maqueta no llevan foto: ocupan todo el ancho */
+.ficha-mini:not(:has(.ficha-mini__foto)) { grid-template-columns: 1fr; }
 
-.ficha-mini:hover { border-color: var(--linea-fuerte); box-shadow: 0 2px 8px rgba(23, 25, 28, .06); }
+.ficha-mini__foto {
+  width: 72px;
+  height: 54px;
+  border-radius: 6px;
+  background: var(--fondo);
+  object-fit: cover;
+  -webkit-user-drag: none;
+}
+.ficha-mini__cuerpo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 
 /* Arrastrar una tarjeta a otra columna (cambia el estado) */
 .ficha-mini[draggable="true"] { cursor: grab; }
-.ficha-mini--arrastrando { opacity: .4; }
-.columna--encima { background: #dfe3e7; outline: 2px dashed var(--linea-fuerte); outline-offset: -2px; }
+.ficha-mini--arrastrando { opacity: .4; transform: none; box-shadow: none; }
+.columna--encima { background: #dfe3e7; box-shadow: inset 0 0 0 2px var(--color-fase); }
 
 .ficha-mini .matricula { align-self: flex-start; }
 
-.ficha-mini__coche { font-size: .875rem; font-weight: 600; line-height: 1.3; }
+.ficha-mini__coche {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: .8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
 
 .ficha-mini__datos {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  font-size: .8125rem;
+  gap: 4px 8px;
+  grid-column: 1 / -1;
+  padding-top: 8px;
+  border-top: 1px solid var(--linea);
+  font-size: .75rem;
   color: var(--tinta-3);
 }
+.ficha-mini__precio { color: var(--tinta); font-weight: 600; }
 
 /* Días en ese estado. Se marca cuando son muchos. */
 .dias { font-weight: 500; }
 .dias--aviso { padding: 0 6px; border-radius: 4px; background: var(--aviso-fondo); color: var(--aviso); font-weight: 600; }
 .dias--peligro { padding: 0 6px; border-radius: 4px; background: var(--peligro-fondo); color: var(--peligro); font-weight: 600; }
+
+/* Columna con muchos coches: se ven los primeros y el resto tras «Ver N más» */
+.columna:not(.columna--abierta) .ficha-mini--oculta { display: none; }
+.columna__mas {
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tinta-2);
+  font: 600 .8125rem/1.2 var(--letra);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.columna__mas:hover { background: rgb(255 255 255 / .7); color: var(--tinta); }
 
 .columna__vacia {
   margin: 0;
@@ -1365,6 +1491,8 @@ a.contacto__coche:hover { background: var(--fondo); }
   .alta { grid-template-columns: 1fr; }
   .indice-alta { display: none; }
   .estados { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .portada { grid-template-columns: 1fr; }
+  .portada__mes { min-width: 0; width: 100%; max-width: 520px; }
   .estados__paso:nth-child(5) { border-right: 0; }
   .estados__paso:nth-child(-n+5) { border-bottom: 1px solid var(--linea); }
 }
@@ -1413,6 +1541,8 @@ a.contacto__coche:hover { background: var(--fondo); }
 
   .portada { margin: -20px calc(var(--espacio-m) * -1) 0; padding: 36px var(--espacio-m) 80px; gap: 16px; }
   .portada__titular { font-size: 2rem; }
+  .portada__fecha { display: none; }
+  .portada__cifras dd { font-size: 1.375rem; }
   /* En el móvil los estados se deslizan de lado */
   .estados { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 128px; overflow-x: auto; margin-top: -44px; scroll-snap-type: x mandatory; }
   .estados__paso { scroll-snap-align: start; border-bottom: 0 !important; border-right: 1px solid var(--linea) !important; }
@@ -1420,7 +1550,11 @@ a.contacto__coche:hover { background: var(--fondo); }
   h1 { font-size: 1.5rem; }
 
   /* El tablero pasa a una columna debajo de otra */
-  .tablero { grid-auto-flow: row; grid-auto-columns: auto; overflow: visible; }
+  .tablero { grid-auto-flow: row; grid-auto-columns: auto; overflow: visible; min-height: 0; cursor: auto; }
+  .tablero-marco::before,
+  .tablero-marco::after,
+  .tablero-flechas,
+  .tablero-cabecera__pista { display: none; }
   .columna { min-height: 0; }
 
   .ficha-cabecera { grid-template-columns: 1fr; }
