@@ -96,7 +96,7 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
 | `GET /usuarios` | gerencia | Lista sin contraseñas, con `activo` y `ultimo_acceso` |
-| `POST /usuarios` | gerencia | `{ nombre, email, rol, contrasena }`, contraseña de 10 caracteres como mínimo. Correo repetido: 409. 201 |
+| `POST /usuarios` | gerencia | `{ nombre, email, rol, contrasena }`, contraseña de 8 caracteres como mínimo. Correo repetido: 409. 201 |
 | `PATCH /usuarios/:id` | gerencia | `{ nombre?, rol?, activo?, contrasena? }`. Desactivar o cambiar la contraseña cierra las sesiones abiertas de esa persona (la de quien la cambia se mantiene) |
 
 Nadie se borra: se desactiva, y su nombre sigue en el historial. Nadie puede desactivarse ni cambiarse el rol a sí mismo, y siempre queda al menos una persona de gerencia activa (409).

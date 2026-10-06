@@ -1,12 +1,11 @@
 // Dueño: Victor. Usuarios del panel (11.3, 11.4). Solo gerencia (se monta con requiereRol en app.js).
 // No se borra a nadie: se desactiva, y su nombre sigue en el historial de lo que movió.
 import { Router } from 'express';
-import { crearUsuario, cambiarContrasena, cerrarSesionesDe, tokenDe, ROLES } from '../auth/sesiones.js';
+import { crearUsuario, cambiarContrasena, cerrarSesionesDe, tokenDe, ROLES, MINIMO_CONTRASENA } from '../auth/sesiones.js';
 import { registrar } from '../auditoria.js';
 
 const CAMPOS = 'id, email, nombre, rol, activo, creado_en, ultimo_acceso';
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MINIMO_CONTRASENA = 10;
 
 export function rutasUsuarios(db) {
   const r = Router();

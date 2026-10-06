@@ -8,9 +8,18 @@ const DIAS = Number(process.env.SESION_DIAS || 30);
 
 const sha256 = (texto) => createHash('sha256').update(texto).digest('hex');
 
+// 8 caracteres y ninguna regla más (ni mayúsculas ni símbolos): con el límite de intentos del login
+// y scrypt, una frase de 8 o más no se saca probando.
+export const MINIMO_CONTRASENA = 8;
+const comprobarContrasena = (contrasena) => {
+  if (typeof contrasena !== 'string' || contrasena.length < MINIMO_CONTRASENA) {
+    throw new Error(`La contraseña necesita al menos ${MINIMO_CONTRASENA} caracteres`);
+  }
+};
+
 export function crearUsuario(db, { email, nombre, rol, contrasena }) {
   if (!ROLES.includes(rol)) throw new Error(`Rol no válido: ${rol}`);
-  if (!contrasena || contrasena.length < 10) throw new Error('La contraseña necesita al menos 10 caracteres');
+  comprobarContrasena(contrasena);
   const info = db
     .prepare('INSERT INTO usuarios (email, nombre, rol, hash) VALUES (?, ?, ?, ?)')
     .run(email.trim().toLowerCase(), nombre.trim(), rol, hashContrasena(contrasena));
@@ -18,7 +27,7 @@ export function crearUsuario(db, { email, nombre, rol, contrasena }) {
 }
 
 export function cambiarContrasena(db, usuarioId, contrasena) {
-  if (!contrasena || contrasena.length < 10) throw new Error('La contraseña necesita al menos 10 caracteres');
+  comprobarContrasena(contrasena);
   db.prepare('UPDATE usuarios SET hash = ? WHERE id = ?').run(hashContrasena(contrasena), usuarioId);
 }
 

@@ -9,7 +9,8 @@
     "usuario": "node --env-file-if-exists=../.env scripts/crear-usuario.js",
     "wordpress": "node --env-file-if-exists=../.env scripts/wordpress.js",
     "seed": "node scripts/sembrar-pruebas.js --reset",
-    "dev:pruebas": "node --watch scripts/arrancar-pruebas.js"
+    "dev:pruebas": "node --watch scripts/arrancar-pruebas.js",
+    "copia": "node --env-file-if-exists=../.env scripts/copia-seguridad.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",

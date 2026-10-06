@@ -19,7 +19,7 @@ test('usuarios: solo gerencia los ve y los gestiona', () =>
 
 test('usuarios: alta con validación y correo único', () =>
   conServidor(async ({ base, pide }) => {
-    const malo = await pide('/usuarios', { method: 'POST', body: { nombre: '', email: 'no-es-correo', rol: 'jefe', contrasena: 'corta' } });
+    const malo = await pide('/usuarios', { method: 'POST', body: { nombre: '', email: 'no-es-correo', rol: 'jefe', contrasena: '' } });
     assert.equal(malo.status, 400);
     assert.equal(malo.json.errores.length, 4);
 

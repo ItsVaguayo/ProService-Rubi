@@ -9,6 +9,7 @@ import { rutasWordPress } from './modules/publicacion/rutas-wordpress.js';
 import { rutasUsuarios } from './modules/usuarios/routes.js';
 import { rutasContactos, rutasContactosPublicas } from './modules/contactos/routes.js';
 import { rutasInformes } from './modules/informes/routes.js';
+import { cabecerasDeSeguridad, mismoOrigen } from './seguridad.js';
 
 export function crearApp(db) {
   const app = express();
@@ -19,6 +20,8 @@ export function crearApp(db) {
   // así que CORS solo se abre a los orígenes que se pongan en CORS_ORIGENES (separados por comas).
   const origenes = (process.env.CORS_ORIGENES || '').split(',').map((o) => o.trim()).filter(Boolean);
   if (origenes.length) app.use(cors({ origin: origenes, credentials: true }));
+  app.use(cabecerasDeSeguridad);
+  app.use('/api', mismoOrigen(origenes));
 
   app.use(express.json({ limit: '100kb' }));
 

@@ -15,7 +15,7 @@ if (!values.email || !values.nombre || !ROLES.includes(values.rol)) {
 }
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
-const contrasena = await rl.question('Contraseña (mínimo 10 caracteres): ');
+const contrasena = await rl.question('Contraseña (mínimo 8 caracteres): ');
 rl.close();
 
 const db = abrirDb();
