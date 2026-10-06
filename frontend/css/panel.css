@@ -19,13 +19,14 @@
 /* 1. ESTRUCTURA ------------------------------------------------------------ */
 
 /* Cada página trae en el HTML datos de ejemplo (los de la maqueta) que panel.js cambia por los reales.
-   Para que no se vea el cambio, el contenido, el usuario del menú y el contador esperan ocultos hasta
+   Para que no se vea el cambio, las piezas del contenido (no el fondo de la cabecera), el usuario del menú y el contador esperan ocultos hasta
    que panel.js pone .listo en <html>, y entonces aparecen con un fundido. Si el JavaScript no llega a
    ejecutarse (por ejemplo, al abrir la maqueta como fichero), se enseñan igual a los 1,5 s.
    El contenido entra por partes, en cascada: panel.js marca cada bloque con .entra y su turno (--i). */
 .menu__usuario,
 .menu__enlaces .contador { transition: opacity .35s ease; }
-html:not(.listo) .contenido,
+html:not(.listo) .contenido > :not(header),
+html:not(.listo) .contenido > header > *,
 html:not(.listo) .menu__usuario,
 html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-js 0s 1.5s forwards; }
 @keyframes mostrar-sin-js { to { opacity: 1; } }
@@ -39,6 +40,23 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 @keyframes entrar-abajo { from { transform: translateY(100%); } }
 @media (prefers-reduced-motion: reduce) {
   .entra, .entra-abajo { animation: none; }
+}
+
+/* Paso de una página a otra. El fondo negro de la cabecera no espera a los datos (arriba solo se
+   ocultan sus piezas): así no hay un fogonazo claro antes de que aparezca. Además el navegador
+   mantiene la página vieja hasta que la nueva pinta y funde una en otra; el menú no se funde,
+   se queda quieto. Sin soporte de View Transitions, se cambia de página como siempre. */
+@view-transition { navigation: auto; }
+.menu { view-transition-name: menu; }
+::view-transition-group(menu),
+::view-transition-new(menu) { animation: none; }
+::view-transition-old(menu) { display: none; }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: .22s; animation-timing-function: ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
 }
 
 .app {
@@ -81,8 +99,8 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 .menu__enlaces a {
   position: relative;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
   padding: 9px 12px;
   border-radius: var(--radio-pequeno);
   color: #b9bec4;
@@ -92,6 +110,24 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 }
 
 .menu__enlaces a:hover { background: var(--negro-2); color: var(--blanco); }
+
+/* Icono de cada enlace: una máscara SVG pintada con el color del texto, así sigue al gris,
+   al blanco del hover y al de la página actual. Se elige por el href del enlace. */
+.menu__icono {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  -webkit-mask: var(--icono) center / contain no-repeat;
+  mask: var(--icono) center / contain no-repeat;
+}
+.menu__enlaces .contador { margin-left: auto; }
+.menu__enlaces a[href="index.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='9' rx='1'/%3E%3Crect x='14' y='3' width='7' height='5' rx='1'/%3E%3Crect x='14' y='12' width='7' height='9' rx='1'/%3E%3Crect x='3' y='16' width='7' height='5' rx='1'/%3E%3C/svg%3E"); } /* Tablero */
+.menu__enlaces a[href="coches.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2'/%3E%3Ccircle cx='7' cy='17' r='2'/%3E%3Cpath d='M9 17h6'/%3E%3Ccircle cx='17' cy='17' r='2'/%3E%3C/svg%3E"); } /* Coches */
+.menu__enlaces a[href="coche-nuevo.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M8 12h8M12 8v8'/%3E%3C/svg%3E"); } /* Alta de vehículo */
+.menu__enlaces a[href="contactos.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12h-6l-2 3h-4l-2-3H2'/%3E%3Cpath d='M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z'/%3E%3C/svg%3E"); } /* Contactos */
+.menu__enlaces a[href="informes.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3v16a2 2 0 0 0 2 2h16'/%3E%3Cpath d='M18 17V9M13 17V5M8 17v-3'/%3E%3C/svg%3E"); } /* Informes */
+.menu__enlaces a[href="usuarios.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E"); } /* Usuarios */
 
 /* La página en la que estás. En el HTML: aria-current="page".
    La marca es la barra inclinada del logo, en rojo. */
@@ -779,6 +815,68 @@ a.contacto__coche:hover { background: var(--fondo); }
 }
 
 
+
+/* 5c. USUARIOS ------------------------------------------------------------- */
+
+/* Usa las tarjetas de contactos (.contacto) sin la columna del coche. Color por rol:
+   gerencia en negro, como el menú; comercial en azul. */
+.segmentos__n { margin-left: 6px; color: var(--tinta-3); font-size: .75rem; font-weight: 600; }
+.segmentos input:checked + span .segmentos__n { color: var(--rojo); }
+
+.usuario { grid-template-columns: 44px minmax(0, 1fr) auto; }
+.usuario__inicial--gerencia { background: var(--negro); color: var(--blanco); }
+.usuario__inicial--comercial { background: var(--reservado-fondo); color: var(--reservado); }
+.rol--gerencia { background: var(--fondo); color: var(--tinta); box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+.rol--comercial { background: var(--reservado-fondo); color: var(--reservado); }
+.usuario__tu { padding: 1px 8px; border-radius: var(--radio-boton); background: var(--rojo-suave); color: var(--rojo); font-size: .75rem; font-weight: 700; }
+.usuario .contacto__datos span { color: var(--tinta-3); }
+
+.usuario__acciones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+/* Cambiar la contraseña sin salir de la tarjeta */
+.usuario__clave {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--linea);
+}
+.usuario__clave .campo { flex: 1 1 260px; max-width: 360px; }
+.usuario__clave .error--lista { flex-basis: 100%; margin: 0; }
+.usuario__hecho { grid-column: 2 / -1; margin: 0; color: var(--venta); font-size: .8125rem; font-weight: 500; }
+
+/* Desactivado: más apagado, sin dejar de leerse */
+.usuario--apagado { background: transparent; }
+.usuario--apagado .contacto__inicial { filter: grayscale(1); opacity: .5; }
+.usuario--apagado .contacto__linea strong { color: var(--tinta-3); }
+
+/* Rol al añadir: dos tarjetas con lo que ve cada uno */
+.roles { margin: 0; padding: 0; border: 0; }
+.roles legend { margin-bottom: 6px; padding: 0; }
+.rol-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-pequeno);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.rol-opcion + .rol-opcion { margin-top: 8px; }
+.rol-opcion:hover { border-color: var(--linea-fuerte); }
+.rol-opcion:has(input:checked) { border-color: var(--tinta); background: var(--fondo); }
+.rol-opcion input { flex: none; width: auto; margin: 3px 0 0; accent-color: var(--rojo); }
+.rol-opcion span { display: flex; flex-direction: column; gap: 2px; color: var(--tinta-2); font-size: .8125rem; line-height: 1.4; }
+.rol-opcion b { color: var(--tinta); font-size: .875rem; }
+
+@media (max-width: 1150px) {
+  .usuario { grid-template-columns: 44px minmax(0, 1fr); }
+  .usuario__acciones { grid-column: 2; justify-content: flex-start; }
+}
+
 /* 6. FICHA DEL COCHE ------------------------------------------------------- */
 
 /* Cabecera: foto, nombre, matrícula, estado y acciones */
@@ -1418,36 +1516,127 @@ a.contacto__coche:hover { background: var(--fondo); }
 
 /* 8. LOGIN Y ERRORES ------------------------------------------------------- */
 
+/* Dos mitades: la marca en negro a la izquierda y el formulario en claro a la derecha */
 .login {
   display: grid;
-  place-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   min-height: 100vh;
-  padding: var(--espacio-m);
-  background: var(--negro);
+  background: var(--fondo);
 }
 
-.login__caja {
-  width: 100%;
-  max-width: 400px;
+.login__marca {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-m);
+  justify-content: space-between;
+  gap: var(--espacio-l);
+  padding: 48px 56px;
+  background:
+    radial-gradient(90% 70% at 90% 110%, rgb(255 255 255 / .08), transparent 60%),
+    linear-gradient(180deg, var(--negro), var(--negro-2));
+  color: var(--blanco);
 }
+/* La barra inclinada roja del logo, en grande y casi transparente, de fondo */
+.login__marca::after {
+  content: "";
+  position: absolute;
+  right: -12%;
+  bottom: -10%;
+  width: 46%;
+  height: 130%;
+  background: linear-gradient(0deg, rgb(255 255 255 / .05), transparent 85%);
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+.login__marca .logo { height: 60px; align-self: flex-start; }
+.login__lema { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 18px; max-width: 36rem; }
+.login__titular { max-width: 30rem; margin: 0; font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+.login__direccion { margin: 0; color: rgb(255 255 255 / .45); font-size: .8125rem; }
 
-.login__caja .logo { height: 64px; align-self: center; margin-bottom: var(--espacio-s); }
+/* El recorrido: puntos con el color de cada fase, unidos por una línea */
+.login__recorrido { display: flex; flex-wrap: wrap; gap: 10px 0; margin: 6px 0 0; padding: 0; list-style: none; }
+.login__recorrido li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgb(255 255 255 / .75);
+  font-size: .8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.login__recorrido li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--color-fase); box-shadow: 0 0 0 3px rgb(255 255 255 / .06); }
+.login__recorrido li + li::after { order: -1; content: ""; width: 14px; height: 1px; margin-right: 2px; margin-left: 8px; background: rgb(255 255 255 / .2); }
+/* Si no cabe en una línea, sin rayas: una al principio de la segunda línea quedaría suelta */
+@media (max-width: 1240px) {
+  .login__recorrido { gap: 10px 16px; }
+  .login__recorrido li + li::after { display: none; }
+}
+.login__fase--llegada { --color-fase: #9aa0a6; }
+.login__fase--preparacion { --color-fase: var(--preparacion); }
+.login__fase--venta { --color-fase: var(--venta); }
+.login__fase--reservado { --color-fase: var(--reservado); }
+.login__fase--vendido { --color-fase: var(--blanco); }
+
+.login__lado { display: grid; place-items: center; padding: 48px var(--espacio-m); }
+.login__caja { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: var(--espacio-m); }
 
 .login__form {
   display: flex;
   flex-direction: column;
-  gap: var(--espacio-m);
-  padding: 28px;
+  gap: 18px;
+  padding: 32px;
   background: var(--blanco);
+  border: 1px solid var(--linea);
   border-radius: var(--radio);
+  box-shadow: 0 10px 30px rgba(23, 25, 28, .06);
 }
+.login__form h1 { margin: 0 0 4px; font-size: 1.625rem; letter-spacing: -.01em; }
+.login__form .nota { margin: 0; }
+.login__form .boton { width: 100%; min-height: 46px; margin-top: 4px; }
+.login__form .boton[aria-busy="true"] { opacity: .75; cursor: progress; }
+.login__form .error { margin: 0; }
+/* Al fallar, el formulario hace un «no» corto con la cabeza */
+.login__form--fallo { animation: no-con-la-cabeza .35s ease; }
+@keyframes no-con-la-cabeza { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+@media (prefers-reduced-motion: reduce) { .login__form--fallo { animation: none; } }
 
-.login__form h1 { font-size: 1.375rem; }
-.login__form .boton { width: 100%; margin-top: 4px; }
-.login__pie { color: #8b9097; font-size: .8125rem; text-align: center; }
+/* Contraseña con el botón de verla dentro del campo */
+.login__clave { position: relative; }
+.login__clave input { padding-right: 64px; }
+.login__ver {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--radio-pequeno);
+  background: transparent;
+  color: var(--tinta-2);
+  font: inherit;
+  font-size: .8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.login__ver:hover { background: var(--fondo); color: var(--tinta); }
+.login__ver:focus-visible { outline: 2px solid var(--rojo); outline-offset: 1px; }
+.login__mayus { color: var(--aviso); font-size: .8125rem; font-weight: 500; }
+
+.login__pie { margin: 0; color: var(--tinta-3); font-size: .8125rem; text-align: center; }
+
+/* Móvil: la marca pasa a ser una banda corta arriba, solo con el logo y el titular */
+@media (max-width: 860px) {
+  .login { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .login__marca { gap: 16px; padding: 24px 20px 28px; }
+  .login__marca .logo { height: 40px; }
+  .login__titular { font-size: 1.25rem; }
+  .login__recorrido,
+  .login__direccion,
+  .login__lema .portada__antetitulo { display: none; }
+  .login__lado { place-items: start center; padding: 24px 16px 40px; }
+  .login__form { padding: 24px 20px; }
+}
 
 /* Nota de desarrollo con los usuarios de prueba (solo en npm run dev:pruebas) */
 .nota-pruebas {

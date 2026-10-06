@@ -12,26 +12,54 @@
 </head>
 <body>
 <main class="login">
-  <div class="login__caja">
+
+  <!-- MARCA. En escritorio, la mitad izquierda en negro; en el móvil, una banda corta arriba. -->
+  <section class="login__marca">
     <img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí">
-    <form class="login__form" action="index.html">
-      <h1>Entrar al stock</h1>
+    <div class="login__lema">
+      <p class="portada__antetitulo">Stock · Panel interno</p>
+      <p class="login__titular">Cada coche, desde que llega hasta que se entrega.</p>
+      <!-- El recorrido del coche con los colores de las fases del tablero -->
+      <ol class="login__recorrido" aria-label="Recorrido de un coche">
+        <li class="login__fase--llegada">Llega</li>
+        <li class="login__fase--preparacion">Taller y fotos</li>
+        <li class="login__fase--venta">A la venta</li>
+        <li class="login__fase--reservado">Reservado</li>
+        <li class="login__fase--vendido">Entregado</li>
+      </ol>
+    </div>
+    <p class="login__direccion">Pro Service Rubí · Ctra. de Terrassa, 83 · Rubí</p>
+  </section>
 
-      <!-- Mensaje de error. Se enseña solo cuando el correo o la contraseña
-           no son correctos. Para verlo en la maqueta, quita el atributo hidden. -->
-      <p class="error" role="alert" hidden>El correo o la contraseña no son correctos. Revisa las mayúsculas.</p>
+  <div class="login__lado">
+    <div class="login__caja">
+      <form class="login__form" action="index.html">
+        <div>
+          <h1>Entrar</h1>
+          <p class="nota">Con tu correo de Pro Service y tu contraseña.</p>
+        </div>
 
-      <label class="campo">
-        <span class="campo__nombre">Correo</span>
-        <input type="email" name="email" autocomplete="username" required>
-      </label>
-      <label class="campo">
-        <span class="campo__nombre">Contraseña</span>
-        <input type="password" name="contrasena" autocomplete="current-password" minlength="10" required>
-      </label>
-      <button class="boton" type="submit">Entrar</button>
-    </form>
-    <p class="login__pie">¿Has olvidado la contraseña? Pídele a Jaume que te la cambie.</p>
+        <!-- Mensaje de error. Se enseña solo cuando el correo o la contraseña
+             no son correctos. Para verlo en la maqueta, quita el atributo hidden. -->
+        <p class="error" role="alert" hidden>El correo o la contraseña no son correctos. Revisa las mayúsculas.</p>
+
+        <label class="campo">
+          <span class="campo__nombre">Correo</span>
+          <input type="email" name="email" autocomplete="username" required autofocus>
+        </label>
+        <div class="campo">
+          <label class="campo__nombre" for="contrasena">Contraseña</label>
+          <div class="login__clave">
+            <input type="password" id="contrasena" name="contrasena" autocomplete="current-password" required>
+            <button class="login__ver" type="button" aria-pressed="false" aria-controls="contrasena">Ver</button>
+          </div>
+          <!-- Lo enseña panel.js al escribir con el bloqueo de mayúsculas puesto -->
+          <span class="login__mayus" hidden>Tienes las mayúsculas activadas</span>
+        </div>
+        <button class="boton" type="submit">Entrar</button>
+      </form>
+      <p class="login__pie">¿Has olvidado la contraseña? Pídele a Jaume que te la cambie.</p>
+    </div>
   </div>
 </main>
 <script type="module" src="../js/panel.js"></script>

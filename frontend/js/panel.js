@@ -184,9 +184,33 @@ async function paginaLogin() {
   } catch { /* sin sesión: se queda aquí */ }
   const form = $('.login__form');
   const error = $('.error', form);
+  const clave = form.elements.contrasena;
+  const boton = $('button[type="submit"]', form);
+
+  // «Ver» / «Ocultar» la contraseña
+  const ver = $('.login__ver', form);
+  ver?.addEventListener('click', () => {
+    const visible = clave.type === 'password';
+    clave.type = visible ? 'text' : 'password';
+    ver.textContent = visible ? 'Ocultar' : 'Ver';
+    ver.setAttribute('aria-pressed', visible);
+    clave.focus();
+  });
+
+  // Aviso de mayúsculas activadas mientras se escribe la contraseña
+  const mayus = $('.login__mayus', form);
+  const mirarMayus = (ev) => { if (mayus && ev.getModifierState) mayus.hidden = !ev.getModifierState('CapsLock'); };
+  clave.addEventListener('keydown', mirarMayus);
+  clave.addEventListener('keyup', mirarMayus);
+  clave.addEventListener('blur', () => { if (mayus) mayus.hidden = true; });
+
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     error.hidden = true;
+    form.classList.remove('login__form--fallo');
+    boton.disabled = true;
+    boton.setAttribute('aria-busy', 'true');
+    boton.textContent = 'Entrando…';
     const datos = Object.fromEntries(new FormData(form));
     try {
       await api('/auth/entrar', { method: 'POST', body: { email: datos.email, contrasena: datos.contrasena } });
@@ -194,6 +218,12 @@ async function paginaLogin() {
     } catch (e) {
       error.textContent = e.status === 429 ? e.message : 'El correo o la contraseña no son correctos. Revisa las mayúsculas.';
       error.hidden = false;
+      void form.offsetWidth; // para que la sacudida se repita en cada fallo
+      form.classList.add('login__form--fallo');
+      boton.disabled = false;
+      boton.removeAttribute('aria-busy');
+      boton.textContent = 'Entrar';
+      clave.select();
     }
   });
   notaDePruebas(form);
@@ -950,39 +980,111 @@ function cajaErrorEn(form) {
 }
 
 async function paginaUsuarios(yo) {
-  const cuerpo = $('.tabla tbody');
+  const lista = $('.usuarios');
+  const vacio = $('.vacio');
+  const filtro = $('form.filtros');
   const formNuevo = $('#nuevo form');
-  const formClave = $('#cambiar form');
+  const errorLista = $('.error--lista');
+  const ROLES = { gerencia: 'Gerencia', comercial: 'Comercial' };
   let usuarios = [];
 
   const pintar = () => {
-    cuerpo.innerHTML = usuarios.map((u) => {
-      const accion = u.id === yo.id
-        ? '<span class="nota">Eres tú</span>'
-        : `<button class="boton boton--secundario boton--pequeno" type="button" data-activar="${u.id}" data-valor="${u.activo ? 'false' : 'true'}">${u.activo ? 'Desactivar' : 'Reactivar'}</button>`;
-      return `<tr${u.activo ? '' : ' class="fila-apagada"'}>
-        <td><span class="coche-celda"><strong>${esc(u.nombre)}</strong><span class="nota">${esc(u.email)}</span></span></td>
-        <td>${u.rol === 'gerencia' ? 'Gerencia' : 'Comercial'}</td>
-        <td>${u.activo ? '<span class="estado estado--venta">Activo</span>' : '<span class="estado estado--llegada">Desactivado</span>'}</td>
-        <td class="cifra">${u.ultimo_acceso ? esc(fechaHora(u.ultimo_acceso)) : '—'}</td>
-        <td class="derecha">${accion}</td>
-      </tr>`;
+    // Resumen de la cabecera y números de las pestañas
+    const activos = usuarios.filter((u) => u.activo);
+    const gerencia = activos.filter((u) => u.rol === 'gerencia').length;
+    const comerciales = activos.length - gerencia;
+    $('.usuarios-resumen').innerHTML = `<strong class="cifra">${activos.length}</strong> con acceso
+      <span>· ${gerencia} de gerencia y ${comerciales} ${comerciales === 1 ? 'comercial' : 'comerciales'}</span>`;
+    const numeros = { activos: activos.length, desactivados: usuarios.length - activos.length };
+    filtro.querySelectorAll('input[name="estado"]').forEach((input) => {
+      const n = $('.segmentos__n', input.nextElementSibling);
+      if (n) n.textContent = numeros[input.value];
+    });
+
+    // Lista: primero tú, luego gerencia y después por nombre
+    const estado = new FormData(filtro).get('estado');
+    const visibles = usuarios
+      .filter((u) => estado === 'todos' || (estado === 'activos') === Boolean(u.activo))
+      .sort((a, b) => (b.id === yo.id) - (a.id === yo.id) || (a.rol !== 'gerencia') - (b.rol !== 'gerencia') || a.nombre.localeCompare(b.nombre, 'es'));
+    lista.innerHTML = visibles.map((u) => {
+      const tu = u.id === yo.id;
+      const acceso = u.ultimo_acceso
+        ? `<span title="${esc(fechaHora(u.ultimo_acceso))}">Último acceso ${esc(haceCuanto(fechaSql(u.ultimo_acceso)))}</span>`
+        : '<span>Aún no ha entrado</span>';
+      const acciones = [
+        u.activo ? '<button class="boton boton--secundario boton--pequeno" type="button" data-clave>Cambiar contraseña</button>' : '',
+        tu ? '' : `<button class="boton ${u.activo ? 'boton--secundario' : 'boton--oscuro'} boton--pequeno" type="button" data-activar="${u.activo ? 'false' : 'true'}">${u.activo ? 'Desactivar' : 'Reactivar'}</button>`,
+      ].join('');
+      return `<li class="contacto usuario${u.activo ? '' : ' usuario--apagado'}" data-id="${u.id}">
+        <span class="contacto__inicial usuario__inicial--${u.rol}" aria-hidden="true">${esc(iniciales(u.nombre))}</span>
+        <div class="contacto__cuerpo">
+          <p class="contacto__linea"><strong>${esc(u.nombre)}</strong> <span class="estado rol--${u.rol}">${ROLES[u.rol] ?? esc(u.rol)}</span>${tu ? ' <span class="usuario__tu">Tú</span>' : ''}${u.activo ? '' : ' <span class="estado estado--llegada">Desactivado</span>'}</p>
+          <p class="contacto__datos"><a href="mailto:${esc(u.email)}">${esc(u.email)}</a>${acceso}</p>
+        </div>
+        <div class="usuario__acciones">${acciones}</div>
+        <form class="usuario__clave" hidden>
+          <label class="campo">
+            <span class="campo__nombre">Contraseña nueva para ${esc(u.nombre)}</span>
+            <input type="password" name="contrasena" minlength="8" autocomplete="new-password" required placeholder="Al menos 8 caracteres">
+          </label>
+          <button class="boton boton--oscuro boton--pequeno" type="submit">Guardar</button>
+          <button class="boton boton--secundario boton--pequeno" type="button" data-cancelar>Cancelar</button>
+        </form>
+      </li>`;
     }).join('');
-    formClave.elements.usuario.innerHTML = usuarios.filter((u) => u.activo)
-      .map((u) => `<option value="${u.id}"${u.id === yo.id ? ' selected' : ''}>${esc(u.nombre)}${u.id === yo.id ? ' (tú)' : ''}</option>`).join('');
+    vacio.hidden = visibles.length > 0;
   };
   const cargar = async () => { usuarios = await api('/usuarios'); pintar(); };
 
-  cuerpo.addEventListener('click', async (ev) => {
+  filtro.addEventListener('change', pintar);
+
+  lista.addEventListener('click', async (ev) => {
+    const tarjeta = ev.target.closest('.usuario');
+    if (!tarjeta) return;
+    const form = $('.usuario__clave', tarjeta);
+
+    // Abrir y cerrar el formulario de contraseña (solo uno abierto a la vez)
+    if (ev.target.closest('[data-clave]')) {
+      lista.querySelectorAll('.usuario__clave').forEach((otro) => { if (otro !== form) otro.hidden = true; });
+      form.hidden = !form.hidden;
+      if (!form.hidden) form.elements.contrasena.focus();
+      return;
+    }
+    if (ev.target.closest('[data-cancelar]')) {
+      form.reset();
+      form.hidden = true;
+      return;
+    }
+
     const boton = ev.target.closest('[data-activar]');
     if (!boton) return;
+    errorLista.hidden = true;
     boton.disabled = true;
     try {
-      await api(`/usuarios/${boton.dataset.activar}`, { method: 'PATCH', body: { activo: boton.dataset.valor === 'true' } });
+      await api(`/usuarios/${tarjeta.dataset.id}`, { method: 'PATCH', body: { activo: boton.dataset.activar === 'true' } });
       await cargar();
     } catch (e) {
-      mostrarErrores(cajaErrorEn(formNuevo), e, 'No se ha podido cambiar:');
+      mostrarErrores(errorLista, e, 'No se ha podido cambiar:');
       boton.disabled = false;
+    }
+  });
+
+  lista.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const form = ev.target;
+    const tarjeta = form.closest('.usuario');
+    const caja = cajaErrorEn(form);
+    caja.hidden = true;
+    try {
+      await api(`/usuarios/${tarjeta.dataset.id}`, { method: 'PATCH', body: { contrasena: form.elements.contrasena.value } });
+      await cargar();
+      const hecho = document.createElement('p');
+      hecho.className = 'usuario__hecho';
+      hecho.textContent = 'Contraseña cambiada. Si tenía la sesión abierta en otro sitio, tendrá que volver a entrar.';
+      $(`.usuario[data-id="${tarjeta.dataset.id}"]`, lista)?.append(hecho);
+      setTimeout(() => hecho.remove(), 6000);
+    } catch (e) {
+      mostrarErrores(caja, e, 'No se ha podido cambiar:');
     }
   });
 
@@ -994,28 +1096,11 @@ async function paginaUsuarios(yo) {
     try {
       await api('/usuarios', { method: 'POST', body: datos });
       formNuevo.reset();
+      // Que se vea el nuevo: vuelve a «Activos»
+      filtro.elements.estado.value = 'activos';
       await cargar();
     } catch (e) {
       mostrarErrores(caja, e, 'No se ha podido añadir:');
-    }
-  });
-
-  formClave.addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    const caja = cajaErrorEn(formClave);
-    caja.hidden = true;
-    const { usuario, contrasena } = Object.fromEntries(new FormData(formClave));
-    try {
-      await api(`/usuarios/${usuario}`, { method: 'PATCH', body: { contrasena } });
-      formClave.reset();
-      await cargar();
-      const hecho = document.createElement('p');
-      hecho.className = 'nota';
-      hecho.textContent = 'Contraseña cambiada. Si tenía la sesión abierta en otro sitio, tendrá que volver a entrar.';
-      formClave.append(hecho);
-      setTimeout(() => hecho.remove(), 6000);
-    } catch (e) {
-      mostrarErrores(caja, e, 'No se ha podido cambiar:');
     }
   });
 
