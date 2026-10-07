@@ -1211,6 +1211,207 @@ async function paginaContactos() {
   await Promise.all([pintar(), resumen()]);
 }
 
+// --- Clientes ----------------------------------------------------------------------------------
+
+const ESTADOS_COMERCIALES = { nuevo: 'Nuevo', interesado: 'Interesado', me_lo_pienso: 'Me lo pienso', negociando: 'Negociando', ganado: 'Ganado', perdido: 'Perdido' };
+const TIPOS_ACTIVIDAD = { llamada: 'Llamada', visita: 'Visita', whatsapp: 'WhatsApp', email: 'Correo', prueba: 'Prueba', tarea: 'Tarea', nota: 'Nota' };
+const enlaceTel = (t) => `<a href="tel:${esc(String(t).replace(/[^\d+]/g, ''))}">${esc(t)}</a>`;
+
+// Lista con buscador a la izquierda, ficha del cliente abierto a la derecha y, debajo, el formulario
+// que sirve para dar de alta y para editar. El cliente abierto va en la dirección (?id=).
+async function paginaClientes() {
+  const filtros = $('form.filtros');
+  const lista = $('.terceros');
+  const vacio = $('.ficha__principal .vacio');
+  const ficha = $('#ficha');
+  const seccion = $('#nuevo');
+  const form = $('form', seccion);
+  let abierto = Number(params.get('id')) || null;
+  let clientes = [];
+
+  const tarjeta = (c) => {
+    const ultima = c.ultima_actividad ? `Hablado ${haceCuanto(fechaSql(c.ultima_actividad))}` : 'Sin actividad';
+    const datos = [
+      c.nif ? `<span>${esc(c.nif)}</span>` : '<span class="nota">Sin DNI todavía</span>',
+      c.telefono ? enlaceTel(c.telefono) : '',
+      c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : '',
+      c.poblacion ? `<span>${esc(c.poblacion)}</span>` : '',
+    ].join('');
+    const etiqueta = c.activo
+      ? `<span class="estado tipo-tercero--${esc(c.tipo)}">${esc(mayuscula(c.tipo))}</span>`
+      : '<span class="estado tipo-tercero--apagado">Desactivado</span>';
+    return `<li class="contacto tercero${c.id === abierto ? ' tercero--abierto' : ''}${c.activo ? '' : ' tercero--apagado'}">
+        <span class="contacto__inicial tercero__inicial--${esc(c.tipo)}" aria-hidden="true">${esc(iniciales(c.nombre))}</span>
+        <div class="contacto__cuerpo">
+          <p class="contacto__linea"><a class="tercero__nombre" href="?id=${c.id}" data-cliente="${c.id}"${c.id === abierto ? ' aria-current="true"' : ''}><strong>${esc(c.nombre)}</strong></a>
+            ${etiqueta}${c.origen ? ` <span class="nota">${esc(mayuscula(c.origen))}</span>` : ''}</p>
+          <p class="contacto__datos">${datos}</p>
+        </div>
+        <p class="tercero__resumen"><b class="cifra">${c.n_coches} ${c.n_coches === 1 ? 'coche' : 'coches'}</b>${esc(mayuscula(ultima))}</p>
+      </li>`;
+  };
+
+  let peticion = 0; // al escribir deprisa, solo se pinta la respuesta de la última búsqueda
+  const pintarLista = async () => {
+    const { q = '', tipo = '', activos = '1' } = Object.fromEntries(new FormData(filtros));
+    const esta = ++peticion;
+    const todos = await api(`/clientes?activos=${activos === '0' ? 0 : 1}${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`);
+    if (esta !== peticion) return;
+    clientes = tipo ? todos.filter((c) => c.tipo === tipo) : todos;
+    lista.innerHTML = clientes.map(tarjeta).join('');
+    lista.hidden = !clientes.length;
+    vacio.hidden = !!clientes.length;
+    const activosN = clientes.filter((c) => c.activo).length;
+    const uno = clientes.length === 1;
+    $('.lista-pie__cuantos').textContent = `${clientes.length} ${uno ? 'cliente' : 'clientes'}${activos === '0' ? '' : uno ? ' activo' : ' activos'}${q.trim() ? ' con esa búsqueda' : ''}`;
+    if (!q.trim() && !tipo && activos !== '0') {
+      const empresas = clientes.filter((c) => c.tipo === 'empresa').length;
+      $('.contactos-resumen').innerHTML = `<strong class="cifra">${activosN}</strong> ${activosN === 1 ? 'cliente' : 'clientes'} <span>· ${activosN - empresas} particulares y ${empresas} ${empresas === 1 ? 'empresa' : 'empresas'}</span>`;
+    }
+  };
+
+  const abrir = async (id, { sinHistorial = false } = {}) => {
+    abierto = id;
+    lista.querySelectorAll('.tercero').forEach((li) => {
+      const suyo = Number($('[data-cliente]', li)?.dataset.cliente) === id;
+      li.classList.toggle('tercero--abierto', suyo);
+      $('[data-cliente]', li)?.toggleAttribute('aria-current', suyo);
+    });
+    if (!sinHistorial) history.replaceState(null, '', `?id=${id}`);
+    const [c, actividades] = await Promise.all([api(`/clientes/${id}`), api(`/actividades?cliente=${id}`).catch(() => [])]);
+    if (abierto !== id) return; // se abrió otro mientras llegaba
+    pintarFicha(c, actividades);
+  };
+
+  const pintarFicha = (c, actividades) => {
+    const direccion = [c.direccion, [c.codigo_postal, c.poblacion].filter(Boolean).join(' ') + (c.provincia ? ` (${c.provincia})` : '')]
+      .filter((t) => t && t.trim()).map(esc).join('<br>');
+    const fila = (titulo, valor) => (valor ? `<div><dt>${titulo}</dt><dd>${valor}</dd></div>` : '');
+    const coches = c.coches.length
+      ? c.coches.map((v) => `<li><span class="coche-celda"><a href="${urlCoche(v)}">${esc(tituloCoche(v))}</a><span class="matricula">${matricula(v.matricula)}</span></span><span class="cifra">${euros(v.pvp_cent)}</span></li>`).join('')
+      : '<li class="nota">Todavía no nos ha comprado ninguno.</li>';
+    // Lo último primero: lo hecho por cuándo se hizo; lo pendiente, por cuándo toca
+    const cuando = (a) => a.hecha_en ? fechaSql(a.hecha_en) : a.programada_para ? new Date(a.programada_para.replace(' ', 'T')) : fechaSql(a.creado_en);
+    const ultimas = [...actividades].sort((a, b) => cuando(b) - cuando(a)).slice(0, 5);
+    const historial = ultimas.length
+      ? ultimas.map((a) => `<li><time>${esc(cuando(a).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))} · ${esc(TIPOS_ACTIVIDAD[a.tipo] ?? a.tipo)}${a.responsable_nombre ? ` · ${esc(a.responsable_nombre)}` : ''}${a.hecha_en ? '' : ' · <b>pendiente</b>'}</time>${esc(a.descripcion)}${a.resultado ? `<br><span class="nota">${esc(a.resultado)}</span>` : ''}</li>`).join('')
+      : '<li class="nota">Nada apuntado todavía.</li>';
+    ficha.innerHTML = `
+      <section class="caja">
+        <div class="ficha-tercero__cabeza">
+          <span class="contacto__inicial tercero__inicial--${esc(c.tipo)}" aria-hidden="true">${esc(iniciales(c.nombre))}</span>
+          <div>
+            <h2>${esc(c.nombre)}</h2>
+            <p class="ficha-tercero__linea"><span class="estado tipo-tercero--${c.activo ? esc(c.tipo) : 'apagado'}">${c.activo ? esc(mayuscula(c.tipo)) : 'Desactivado'}</span>
+              <span class="estado crm--${esc(c.estado_comercial)}">${esc(ESTADOS_COMERCIALES[c.estado_comercial] ?? c.estado_comercial)}</span></p>
+          </div>
+        </div>
+        <dl class="reserva-activa">
+          ${fila(c.tipo === 'empresa' ? 'CIF' : 'DNI / NIE', c.nif ? esc(c.nif) : '<span class="nota">Sin DNI todavía</span>')}
+          ${fila('Teléfono', c.telefono && enlaceTel(c.telefono))}
+          ${fila('Correo', c.email && `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`)}
+          ${fila('Dirección', direccion)}
+          ${fila('Vino por', c.origen && esc(mayuscula(c.origen)))}
+        </dl>
+        ${c.notas ? `<p class="nota ficha-tercero__notas">${esc(c.notas)}</p>` : ''}
+        <div class="ficha-tercero__acciones">
+          ${c.telefono ? `<a class="boton boton--secundario boton--pequeno" href="tel:${esc(c.telefono.replace(/[^\d+]/g, ''))}">Llamar</a>` : ''}
+          <button class="boton boton--secundario boton--pequeno" type="button" data-editar>Editar datos</button>
+        </div>
+      </section>
+      <section class="caja">
+        <div class="caja__titulo"><h2>Coches que ha comprado</h2><span class="nota cifra">${c.coches.length}</span></div>
+        <ul class="canales">${coches}</ul>
+      </section>
+      <section class="caja">
+        <div class="caja__titulo"><h2>Facturas</h2></div>
+        <p class="nota">Saldrán aquí cuando esté la facturación.</p>
+      </section>
+      <section class="caja">
+        <div class="caja__titulo"><h2>Lo último que se habló</h2><a class="enlace-pequeno" href="crm.html">Ver en el CRM</a></div>
+        <ol class="historial">${historial}</ol>
+      </section>`;
+    ficha.hidden = false;
+    $('[data-editar]', ficha).addEventListener('click', () => editar(c));
+  };
+
+  // El mismo formulario para alta y edición. editando = null → alta.
+  let editando = null;
+  const caja = cajaErrorEn(form);
+  caja.classList.add('campo--ancho'); // el formulario es una rejilla: el aviso, a todo el ancho
+  const titulo = $('#nuevo-titulo');
+  const boton = $('button[type="submit"]', form);
+  const fijarOrigen = (valor) => {
+    const select = form.elements.origen;
+    const opcion = [...select.options].find((o) => o.value.toLowerCase() === String(valor ?? '').toLowerCase());
+    if (!opcion && valor) select.add(new Option(mayuscula(valor), valor));
+    select.value = opcion?.value ?? valor ?? '';
+  };
+  const limpiar = () => {
+    editando = null;
+    form.reset();
+    caja.hidden = true;
+    titulo.textContent = 'Nuevo cliente';
+    boton.textContent = 'Guardar cliente';
+  };
+  const editar = (c) => {
+    limpiar();
+    editando = c;
+    for (const campo of ['tipo', 'nombre', 'nif', 'telefono', 'email', 'direccion', 'codigo_postal', 'poblacion', 'provincia', 'pais', 'notas']) fijarValor(form, campo, c[campo]);
+    fijarOrigen(c.origen);
+    titulo.textContent = `Editar ${c.nombre}`;
+    boton.textContent = 'Guardar cambios';
+    seccion.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    caja.hidden = true;
+    // Solo los campos del formulario. Al editar, un campo vaciado se manda vacío (null) para borrarlo.
+    const datos = Object.fromEntries([...new FormData(form)].map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v]));
+    if (!editando) for (const k of Object.keys(datos)) if (datos[k] === '') delete datos[k];
+    boton.disabled = true;
+    try {
+      const guardado = editando
+        ? await api(`/clientes/${editando.id}`, { method: 'PUT', body: Object.fromEntries(Object.entries(datos).map(([k, v]) => [k, v === '' ? null : v])) })
+        : await api('/clientes', { method: 'POST', body: datos });
+      limpiar();
+      abierto = guardado.id;
+      await pintarLista();
+      await abrir(guardado.id);
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // la lista y su ficha, arriba
+    } catch (e) {
+      mostrarErrores(caja, e.status === 409 ? Object.assign(e, { lista: ['Ya hay un cliente con ese DNI, NIE o CIF. Búscalo arriba.'] }) : e,
+        editando ? 'No se han podido guardar los cambios:' : 'No se ha podido dar de alta:');
+    } finally {
+      boton.disabled = false;
+    }
+  });
+  $('.form-tercero__pie a', seccion)?.addEventListener('click', (ev) => { ev.preventDefault(); limpiar(); });
+  document.querySelectorAll('a[href="#nuevo"]').forEach((a) => a.addEventListener('click', () => limpiar()));
+
+  lista.addEventListener('click', (ev) => {
+    const enlace = ev.target.closest('[data-cliente]');
+    if (!enlace) return;
+    ev.preventDefault();
+    abrir(Number(enlace.dataset.cliente)).catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido abrir la ficha:'));
+  });
+  let espera;
+  filtros.addEventListener('input', (ev) => {
+    if (ev.target.name !== 'q') return;
+    clearTimeout(espera);
+    espera = setTimeout(pintarLista, 250);
+  });
+  filtros.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintarLista(); });
+  filtros.addEventListener('submit', (ev) => { ev.preventDefault(); pintarLista(); });
+
+  ficha.hidden = true;
+  await pintarLista();
+  // El de la dirección (?id=) o, si no hay, el primero de la lista
+  const primero = abierto ?? clientes[0]?.id;
+  if (primero) await abrir(primero, { sinHistorial: true });
+}
+
 // --- Informes (solo gerencia) -----------------------------------------------------------------
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -1291,6 +1492,7 @@ const PAGINAS = {
   }),
   'usuarios.html': paginaUsuarios,
   'contactos.html': paginaContactos,
+  'clientes.html': paginaClientes,
   'informes.html': paginaInformes,
 };
 
@@ -1298,7 +1500,7 @@ const PAGINAS = {
   if (PAGINA === 'login.html') return paginaLogin();
   try {
     const usuario = await api('/auth/yo');
-    if (usuario.rol !== 'gerencia' && ['informes.html', 'usuarios.html'].includes(PAGINA)) return (location.href = 'index.html');
+    if (usuario.rol !== 'gerencia' && ['informes.html', 'usuarios.html', 'proveedores.html', 'gastos.html', 'facturas.html'].includes(PAGINA)) return (location.href = 'index.html');
     const menu = prepararMenu(usuario);
     const pagina = PAGINAS[PAGINA];
     if (pagina) await pagina(usuario);

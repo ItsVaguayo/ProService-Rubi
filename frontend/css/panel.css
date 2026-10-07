@@ -2115,8 +2115,13 @@ a.contacto__coche:hover { background: var(--fondo); }
 .columna--perdido { --color-fase: var(--peligro); }
 .ficha-mini--perdido { opacity: .7; }
 
-/* La etiqueta de embudo en la ficha del cliente (clientes.html) */
+/* La etiqueta de embudo en la ficha del cliente (clientes.html), con los colores de su columna en crm.html */
+.crm--nuevo { background: var(--llegada-fondo); color: var(--llegada); }
+.crm--interesado { background: var(--reservado-fondo); color: var(--reservado); }
+.crm--me_lo_pienso { background: #fbf0dc; color: #8a5a0f; }
 .crm--negociando { background: var(--negro); color: var(--blanco); }
+.crm--ganado { background: var(--venta-fondo); color: var(--venta); }
+.crm--perdido { background: var(--peligro-fondo, #fdecec); color: var(--peligro); }
 
 @media (max-width: 760px) {
   .actividad { grid-template-columns: 52px minmax(0, 1fr); gap: 6px 12px; padding: 12px 16px; }

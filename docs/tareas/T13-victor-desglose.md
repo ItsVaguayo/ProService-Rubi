@@ -71,6 +71,7 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - [ ] Endpoint para el panel y correo diario (duda H13).
 
 ## 12. Conectar las maquetas de Hafsa
-- [ ] Cada página de T07 se conecta a su API conforme sale su bloque.
+- ✅ `clientes.html` (7-oct): lista con buscador y filtros, ficha con sus coches y lo último del CRM, alta y edición. La lista de la API trae `n_coches` y `ultima_actividad`. Las facturas del cliente salen cuando esté el bloque 3.
+- [ ] El resto, conforme sale su bloque. Siguiente con API ya hecha: `crm.html` (T11) e `incentivos.html` (T12).
 
 Cada bloque es: migración, módulo, tests, `docs/api.md`, página del panel y datos de prueba. Marca con ✅ lo que acabes.

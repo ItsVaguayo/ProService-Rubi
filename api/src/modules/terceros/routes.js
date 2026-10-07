@@ -5,8 +5,9 @@ import { Router } from 'express';
 import { registrar } from '../auditoria.js';
 import { CAMPOS_CLIENTE, CAMPOS_PROVEEDOR, limpiarTercero } from './campos.js';
 
-// Rutas comunes de lista, ficha, alta y edición. `extra(fila)` añade lo propio de cada ficha.
-function rutasTercero(db, { tabla, entidad, campos, extra }) {
+// Rutas comunes de lista, ficha, alta y edición. `extra(fila)` añade lo propio de cada ficha y
+// `resumen` (SQL) las columnas calculadas de cada fila de la lista.
+function rutasTercero(db, { tabla, entidad, campos, extra, resumen = '' }) {
   const r = Router();
   const leer = db.prepare(`SELECT * FROM ${tabla} WHERE id = ?`);
 
@@ -29,7 +30,7 @@ function rutasTercero(db, { tabla, entidad, campos, extra }) {
       valores.push(`%${q}%`, `%${comoNif}%`, `%${comoTelefono}%`, `%${q}%`);
     }
     const donde = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';
-    res.json(db.prepare(`SELECT * FROM ${tabla} ${donde} ORDER BY nombre COLLATE NOCASE, id LIMIT 500`).all(...valores));
+    res.json(db.prepare(`SELECT ${tabla}.*${resumen} FROM ${tabla} ${donde} ORDER BY nombre COLLATE NOCASE, id LIMIT 500`).all(...valores));
   });
 
   r.get('/:id', (req, res) => {
@@ -72,11 +73,14 @@ function rutasTercero(db, { tabla, entidad, campos, extra }) {
 }
 
 export function rutasClientes(db) {
-  const coches = db.prepare('SELECT id, referencia, matricula, marca, modelo, estado FROM vehiculos WHERE comprador_id = ? ORDER BY id DESC');
+  const coches = db.prepare('SELECT id, referencia, matricula, marca, modelo, version, estado, pvp_cent FROM vehiculos WHERE comprador_id = ? ORDER BY id DESC');
   const contactos = db.prepare('SELECT id, tipo, mensaje, recibido_en, atendido_en, vehiculo_id FROM contactos WHERE cliente_id = ? ORDER BY recibido_en DESC');
   return rutasTercero(db, {
     tabla: 'clientes', entidad: 'cliente', campos: CAMPOS_CLIENTE,
     extra: (c) => ({ coches: coches.all(c.id), contactos: contactos.all(c.id) }),
+    // Para la lista: cuántos coches ha comprado y cuándo se habló con él por última vez (CRM)
+    resumen: `, (SELECT COUNT(*) FROM vehiculos v WHERE v.comprador_id = clientes.id) AS n_coches,
+               (SELECT MAX(COALESCE(a.hecha_en, a.creado_en)) FROM actividades a WHERE a.cliente_id = clientes.id) AS ultima_actividad`,
   });
 }
 
@@ -85,5 +89,6 @@ export function rutasProveedores(db) {
   return rutasTercero(db, {
     tabla: 'proveedores', entidad: 'proveedor', campos: CAMPOS_PROVEEDOR,
     extra: (p) => ({ coches: coches.all(p.id) }),
+    resumen: ', (SELECT COUNT(*) FROM vehiculos v WHERE v.proveedor_id = proveedores.id) AS n_coches',
   });
 }

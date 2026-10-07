@@ -134,3 +134,18 @@ test('clientes: estado comercial del embudo', () =>
     assert.equal((await pide('/clientes?estado_comercial=raro')).status, 400);
     assert.equal((await pide('/proveedores?estado_comercial=nuevo')).status, 400, 'los proveedores no tienen embudo');
   }));
+
+test('clientes y proveedores: la lista trae cuántos coches y la última actividad', () =>
+  conServidor(async ({ pide }) => {
+    const c = (await pide('/clientes', { method: 'POST', body: { nombre: 'Marta' } })).json;
+    const p = (await pide('/proveedores', { method: 'POST', body: { nombre: 'Subastas' } })).json;
+    await pide('/vehiculos', { method: 'POST', body: { ...coche, comprador_id: c.id, proveedor_id: p.id } });
+    let [fila] = (await pide('/clientes')).json;
+    assert.equal(fila.n_coches, 1);
+    assert.equal(fila.ultima_actividad, null);
+    await pide('/actividades', { method: 'POST', body: { tipo: 'llamada', cliente_id: c.id, descripcion: 'Llamar' } });
+    [fila] = (await pide('/clientes')).json;
+    assert.ok(fila.ultima_actividad, 'sin hacer: cuenta cuándo se apuntó');
+    assert.equal((await pide('/proveedores')).json[0].n_coches, 1);
+    assert.equal((await pide(`/clientes/${c.id}`)).json.coches[0].pvp_cent, coche.pvp_cent);
+  }));
