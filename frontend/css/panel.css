@@ -2125,3 +2125,60 @@ a.contacto__coche:hover { background: var(--fondo); }
   .actividad .boton,
   .actividad__hecha { grid-column: 2; justify-self: start; }
 }
+
+
+/* T07 · agenda.html -------------------------------------------------------- */
+
+/* Leyenda de los estados */
+.leyenda-pruebas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin: 0 0 var(--espacio-m); padding: 0; list-style: none; font-size: .8125rem; font-weight: 500; }
+.leyenda-pruebas li { display: flex; align-items: center; gap: 7px; }
+.leyenda-pruebas .nota { margin-left: auto; font-size: .8125rem; font-weight: 400; }
+
+/* Cuatro estados: el punto de la leyenda, la etiqueta y el borde de la prueba */
+.estado-prueba--pedida { background: var(--aviso-fondo); color: var(--aviso); }
+.estado-prueba--confirmada { background: var(--reservado-fondo); color: var(--reservado); }
+.estado-prueba--hecha { background: var(--ok-fondo); color: var(--ok); }
+.estado-prueba--no-vino { background: var(--peligro-fondo); color: var(--peligro); }
+.punto.estado-prueba--pedida,
+.punto.estado-prueba--confirmada,
+.punto.estado-prueba--hecha,
+.punto.estado-prueba--no-vino { flex: none; background: currentColor; }
+
+/* La semana: seis columnas, de lunes a sábado */
+.semana { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.dia { display: flex; flex-direction: column; gap: 8px; min-height: 220px; padding: 10px; border-top: 3px solid var(--linea-fuerte); border-radius: 4px 4px var(--radio) var(--radio); background: #ebedef; }
+.dia__titulo { display: flex; align-items: baseline; gap: 6px; padding: 2px 4px 4px; font-size: .8125rem; font-weight: 600; letter-spacing: 0; }
+.dia__titulo .cifra { color: var(--tinta-3); }
+.dia__hoy { margin-left: auto; padding: 0 8px; border-radius: var(--radio-boton); background: var(--rojo); color: var(--blanco); font-size: .6875rem; font-weight: 700; }
+.dia--hoy { border-top-color: var(--rojo); background: #e4e7ea; }
+.dia--pasado { opacity: .75; }
+
+/* Una prueba: hora y estado, coche, cliente y botones */
+.prueba { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--linea); border-left: 3px solid var(--color-prueba, var(--linea-fuerte)); border-radius: 8px; background: var(--blanco); font-size: .8125rem; }
+.prueba p { margin: 0; }
+.prueba--pedida { --color-prueba: #e0a23a; }
+.prueba--confirmada { --color-prueba: var(--reservado); }
+.prueba--hecha { --color-prueba: var(--ok); }
+.prueba--no-vino { --color-prueba: var(--peligro); }
+.prueba--no-vino .prueba__coche b,
+.prueba--no-vino .prueba__cliente { color: var(--tinta-3); }
+.prueba__linea { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px; }
+.prueba__hora { font-size: .9375rem; font-weight: 700; }
+.prueba__linea .estado { padding: 1px 8px; font-size: .75rem; }
+.prueba__coche { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.prueba__coche .matricula { font-size: .75rem; }
+.prueba__cliente { color: var(--tinta-2); }
+.prueba__cliente a { color: var(--tinta-3); text-decoration: none; white-space: nowrap; }
+.prueba__cliente a:hover { color: var(--tinta); text-decoration: underline; }
+.prueba__acciones { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--linea); }
+
+@media (max-width: 1150px) {
+  .semana { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .prueba__acciones { flex-direction: row; flex-wrap: wrap; }
+  .prueba__acciones .boton { flex: 1; }
+}
+@media (max-width: 800px) {
+  .semana { grid-template-columns: minmax(0, 1fr); }
+  .dia { min-height: 0; }
+  .leyenda-pruebas .nota { flex-basis: 100%; margin-left: 0; }
+}
