@@ -84,7 +84,7 @@ Además, en la semana 0:
 
 - **Solo la API toca la base de datos.** Panel, web y portales pasan por la API.
 - `api/migraciones/` es de Victor. Si alguien necesita una columna, la pide y Victor la añade en menos de un día con una migración nueva, o se propone en un PR pequeño aparte. Una migración ya mergeada no se edita.
-- **Cada uno en su módulo**: `api/src/modules/vehiculos` (Victor), `modules/fotos` (Hafsa), `modules/publicacion` y `modules/contactos` (David). Si tu módulo necesita reaccionar a algo de otro módulo, el dueño de ese módulo expone una función y tú la usas. No se edita el módulo de otro.
+- **Cada uno en su módulo**: `api/src/modules/vehiculos` (Victor), `modules/fotos` (Hafsa), `modules/publicacion` y `modules/contactos` (David hasta el 7-oct; ahora, Victor), `modules/crm` y `modules/incentivos` (David, desde el 7-oct). Si tu módulo necesita reaccionar a algo de otro módulo, el dueño de ese módulo expone una función y tú la usas. No se edita el módulo de otro.
 - **Ramas**: `main` (producción), `develop` (integración), `feat/core-api`, `feat/panel-fotos` y `feat/web-portales`. Se trae `develop` a la rama propia cada mañana. PR a `develop` con tests en verde. Victor revisa en menos de un día. `main` solo se toca para desplegar.
 - **Seguimiento**: 10 minutos al empezar el día en el canal del equipo: qué hice, qué hago y qué me bloquea. Un bloqueo de más de medio día se dice, no se espera.
 - **Con el cliente habla Diego.** Victor le prepara los mensajes y las preguntas; Hafsa y David no escriben al cliente. Si necesitan algo de Jaume o de Francesc, se lo piden a Victor.
@@ -208,14 +208,14 @@ Diego añade diez bloques que convierten la plataforma en el sistema que sustitu
 | # | Bloque | Victor (API, lógica y web) | Hafsa | David |
 |---|---|---|---|---|
 | 1 | Clientes y proveedores | ✅ Tablas, API y pasar un contacto a cliente (7-oct, `docs/api.md`). Falta conectar las maquetas | T07: `clientes.html`, `proveedores.html` | — |
-| 2 | Gastos y margen con REBU o IVA | Tabla `gastos` (coche, personal, proveedor, comisión, otros), margen neto, informes | T07: `gastos.html` | T10: casos del margen a mano |
-| 3 | Facturación, cobros e impagos | Series sin huecos, emisión, rectificativas, cobros, vencidas, anticipo de la señal | T07: `facturas.html` | T09: `factura.html` imprimible |
-| 4 | Verifactu | Adaptador a un proveedor de API Verifactu, cola y QR | — | T10: comparativa de proveedores |
-| 5 | Contratos | Reserva, compraventa, compra, compra a particular y depósito, con los datos congelados al generarlos | — | T09: plantillas imprimibles |
-| 6 | Incentivos comerciales | Reglas por comercial, cálculo mensual sobre el margen neto, liquidación como gasto | T07: `incentivos.html` | — |
+| 2 | Gastos y margen con REBU o IVA | Tabla `gastos` (coche, personal, proveedor, comisión, otros), margen neto, informes. T10: casos del margen a mano | T07: `gastos.html` | — |
+| 3 | Facturación, cobros e impagos | Series sin huecos, emisión, rectificativas, cobros, vencidas, anticipo de la señal. T09: `factura.html` imprimible | T07: `facturas.html` | — |
+| 4 | Verifactu | T10: comparativa de proveedores. Adaptador al elegido, cola y QR | — | — |
+| 5 | Contratos | Reserva, compraventa, compra, compra a particular y depósito, con los datos congelados al generarlos. T09: plantillas imprimibles | — | — |
+| 6 | Incentivos comerciales | Sacar `ventasDelMes` a una función y el gasto al liquidar | T07: `incentivos.html` | T12: reglas por comercial, cálculo del mes y liquidación |
 | 7 | Fondo con IA y vídeo | Cola de trabajos, quitar fondo, componer sobre el fondo de la marca, vídeo con ffmpeg | T08: prueba de herramientas y estados de las fotos | — |
-| 8 | Web, portales y redes | Vídeo en la web, feed XML para un partner de portales, publicar y retirar en Instagram y Facebook | — | T10: Meta y partners |
-| 9 | CRM y avisos | Actividades (llamadas, visitas, tareas), estado comercial, avisos del día y correo diario | T07: `crm.html` | — |
+| 8 | Web, portales y redes | T10: Meta y partners. Vídeo en la web, feed XML para un partner de portales, publicar y retirar en Instagram y Facebook | — | — |
+| 9 | CRM y avisos | Avisos del día y correo diario, encima de la tabla de David | T07: `crm.html` | T11: actividades (llamadas, visitas, tareas) y estado comercial del cliente |
 | 10 | Cita previa de pruebas | Huecos y citas públicos para la web, sin solapes, agenda | T07: `agenda.html` | — |
 
 Reglas: un bloque es migración + módulo + tests + `docs/api.md` + página del panel + datos de prueba. Cada servicio de fuera (Verifactu, fondo con IA, Meta, portales) tiene un modo simulado para probar sin credenciales. Lo económico sigue siendo solo de gerencia, salvo que cada comercial ve sus incentivos.

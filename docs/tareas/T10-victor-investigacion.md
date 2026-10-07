@@ -1,7 +1,7 @@
 # T10 · Investigar Verifactu, Meta y partners de portales, y la hoja del REBU
 
-**Quién:** David.
-**Para cuándo:** en paralelo a T09. La parte 1 primero: es la que más prisa corre.
+**Quién:** Victor.
+**Para cuándo:** la parte 1 primero: es la que más prisa corre.
 **Qué aprendes:** lo mismo que en T04 (portales): averiguar cómo funciona algo antes de programarlo, distinguiendo lo que dice el proveedor de lo que está comprobado.
 
 Mismo formato que `docs/portales.md`: **[oficial]** si lo dice la web del propio servicio, **[tercero]** si lo dice otro. Lo que no esté claro: **no lo sé**, y la pregunta para su soporte. **Ningún precio inventado.**
@@ -37,7 +37,7 @@ En T04 viste que Coches.net y Wallapop solo cargan a través de un programa o pa
 
 ## Parte 4 · Casos del margen → `docs/datos/margenes.csv`
 
-Victor necesita casos calculados a mano para probar el cálculo del margen. Con Excel o LibreOffice, haz 6 coches de ejemplo:
+Casos calculados a mano para probar el cálculo del margen (y para que David compruebe los incentivos de T12). Con Excel o LibreOffice, haz 6 coches de ejemplo:
 
 - 2 en **REBU** (compramos a un particular). El IVA solo va sobre el margen: IVA = (precio de venta − precio de compra) × 21 ÷ 121. Uno con margen negativo (vendemos por debajo de lo que costó): ahí el IVA es 0.
 - 2 en **IVA general** (compramos a un profesional con factura con IVA). Base de venta = precio ÷ 1,21; margen = base de venta − base de compra − base de los gastos.
