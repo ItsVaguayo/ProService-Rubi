@@ -73,7 +73,7 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 
 ## 12. Conectar las maquetas de Hafsa
 - ✅ `clientes.html` (7-oct): lista con buscador y filtros, ficha con sus coches y lo último del CRM, alta y edición. La lista de la API trae `n_coches` y `ultima_actividad`. Las facturas del cliente salen cuando esté el bloque 3.
-- ✅ `crm.html` (7-oct): «Hoy» con lo atrasado, «Lo mío» o «De todos», marcar hecha, apuntar actividad y embudo que se mueve arrastrando. «Hablado» cuenta solo lo hecho. En el móvil no se puede arrastrar: el estado se cambia desde un ordenador (pendiente: un selector en la ficha del cliente).
+- ✅ `crm.html` (7-oct): «Hoy» con lo atrasado, «Lo mío» o «De todos», marcar hecha, apuntar actividad y el embudo: cada estado es un tramo que se estrecha, con sus clientes dentro, y se mueven arrastrando. «Hablado» cuenta solo lo hecho. En el móvil no se puede arrastrar: el estado se cambia desde un ordenador (pendiente: un selector en la ficha del cliente).
 - [ ] El resto, conforme sale su bloque. Siguiente con API ya hecha: `incentivos.html` (T12), `proveedores.html` (T15) y `gastos.html` (T14, después de la T07b de Hafsa).
 
 Cada bloque es: migración, módulo, tests, `docs/api.md`, página del panel y datos de prueba. Marca con ✅ lo que acabes.
