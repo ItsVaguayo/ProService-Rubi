@@ -1,12 +1,13 @@
 // Dueño: David. Lista blanca de campos del libro de gastos (T14). Como en crm/campos.js: los nombres de
 // columna nunca salen del cuerpo de la petición, solo de estas listas.
+import { FORMAS_PAGO } from '../terceros/campos.js';
 
 export const TIPOS = ['general', 'irpf', 'comision', 'rebu', 'vehiculo'];
 export const CONCEPTOS = ['alquileres', 'carburantes', 'comisiones', 'compras', 'electricidad', 'gestorias', 'papelerias', 'publicidad', 'vehiculos'];
 export const IVAS = [0, 4, 10, 21];
 export const IRPFS = [0, 7, 15, 19]; // los que tiene configurados Pymecar
-// Las de Pymecar. TODO: cuando entre la T15, se importa de terceros/campos.js y se quita de aquí.
-export const FORMAS_PAGO = ['a_la_vista', 'contado', 'pago_30', 'pago_30_60', 'tarjeta', 'transferencia'];
+// Las de Pymecar, las mismas que en los proveedores (T15)
+export { FORMAS_PAGO };
 
 export const DIA = /^(\d{4})-(\d{2})-(\d{2})$/;
 

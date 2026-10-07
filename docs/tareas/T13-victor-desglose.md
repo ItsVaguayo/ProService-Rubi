@@ -13,6 +13,7 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - ✅ `estado_comercial` en clientes (migración `0009`, campo y filtro `?estado_comercial=`), hecho aparte para que David no espere (7-oct).
 - ✅ `ventasDelMes(db, mes)` en `api/src/modules/informes/ventas.js`, con `vendio_id` para la T12 (7-oct). De paso, arreglado: si «Vendido» y «Entregado» caían en el mismo segundo, la venta se atribuía a quien entregó.
 - ✅ PR #9 (T11) y #10 (T12) de David revisados y fusionados (7-oct). Queda el `TODO(Victor)` de T12: apuntar el gasto de comisión al liquidar, con el bloque 2.
+- ✅ PR #12 (T14) y #13 (T15) de David y #14 (T08) de Hafsa, fusionados (7-oct). `FORMAS_PAGO` ya vive solo en `terceros/campos.js`.
 - ✅ PR #11 (T07) de Hafsa revisado y fusionado (7-oct). Al comercial ya no le salen Proveedores, Gastos ni Facturas en el menú. Falta su T07b (gastos y facturas como en Pymecar).
 
 ## 2. T10 · Investigación (antes de los bloques 4 y 8)

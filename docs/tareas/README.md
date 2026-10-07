@@ -14,13 +14,13 @@ Las piezas difíciles (login, seguridad, servidor, migración) las monta Claude.
 | [T04 · Investigar los portales](T04-david-portales.md) | David | Martes 6-oct |
 | [T06 · Lista de extras](T06-hafsa-extras.md) | Hafsa | Viernes 9-oct |
 | ✅ [T07 · Maquetas del panel de gestión](T07-hafsa-maquetas-gestion.md) | Hafsa | Hecha (PR #11). Falta la segunda vuelta (T07b): gastos y facturas como en Pymecar |
-| [T08 · Fondo con IA y estados de las fotos](T08-hafsa-fondo-ia.md) | Hafsa | Al acabar T07 |
+| ✅ [T08 · Fondo con IA y estados de las fotos](T08-hafsa-fondo-ia.md) | Hafsa | Parte 2 hecha (PR #14). La prueba de la parte 1 espera las fotos de Jaume y el fondo (D2) |
 | [T09 · Factura y contratos imprimibles](T09-victor-factura-contratos.md) | Victor | Cuanto antes |
 | [T10 · Verifactu, Meta, partners y casos del REBU](T10-victor-investigacion.md) | Victor | La parte 1, cuanto antes |
 | ✅ [T11 · API de actividades del CRM](T11-david-crm-actividades.md) | David | Hecha (PR #9) |
 | ✅ [T12 · API de incentivos de los comerciales](T12-david-incentivos.md) | David | Hecha (PR #10) |
-| [T14 · API de gastos (el libro de gastos)](T14-david-gastos.md) | David | Cuanto antes |
-| [T15 · Campos nuevos de proveedores](T15-david-proveedores.md) | David | Después de T14 |
+| ✅ [T14 · API de gastos (el libro de gastos)](T14-david-gastos.md) | David | Hecha (PR #12) |
+| ✅ [T15 · Campos nuevos de proveedores](T15-david-proveedores.md) | David | Hecha (PR #13) |
 | [T13 · La parte de Victor, desglosada](T13-victor-desglose.md) | Victor | En orden |
 
 Cuando acabéis una, se marca aquí con ✅ y Victor os da la siguiente.
