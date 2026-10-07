@@ -2026,3 +2026,43 @@ a.contacto__coche:hover { background: var(--fondo); }
   .fila-vencida { box-shadow: inset 3px 0 0 var(--peligro); }
   .fila-vencida td:first-child { box-shadow: none; }
 }
+
+
+/* T07 · incentivos.html ---------------------------------------------------- */
+
+.incentivos { display: flex; flex-direction: column; gap: var(--espacio-m); }
+
+/* Cabeza de cada comercial: quién y su regla, coches, importe y la acción */
+.incentivo { padding: 0; overflow: hidden; }
+.incentivo__cabeza { display: grid; grid-template-columns: 44px minmax(0, 1fr) 90px 110px 190px; align-items: center; gap: 18px; padding: 18px 20px; }
+.incentivo__quien h2 { font-size: 1rem; }
+.incentivo__quien .nota { margin: 2px 0 0; font-size: .8125rem; }
+.incentivo__dato { display: flex; flex-direction: column; margin: 0; }
+.incentivo__dato b { font-size: 1.25rem; letter-spacing: -.01em; }
+.incentivo__accion { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.incentivo__accion .nota { font-size: .75rem; }
+.incentivo .tabla-caja { border: 0; border-top: 1px solid var(--linea); border-radius: 0; }
+.incentivo--liquidado .incentivo__cabeza { background: #fafbfb; }
+.incentivo--sin-regla { border-color: #e0a23a; }
+/* Botón que aún no se puede usar (liquidar sin regla, confirmar una prueba ya confirmada) */
+.incentivo .boton:disabled,
+.prueba .boton:disabled { opacity: .45; cursor: not-allowed; }
+.incentivo .boton:disabled:hover { background: var(--rojo); border-color: var(--rojo); }
+.prueba .boton--oscuro:disabled:hover { background: var(--negro); border-color: var(--negro); }
+
+/* Separador entre la versión de gerencia y la del comercial (solo en la maqueta) */
+.version-separador { display: flex; align-items: center; gap: 14px; margin: 48px 0 var(--espacio-l); color: var(--tinta-3); font-size: .75rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.version-separador::before,
+.version-separador::after { content: ""; flex: 1; border-top: 2px dashed var(--linea-fuerte); }
+.version-incentivos > * + * { margin-top: var(--espacio-l); }
+.version-incentivos .cifras { margin-bottom: 0; }
+
+@media (max-width: 1150px) {
+  .incentivo__cabeza { grid-template-columns: 44px minmax(0, 1fr) auto auto; }
+  .incentivo__accion { grid-column: 2 / -1; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; align-items: center; }
+}
+@media (max-width: 600px) {
+  .incentivo__cabeza { grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px 14px; padding: 16px; }
+  .incentivo__dato:first-of-type { display: none; }
+  .incentivo__accion .boton { flex: 1; }
+}
