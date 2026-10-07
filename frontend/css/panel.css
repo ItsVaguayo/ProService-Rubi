@@ -1921,3 +1921,46 @@ a.contacto__coche:hover { background: var(--fondo); }
 .canales--oscuro li { border-bottom-color: var(--negro-3); }
 .canales--oscuro .coche-celda a { color: var(--blanco); }
 .ficha-tercero .dinero .margen strong { color: var(--blanco); }
+
+
+/* T07 · gastos.html -------------------------------------------------------- */
+
+/* Un color por categoría: el punto, la etiqueta y la cifra de arriba */
+.categoria--vehiculo { background: var(--reservado-fondo); color: var(--reservado); }
+.categoria--personal { background: var(--llegada-fondo); color: var(--llegada); }
+.categoria--proveedor { background: var(--preparacion-fondo); color: var(--preparacion); }
+.categoria--comision { background: var(--venta-fondo); color: var(--venta); }
+.categoria--otros { background: var(--vendido-fondo); color: var(--vendido); }
+.punto.categoria--vehiculo,
+.punto.categoria--personal,
+.punto.categoria--proveedor,
+.punto.categoria--comision,
+.punto.categoria--otros { flex: none; background: currentColor; }
+
+/* Formulario corto: la categoría en una fila y los datos debajo, tantos por fila como quepan */
+.gasto-form { margin-bottom: var(--espacio-l); }
+.gasto-form__campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; align-items: end; }
+.gasto-form__categoria { grid-column: 1 / -1; }
+.gasto-form__categoria span { gap: 7px; }
+.gasto-form__concepto { grid-column: span 2; }
+.gasto-form__pie { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 12px 20px; padding-top: 14px; border-top: 1px solid var(--linea); }
+.gasto-form__pie .casilla { margin-right: auto; }
+.gasto-form__total { margin: 0; }
+.gasto-form__total b { color: var(--tinta); }
+/* El coche solo se pide si la categoría es «Coche». Sin JavaScript, con :has */
+.gasto-form__campos:not(:has(input[name="categoria"][value="vehiculo"]:checked)) .solo-vehiculo { display: none; }
+
+/* Filtros en la cabecera de la lista */
+.filtros--gastos { margin: 0; }
+.tabla--gastos .coche-celda .nota { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.tabla--gastos tfoot td { padding: 12px 16px; border-top: 1px solid var(--linea); background: #fafbfb; font-weight: 600; }
+/* Sin pagar: raya ámbar a la izquierda */
+.fila-pendiente td:first-child { box-shadow: inset 3px 0 0 var(--aviso); }
+
+@media (max-width: 760px) {
+  .gasto-form__concepto { grid-column: 1 / -1; }
+  .gasto-form__pie .boton { flex-basis: 100%; }
+  .fila-pendiente { box-shadow: inset 3px 0 0 var(--aviso); }
+  .fila-pendiente td:first-child { box-shadow: none; }
+  .tabla--gastos tfoot td { padding: 0; border: 0; background: none; }
+}
