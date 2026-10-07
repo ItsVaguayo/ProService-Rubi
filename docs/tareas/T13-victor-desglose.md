@@ -12,7 +12,8 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 ## 1. Desbloquear a David y a Hafsa
 - ✅ `estado_comercial` en clientes (migración `0009`, campo y filtro `?estado_comercial=`), hecho aparte para que David no espere (7-oct).
 - ✅ `ventasDelMes(db, mes)` en `api/src/modules/informes/ventas.js`, con `vendio_id` para la T12 (7-oct). De paso, arreglado: si «Vendido» y «Entregado» caían en el mismo segundo, la venta se atribuía a quien entregó.
-- [ ] Revisar los PR de T07 (Hafsa), T11 y T12 (David) cuando lleguen.
+- ✅ PR #9 (T11) y #10 (T12) de David revisados y fusionados (7-oct). Queda el `TODO(Victor)` de T12: apuntar el gasto de comisión al liquidar, con el bloque 2.
+- [ ] Revisar el PR de T07 (Hafsa) cuando llegue.
 
 ## 2. T10 · Investigación (antes de los bloques 4 y 8)
 - [ ] Parte 1: Verifactu → `docs/verifactu.md`.

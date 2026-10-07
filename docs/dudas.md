@@ -136,6 +136,8 @@ Sale de la lista nueva de Diego. Las H1 a H6 son internas (Diego); las H7 en ade
 | H11 | Contratos: ¿cuáles usáis hoy? ¿Nos pasáis los que tengáis, en blanco? | Mejor partir de los suyos que de cero. | Los cinco de T09 con texto nuestro. | Jaume |
 | H12 | Pruebas de conducción: horario, cuánto dura una prueba y qué pedís al cliente (carnet, DNI). | La web solo ofrece huecos libres dentro del horario. | Lunes a viernes de 10:00 a 13:30 y de 16:30 a 19:30, sábado de 10:00 a 13:30; 30 minutos; carnet. | Jaume |
 | H13 | Correo desde el que salen los avisos (servidor SMTP o una cuenta de Google). | Sin él, los avisos solo se ven en el panel. | Solo en el panel. | Francesc |
+| H15 | Con una regla de porcentaje, el comercial ve el incentivo de cada coche y puede sacar su margen (117,28 € al 5 % = 2.345,67 €). ¿Se acepta, o solo ve el total del mes (y aun así saca el margen total de sus ventas)? | El margen solo lo ve gerencia (11.2). | Ve el incentivo de cada coche. | Diego |
+| H16 | Si gerencia cambia la regla de un comercial a mitad de mes, ¿se aplica al mes entero o solo desde ese día? | Hoy se aplica la regla vigente al liquidar, al mes entero. | Mes entero. | Jaume |
 | H14 | El fondo del photocall y el logo en buena calidad (es la D2). Ahora también se usan para el vídeo. | Sin fondo no hay fotos ni vídeo con la marca. | Fondo gris liso. | Jaume |
 
 ---
