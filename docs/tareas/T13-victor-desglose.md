@@ -16,11 +16,11 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - ✅ PR #11 (T07) de Hafsa revisado y fusionado (7-oct). Al comercial ya no le salen Proveedores, Gastos ni Facturas en el menú. Falta su T07b (gastos y facturas como en Pymecar).
 
 ## 2. T10 · Investigación (antes de los bloques 4 y 8)
-- [ ] Parte 1: Verifactu → `docs/verifactu.md`.
+- ~~Parte 1: Verifactu~~: aplazado a octubre de 2028 (duda H1).
 - [ ] Parte 4: casos del margen → `docs/datos/margenes.csv` (los necesitan el bloque 2 y la T12).
 - [ ] Parte 2: Meta → `docs/rrss.md`.
 - [ ] Parte 3: partners de portales → `docs/portales.md`.
-- [ ] Pasar a Diego las dudas H1, H5 y H6 con lo encontrado.
+- [ ] Pasar a Diego las dudas H5 y H6 con lo encontrado. Para la H6, el candidato es Inventario.pro (lo trae Pymecar).
 
 ## 3. Bloque 2 · Gastos y margen con REBU
 - [ ] Tabla `gastos` con el modelo de Pymecar: **T14 de David**.
@@ -42,9 +42,8 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - [ ] Los cinco contratos con la banda «pendiente de revisión por abogado».
 - [ ] Textos base de los contratos en `docs/contratos/`, para el abogado (duda H3).
 
-## 6. Bloque 4 · Verifactu
-- [ ] Adaptador al proveedor elegido en T10, con modo simulado.
-- [ ] Envío por la cola, estado de cada factura y QR en `factura.html`.
+## 6. Bloque 4 · Verifactu (aplazado a 2028)
+- Hacienda lo pasa a octubre de 2028 (duda H1). En el bloque 3 solo se deja sitio: un estado por factura y el hueco del QR.
 
 ## 7. Bloque 5 · Contratos
 - [ ] Migración `contratos`, numeración y datos congelados al generarlo.

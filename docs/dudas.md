@@ -123,7 +123,7 @@ Sale de la lista nueva de Diego. Las H1 a H6 son internas (Diego); las H7 en ade
 
 | # | Duda | Por qué importa | Mientras tanto | Quién |
 |---|---|---|---|---|
-| H1 | ¿Con qué proveedor de API Verifactu facturamos y quién lo paga? (comparativa en T10) | Montar un programa de facturación propio que cumpla Verifactu obliga a firmar como fabricante la declaración responsable. Con un proveedor, esa parte es suya. | Modo simulado: las facturas salen con QR de prueba y no se mandan a Hacienda. | Diego |
+| H1 ✅ | ¿Con qué proveedor de API Verifactu facturamos y quién lo paga? | Montar un programa de facturación propio que cumpla Verifactu obliga a firmar como fabricante la declaración responsable. | **Aplazado (7-oct).** Hacienda anunció el 5-oct-2026 que Verifactu pasa a **octubre de 2028** para empresas de menos de 8 M€ de facturación (antes, enero de 2027 para sociedades). Falta verlo publicado en el BOE. La facturación se hace sin Verifactu, dejando sitio para añadirlo: estado por factura y hueco del QR. Se retoma en 2028 o si cambia la fecha. | Diego |
 | H2 | ¿Esta ampliación se cobra aparte de lo pactado? | Son diez bloques nuevos, varios con coste mensual (Verifactu, fondo con IA, redes). | Se construye igual; el precio no lo tocamos. | Diego |
 | H3 | Los textos de los contratos los redacta Claude como base. ¿Qué abogado los revisa? | Un contrato de compraventa mal hecho es responsabilidad nuestra ante el cliente. | Salen con la banda «Borrador pendiente de revisión por abogado». | Diego |
 | H4 | Herramienta del fondo con IA: rembg (gratis, en nuestro servidor) o Photoroom (de pago por foto). Prueba en T08. | Unas 240 fotos al mes. | rembg. | Diego |

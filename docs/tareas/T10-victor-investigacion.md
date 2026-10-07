@@ -6,7 +6,7 @@
 
 Mismo formato que `docs/portales.md`: **[oficial]** si lo dice la web del propio servicio, **[tercero]** si lo dice otro. Lo que no esté claro: **no lo sé**, y la pregunta para su soporte. **Ningún precio inventado.**
 
-## Parte 1 · Verifactu → `docs/verifactu.md`
+## Parte 1 · Verifactu → `docs/verifactu.md` (aplazada: Verifactu pasa a octubre de 2028, duda H1)
 
 Verifactu es el sistema de Hacienda para que las facturas no se puedan manipular: cada factura se manda a la AEAT al emitirla y lleva un QR. La plataforma va a facturar, así que tiene que cumplirlo. No lo vamos a construir desde cero: vamos a usar un servicio que ya lo hace.
 

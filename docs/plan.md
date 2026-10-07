@@ -210,7 +210,7 @@ Diego añade diez bloques que convierten la plataforma en el sistema que sustitu
 | 1 | Clientes y proveedores | ✅ Tablas, API y pasar un contacto a cliente (7-oct, `docs/api.md`). Falta conectar las maquetas | T07: `clientes.html`, `proveedores.html` | — |
 | 2 | Gastos y margen con REBU o IVA | Tabla `gastos` (coche, personal, proveedor, comisión, otros), margen neto, informes. T10: casos del margen a mano | T07: `gastos.html` | — |
 | 3 | Facturación, cobros e impagos | Series sin huecos, emisión, rectificativas, cobros, vencidas, anticipo de la señal. T09: `factura.html` imprimible | T07: `facturas.html` | — |
-| 4 | Verifactu | T10: comparativa de proveedores. Adaptador al elegido, cola y QR | — | — |
+| 4 | Verifactu | **Aplazado a 2028** (duda H1). La facturación deja sitio para añadirlo | — | — |
 | 5 | Contratos | Reserva, compraventa, compra, compra a particular y depósito, con los datos congelados al generarlos. T09: plantillas imprimibles | — | — |
 | 6 | Incentivos comerciales | Sacar `ventasDelMes` a una función y el gasto al liquidar | T07: `incentivos.html` | T12: reglas por comercial, cálculo del mes y liquidación |
 | 7 | Fondo con IA y vídeo | Cola de trabajos, quitar fondo, componer sobre el fondo de la marca, vídeo con ffmpeg | T08: prueba de herramientas y estados de las fotos | — |
