@@ -42,3 +42,21 @@ export function tipoNif(texto) {
   if (cifValido(nif)) return 'cif';
   return null;
 }
+
+// IBAN: dos letras de país, dos dígitos de control y de 11 a 30 letras o números (en España, 24 en total).
+// Se pasan los cuatro primeros al final, cada letra a su número (A = 10 … Z = 35) y el resultado módulo 97
+// tiene que dar 1. El número sale de hasta 70 cifras: demasiado para un Number, así que el resto se va
+// sacando por trozos de 9 cifras (cabe de sobra en un entero de JavaScript).
+export function normalizarIban(texto) {
+  return String(texto).toUpperCase().replace(/\s/g, '');
+}
+
+export function ibanValido(texto) {
+  const iban = normalizarIban(texto);
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+  if (iban.startsWith('ES') && iban.length !== 24) return false;
+  const numeros = (iban.slice(4) + iban.slice(0, 4)).replace(/[A-Z]/g, (l) => String(l.charCodeAt(0) - 55));
+  let resto = 0;
+  for (let i = 0; i < numeros.length; i += 9) resto = Number(String(resto) + numeros.slice(i, i + 9)) % 97;
+  return resto === 1;
+}
