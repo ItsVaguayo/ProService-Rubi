@@ -207,7 +207,7 @@ Diego añade diez bloques que convierten la plataforma en el sistema que sustitu
 
 | # | Bloque | Victor (API, lógica y web) | Hafsa | David |
 |---|---|---|---|---|
-| 1 | Clientes y proveedores | Tablas, API, pasar un contacto a cliente | T07: `clientes.html`, `proveedores.html` | — |
+| 1 | Clientes y proveedores | ✅ Tablas, API y pasar un contacto a cliente (7-oct, `docs/api.md`). Falta conectar las maquetas | T07: `clientes.html`, `proveedores.html` | — |
 | 2 | Gastos y margen con REBU o IVA | Tabla `gastos` (coche, personal, proveedor, comisión, otros), margen neto, informes | T07: `gastos.html` | T10: casos del margen a mano |
 | 3 | Facturación, cobros e impagos | Series sin huecos, emisión, rectificativas, cobros, vencidas, anticipo de la señal | T07: `facturas.html` | T09: `factura.html` imprimible |
 | 4 | Verifactu | Adaptador a un proveedor de API Verifactu, cola y QR | — | T10: comparativa de proveedores |

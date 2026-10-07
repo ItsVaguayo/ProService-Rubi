@@ -34,7 +34,7 @@ Seis documentos en HTML que se imprimen en A4 (o se guardan como PDF desde el na
    @media print { .no-imprimir { display: none; } }
    ```
    Y `break-inside: avoid` en los bloques que no se pueden partir (los totales, las firmas).
-4. Los contratos: misma cabecera que la factura, título, las dos partes (nosotros y el cliente o el dueño), los datos del coche, el precio y la forma de pago, las cláusulas y, al final, dos cajas para firmar con nombre, DNI y fecha. **El texto de las cláusulas te lo paso yo** (Claude) en `docs/contratos/`: tú copias el texto, no lo redactas. Hasta que lo tengas, pon párrafos de relleno.
+4. Los contratos: misma cabecera que la factura, título, las dos partes (nosotros y el cliente o el dueño), los datos del coche, el precio y la forma de pago, las cláusulas y, al final, dos cajas para firmar con nombre, DNI y fecha. **El texto de las cláusulas te lo pasa Victor** en `docs/contratos/`: tú copias el texto, no lo redactas. Hasta que lo tengas, pon párrafos de relleno.
 5. Arriba de cada contrato, una banda amarilla que diga «Borrador pendiente de revisión por abogado», con la clase `no-imprimir` **no**: tiene que salir también en papel hasta que Diego diga que se quita.
 6. Prueba cada uno con Ctrl+P → «Guardar como PDF». Mira el PDF entero.
 
