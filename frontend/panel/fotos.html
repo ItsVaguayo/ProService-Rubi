@@ -92,13 +92,30 @@
       </li>
     </ol>
 
-    <!-- Plantilla de una foto subida -->
+    <!-- Plantilla de una foto subida.
+         T08 · photocall: lo marcado como «photocall» no se ve hasta que la fila lleve uno de estos
+         estados, que pondrá fotos.js cuando la API diga cómo va el fondo de cada foto (bloque 7, Victor):
+           foto-fila--procesando · el servidor le está poniendo el fondo: miniatura apagada y la rueda
+           foto-fila--lista      · ya tiene el fondo (ruta_photocall)
+           foto-fila--fallo      · no se pudo: se enseña la original, un aviso y «Reintentar»
+         Sin ninguno, la fila es la de siempre. Las piezas nuevas no llevan data-*: fotos.js no las toca. -->
     <template id="plantilla-foto">
       <li class="foto-fila">
         <img src="" alt="" loading="lazy">
-        <div class="foto-fila__info"><strong data-nombre></strong><span class="nota" data-detalle></span></div>
+        <span class="foto-fila__girando" aria-hidden="true"></span><!-- photocall -->
+        <div class="foto-fila__info"><strong data-nombre></strong><span class="nota" data-detalle></span>
+          <!-- photocall: una línea por estado; se ve la del estado de la fila -->
+          <span class="foto-fila__estado foto-fila__estado--procesando" role="status">Poniendo el fondo…</span>
+          <span class="foto-fila__estado foto-fila__estado--lista">Con el fondo del photocall</span>
+          <span class="foto-fila__estado foto-fila__estado--fallo">No se pudo poner el fondo: se usa la original</span>
+        </div>
         <label class="casilla"><input type="checkbox" data-campo="publica"> En la web</label>
         <label class="casilla"><input type="checkbox" data-campo="es_dano"> Daño</label>
+        <!-- photocall: el interruptor y, si falló, «Reintentar» -->
+        <div class="foto-fila__photocall">
+          <label class="interruptor"><input type="checkbox" role="switch"><span>Usar la original</span></label>
+          <button class="boton boton--secundario boton--pequeno foto-fila__reintentar" type="button">Reintentar</button>
+        </div>
         <div class="foto-fila__mover">
           <button type="button" aria-label="Subir de posición" data-mover="-1">↑</button>
           <button type="button" aria-label="Bajar de posición" data-mover="1">↓</button>
@@ -114,6 +131,90 @@
         <div class="foto-fila__info"><strong data-nombre></strong><span class="nota" data-detalle></span></div>
       </li>
     </template>
+
+    <!-- T08 · VÍDEO DEL COCHE, debajo de la galería. Maqueta: todavía no hay vídeo. Lo montará el
+         servidor con las fotos (bloque 7, Victor); entonces el hueco lleva un <video>. Vertical por
+         defecto (Instagram, móvil); el selector lo pasa a horizontal sin JavaScript (CSS con :has). -->
+    <section class="video-coche" aria-labelledby="video-coche-titulo">
+      <div class="video-coche__cabeza">
+        <div>
+          <h2 id="video-coche-titulo">Vídeo del coche <span class="maqueta-etiqueta">Maqueta</span></h2>
+          <p class="nota">Se montará solo con las fotos del coche. Todavía no está en marcha.</p>
+        </div>
+        <fieldset class="segmentos" aria-label="Formato del vídeo">
+          <label><input type="radio" name="formato-video" value="vertical" checked><span>Vertical</span></label>
+          <label><input type="radio" name="formato-video" value="horizontal"><span>Horizontal</span></label>
+        </fieldset>
+      </div>
+      <div class="video-coche__marco">
+        <p class="video-coche__vacio"><b>Aún no hay vídeo</b><span class="video-coche__formato"></span></p>
+      </div>
+    </section>
+
+    <!-- T08 · MAQUETA DE LOS ESTADOS DEL PHOTOCALL. Tres filas de ejemplo, escritas a mano, con las
+         mismas piezas que la plantilla de arriba, para ver los tres estados y el interruptor. No
+         llevan data-*: fotos.js no las toca, y sus botones de siempre van desactivados. Se quita
+         cuando Victor conecte la cola y las filas de verdad enseñen su estado. -->
+    <section class="maqueta-photocall" aria-labelledby="maqueta-photocall-titulo">
+      <div class="maqueta-photocall__cabeza">
+        <h2 id="maqueta-photocall-titulo">Así se verán las fotos con el fondo del photocall <span class="maqueta-etiqueta">Maqueta</span></h2>
+        <p class="nota">Ejemplo, no son fotos de este coche. Hoy las fotos se publican tal cual: el fondo del photocall aún no está en marcha.</p>
+      </div>
+      <ol class="fotos-orden">
+        <li class="foto-fila foto-fila--procesando">
+          <img src="../img/coche.svg" alt="Ejemplo: foto poniéndose el fondo">
+          <span class="foto-fila__girando" aria-hidden="true"></span>
+          <div class="foto-fila__info"><strong>1 · Frontal</strong><span class="nota">Sale en la web</span>
+            <span class="foto-fila__estado foto-fila__estado--procesando" role="status">Poniendo el fondo…</span>
+          </div>
+          <label class="casilla"><input type="checkbox" checked disabled> En la web</label>
+          <label class="casilla"><input type="checkbox" disabled> Daño</label>
+          <div class="foto-fila__photocall">
+            <label class="interruptor"><input type="checkbox" role="switch"><span>Usar la original</span></label>
+          </div>
+          <div class="foto-fila__mover">
+            <button type="button" aria-label="Subir de posición" disabled>↑</button>
+            <button type="button" aria-label="Bajar de posición" disabled>↓</button>
+          </div>
+          <button class="foto-fila__quitar" type="button" disabled>Quitar</button>
+        </li>
+        <li class="foto-fila foto-fila--lista">
+          <img src="../img/coche.svg" alt="Ejemplo: foto con el fondo del photocall">
+          <span class="foto-fila__girando" aria-hidden="true"></span>
+          <div class="foto-fila__info"><strong>2 · 3/4 delantero izq.</strong><span class="nota">Sale en la web</span>
+            <span class="foto-fila__estado foto-fila__estado--lista">Con el fondo del photocall</span>
+          </div>
+          <label class="casilla"><input type="checkbox" checked disabled> En la web</label>
+          <label class="casilla"><input type="checkbox" disabled> Daño</label>
+          <div class="foto-fila__photocall">
+            <label class="interruptor"><input type="checkbox" role="switch"><span>Usar la original</span></label>
+          </div>
+          <div class="foto-fila__mover">
+            <button type="button" aria-label="Subir de posición" disabled>↑</button>
+            <button type="button" aria-label="Bajar de posición" disabled>↓</button>
+          </div>
+          <button class="foto-fila__quitar" type="button" disabled>Quitar</button>
+        </li>
+        <li class="foto-fila foto-fila--fallo">
+          <img src="../img/coche.svg" alt="Ejemplo: foto original, sin fondo">
+          <span class="foto-fila__girando" aria-hidden="true"></span>
+          <div class="foto-fila__info"><strong>3 · Lateral izq.</strong><span class="nota">Sale en la web</span>
+            <span class="foto-fila__estado foto-fila__estado--fallo">No se pudo poner el fondo: se usa la original</span>
+          </div>
+          <label class="casilla"><input type="checkbox" checked disabled> En la web</label>
+          <label class="casilla"><input type="checkbox" disabled> Daño</label>
+          <div class="foto-fila__photocall">
+            <label class="interruptor"><input type="checkbox" role="switch" checked disabled><span>Usar la original</span></label>
+            <button class="boton boton--secundario boton--pequeno foto-fila__reintentar" type="button">Reintentar</button>
+          </div>
+          <div class="foto-fila__mover">
+            <button type="button" aria-label="Subir de posición" disabled>↑</button>
+            <button type="button" aria-label="Bajar de posición" disabled>↓</button>
+          </div>
+          <button class="foto-fila__quitar" type="button" disabled>Quitar</button>
+        </li>
+      </ol>
+    </section>
 
   </main>
 </div>

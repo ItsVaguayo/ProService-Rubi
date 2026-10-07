@@ -2182,3 +2182,132 @@ a.contacto__coche:hover { background: var(--fondo); }
   .dia { min-height: 0; }
   .leyenda-pruebas .nota { flex-basis: 100%; margin-left: 0; }
 }
+
+
+/* ==========================================================================
+   T08 · FOTOS CON EL FONDO DEL PHOTOCALL Y VÍDEO (Hafsa)
+   Estados de cada foto en fotos.html y el hueco del vídeo. Las piezas nuevas
+   de la fila no se ven hasta que la fila lleva un estado: sin estado, la
+   fila es la de siempre.
+   ========================================================================== */
+
+
+/* T08 · fotos.html: estados de cada foto ------------------------------------ */
+
+.foto-fila__girando,
+.foto-fila__estado,
+.foto-fila__photocall,
+.foto-fila__reintentar { display: none; }
+
+/* Con estado, la fila gana una columna para el interruptor (y «Reintentar») */
+.foto-fila--procesando,
+.foto-fila--lista,
+.foto-fila--fallo { grid-template-columns: 96px minmax(0, 1fr) auto auto auto auto auto; }
+.foto-fila--procesando .foto-fila__photocall,
+.foto-fila--lista .foto-fila__photocall,
+.foto-fila--fallo .foto-fila__photocall { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.foto-fila--procesando .foto-fila__estado--procesando,
+.foto-fila--lista .foto-fila__estado--lista,
+.foto-fila--fallo .foto-fila__estado--fallo { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: .75rem; font-weight: 600; }
+
+/* La miniatura y la rueda comparten la misma celda */
+.foto-fila--procesando > img,
+.foto-fila--procesando .foto-fila__girando { grid-column: 1; grid-row: 1; }
+
+/* Procesando: miniatura apagada, rueda que gira encima y texto en gris */
+.foto-fila--procesando > img { opacity: .45; filter: grayscale(.5); }
+.foto-fila--procesando .foto-fila__girando {
+  display: block;
+  place-self: center;
+  width: 26px;
+  height: 26px;
+  border: 3px solid rgb(23 25 28 / .15);
+  border-top-color: var(--tinta);
+  border-radius: 50%;
+  animation: girar .8s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+.foto-fila__estado--procesando { color: var(--tinta-3); }
+
+/* Lista: la foto con el fondo, normal; solo una marca verde */
+.foto-fila__estado--lista { color: var(--ok); }
+.foto-fila__estado--lista::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* Falló: la original, un aviso rojo pequeño y «Reintentar» */
+.foto-fila--fallo { background: #fffafa; box-shadow: inset 3px 0 0 var(--peligro); }
+.foto-fila__estado--fallo { color: var(--peligro); }
+.foto-fila__estado--fallo::before { content: "!"; display: grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; background: var(--peligro); color: var(--blanco); font-size: .625rem; font-weight: 800; }
+.foto-fila--fallo .foto-fila__reintentar { display: inline-flex; }
+
+/* Interruptor «Usar la original»: una casilla con forma de interruptor */
+.interruptor { display: inline-flex; align-items: center; gap: 8px; color: var(--tinta-2); font-size: .8125rem; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.interruptor input {
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  border-radius: var(--radio-boton);
+  background: var(--linea-fuerte);
+  appearance: none;
+  cursor: pointer;
+  transition: background .15s;
+}
+.interruptor input::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--blanco); box-shadow: 0 1px 2px rgb(0 0 0 / .2); transition: transform .15s; }
+.interruptor input:checked { background: var(--tinta); }
+.interruptor input:checked::before { transform: translateX(14px); }
+.interruptor input:focus-visible { outline: 2px solid var(--rojo); outline-offset: 2px; }
+.interruptor:has(input:disabled) { cursor: default; opacity: .6; }
+.interruptor input:disabled { cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .foto-fila--procesando .foto-fila__girando { animation: none; border-top-color: rgb(23 25 28 / .15); border-style: dotted; }
+}
+
+@media (max-width: 800px) {
+  .foto-fila--procesando,
+  .foto-fila--lista,
+  .foto-fila--fallo { grid-template-columns: 80px minmax(0, 1fr); }
+  .foto-fila--procesando > img,
+  .foto-fila--procesando .foto-fila__girando { grid-row: 1 / span 2; }
+  .foto-fila__photocall { grid-column: 2; justify-self: start; }
+}
+
+/* La maqueta de los tres estados, debajo del vídeo */
+.maqueta-photocall { margin-top: var(--espacio-l); }
+.maqueta-photocall__cabeza { margin-bottom: 12px; }
+/* En la maqueta, lo de siempre (casillas, flechas, «Quitar») va desactivado y se nota */
+.maqueta-photocall .foto-fila__quitar:disabled { opacity: .35; cursor: default; }
+.maqueta-photocall__cabeza h2,
+.video-coche__cabeza h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.maqueta-photocall__cabeza .nota { margin: 4px 0 0; }
+.maqueta-etiqueta { padding: 1px 8px; border-radius: var(--radio-boton); background: var(--aviso-fondo); color: var(--aviso); font-size: .6875rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+
+
+/* T08 · fotos.html: el vídeo del coche --------------------------------------- */
+
+.video-coche { margin-top: var(--espacio-l); padding: 20px; background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio); }
+.video-coche__cabeza { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px 20px; margin-bottom: 16px; }
+.video-coche__cabeza .nota { margin: 4px 0 0; }
+
+/* Vertical por defecto (9:16); con «Horizontal», 16:9 a lo ancho */
+.video-coche__marco {
+  display: grid;
+  place-items: center;
+  width: min(100%, 220px);
+  aspect-ratio: 9 / 16;
+  margin: 0 auto;
+  border: 2px dashed var(--linea-fuerte);
+  border-radius: var(--radio);
+  background: var(--fondo);
+  transition: width .25s cubic-bezier(.2, .8, .2, 1);
+}
+.video-coche:has(input[name="formato-video"][value="horizontal"]:checked) .video-coche__marco { width: min(100%, 640px); aspect-ratio: 16 / 9; }
+.video-coche__vacio { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 0; padding: 16px; color: var(--tinta-3); font-size: .8125rem; text-align: center; }
+.video-coche__vacio b { color: var(--tinta-2); font-size: .9375rem; }
+.video-coche__formato::before { content: "Vertical · 9:16"; }
+.video-coche:has(input[name="formato-video"][value="horizontal"]:checked) .video-coche__formato::before { content: "Horizontal · 16:9"; }
+
+@media (max-width: 800px) {
+  .video-coche { padding: 16px; }
+}
