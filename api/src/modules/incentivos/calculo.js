@@ -7,7 +7,7 @@ import { margenNeto } from '../margen.js';
 import { ventasDelMes } from '../informes/ventas.js';
 
 export const TIPOS_REGLA = ['porcentaje_margen', 'fijo_por_coche'];
-export const MES = /^\d{4}-(0[1-9]|1[0-2])$/;
+export { MES } from '../../fechas.js';
 
 const margenDe = margenNeto; // el neto: después del IVA de la venta y con todos los gastos del coche
 

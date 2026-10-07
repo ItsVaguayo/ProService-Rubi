@@ -26,11 +26,12 @@ function rutasTercero(db, { tabla, entidad, campos, extra, resumen = '' }) {
     if (q) {
       const comoNif = q.toUpperCase().replace(/[\s.-]/g, '');
       const comoTelefono = q.replace(/[\s().-]/g, '');
-      filtros.push("(nombre LIKE ? OR nif LIKE ? OR replace(replace(telefono, ' ', ''), '-', '') LIKE ? OR email LIKE ?)");
+      // El teléfono, sin espacios, guiones, puntos ni paréntesis: igual que al pasar un contacto a cliente
+      filtros.push("(nombre LIKE ? OR nif LIKE ? OR replace(replace(replace(replace(replace(telefono, ' ', ''), '-', ''), '.', ''), '(', ''), ')', '') LIKE ? OR email LIKE ?)");
       valores.push(`%${q}%`, `%${comoNif}%`, `%${comoTelefono}%`, `%${q}%`);
     }
     const donde = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';
-    res.json(db.prepare(`SELECT ${tabla}.*${resumen} FROM ${tabla} ${donde} ORDER BY nombre COLLATE NOCASE, id LIMIT 500`).all(...valores));
+    res.json(db.prepare(`SELECT ${tabla}.*${resumen} FROM ${tabla} ${donde} ORDER BY nombre COLLATE NOCASE, id LIMIT 5000`).all(...valores));
   });
 
   r.get('/:id', (req, res) => {

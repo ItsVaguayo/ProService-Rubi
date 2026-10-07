@@ -6,6 +6,7 @@ import { apuntarGasto } from '../gastos/apuntar.js';
 import { importes } from '../gastos/calculo.js';
 import { registrar } from '../auditoria.js';
 import { CASILLAS_COSTE } from '../margen.js';
+import { hoyLocal } from '../../fechas.js';
 
 export const CAMPOS_COSTE = CASILLAS_COSTE.map((k) => `coste_${k}_cent`);
 
@@ -31,7 +32,7 @@ export function guardarCostes(db, vehiculoId, costes, usuarioId) {
       registrar(db, { usuarioId, entidad: 'gasto', entidadId: antes.id, accion: 'edicion', antes: { base_cent: antes.base_cent }, despues: nuevos });
     } else if (base > 0) {
       apuntarGasto(db, {
-        fecha: new Date().toISOString().slice(0, 10), tipo: 'vehiculo', concepto: 'vehiculos', vehiculo_id: vehiculoId,
+        fecha: hoyLocal(), tipo: 'vehiculo', concepto: 'vehiculos', vehiculo_id: vehiculoId,
         base_cent: base, iva_pct: casilla === 'impuestos' ? 0 : 21, irpf_pct: 0, coste_ficha: casilla,
         descripcion: 'Desde la ficha del coche',
       }, usuarioId);

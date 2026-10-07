@@ -49,7 +49,7 @@ export function rutasActividades(db) {
     const donde = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';
     // Las programadas por orden de fecha; las que no tienen fecha (notas), al final y de la más nueva a la más vieja
     res.json(db.prepare(`${SELECT} ${donde}
-                         ORDER BY a.programada_para IS NULL, a.programada_para, a.creado_en DESC, a.id LIMIT 500`).all(...valores));
+                         ORDER BY a.programada_para IS NULL, a.programada_para, a.creado_en DESC, a.id LIMIT 5000`).all(...valores));
   });
 
   r.get('/:id', (req, res) => {

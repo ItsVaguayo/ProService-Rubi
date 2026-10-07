@@ -208,3 +208,9 @@ test('migración 0011: un proveedor dado de alta antes sale como «proveedor»',
   assert.deepEqual({ ...p }, { clase: 'proveedor', iban: null, forma_pago: null });
   db.close();
 });
+
+test('revisión: el teléfono se busca sin paréntesis, puntos ni guiones', () =>
+  conServidor(async ({ pide }) => {
+    await pide('/clientes', { method: 'POST', body: { nombre: 'Con formato', telefono: '93 (111) 22.33' } });
+    assert.deepEqual((await pide('/clientes?q=931112233')).json.map((c) => c.nombre), ['Con formato']);
+  }));

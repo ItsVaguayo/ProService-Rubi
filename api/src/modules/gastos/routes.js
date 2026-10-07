@@ -7,9 +7,7 @@ import { limpiarGasto, TIPOS, CONCEPTOS, FORMAS_PAGO } from './campos.js';
 import { importes, reglasIncumplidas } from './calculo.js';
 import { apuntarGasto, ErrorGasto } from './apuntar.js';
 
-const MES = /^\d{4}-(0[1-9]|1[0-2])$/;
-const ENTERO = /^[1-9]\d*$/;
-const mesActual = () => new Date().toISOString().slice(0, 7);
+import { MES, ENTERO, mesLocal as mesActual, hoyLocal } from '../../fechas.js';
 const IMPORTES = ['base_cent', 'iva_cent', 'irpf_cent', 'total_cent'];
 
 const SELECT = `SELECT g.*, p.nombre AS proveedor_nombre, c.nombre AS cliente_nombre, u.nombre AS usuario_nombre,
@@ -95,6 +93,11 @@ export function rutasGastos(db) {
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
     if (!Object.keys(datos).length) return res.status(400).json({ error: 'Sin cambios' });
 
+    // Un gasto que sale de una casilla de la ficha del coche (coste_ficha) es de ese coche: se corrige
+    // desde su ficha o aquí, pero no se pasa a otro coche ni se queda sin él.
+    if (antes.coste_ficha && 'vehiculo_id' in datos && datos.vehiculo_id !== antes.vehiculo_id) {
+      return res.status(400).json({ error: `Este gasto es el ${antes.coste_ficha} de la ficha de su coche: no se puede pasar a otro coche` });
+    }
     const nuevo = { ...antes, ...datos };
     const incumplidas = reglasIncumplidas(nuevo);
     if (incumplidas.length) return res.status(400).json({ error: incumplidas.join('. '), errores: incumplidas });
@@ -122,7 +125,7 @@ export function rutasGastos(db) {
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
 
     db.transaction(() => {
-      if (pagado) db.prepare("UPDATE gastos SET pagado_en = date('now'), forma_pago = COALESCE(?, forma_pago) WHERE id = ?").run(forma_pago ?? null, antes.id);
+      if (pagado) db.prepare('UPDATE gastos SET pagado_en = ?, forma_pago = COALESCE(?, forma_pago) WHERE id = ?').run(hoyLocal(), forma_pago ?? null, antes.id);
       else db.prepare('UPDATE gastos SET pagado_en = NULL WHERE id = ?').run(antes.id);
       registrar(db, { usuarioId: req.usuario.id, entidad: 'gasto', entidadId: antes.id, accion: pagado ? 'pagado' : 'sin_pagar',
         antes: { pagado_en: antes.pagado_en, forma_pago: antes.forma_pago }, despues: { pagado, forma_pago: forma_pago ?? antes.forma_pago } });

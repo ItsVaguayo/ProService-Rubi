@@ -98,7 +98,7 @@ Clientes: los dos roles (el comercial los usa en el CRM). Proveedores: solo gere
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
-| `GET /clientes?q=` | con sesión | Lista por nombre. `q` busca en nombre, NIF, teléfono (sin espacios) y correo. `activos=0` incluye los desactivados. Como mucho 500. Cada fila trae `n_coches` (los que ha comprado) y `ultima_actividad` (cuándo se hizo su última actividad del CRM; las apuntadas sin hacer no cuentan) |
+| `GET /clientes?q=` | con sesión | Lista por nombre. `q` busca en nombre, NIF, teléfono (sin espacios) y correo. `activos=0` incluye los desactivados. Como mucho 5.000. Cada fila trae `n_coches` (los que ha comprado) y `ultima_actividad` (cuándo se hizo su última actividad del CRM; las apuntadas sin hacer no cuentan) |
 | `GET /clientes/:id` | con sesión | La ficha, con `coches` (los que ha comprado: `vehiculos.comprador_id`) y `contactos` (los de la web unidos a él) |
 | `POST /clientes` | con sesión | Alta. Solo `nombre` es obligatorio. 201 |
 | `PUT /clientes/:id` | con sesión | Cambia los campos que lleguen. `{ activo: false }` lo desactiva: no se borra nunca |

@@ -11,7 +11,7 @@ import { Router } from 'express';
 import { costeTotal, ivaDeLaVenta, margenNeto, regimenDe } from '../margen.js';
 import { ventasDelMes } from './ventas.js';
 
-const MES = /^\d{4}-(0[1-9]|1[0-2])$/;
+import { MES } from '../../fechas.js';
 const DIA_MS = 86400000;
 const TRAMOS = [
   { nombre: 'Menos de 30 días', desde: 0, hasta: 30 },

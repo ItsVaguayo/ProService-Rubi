@@ -2,7 +2,8 @@
 //
 // Los costes salen del libro de gastos (bloque 2): los cuatro de la ficha (transporte, taller, preparación e
 // impuestos, sin IVA) más cualquier otro gasto apuntado a ese coche, menos la factura de compra en REBU, que
-// ya es el precio de compra. Las consultas los traen con COSTES_SQL.
+// ya es el precio de compra: la del tipo «rebu» y cualquiera del concepto «compras» (la de un coche comprado con
+// IVA general se apunta como gasto general). Las consultas los traen con COSTES_SQL.
 //
 // La base es lo que costó el coche: el precio de compra o, en depósito, lo pactado con el dueño.
 //
@@ -22,7 +23,7 @@ export const CASILLAS_COSTE = ['transporte', 'taller', 'preparacion', 'impuestos
 // Columnas calculadas para una consulta sobre vehiculos con alias `v`
 export const COSTES_SQL = [
   ...CASILLAS_COSTE.map((k) => `(SELECT COALESCE(SUM(g.base_cent), 0) FROM gastos g WHERE g.vehiculo_id = v.id AND g.coste_ficha = '${k}') AS coste_${k}_cent`),
-  "(SELECT COALESCE(SUM(g.base_cent), 0) FROM gastos g WHERE g.vehiculo_id = v.id AND g.coste_ficha IS NULL AND g.tipo <> 'rebu') AS coste_otros_cent",
+  "(SELECT COALESCE(SUM(g.base_cent), 0) FROM gastos g WHERE g.vehiculo_id = v.id AND g.coste_ficha IS NULL AND g.tipo <> 'rebu' AND g.concepto <> 'compras') AS coste_otros_cent",
 ].join(',\n      ');
 
 export function costesDelCoche(v) {

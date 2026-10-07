@@ -111,3 +111,24 @@ test('migración 0012: los costes de la ficha pasan al libro y las columnas se v
   assert.ok(!columnas.some((c) => c.startsWith('coste_')), 'ya no hay columnas de coste en vehiculos');
   db.close();
 });
+
+test('revisión: la factura de compra no cuenta como coste aunque vaya en IVA general', () =>
+  conServidor(async ({ pide }) => {
+    const v = (await pide('/vehiculos', { method: 'POST', body: { ...coche, regimen_iva: 'deducible' } })).json;
+    assert.equal((await pide('/gastos', { method: 'POST', body: { fecha: '2026-10-01', tipo: 'general', concepto: 'compras', vehiculo_id: v.id, base_cent: 900000 } })).status, 201);
+    const ficha = (await pide(`/vehiculos/${v.id}`)).json;
+    assert.equal(ficha.coste_otros_cent, 0);
+    assert.equal(ficha.coste_total_cent, 950000, 'compra 9.000 + transporte + taller, sin la factura de compra otra vez');
+  }));
+
+test('revisión: un gasto que sale de la ficha no se pasa a otro coche', () =>
+  conServidor(async ({ db, pide }) => {
+    const a = (await pide('/vehiculos', { method: 'POST', body: coche })).json;
+    const b = (await pide('/vehiculos', { method: 'POST', body: { ...coche, matricula: '2222BBB', bastidor: null } })).json;
+    const { id } = db.prepare("SELECT id FROM gastos WHERE vehiculo_id = ? AND coste_ficha = 'taller'").get(a.id);
+    const r = await pide(`/gastos/${id}`, { method: 'PUT', body: { vehiculo_id: b.id } });
+    assert.equal(r.status, 400);
+    assert.match(r.json.error, /taller de la ficha/);
+    assert.equal((await pide(`/gastos/${id}`, { method: 'PUT', body: { base_cent: 31000 } })).status, 200, 'el importe sí se corrige');
+    assert.equal((await pide(`/vehiculos/${a.id}`)).json.coste_taller_cent, 31000);
+  }));

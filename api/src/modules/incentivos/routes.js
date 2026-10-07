@@ -6,6 +6,7 @@ import { registrar } from '../auditoria.js';
 import { requiereRol } from '../auth/sesiones.js';
 import { calcularIncentivos, MES, TIPOS_REGLA } from './calculo.js';
 import { apuntarGasto } from '../gastos/apuntar.js';
+import { hoyLocal } from '../../fechas.js';
 
 const esGerencia = (u) => u?.rol === 'gerencia';
 const mesActual = () => new Date().toISOString().slice(0, 7); // UTC, como ventasDelMes
@@ -86,7 +87,7 @@ export function rutasIncentivos(db) {
       // factura (duda F5), llevaría IVA: se cambia aquí.
       if (importe > 0) {
         apuntarGasto(db, {
-          fecha: new Date().toISOString().slice(0, 10), tipo: 'comision', concepto: 'comisiones', usuario_id,
+          fecha: hoyLocal(), tipo: 'comision', concepto: 'comisiones', usuario_id,
           base_cent: importe, iva_pct: 0, irpf_pct: 0, descripcion: `Incentivo de ${usuario.get(usuario_id).nombre}, ${mes}`,
         }, req.usuario.id);
       }
