@@ -2139,7 +2139,16 @@ a.contacto__coche:hover { background: var(--fondo); }
   .embudo-crm .columna--fuera { width: 100%; }
 }
 
+.embudo-crm .ficha-mini__tarde { color: var(--peligro); font-weight: 600; }
+.embudo-crm .ficha-mini__nada { color: var(--tinta-3); }
+
 /* La etiqueta de embudo en la ficha del cliente (clientes.html), con los colores de su columna en crm.html */
+/* En la ficha es un desplegable con aspecto de etiqueta: se cambia el estado sin ir al CRM */
+.estado-crm { position: relative; display: inline-flex; border-radius: 4px; }
+.estado-crm select { appearance: none; margin: 0; padding: 2px 24px 2px 10px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; font-size: .8125rem; font-weight: 600; line-height: 1.6; cursor: pointer; }
+.estado-crm::after { content: ''; position: absolute; right: 9px; top: 50%; width: 6px; height: 6px; margin-top: -4px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); pointer-events: none; }
+.estado-crm select:focus-visible { outline: 2px solid var(--rojo); outline-offset: 2px; }
+.estado-crm option { color: var(--tinta); background: var(--blanco); }
 .crm--nuevo { background: var(--llegada-fondo); color: var(--llegada); }
 .crm--interesado { background: var(--reservado-fondo); color: var(--reservado); }
 .crm--me_lo_pienso { background: #fbf0dc; color: #8a5a0f; }

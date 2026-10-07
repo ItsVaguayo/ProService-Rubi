@@ -1230,7 +1230,9 @@ async function paginaClientes() {
   let clientes = [];
 
   const tarjeta = (c) => {
-    const ultima = c.ultima_actividad ? `Hablado ${haceCuanto(fechaSql(c.ultima_actividad))}` : 'Sin actividad';
+    const ultima = c.ultima_actividad ? `Hablado ${haceCuanto(fechaSql(c.ultima_actividad))}` : 'Todavía sin hablar';
+    // Si ya ha comprado, cuántos coches; si no, en qué punto del embudo está
+    const arriba = c.n_coches ? `${c.n_coches} ${c.n_coches === 1 ? 'coche' : 'coches'}` : ESTADOS_COMERCIALES[c.estado_comercial] ?? '';
     const datos = [
       c.nif ? `<span>${esc(c.nif)}</span>` : '<span class="nota">Sin DNI todavía</span>',
       c.telefono ? enlaceTel(c.telefono) : '',
@@ -1247,7 +1249,7 @@ async function paginaClientes() {
             ${etiqueta}${c.origen ? ` <span class="nota">${esc(mayuscula(c.origen))}</span>` : ''}</p>
           <p class="contacto__datos">${datos}</p>
         </div>
-        <p class="tercero__resumen"><b class="cifra">${c.n_coches} ${c.n_coches === 1 ? 'coche' : 'coches'}</b>${esc(mayuscula(ultima))}</p>
+        <p class="tercero__resumen"><b${c.n_coches ? ' class="cifra"' : ''}>${esc(arriba)}</b>${esc(mayuscula(ultima))}</p>
       </li>`;
   };
 
@@ -1303,20 +1305,22 @@ async function paginaClientes() {
           <div>
             <h2>${esc(c.nombre)}</h2>
             <p class="ficha-tercero__linea"><span class="estado tipo-tercero--${c.activo ? esc(c.tipo) : 'apagado'}">${c.activo ? esc(mayuscula(c.tipo)) : 'Desactivado'}</span>
-              <span class="estado crm--${esc(c.estado_comercial)}">${esc(ESTADOS_COMERCIALES[c.estado_comercial] ?? c.estado_comercial)}</span></p>
+              <label class="estado-crm crm--${esc(c.estado_comercial)}"><span class="oculto">En qué punto está</span>
+                <select data-estado-comercial>${Object.entries(ESTADOS_COMERCIALES).map(([id, n]) => `<option value="${id}"${id === c.estado_comercial ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label></p>
           </div>
         </div>
         <dl class="reserva-activa">
           ${fila(c.tipo === 'empresa' ? 'CIF' : 'DNI / NIE', c.nif ? esc(c.nif) : '<span class="nota">Sin DNI todavía</span>')}
           ${fila('Teléfono', c.telefono && enlaceTel(c.telefono))}
           ${fila('Correo', c.email && `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`)}
-          ${fila('Dirección', direccion)}
+          ${fila(c.direccion ? 'Dirección' : 'Población', direccion)}
           ${fila('Vino por', c.origen && esc(mayuscula(c.origen)))}
         </dl>
         ${c.notas ? `<p class="nota ficha-tercero__notas">${esc(c.notas)}</p>` : ''}
         <div class="ficha-tercero__acciones">
           ${c.telefono ? `<a class="boton boton--secundario boton--pequeno" href="tel:${esc(c.telefono.replace(/[^\d+]/g, ''))}">Llamar</a>` : ''}
           <button class="boton boton--secundario boton--pequeno" type="button" data-editar>Editar datos</button>
+          <a class="boton boton--secundario boton--pequeno" href="crm.html?apuntar=${c.id}">Apuntar en el CRM</a>
         </div>
       </section>
       <section class="caja">
@@ -1333,6 +1337,20 @@ async function paginaClientes() {
       </section>`;
     ficha.hidden = false;
     $('[data-editar]', ficha).addEventListener('click', () => editar(c));
+    // El estado comercial se cambia aquí también (en el móvil no se puede arrastrar en el CRM)
+    $('[data-estado-comercial]', ficha).addEventListener('change', async (ev) => {
+      const select = ev.target;
+      select.disabled = true;
+      try {
+        await api(`/clientes/${c.id}`, { method: 'PUT', body: { estado_comercial: select.value } });
+        await pintarLista();
+        await abrir(c.id, { sinHistorial: true });
+      } catch (e) {
+        select.value = c.estado_comercial;
+        select.disabled = false;
+        mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cambiar el estado:');
+      }
+    });
   };
 
   // El mismo formulario para alta y edición. editando = null → alta.
@@ -1470,7 +1488,7 @@ async function paginaCrm(usuario) {
       ? lista.map(fila).join('')
       : `<li class="actividad"><span></span><span></span><p class="actividad__texto">Nada programado para hoy${responsable ? '' : ' en todo el equipo'}.</p></li>`;
     const pendientesHoy = lista.length - hechas;
-    $('.contactos-resumen').innerHTML = `<strong class="cifra">${pendientesHoy}</strong> ${pendientesHoy === 1 ? 'cosa' : 'cosas'} para hoy${conRetraso ? ` <span class="portada__alerta">· ${conRetraso} con retraso</span>` : ''}`;
+    $('.contactos-resumen').innerHTML = `<strong class="cifra">${pendientesHoy}</strong> por hacer hoy${conRetraso ? ` <span class="portada__alerta">· ${conRetraso} con retraso</span>` : ''}`;
   };
 
   hoyCaja.addEventListener('click', async (ev) => {
@@ -1505,11 +1523,17 @@ async function paginaCrm(usuario) {
     const visibles = lista.filter(reciente);
     const tarjeta = (c) => {
       const p = proxima.get(c.id);
+      const cerrado = ['ganado', 'perdido'].includes(c.estado_comercial);
+      // Lo siguiente que hay que hacer, en rojo si ya va atrasado. En los cerrados, sin nada programado no se dice.
+      const atrasada = p?.programada_para && new Date(p.programada_para.replace(' ', 'T')) < new Date();
+      const cuandoToca = p?.programada_para
+        ? p.programada_para.slice(0, 10) === diaLocal() ? `hoy a las ${p.programada_para.slice(11, 16).replace(/^0/, '')}` : new Date(p.programada_para.replace(' ', 'T')).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+        : '';
       const siguiente = p
-        ? `${TIPOS_ACTIVIDAD[p.tipo] ?? p.tipo}${p.programada_para ? ` ${p.programada_para.slice(0, 10) === diaLocal() ? `hoy ${p.programada_para.slice(11, 16)}` : new Date(p.programada_para.replace(' ', 'T')).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}` : ''}`
-        : 'Sin nada programado';
+        ? `<span${atrasada ? ' class="ficha-mini__tarde"' : ''}>${esc(TIPOS_ACTIVIDAD[p.tipo] ?? p.tipo)}${cuandoToca ? ` ${esc(cuandoToca)}` : ''}</span>`
+        : cerrado ? '<span></span>' : '<span class="ficha-mini__nada">Nada programado</span>';
       const dias = c.ultima_actividad ? diasDesde(c.ultima_actividad) : null;
-      const textoDias = dias == null ? 'Sin hablar' : dias === 0 ? 'Hoy' : dias === 1 ? 'Ayer' : `${dias} días`;
+      const textoDias = dias == null ? 'Sin hablar' : dias === 0 ? 'Hablado hoy' : dias === 1 ? 'Hablado ayer' : `Hace ${dias} días`;
       const claseDias = dias == null ? '' : dias > 14 ? ' dias--peligro' : dias > 7 ? ' dias--aviso' : '';
       const nota = p?.descripcion ?? c.notas ?? (c.n_coches ? `${c.n_coches} ${c.n_coches === 1 ? 'coche comprado' : 'coches comprados'}` : '');
       return `<a class="ficha-mini${c.estado_comercial === 'perdido' ? ' ficha-mini--perdido' : ''}" href="clientes.html?id=${c.id}" draggable="true" data-id="${c.id}">
@@ -1517,7 +1541,7 @@ async function paginaCrm(usuario) {
             <span class="ficha-mini__coche">${esc(c.nombre)}</span>
             ${nota ? `<span class="nota">${esc(nota)}</span>` : ''}
           </span>
-          <span class="ficha-mini__datos"><span>${esc(siguiente)}</span><span class="dias cifra${claseDias}">${esc(textoDias)}</span></span>
+          <span class="ficha-mini__datos">${siguiente}<span class="dias${claseDias}" title="Última vez que se habló con él">${esc(textoDias)}</span></span>
         </a>`;
     };
     tablero.innerHTML = Object.entries(ESTADOS_COMERCIALES).map(([id, nombre]) => {
@@ -1528,7 +1552,7 @@ async function paginaCrm(usuario) {
         </div>`;
     }).join('');
     const enMarcha = visibles.filter((c) => !['ganado', 'perdido'].includes(c.estado_comercial)).length;
-    $('.tablero-cabecera__pista').textContent = `${enMarcha} ${enMarcha === 1 ? 'cliente' : 'clientes'} con algo en marcha. Arrastra un cliente a otro tramo para cambiarlo de estado. Los ganados y perdidos se quedan 30 días.`;
+    $('.tablero-cabecera__pista').textContent = `${enMarcha} ${enMarcha === 1 ? 'cliente' : 'clientes'} en marcha. Arrastra un cliente a otro tramo para cambiar su estado.`;
   };
 
   // El embudo: cada estado es un tramo que se estrecha hacia «Ganado», con sus clientes dentro.
@@ -1630,15 +1654,19 @@ async function paginaCrm(usuario) {
   errorForm.classList.add('campo--ancho');
   const cerrar = () => { seccion.hidden = true; form.reset(); errorForm.hidden = true; };
 
-  boton.addEventListener('click', (ev) => {
-    ev.preventDefault();
-    if (!seccion.hidden) return cerrar();
+  const abrirForm = (clienteId) => {
     const select = form.elements.cliente_id;
     select.length = 1;
     for (const c of [...clientes.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))) select.add(new Option(c.nombre, c.id));
+    if (clienteId) select.value = String(clienteId);
     seccion.hidden = false;
     seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    form.elements.tipo.focus();
+    (clienteId ? form.elements.descripcion : form.elements.tipo).focus();
+  };
+  boton.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    if (!seccion.hidden) return cerrar();
+    abrirForm();
   });
   $('[data-cancelar]', form).addEventListener('click', cerrar);
   form.addEventListener('submit', async (ev) => {
@@ -1665,6 +1693,8 @@ async function paginaCrm(usuario) {
   });
 
   await Promise.all([pintarHoy(), pintarEmbudo()]);
+  // Desde la ficha del cliente («Apuntar en el CRM»): el formulario abierto con él ya elegido
+  if (params.get('apuntar')) abrirForm(params.get('apuntar'));
 }
 
 // --- Informes (solo gerencia) -----------------------------------------------------------------
