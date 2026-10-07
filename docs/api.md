@@ -127,7 +127,7 @@ Llamadas, visitas, WhatsApp, correos, pruebas, tareas y notas de cada cliente, c
 - `programada_para`: `AAAA-MM-DD HH:MM`, hora de Rubí, y tiene que existir (`2026-02-30` da 400). Vacía en una nota.
 - `hecha_en` va en UTC, como el resto de fechas de la base.
 - Cada alta, edición, «hecha» y vuelta a pendiente queda en `auditoria` (entidad `actividad`).
-- Los clientes tienen además `estado_comercial`: `nuevo` (por defecto), `interesado`, `me_lo_pienso`, `negociando`, `ganado` o `perdido`. Hoy solo se lee: para escribirlo hay que añadirlo a `terceros/campos.js`.
+- El estado comercial de cada cliente (las columnas del embudo) está en «Clientes y proveedores»: `estado_comercial`.
 
 ## Usuarios (solo gerencia)
 

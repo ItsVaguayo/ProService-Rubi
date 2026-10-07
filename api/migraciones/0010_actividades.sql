@@ -19,7 +19,3 @@ CREATE TABLE actividades (
 );
 CREATE INDEX actividades_pendientes ON actividades (responsable_id, hecha_en, programada_para);
 CREATE INDEX actividades_cliente ON actividades (cliente_id);
-
--- En qué punto está cada cliente. Lo escribe la ficha de clientes (terceros/campos.js, de Victor).
-ALTER TABLE clientes ADD COLUMN estado_comercial TEXT NOT NULL DEFAULT 'nuevo'
-  CHECK (estado_comercial IN ('nuevo','interesado','me_lo_pienso','negociando','ganado','perdido'));

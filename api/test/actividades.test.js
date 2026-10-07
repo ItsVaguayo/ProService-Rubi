@@ -146,9 +146,3 @@ test('sin sesión: 401', () =>
     assert.equal((await pide('/actividades', { como: null })).status, 401);
     assert.equal((await pide('/actividades', { method: 'POST', como: null, body: { tipo: 'nota', cliente_id: 1, descripcion: 'x' } })).status, 401);
   }));
-
-test('los clientes nacen con estado comercial «nuevo»', () =>
-  conServidor(async ({ pide }) => {
-    const c = await cliente(pide);
-    assert.equal((await pide(`/clientes/${c}`)).json.estado_comercial, 'nuevo');
-  }));
