@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { conServidor, coche } from './ayuda.js';
-import { tipoNif } from '../src/modules/terceros/fiscal.js';
+import { tipoNif, ibanValido } from '../src/modules/terceros/fiscal.js';
 
 test('fiscal: DNI, NIE y CIF con su control', () => {
   assert.equal(tipoNif('12345678Z'), 'dni');
@@ -149,3 +149,59 @@ test('clientes y proveedores: la lista trae cuántos coches y la última activid
     assert.equal((await pide('/proveedores')).json[0].n_coches, 1);
     assert.equal((await pide(`/clientes/${c.id}`)).json.coches[0].pvp_cent, coche.pvp_cent);
   }));
+
+// --- T15: campos de proveedores de Pymecar ------------------------------------------------------------
+
+test('fiscal: IBAN con su dígito de control (módulo 97)', () => {
+  assert.equal(ibanValido('ES91 2100 0418 4502 0005 1332'), true);
+  assert.equal(ibanValido('es9121000418450200051332'), true, 'minúsculas y sin espacios');
+  assert.equal(ibanValido('ES91 2100 0418 4502 0005 1333'), false, 'una cifra cambiada');
+  assert.equal(ibanValido('ES81 2100 0418 4502 0005 1332'), false, 'el control cambiado');
+  assert.equal(ibanValido('DE89370400440532013000'), true, 'alemán');
+  assert.equal(ibanValido('GB82WEST12345698765432'), true, 'con letras en medio');
+  assert.equal(ibanValido('ES912100041845020005133'), false, 'en España, 24 caracteres');
+  assert.equal(ibanValido('9121000418450200051332'), false);
+  assert.equal(ibanValido(''), false);
+});
+
+test('proveedores: clase, móvil, IBAN, forma de pago y persona de contacto', () =>
+  conServidor(async ({ pide }) => {
+    const alta = await pide('/proveedores', { method: 'POST', body: {
+      nombre: 'Gestoría Rubí', clase: 'acreedor', movil: '600 333 444', iban: 'ES91 2100 0418 4502 0005 1332',
+      forma_pago: 'transferencia', persona_contacto: 'Núria' } });
+    assert.equal(alta.status, 201);
+    assert.equal(alta.json.iban, 'ES9121000418450200051332', 'se guarda sin espacios');
+    assert.equal(alta.json.clase, 'acreedor');
+    assert.equal(alta.json.forma_pago, 'transferencia');
+    assert.equal(alta.json.persona_contacto, 'Núria');
+
+    const sinClase = (await pide('/proveedores', { method: 'POST', body: { nombre: 'Autos Terrassa', iban: 'DE89370400440532013000' } })).json;
+    assert.equal(sinClase.clase, 'proveedor', 'por defecto');
+    assert.equal(sinClase.iban, 'DE89370400440532013000', 'un IBAN alemán también vale');
+
+    const malo = await pide('/proveedores', { method: 'POST', body: { nombre: 'X', iban: 'ES91 2100 0418 4502 0005 1333' } });
+    assert.equal(malo.status, 400);
+    assert.match(malo.json.error, /El IBAN no es válido/);
+    assert.equal((await pide('/proveedores', { method: 'POST', body: { nombre: 'X', forma_pago: 'cheque' } })).status, 400);
+    assert.equal((await pide('/proveedores', { method: 'POST', body: { nombre: 'X', clase: 'otro' } })).status, 400);
+    assert.match((await pide('/proveedores', { method: 'POST', body: { nombre: 'X', movil: 'abc' } })).json.error, /móvil/);
+    assert.equal((await pide('/proveedores', { method: 'POST', body: { nombre: 'X', persona_contacto: 'x'.repeat(101) } })).status, 400);
+
+    assert.equal((await pide(`/proveedores/${alta.json.id}`, { method: 'PUT', body: { clase: null } })).status, 400, 'clase no puede quedar vacía');
+    assert.equal((await pide(`/proveedores/${alta.json.id}`, { method: 'PUT', body: { iban: null } })).json.iban, null, 'el IBAN sí se puede quitar');
+    assert.equal((await pide('/clientes', { method: 'POST', body: { nombre: 'Y', iban: 'ES9121000418450200051332' } })).status, 400, 'los clientes no llevan IBAN');
+  }));
+
+test('migración 0011: un proveedor dado de alta antes sale como «proveedor»', async () => {
+  const { default: Database } = await import('better-sqlite3');
+  const { readFileSync, readdirSync } = await import('node:fs');
+  const dir = new URL('../migraciones/', import.meta.url);
+  const db = new Database(':memory:');
+  for (const f of readdirSync(dir).filter((f) => /^\d{4}_/.test(f)).sort()) {
+    if (f === '0011_proveedores_pago.sql') db.prepare("INSERT INTO proveedores (nombre) VALUES ('Subastas Vallès')").run();
+    db.exec(readFileSync(new URL(f, dir), 'utf8'));
+  }
+  const p = db.prepare("SELECT clase, iban, forma_pago FROM proveedores WHERE nombre = 'Subastas Vallès'").get();
+  assert.deepEqual({ ...p }, { clase: 'proveedor', iban: null, forma_pago: null });
+  db.close();
+});
