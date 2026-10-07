@@ -1522,14 +1522,43 @@ async function paginaCrm(usuario) {
     };
     tablero.innerHTML = Object.entries(ESTADOS_COMERCIALES).map(([id, nombre]) => {
       const suyos = visibles.filter((c) => c.estado_comercial === id);
-      return `<div class="columna columna--${COLUMNA_CRM[id]}" data-estado="${id}">
+      return `<div class="columna columna--${COLUMNA_CRM[id]}" data-estado="${id}" id="columna-${id}">
           <h2 class="columna__titulo">${esc(nombre)} <span class="cifra">${suyos.length}</span></h2>
           ${suyos.map(tarjeta).join('')}
         </div>`;
     }).join('');
+    pintarForma(visibles);
     const enMarcha = visibles.filter((c) => !['ganado', 'perdido'].includes(c.estado_comercial)).length;
     $('.tablero-cabecera__pista').textContent = `${enMarcha} ${enMarcha === 1 ? 'cliente' : 'clientes'} con algo en marcha. Arrastra una tarjeta para cambiarla de columna. Los ganados y perdidos se quedan 30 días.`;
   };
+
+  // El embudo dibujado: un tramo por estado que se estrecha hacia «Ganado», con cuántos hay en cada uno.
+  // Cada tramo es más estrecho que el anterior y se recorta en trapecio hasta el ancho del siguiente.
+  // Los perdidos salen aparte, bajo la punta. Pulsar un tramo lleva a su columna.
+  const forma = document.createElement('nav');
+  forma.className = 'embudo';
+  forma.setAttribute('aria-label', 'Embudo de clientes');
+  $('.tablero-cabecera').after(forma);
+  const TRAMOS = ['nuevo', 'interesado', 'me_lo_pienso', 'negociando', 'ganado'];
+  const ANCHOS = [100, 84, 68, 52, 38, 30]; // el último es el borde de abajo de «Ganado»
+  const pintarForma = (visibles) => {
+    const n = (id) => visibles.filter((c) => c.estado_comercial === id).length;
+    forma.innerHTML = TRAMOS.map((id, i) => {
+      const lado = ((ANCHOS[i] - ANCHOS[i + 1]) / 2 / ANCHOS[i]) * 100; // cuánto entra cada lado, en % del tramo
+      return `<a class="embudo__tramo embudo__tramo--${COLUMNA_CRM[id]}" href="#columna-${id}" data-ir="${id}"
+          style="width:${ANCHOS[i]}%;clip-path:polygon(0 0,100% 0,${100 - lado}% 100%,${lado}% 100%)">
+          <b class="cifra">${n(id)}</b><span>${esc(ESTADOS_COMERCIALES[id])}</span></a>`;
+    }).join('') + `<a class="embudo__perdidos" href="#columna-perdido" data-ir="perdido"><b class="cifra">${n('perdido')}</b> ${n('perdido') === 1 ? 'perdido' : 'perdidos'} en los últimos 30 días</a>`;
+  };
+  forma.addEventListener('click', (ev) => {
+    const tramo = ev.target.closest('[data-ir]');
+    if (!tramo) return;
+    ev.preventDefault();
+    const columna = tablero.querySelector(`[data-estado="${tramo.dataset.ir}"]`);
+    columna?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    columna?.classList.add('columna--encima');
+    setTimeout(() => columna?.classList.remove('columna--encima'), 900);
+  });
 
   // Arrastrar una tarjeta a otra columna cambia su estado comercial (PUT /api/clientes/:id)
   let arrastrado = null;
