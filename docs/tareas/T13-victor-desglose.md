@@ -38,7 +38,7 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - ✅ La señal de la reserva se aplica como cobro (Pymecar no factura las reservas aparte).
 - ✅ Libro de ingresos y libro de REBU, en pantalla y CSV.
 - ✅ Panel (7-oct): `facturas.html` conectada (resumen, filtros, emitir, apuntar cobro y señal), «Nueva factura» (también desde la ficha del coche: «Facturar la venta»), datos de la empresa y numeración, y `factura.html` imprimible en A4 con `documentos.css`.
-- [ ] Pantalla de los libros (hoy solo por la API y en CSV).
+- ✅ `libros.html` (7-oct): ingresos, REBU y gastos por año o trimestre (por defecto el trimestre en curso), con totales y «Descargar en Excel». En el menú de gerencia, debajo de Facturas.
 
 ## 5. T09 · Factura y contratos imprimibles
 - ✅ La factura imprimible ya está: `frontend/panel/factura.html` y `frontend/css/documentos.css` (7-oct). Sin QR hasta Verifactu (2028).

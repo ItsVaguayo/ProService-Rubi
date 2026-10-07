@@ -119,7 +119,7 @@ function prepararMenu(usuario) {
   const contador = actualizarContadorContactos();
   if (usuario.rol !== 'gerencia') {
     // Lo de dinero y administración solo es de gerencia (la API también se lo niega). Incentivos sí: cada uno ve lo suyo.
-    document.querySelectorAll(['informes', 'usuarios', 'proveedores', 'gastos', 'facturas'].map((p) => `a[href="${p}.html"]`).join(', '))
+    document.querySelectorAll(['informes', 'usuarios', 'proveedores', 'gastos', 'facturas', 'libros'].map((p) => `a[href="${p}.html"]`).join(', '))
       .forEach((a) => a.remove());
   }
   resalteDelMenu();
@@ -2093,6 +2093,92 @@ async function paginaFactura() {
   await pintar();
 }
 
+// --- Libros (solo gerencia) -------------------------------------------------------------------
+
+// Cada libro: sus columnas en pantalla, sus cifras de arriba y una línea que explica qué es
+const LIBROS = {
+  ingresos: {
+    titulo: 'Libro de ingresos',
+    explica: 'Las facturas emitidas, por orden. En REBU la base y el IVA son los del margen (precio − compra), como en Pymecar; el cliente ve un solo total.',
+    columnas: ['Número', 'Fecha', 'Cliente', 'NIF', 'Régimen', 'Base', 'IVA', 'Total'],
+    fila: (f) => [`<b class="cifra">${esc(f.codigo)}</b>`, esc(fechaCorta(f.fecha)), esc(f.cliente), esc(f.nif ?? '—'), f.regimen === 'REBU' ? 'REBU' : 'General',
+      euros2(f.base_cent), `${euros2(f.iva_cent)} <small class="nota">${f.iva_pct} %</small>`, `<b>${euros2(f.total_cent)}</b>`],
+    cifras: (t, n) => [['Facturas', cifra(n)], ['Base imponible', euros(t.base_cent)], ['IVA repercutido', euros(t.iva_cent)], ['Total facturado', euros(t.total_cent)]],
+  },
+  rebu: {
+    titulo: 'Libro de REBU',
+    explica: 'Cada coche vendido en REBU: de quién se compró y por cuánto, y a quién se vendió. El IVA solo va sobre la diferencia.',
+    columnas: ['Nº', 'Vehículo', 'Compra', 'Proveedor', 'Venta', 'Cliente', 'Base', 'IVA', 'Total venta'],
+    fila: (f) => [cifra(f.numero), esc(f.vehiculo), `${euros2(f.compra_cent)}<small class="nota">${esc(fechaCorta(f.fecha_compra))}</small>`,
+      `${esc(f.proveedor ?? '—')}${f.proveedor_nif ? `<small class="nota">${esc(f.proveedor_nif)}</small>` : ''}`,
+      `<b class="cifra">${esc(f.codigo)}</b><small class="nota">${esc(fechaCorta(f.fecha_venta))}</small>`, esc(f.cliente),
+      euros2(f.base_cent), euros2(f.iva_cent), `<b>${euros2(f.total_venta_cent)}</b>`],
+    cifras: (t, n) => [['Coches', cifra(n)], ['Compras', euros(t.compra_cent)], ['Ventas', euros(t.total_venta_cent)], ['IVA del REBU', euros(t.iva_cent)]],
+  },
+  gastos: {
+    titulo: 'Libro de gastos',
+    explica: 'Lo apuntado en Gastos, por número de registro: también los costes que se escriben en la ficha de cada coche.',
+    columnas: ['Nº', 'Fecha', 'Proveedor', 'Concepto', 'Base', 'IVA', 'IRPF', 'Total', 'Pagado'],
+    fila: (g) => [cifra(g.numero), esc(fechaCorta(g.fecha)),
+      `${esc(g.quien ?? '—')}${g.factura_proveedor ? `<small class="nota">Fra. ${esc(g.factura_proveedor)}</small>` : ''}`,
+      `${esc(CONCEPTOS_GASTO[g.concepto] ?? g.concepto)}${g.vehiculo ? `<small class="nota">${esc(g.vehiculo)}</small>` : g.descripcion ? `<small class="nota">${esc(g.descripcion)}</small>` : ''}`,
+      euros2(g.base_cent), euros2(g.iva_cent), g.irpf_cent ? `−${euros2(g.irpf_cent)}` : '—', `<b>${euros2(g.total_cent)}</b>`,
+      g.pagado_en ? esc(fechaCorta(g.pagado_en)) : '<span class="estado cobro--pendiente">Sin pagar</span>'],
+    cifras: (t, n) => [['Gastos', cifra(n)], ['Base', euros(t.base_cent)], ['IVA soportado', euros(t.iva_cent)], ['Retenciones de IRPF', euros(t.irpf_cent)]],
+  },
+};
+const CONCEPTOS_GASTO = { alquileres: 'Alquileres', carburantes: 'Carburantes', comisiones: 'Comisiones', compras: 'Compras', electricidad: 'Electricidad',
+  gestorias: 'Gestorías', papelerias: 'Papelerías', publicidad: 'Publicidad', vehiculos: 'Vehículos' };
+// Las columnas de importe van a la derecha
+const DERECHA = new Set(['Base', 'IVA', 'IRPF', 'Total', 'Total venta', 'Compra']);
+
+async function paginaLibros() {
+  const periodo = $('.libros-periodo');
+  const filtros = $('form.filtros');
+  const descargar = $('[data-descargar]');
+  const hoy = diaLocal();
+  // Años: desde el de la primera factura (o este) hasta este
+  const anioActual = Number(hoy.slice(0, 4));
+  periodo.elements.anio.innerHTML = [anioActual, anioActual - 1, anioActual - 2].map((a) => `<option value="${a}">${a}</option>`).join('');
+  periodo.elements.anio.value = params.get('anio') ?? String(anioActual);
+  // Por defecto, el trimestre en curso: es lo que se le pasa a la gestoría
+  periodo.elements.trimestre.value = params.get('trimestre') ?? String(Math.ceil(Number(hoy.slice(5, 7)) / 3));
+  if (params.get('libro')) filtros.elements.libro.value = params.get('libro');
+
+  let peticion = 0;
+  const pintar = async () => {
+    const anio = periodo.elements.anio.value;
+    const trimestre = periodo.elements.trimestre.value;
+    const libro = filtros.elements.libro.value;
+    const q = new URLSearchParams({ anio, ...(trimestre ? { trimestre } : {}) });
+    history.replaceState(null, '', `?${new URLSearchParams({ libro, ...Object.fromEntries(q) })}`);
+    const esta = ++peticion;
+    // Los tres a la vez: así cada pestaña lleva su cuenta
+    const datos = Object.fromEntries(await Promise.all(Object.keys(LIBROS).map(async (k) => [k, await api(`/facturas/libros/${k}?${q}`)])));
+    if (esta !== peticion) return;
+    for (const k of Object.keys(LIBROS)) $(`[data-n="${k}"]`).textContent = datos[k].filas.length;
+    const def = LIBROS[libro];
+    const { filas, totales, desde, hasta } = datos[libro];
+    $('[data-titulo]').textContent = def.titulo;
+    $('[data-periodo]').textContent = `Del ${fechaCorta(desde)} al ${fechaCorta(hasta)}`;
+    $('[data-explica]').textContent = def.explica;
+    $('.cifras').innerHTML = def.cifras(totales, filas.length).map(([rotulo, valor]) =>
+      `<div class="cifras__dato"><span class="rotulo">${esc(rotulo)}</span><strong class="cifra">${esc(valor)}</strong></div>`).join('');
+    $('.tabla--libro thead').innerHTML = `<tr>${def.columnas.map((c) => `<th${DERECHA.has(c) ? ' class="derecha"' : ''}>${esc(c)}</th>`).join('')}</tr>`;
+    // En el móvil la tabla pasa a tarjetas: cada celda lleva su rótulo
+    $('.tabla--libro tbody').innerHTML = filas.map((f) => `<tr>${def.fila(f).map((celda, i) =>
+      `<td data-rotulo="${esc(def.columnas[i])}"${DERECHA.has(def.columnas[i]) ? ' class="derecha cifra"' : ''}>${celda}</td>`).join('')}</tr>`).join('');
+    $('.tabla-caja').hidden = !filas.length;
+    $('.caja .vacio').hidden = !!filas.length;
+    descargar.href = `/api/facturas/libros/${libro}.csv?${q}`;
+    descargar.setAttribute('download', `libro-${libro}-${desde}-${hasta}.csv`);
+  };
+  periodo.addEventListener('change', pintar);
+  periodo.addEventListener('submit', (ev) => ev.preventDefault());
+  filtros.addEventListener('change', pintar);
+  await pintar();
+}
+
 // --- Informes (solo gerencia) -----------------------------------------------------------------
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -2178,6 +2264,7 @@ const PAGINAS = {
   'contactos.html': paginaContactos,
   'clientes.html': paginaClientes,
   'facturas.html': paginaFacturas,
+  'libros.html': paginaLibros,
   'factura.html': paginaFactura,
   'crm.html': paginaCrm,
   'informes.html': paginaInformes,
@@ -2187,7 +2274,7 @@ const PAGINAS = {
   if (PAGINA === 'login.html') return paginaLogin();
   try {
     const usuario = await api('/auth/yo');
-    if (usuario.rol !== 'gerencia' && ['informes.html', 'usuarios.html', 'proveedores.html', 'gastos.html', 'facturas.html', 'factura.html'].includes(PAGINA)) return (location.href = 'index.html');
+    if (usuario.rol !== 'gerencia' && ['informes.html', 'usuarios.html', 'proveedores.html', 'gastos.html', 'facturas.html', 'factura.html', 'libros.html'].includes(PAGINA)) return (location.href = 'index.html');
     const menu = prepararMenu(usuario);
     const pagina = PAGINAS[PAGINA];
     if (pagina) await pagina(usuario);

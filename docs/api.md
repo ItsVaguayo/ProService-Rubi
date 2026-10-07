@@ -220,8 +220,9 @@ En `api/src/modules/facturacion`. Verifactu queda para octubre de 2028 (duda H1)
 | `DELETE /facturas/:id/cobros/:cobro` | Quita un cobro mal apuntado |
 | `GET /facturas/series` · `PUT /facturas/series/:serie` | Las series y su `codigo_siguiente`. `{ ultimo }` fija el último número dado, para seguir a Pymecar, solo mientras la serie no tenga facturas |
 | `GET /facturas/empresa` · `PUT /facturas/empresa` | Datos fiscales de la empresa (`direccion`, `codigo_postal`, `poblacion`, `provincia`, `telefono`, `email`, `registro_mercantil`, `iban`…). Razón social y NIF no se cambian una vez hay facturas emitidas (409) |
-| `GET /facturas/libros/ingresos` · `.csv` | Libro de ingresos: las emitidas del periodo (`?desde=&hasta=`, por defecto el año en curso) |
+| `GET /facturas/libros/ingresos` · `.csv` | Libro de ingresos: las emitidas del periodo. Periodo: `?anio=2026` y, si se quiere, `&trimestre=1..4`; o `?desde=&hasta=`; sin nada, el año en curso. JSON con `filas` y `totales` |
 | `GET /facturas/libros/rebu` · `.csv` | Libro de REBU: cada coche vendido en REBU, con la compra (fecha, proveedor, NIF, importe) y la venta |
+| `GET /facturas/libros/gastos` · `.csv` | Libro de gastos: lo del libro de `/gastos`, por número de registro, con proveedor y NIF, base, IVA, IRPF, total y si está pagado |
 
 Importes (`importes.js`): en REBU el cliente ve un solo total, sin IVA desglosado, y para los libros el margen (precio − compra) se separa en base e IVA (margen 1.975 → 1.632,23 + 342,77, como Pymecar); con pérdida, 0. En general, el 21 % va dentro del precio. Los suplidos se suman al total, fuera de la base. Estado de cobro: `cobrada` sin saldo, `vencida` con saldo y el vencimiento pasado, `parcial` con algo cobrado, si no `pendiente`.
 

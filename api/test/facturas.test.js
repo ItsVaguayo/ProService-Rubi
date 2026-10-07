@@ -204,3 +204,28 @@ test('empresa: se completa la dirección; razón social y NIF fijos una vez hay 
     assert.equal((await pide('/facturas/empresa', { method: 'PUT', body: { nif: 'A58818501' } })).status, 409);
     assert.equal((await pide('/facturas/empresa', { method: 'PUT', body: { telefono: '934 000 000' } })).status, 200, 'lo demás sí');
   }));
+
+test('libros: trimestre y año, el libro de gastos y los totales', () =>
+  conServidor(async ({ pide }) => {
+    const { c, v } = await preparar(pide);
+    const f = (await borrador(pide, { cliente_id: c.id, vehiculo_id: v.id, fecha: '2026-08-14' })).json;
+    await pide(`/facturas/${f.id}/emitir`, { method: 'POST' });
+    await pide('/gastos', { method: 'POST', body: { fecha: '2026-09-30', concepto: 'gestorias', base_cent: 10000, factura_proveedor: 'G-1' } });
+    await pide('/gastos', { method: 'POST', body: { fecha: '2026-10-01', concepto: 'electricidad', base_cent: 5000 } });
+
+    const t3 = (await pide('/facturas/libros/ingresos?anio=2026&trimestre=3')).json;
+    assert.deepEqual([t3.desde, t3.hasta], ['2026-07-01', '2026-09-30']);
+    assert.equal(t3.filas.length, 1);
+    assert.equal((await pide('/facturas/libros/ingresos?anio=2026&trimestre=4')).json.filas.length, 0);
+    assert.equal((await pide('/facturas/libros/rebu?anio=2026')).json.totales.compra_cent, 900000);
+
+    const g = (await pide('/facturas/libros/gastos?anio=2026&trimestre=3')).json;
+    // Los costes del coche de ayuda.js (transporte y taller) son de hoy: entran o no según la fecha de hoy
+    const gestoria = g.filas.find((x) => x.factura_proveedor === 'G-1');
+    assert.deepEqual([gestoria.tipo, gestoria.irpf_pct, gestoria.irpf_cent], ['irpf', 15, 1500]);
+    assert.ok(!g.filas.some((x) => x.fecha === '2026-10-01'), 'el 1 de octubre es del cuarto trimestre');
+    assert.equal(g.totales.total_cent, g.filas.reduce((s, x) => s + x.total_cent, 0));
+    for (const malo of ['anio=26', 'anio=2026&trimestre=5', 'trimestre=1']) {
+      assert.equal((await pide(`/facturas/libros/gastos?${malo}`)).status, 400, malo);
+    }
+  }));

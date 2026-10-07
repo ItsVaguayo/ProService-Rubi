@@ -1797,6 +1797,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 .menu__enlaces a[href="proveedores.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2M15 18H9'/%3E%3Cpath d='M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14'/%3E%3Ccircle cx='17' cy='18' r='2'/%3E%3Ccircle cx='7' cy='18' r='2'/%3E%3C/svg%3E"); } /* Proveedores */
 .menu__enlaces a[href="gastos.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z'/%3E%3Cpath d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 17.5v-11'/%3E%3C/svg%3E"); } /* Gastos */
 .menu__enlaces a[href="facturas.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/%3E%3Cpath d='M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8'/%3E%3C/svg%3E"); } /* Facturas */
+.menu__enlaces a[href="libros.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20'/%3E%3Cpath d='M8 7h8M8 11h6'/%3E%3C/svg%3E"); } /* Libros */
 .menu__enlaces a[href="incentivos.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='6'/%3E%3Cpath d='M15.48 12.89 17 22l-5-3-5 3 1.52-9.11'/%3E%3C/svg%3E"); } /* Incentivos */
 
 
@@ -1991,6 +1992,8 @@ a.contacto__coche:hover { background: var(--fondo); }
 .cabecera__acciones-factura { margin: 14px 0 0; }
 .ajustes-factura { margin-top: var(--espacio-l); }
 .facturar-coche { margin: 12px 0 0; }
+.tabla--libro small { display: block; margin-top: 2px; font-size: .75rem; }
+.libros-periodo { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
 .ajustes-factura summary { cursor: pointer; padding: 4px 0; }
 .ajustes-factura form { margin-top: var(--espacio-m); }
 .ajustes-factura form + form { padding-top: var(--espacio-m); border-top: 1px solid var(--linea); }

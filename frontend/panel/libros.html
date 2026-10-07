@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Libros · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
+    <div class="menu__enlaces">
+      <a href="index.html"><span class="menu__icono" aria-hidden="true"></span>Tablero</a>
+      <a href="coches.html"><span class="menu__icono" aria-hidden="true"></span>Coches</a>
+      <a href="coche-nuevo.html"><span class="menu__icono" aria-hidden="true"></span>Alta de vehículo</a>
+      <a href="contactos.html"><span class="menu__icono" aria-hidden="true"></span>Contactos <span class="contador">3</span></a>
+      <a href="clientes.html"><span class="menu__icono" aria-hidden="true"></span>Clientes</a>
+      <a href="crm.html"><span class="menu__icono" aria-hidden="true"></span>CRM</a>
+      <a href="agenda.html"><span class="menu__icono" aria-hidden="true"></span>Agenda</a>
+      <!-- Proveedores: solo gerencia, como el precio de compra. -->
+      <a href="proveedores.html"><span class="menu__icono" aria-hidden="true"></span>Proveedores</a>
+      <!-- Dinero y administración. Incentivos lo ven los dos roles (el comercial, solo lo suyo); el resto,
+           solo gerencia. panel.js de momento solo le quita al comercial Informes y Usuarios. -->
+      <a class="menu__separado" href="gastos.html"><span class="menu__icono" aria-hidden="true"></span>Gastos</a>
+      <a href="facturas.html"><span class="menu__icono" aria-hidden="true"></span>Facturas</a>
+      <a href="libros.html" aria-current="page"><span class="menu__icono" aria-hidden="true"></span>Libros</a>
+      <a href="incentivos.html"><span class="menu__icono" aria-hidden="true"></span>Incentivos</a>
+      <a href="informes.html"><span class="menu__icono" aria-hidden="true"></span>Informes</a>
+      <a href="usuarios.html"><span class="menu__icono" aria-hidden="true"></span>Usuarios</a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <!-- CABECERA: el periodo (año y, si se quiere, trimestre: la gestoría trabaja por trimestres) y la descarga -->
+    <header class="cabecera cabecera--portada">
+      <div>
+        <p class="portada__antetitulo">Gerencia</p>
+        <h1>Libros</h1>
+        <p class="nota">Los tres que se pasan a la gestoría: ingresos, REBU y gastos. Se descargan en Excel.</p>
+      </div>
+      <form class="cabecera__acciones libros-periodo">
+        <label class="campo"><span class="campo__nombre">Año</span><select name="anio"></select></label>
+        <label class="campo"><span class="campo__nombre">Periodo</span>
+          <select name="trimestre">
+            <option value="">Todo el año</option>
+            <option value="1">1.er trimestre</option>
+            <option value="2">2.º trimestre</option>
+            <option value="3">3.er trimestre</option>
+            <option value="4">4.º trimestre</option>
+          </select>
+        </label>
+        <a class="boton boton--secundario" href="#" data-descargar download>Descargar en Excel</a>
+      </form>
+    </header>
+
+    <!-- QUÉ LIBRO. La cuenta de cada uno sale al lado. -->
+    <form class="filtros">
+      <fieldset class="segmentos" aria-label="Libro">
+        <label><input type="radio" name="libro" value="ingresos" checked><span>Ingresos <span class="segmentos__n" data-n="ingresos"></span></span></label>
+        <label><input type="radio" name="libro" value="rebu"><span>REBU <span class="segmentos__n" data-n="rebu"></span></span></label>
+        <label><input type="radio" name="libro" value="gastos"><span>Gastos <span class="segmentos__n" data-n="gastos"></span></span></label>
+      </fieldset>
+    </form>
+
+    <!-- TOTALES del libro elegido. Los rellena panel.js. -->
+    <section class="cifras" aria-label="Totales del periodo"></section>
+
+    <section class="caja">
+      <div class="caja__titulo"><h2 data-titulo>Libro de ingresos</h2><span class="nota" data-periodo></span></div>
+      <div class="tabla-caja">
+        <table class="tabla tabla--tarjetas tabla--libro">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="vacio" hidden><strong>Nada en este periodo</strong><p class="nota">Prueba con otro trimestre o con todo el año.</p></div>
+      <p class="nota tabla-pie" data-explica></p>
+    </section>
+
+  </main>
+</div>
+<script type="module" src="../js/panel.js"></script>
+</body>
+</html>
