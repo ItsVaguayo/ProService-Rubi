@@ -8,6 +8,7 @@ import { dirname, join, resolve } from 'node:path';
 import { deflateSync, crc32 } from 'node:zlib';
 import { abrirDb } from '../src/db.js';
 import { crearUsuario } from '../src/modules/auth/sesiones.js';
+import { separarCostes, guardarCostes } from '../src/modules/vehiculos/costes.js';
 import { CONTRASENA_PRUEBAS, USUARIOS_PRUEBAS } from './usuarios-pruebas.js';
 
 const { values } = parseArgs({ options: { reset: { type: 'boolean', default: false } } });
@@ -110,11 +111,13 @@ db.transaction(() => {
   COCHES.forEach((c, i) => {
     const datos = { ...tecnica, ...c.d };
     if (datos.propiedad === 'deposito') delete datos.regimen_iva;
+    const costes = separarCostes(datos); // van al libro de gastos (0012), no a la tabla vehiculos
     const cols = Object.keys(datos);
     const id = Number(db.prepare(`INSERT INTO vehiculos (${cols.join(',')}, estado, creado_en, actualizado_en)
                                   VALUES (${cols.map(() => '?').join(',')}, ?, ${haceDias(c.dias)}, ${haceDias(Math.min(c.dias, 2))})`)
       .run(...cols.map((k) => datos[k]), c.estado).lastInsertRowid);
     db.prepare("UPDATE vehiculos SET referencia = printf('PS-%05d', id) WHERE id = ?").run(id);
+    guardarCostes(db, id, costes, jaume);
 
     // Historial: la preparación ocupa los primeros días (hasta 12) y el último estado, el resto.
     // Así un coche con 97 días en stock lleva unos 85 a la venta, que es lo que ve el tablero.

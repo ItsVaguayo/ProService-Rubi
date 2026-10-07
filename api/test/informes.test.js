@@ -36,12 +36,14 @@ test('ventas del mes: precio, margen, quién vendió y días hasta vender', () =
     assert.equal(v.id, id);
     assert.equal(v.precio_venta_cent, 1290000);
     assert.equal(v.coste_total_cent, 950000, 'compra 9.000 + transporte 200 + taller 300');
-    assert.equal(v.margen_cent, 340000);
+    // REBU: IVA = (12.900 − 9.000) × 21/121 = 676,86; neto = 3.400 − 676,86
+    assert.equal(v.iva_venta_cent, 67686);
+    assert.equal(v.margen_cent, 272314);
     assert.equal(v.vendio, 'Comercial');
     assert.equal(v.dias_en_stock, 40);
     assert.deepEqual(
       { vendidos: json.resumen.vendidos, facturado: json.resumen.facturado_cent, margen: json.resumen.margen_cent, dias: json.resumen.dias_medios_venta },
-      { vendidos: 1, facturado: 1290000, margen: 340000, dias: 40 },
+      { vendidos: 1, facturado: 1290000, margen: 272314, dias: 40 },
     );
   }));
 
@@ -120,5 +122,5 @@ test('CSV para el gestor: Excel en español y sin fórmulas coladas', () =>
     const celdas = fila.split(';');
     assert.equal(celdas[3], `"'=HYPERLINK(""x"")"`, 'una fórmula entra como texto, con apóstrofo y entre comillas');
     assert.ok(fila.includes('"Clio; 5p"'), 'el «;» de un dato no parte la columna');
-    assert.ok(fila.includes(';12900,00;9500,00;3400,00;12'), 'euros con coma decimal y los días al final');
+    assert.ok(fila.includes(';12900,00;9500,00;REBU;676,86;2723,14;12'), 'coste, régimen, IVA de la venta y margen neto, con coma decimal; los días al final');
   }));

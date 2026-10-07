@@ -23,12 +23,12 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - [ ] Parte 3: partners de portales → `docs/portales.md`.
 - [ ] Pasar a Diego las dudas H5 y H6 con lo encontrado. Para la H6, el candidato es Inventario.pro (lo trae Pymecar).
 
-## 3. Bloque 2 · Gastos y margen con REBU
-- [ ] Tabla `gastos` con el modelo de Pymecar: **T14 de David**.
-- [ ] Tuyo, después de la T14: los cuatro `coste_*` de la ficha pasan a filas de `gastos`; la API los sigue aceptando y devolviendo.
-- [ ] `margenNeto` en `api/src/modules/margen.js` (REBU, IVA general y depósito), probado con `margenes.csv`.
-- [ ] Rutas `/api/gastos`, el libro y la comisión al liquidar: **ahora es la T14 de David**. Tú revisas su PR y luego sumas los gastos de cada coche a su coste.
-- [ ] Informes con margen neto, gastos del mes y resultado.
+## 3. ✅ Bloque 2 · Gastos y margen con REBU
+- ✅ Tabla `gastos` con el modelo de Pymecar: T14 de David (PR #12).
+- ✅ Los cuatro `coste_*` de la ficha viven en el libro de gastos (migración `0012`, `vehiculos/costes.js`); la API los sigue aceptando y devolviendo (7-oct).
+- ✅ `margenNeto` en `margen.js`: REBU, IVA general y depósito como REBU, probado con la venta real de Pymecar (`test/margen.test.js`). Los incentivos ya usan el neto (7-oct).
+- ✅ Rutas `/api/gastos`, el libro y la comisión al liquidar: T14 de David. Los gastos de cada coche ya suman a su coste.
+- ✅ Informes y ficha con margen neto, IVA de la venta, gastos de estructura y resultado del mes (7-oct).
 
 ## 4. Bloque 3 · Facturación, cobros e impagos
 - [ ] Migración: series, facturas, líneas, cobros y datos de la empresa.

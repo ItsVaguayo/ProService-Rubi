@@ -3,9 +3,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { conServidor, coche, meterFotos } from './ayuda.js';
 import { incentivoDeCoche } from '../src/modules/incentivos/calculo.js';
+import { margenNeto } from '../src/modules/margen.js';
 
-// El coche de ayuda.js cuesta 9.500 € (compra 9.000 + transporte 200 + taller 300): el margen es PVP − 950.000
+// El coche de ayuda.js cuesta 9.500 € (compra 9.000 + transporte 200 + taller 300): el margen bruto es PVP − 950.000.
+// El incentivo va sobre el neto (después del IVA de la venta en REBU): netoDe(bruto) lo calcula como margen.js.
 const COSTE = 950000;
+const netoDe = (bruto) => margenNeto({ ...coche, coste_otros_cent: 0, pvp_cent: COSTE + bruto });
 const mesActual = () => new Date().toISOString().slice(0, 7);
 const mesPasado = () => { const d = new Date(); return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 1, 1)).toISOString().slice(0, 7); };
 const idDe = (db, email) => db.prepare('SELECT id FROM usuarios WHERE email = ?').get(email).id;
@@ -47,9 +50,12 @@ test('porcentaje sobre el margen real de los coches vendidos', () =>
     await vendido(db, pide, { sinCompra: true });
 
     const c = comercialDe((await pide(`/incentivos?mes=${mesActual()}`)).json, comercial);
-    assert.deepEqual(c.coches.map((x) => x.incentivo_cent).sort((a, b) => a - b), [0, 0, 11728]);
-    assert.deepEqual(c.coches.map((x) => x.margen_cent).sort((a, b) => (a ?? 0) - (b ?? 0)), [-50000, null, 234567]);
-    assert.equal(c.total_cent, 11728);
+    const bueno = incentivoDeCoche({ tipo: 'porcentaje_margen', valor: 500 }, netoDe(234567));
+    assert.equal(netoDe(234567), 234567 - Math.round((284567 * 21) / 121), 'neto = bruto − IVA del REBU sobre venta − compra');
+    assert.equal(netoDe(-50000), -50000, 'vendido por debajo de la compra: sin IVA');
+    assert.deepEqual(c.coches.map((x) => x.incentivo_cent).sort((a, b) => a - b), [0, 0, bueno]);
+    assert.deepEqual(c.coches.map((x) => x.margen_cent).sort((a, b) => (a ?? 0) - (b ?? 0)), [-50000, null, netoDe(234567)]);
+    assert.equal(c.total_cent, bueno);
     assert.deepEqual(c.regla, { tipo: 'porcentaje_margen', valor: 500 });
     assert.ok(Number.isInteger(c.total_cent));
   }));
@@ -90,8 +96,8 @@ test('el comercial solo ve lo suyo, sin el margen de ningún coche', () =>
     const [c] = r.json.comerciales;
     assert.equal(c.coches.length, 1);
     assert.ok(c.coches.every((x) => !('margen_cent' in x)), 'sin margen');
-    assert.equal(c.coches[0].incentivo_cent, 11728, 'el incentivo sí');
-    assert.ok(!JSON.stringify(r.json).includes('234567'), 'el margen no aparece por ningún sitio');
+    assert.equal(c.coches[0].incentivo_cent, incentivoDeCoche({ tipo: 'porcentaje_margen', valor: 500 }, netoDe(234567)), 'el incentivo sí');
+    assert.ok(!JSON.stringify(r.json).includes(String(netoDe(234567))), 'el margen no aparece por ningún sitio');
   }));
 
 test('el comercial no puede ver ni cambiar reglas ni liquidar: 403', () =>

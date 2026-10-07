@@ -2,14 +2,14 @@
 //
 // Todo en enteros. El porcentaje va en centésimas (500 = 5 %) y el dinero en céntimos, y se redondea una
 // sola vez, al final de cada coche: con decimales, 0.1 + 0.2 no da 0.3.
-// El margen es el de margen.js (hoy el bruto; cuando Victor tenga el neto con REBU o IVA, se cambia aquí).
-import { margenBruto } from '../margen.js';
+// El margen es el neto de margen.js: después del IVA de la venta y con todos los gastos del coche.
+import { margenNeto } from '../margen.js';
 import { ventasDelMes } from '../informes/ventas.js';
 
 export const TIPOS_REGLA = ['porcentaje_margen', 'fijo_por_coche'];
 export const MES = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-const margenDe = margenBruto;
+const margenDe = margenNeto; // el neto: después del IVA de la venta y con todos los gastos del coche
 
 /** Incentivo de un coche según la regla, en céntimos enteros. Sin regla, sin margen o con pérdida, 0. */
 export function incentivoDeCoche(regla, margenCent) {

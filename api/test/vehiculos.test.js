@@ -16,7 +16,9 @@ test('recorrido: alta, margen y publicar con fotos', () =>
     assert.equal(ficha.matricula, '1234ABC', 'la matrícula se normaliza');
     assert.equal(ficha.bastidor, 'VF1RFB00000000001');
     assert.equal(ficha.coste_total_cent, 950000);
-    assert.equal(ficha.margen_cent, 340000);
+    assert.equal(ficha.margen_bruto_cent, 340000);
+    assert.equal(ficha.iva_venta_cent, 67686, 'REBU: (12.900 − 9.000) × 21/121');
+    assert.equal(ficha.margen_cent, 272314, 'el neto');
 
     meterFotos(db, id, 15);
     const cambio = await pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: 'publicado' } });
@@ -163,7 +165,10 @@ test('coche en depósito: el margen sale de lo que se paga al dueño', () =>
     const { id } = (await pide('/vehiculos', { method: 'POST', body: deposito })).json;
     const ficha = (await pide(`/vehiculos/${id}`)).json;
     assert.equal(ficha.coste_total_cent, 1525000);
-    assert.equal(ficha.margen_cent, 165000);
+    assert.equal(ficha.margen_bruto_cent, 165000);
+    // Como en Pymecar: al venderlo se le compra al dueño y se vende en REBU. IVA = (16.900 − 15.000) × 21/121
+    assert.equal(ficha.iva_venta_cent, 32975);
+    assert.equal(ficha.margen_cent, 132025);
 
     const sinPago = (await pide('/vehiculos', { method: 'POST', body: { ...deposito, matricula: '4444DDD', pago_propietario_cent: null } })).json;
     assert.equal(sinPago.margen_cent, null, 'sin lo pactado con el dueño no se inventa un margen');

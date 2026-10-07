@@ -1059,6 +1059,8 @@ a.contacto__coche:hover { background: var(--fondo); }
 }
 .margen span { color: #a7adb3; font-size: .875rem; }
 .margen strong { font-size: 1.75rem; line-height: 1; letter-spacing: -.02em; color: #5fd08e; }
+.margen { flex-wrap: wrap; }
+.margen__detalle { flex-basis: 100%; margin-top: 8px; color: #a7adb3; font-size: .75rem; }
 
 /* Reserva activa: los datos en filas */
 .reserva-activa { margin: 0 0 var(--espacio-m); }
@@ -1802,6 +1804,9 @@ a.contacto__coche:hover { background: var(--fondo); }
 
 /* Cifras de arriba con 2, 3 o 6 datos (la de informes lleva 4) */
 .cifras--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cifras--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .cifras--5 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .cifras--5 { grid-template-columns: 1fr 1fr; } }
 .cifras--6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .cifras__dato--alerta strong { color: var(--peligro); }
 /* Una cifra que filtra la lista: se nota que se puede pulsar */

@@ -1,7 +1,8 @@
 // Dueño: Victor. Alta, ficha, estados y reservas.
 import { Router } from 'express';
 import { ESTADOS, ESTADOS_WEB, esEstadoValido } from '../estados.js';
-import { costeTotal, margenBruto } from '../margen.js';
+import { COSTES_SQL, costeTotal, ivaDeLaVenta, margenBruto, margenNeto } from '../margen.js';
+import { separarCostes, guardarCostes } from './costes.js';
 import { registrar } from '../auditoria.js';
 import { limpiarDatos, quitarDinero } from './campos.js';
 import { motivosParaNoEntrar, faltanParaPublicar, cierraLaReserva } from './reglas.js';
@@ -10,10 +11,11 @@ import { liberarReserva } from './reservas.js';
 
 const esGerencia = (usuario) => usuario?.rol === 'gerencia';
 
-// Toda respuesta con un coche pasa por aquí: gerencia ve coste y margen, el resto no ve dinero.
+// Toda respuesta con un coche pasa por aquí: gerencia ve coste, IVA y margen, el resto no ve dinero.
+// margen_cent es el neto (después del IVA de la venta); margen_bruto_cent, antes del IVA.
 export function serializar(v, usuario) {
   if (!esGerencia(usuario)) return quitarDinero(v);
-  return { ...v, coste_total_cent: costeTotal(v), margen_cent: margenBruto(v) };
+  return { ...v, coste_total_cent: costeTotal(v), iva_venta_cent: ivaDeLaVenta(v), margen_bruto_cent: margenBruto(v), margen_cent: margenNeto(v) };
 }
 
 export function rutasVehiculos(db) {
@@ -27,7 +29,8 @@ export function rutasVehiculos(db) {
       -- Versión de la portada para su dirección (?v=): la misma que versionFoto() en fotos/routes.js
       (SELECT COALESCE(f.ruta_photocall, f.ruta_original) || '@' || f.creado_en FROM fotos f
         WHERE f.vehiculo_id = v.id AND f.es_dano = 0 ORDER BY f.orden LIMIT 1) AS foto_portada_v,
-      (SELECT COUNT(*) FROM fotos f WHERE f.vehiculo_id = v.id) AS n_fotos
+      (SELECT COUNT(*) FROM fotos f WHERE f.vehiculo_id = v.id) AS n_fotos,
+      ${COSTES_SQL}
     FROM vehiculos v`;
   const leer = db.prepare(`${SELECT} WHERE v.id = ?`);
 
@@ -142,6 +145,8 @@ export function rutasVehiculos(db) {
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
 
     // Las columnas salen de la lista blanca de campos.js, nunca del cuerpo de la petición.
+    // Los costes no son columnas: van al libro de gastos (costes.js).
+    const costes = separarCostes(datos);
     const columnas = Object.keys(datos);
     const id = db.transaction(() => {
       const info = db
@@ -152,6 +157,7 @@ export function rutasVehiculos(db) {
       db.prepare('INSERT INTO historial_estados (vehiculo_id, de, a, usuario_id) SELECT id, NULL, estado, ? FROM vehiculos WHERE id = ?')
         .run(req.usuario.id, nuevoId);
       registrar(db, { usuarioId: req.usuario.id, entidad: 'vehiculo', entidadId: nuevoId, accion: 'alta', despues: datos });
+      guardarCostes(db, nuevoId, costes, req.usuario.id);
       return nuevoId;
     })();
     res.status(201).json(serializar(leer.get(id), req.usuario));
@@ -162,8 +168,9 @@ export function rutasVehiculos(db) {
     if (!antes) return res.status(404).json({ error: 'No existe' });
     const { datos, errores } = limpiarDatos(req.body, { parcial: true, puedeDinero: esGerencia(req.usuario) });
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
+    const costes = separarCostes(datos);
     const columnas = Object.keys(datos);
-    if (!columnas.length) return res.status(400).json({ error: 'Sin cambios' });
+    if (!columnas.length && !Object.keys(costes).length) return res.status(400).json({ error: 'Sin cambios' });
 
     // Un coche que sale en la web (publicado, reservado o vendido) no puede perder, en esta edición,
     // un dato de los que hacen falta para publicar: por ejemplo, el precio. Solo cuenta lo que esta
@@ -179,10 +186,13 @@ export function rutasVehiculos(db) {
 
     db.transaction(() => {
       db.prepare(
-        `UPDATE vehiculos SET ${columnas.map((c) => `${c} = ?`).join(', ')}, actualizado_en = datetime('now') WHERE id = ?`,
+        `UPDATE vehiculos SET ${[...columnas.map((c) => `${c} = ?`), "actualizado_en = datetime('now')"].join(', ')} WHERE id = ?`,
       ).run(...columnas.map((c) => datos[c]), antes.id);
-      const cambiados = Object.fromEntries(columnas.map((c) => [c, antes[c]]));
-      registrar(db, { usuarioId: req.usuario.id, entidad: 'vehiculo', entidadId: antes.id, accion: 'edicion', antes: cambiados, despues: datos });
+      if (columnas.length) {
+        const cambiados = Object.fromEntries(columnas.map((c) => [c, antes[c]]));
+        registrar(db, { usuarioId: req.usuario.id, entidad: 'vehiculo', entidadId: antes.id, accion: 'edicion', antes: cambiados, despues: datos });
+      }
+      guardarCostes(db, antes.id, costes, req.usuario.id);
     })();
     res.json(serializar(leer.get(antes.id), req.usuario));
   });

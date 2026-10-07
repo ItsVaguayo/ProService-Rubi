@@ -389,7 +389,7 @@ async function cifrasDelMes(todos, enStock, usuario) {
       const tendencia = r.vendidos > antes ? 'sube' : r.vendidos < antes ? 'baja' : '';
       const mesPasado = new Date(Date.UTC(+mes.slice(0, 4), +mes.slice(5) - 2, 1)).toLocaleDateString('es-ES', { month: 'long', timeZone: 'UTC' });
       cifras.push([`Vendidos <small class="${tendencia}">${cifra(antes)} en ${mesPasado}</small>`, cifra(r.vendidos)]);
-      cifras.push(['Margen bruto', esc(euros(r.margen_cent))]);
+      cifras.push(['Margen neto', esc(euros(r.margen_cent))]);
       cifras.push(['Días medios para vender', r.dias_medios_venta != null ? cifra(r.dias_medios_venta) : '—']);
     }
   }
@@ -794,12 +794,21 @@ async function paginaFicha(usuario) {
     const persona = (dt, nombre, tel) => `<div><dt>${dt}</dt><dd>${esc(nombre)}${tel ? ` · <a href="tel:${esc(tel)}">${esc(tel)}</a>` : ''}</dd></div>`;
     cuentas[0].innerHTML = [deposito ? linea('Pactado con el dueño', v.pago_propietario_cent) : linea('Precio de compra', v.precio_compra_cent),
       linea('Transporte', v.coste_transporte_cent), linea('Taller', v.coste_taller_cent), linea('Preparación y limpieza', v.coste_preparacion_cent),
-      linea('Impuestos y gestoría', v.coste_impuestos_cent), linea('Coste total', v.coste_total_cent, true)].join('');
+      linea('Impuestos y gestoría', v.coste_impuestos_cent),
+      ...(v.coste_otros_cent ? [`<div><dt>Otros gastos <a class="enlace-pequeno" href="gastos.html?vehiculo=${v.id}">del libro</a></dt><dd>${euros(v.coste_otros_cent)}</dd></div>`] : []),
+      linea('Coste total', v.coste_total_cent, true)].join('');
     cuentas[1].innerHTML = [linea('Precio de venta', v.pvp_cent), linea('Precio si financia', v.precio_financiado_cent), linea('Mínimo aceptable', v.precio_minimo_cent),
       `<div><dt>Régimen de IVA</dt><dd>${esc(v.regimen_iva ?? (deposito ? 'Depósito' : '—'))}</dd></div>`].join('')
       + (deposito && v.propietario_nombre ? persona('Dueño', v.propietario_nombre, v.propietario_telefono) : '')
       + (!deposito && v.proveedor_nombre ? persona('Proveedor', v.proveedor_nombre, v.proveedor_telefono) : '');
-    $('#dinero .margen strong').textContent = v.margen_cent == null ? 'Falta un dato' : euros(v.margen_cent);
+    // El neto: después del IVA de la venta (REBU sobre venta − compra; general, el 21 % del precio)
+    const margen = $('#dinero .margen');
+    $('span', margen).textContent = 'Margen neto';
+    $('strong', margen).textContent = v.margen_cent == null ? 'Falta un dato' : euros(v.margen_cent);
+    let detalle = $('.margen__detalle', margen);
+    if (!detalle) margen.append(detalle = Object.assign(document.createElement('small'), { className: 'margen__detalle nota' }));
+    detalle.textContent = v.margen_cent == null ? 'Hace falta el precio de compra (o lo pactado con el dueño) y el de venta.'
+      : `${euros(v.margen_bruto_cent)} antes de IVA − ${euros(v.iva_venta_cent)} de IVA ${deposito || (v.regimen_iva ?? 'REBU') === 'REBU' ? 'en REBU' : 'general'}`;
   }
 
   pintarReserva(v, reserva);
@@ -1720,11 +1729,14 @@ async function paginaInformes() {
       : `${r.vendidos > r.vendidos_mes_anterior ? 'Más' : 'Menos'} que el mes anterior (${r.vendidos_mes_anterior})`;
     const cifras = [
       ['Coches vendidos', cifra(r.vendidos), comparado],
-      ['Margen bruto', r.margen_cent == null ? '—' : euros(r.margen_cent),
+      ['Margen neto', r.margen_cent == null ? '—' : euros(r.margen_cent),
         r.margen_medio_cent == null ? 'Sin ventas con margen' : `${euros(r.margen_medio_cent)} por coche${r.ventas_sin_margen ? ` · ${r.ventas_sin_margen} sin coste apuntado` : ''}`],
+      ['Resultado del mes', r.resultado_cent == null ? '—' : euros(r.resultado_cent),
+        `Margen neto − ${euros(r.gastos_estructura_cent)} de gastos de la tienda`],
       ['Días hasta vender', r.dias_medios_venta == null ? '—' : cifra(r.dias_medios_venta), 'Media de los vendidos este mes'],
       ['En stock', cifra(stock.total), `${stock.deposito} en depósito, ${stock.propios} propios`],
     ];
+    $('.cifras').classList.add('cifras--5');
     $('.cifras').innerHTML = cifras.map(([rotulo, valor, nota]) => `<div class="cifras__dato">
         <span class="rotulo">${esc(rotulo)}</span><strong class="cifra">${esc(valor)}</strong><span class="nota">${esc(nota)}</span>
       </div>`).join('');
@@ -1742,7 +1754,7 @@ async function paginaInformes() {
         </tr>`).join('')
       : '<tr><td colspan="6" class="nota">Ninguna venta este mes.</td></tr>';
     $('.tabla-pie').textContent = ventas.length
-      ? `${ventas.length} ${ventas.length === 1 ? 'venta' : 'ventas'}. El margen es bruto: falta el ajuste de REBU o IVA deducible.`
+      ? `${ventas.length} ${ventas.length === 1 ? 'venta' : 'ventas'}. El margen es neto: después del IVA de la venta y con los gastos de cada coche.`
       : '';
 
     // Stock por antigüedad: la barra es la parte del stock en cada tramo

@@ -156,7 +156,7 @@ test('liquidar un incentivo de 150 € apunta un gasto de comisión de 150 €; 
     db.prepare("UPDATE historial_estados SET fecha = ? || '-15 10:00:00' WHERE vehiculo_id = ?").run(mesPasado(), v);
 
     assert.equal((await pide('/incentivos/liquidar', { method: 'POST', body: { mes: mesPasado(), usuario_id: comercial } })).status, 201);
-    const [g] = db.prepare('SELECT * FROM gastos').all();
+    const [g] = db.prepare("SELECT * FROM gastos WHERE tipo = 'comision'").all(); // los otros son los costes del coche
     assert.equal(g.tipo, 'comision');
     assert.equal(g.concepto, 'comisiones');
     assert.equal(g.usuario_id, comercial);
@@ -166,5 +166,5 @@ test('liquidar un incentivo de 150 € apunta un gasto de comisión de 150 €; 
 
     const jaume = idDe(db, 'jaume@ejemplo.com');
     assert.equal((await pide('/incentivos/liquidar', { method: 'POST', body: { mes: mesPasado(), usuario_id: jaume } })).status, 201);
-    assert.equal(db.prepare('SELECT COUNT(*) AS n FROM gastos').get().n, 1, 'un incentivo de 0 € no apunta gasto');
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM gastos WHERE tipo = 'comision'").get().n, 1, 'un incentivo de 0 € no apunta gasto');
   }));

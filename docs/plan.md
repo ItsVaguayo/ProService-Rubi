@@ -208,7 +208,7 @@ Diego añade diez bloques que convierten la plataforma en el sistema que sustitu
 | # | Bloque | Victor (API, lógica y web) | Hafsa | David |
 |---|---|---|---|---|
 | 1 | Clientes y proveedores | ✅ Tablas, API y pasar un contacto a cliente (7-oct, `docs/api.md`). Falta conectar las maquetas | T07: `clientes.html`, `proveedores.html` | — |
-| 2 | Gastos y margen con REBU o IVA | Tabla `gastos` (coche, personal, proveedor, comisión, otros), margen neto, informes. T10: casos del margen a mano | T07: `gastos.html` | — |
+| 2 | Gastos y margen con REBU o IVA | ✅ Libro de gastos (T14 de David), costes de la ficha en el libro, margen neto con REBU, IVA general y depósito, informes con resultado del mes (7-oct) | T07b: `gastos.html` como en Pymecar | ✅ T14 |
 | 3 | Facturación, cobros e impagos | Series sin huecos, emisión, rectificativas, cobros, vencidas, anticipo de la señal. T09: `factura.html` imprimible | T07: `facturas.html` | — |
 | 4 | Verifactu | **Aplazado a 2028** (duda H1). La facturación deja sitio para añadirlo | — | — |
 | 5 | Contratos | Reserva, compraventa, compra, compra a particular y depósito, con los datos congelados al generarlos. T09: plantillas imprimibles | — | — |

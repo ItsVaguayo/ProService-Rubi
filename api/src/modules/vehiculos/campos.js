@@ -57,6 +57,7 @@ export const CAMPOS = {
 
   // 3.5 Dinero
   precio_compra_cent: { tipo: 'cent', dinero: true },
+  // Los cuatro costes no son columnas: viven en el libro de gastos (vehiculos/costes.js, migración 0012)
   coste_transporte_cent: { tipo: 'cent', dinero: true },
   coste_taller_cent: { tipo: 'cent', dinero: true },
   coste_preparacion_cent: { tipo: 'cent', dinero: true },
@@ -150,7 +151,6 @@ export function limpiarDatos(cuerpo, { parcial = false, puedeDinero = false } = 
 export function quitarDinero(vehiculo) {
   const copia = { ...vehiculo };
   for (const campo of CAMPOS_DINERO) delete copia[campo];
-  delete copia.coste_total_cent;
-  delete copia.margen_cent;
+  for (const calculado of ['coste_total_cent', 'coste_otros_cent', 'iva_venta_cent', 'margen_bruto_cent', 'margen_cent']) delete copia[calculado];
   return copia;
 }

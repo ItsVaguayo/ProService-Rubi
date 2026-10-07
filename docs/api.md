@@ -27,7 +27,7 @@ Campos que se pueden escribir: los de `api/src/modules/vehiculos/campos.js` y ni
 |---|---|---|
 | `GET /vehiculos/estados` | con sesión | Los 10 estados en orden, con `web: true` en los que salen en la web |
 | `GET /vehiculos?estado=publicado` | con sesión | Lista, del más nuevo al más viejo. Cada coche lleva además `en_estado_desde`, `foto_portada_id` y `n_fotos` |
-| `GET /vehiculos/:id` | con sesión | La ficha. Gerencia recibe también `coste_total_cent` y `margen_cent` |
+| `GET /vehiculos/:id` | con sesión | La ficha. Gerencia recibe también `coste_otros_cent`, `coste_total_cent`, `iva_venta_cent`, `margen_bruto_cent` y `margen_cent` (el neto). Ver «Coste y margen» |
 | `POST /vehiculos` | con sesión | Alta. Basta con `matricula`, `marca` y `modelo`. Entra en «Pendiente de recoger». 201 con la ficha |
 | `PUT /vehiculos/:id` | con sesión | Cambia solo lo que llega. **Si el coche sale en la web** (publicado, reservado o vendido), la edición no puede vaciar ninguno de los datos de publicar que tenía: 409 con la lista. Si ya le faltaba alguno de antes, se le deja editar lo demás |
 | `PATCH /vehiculos/:id/estado` | con sesión | `{ estado }`. Para entrar en la web desde fuera (a «Publicado», o de taller directo a «Vendido») hacen falta todos los datos de publicar y 15 fotos públicas que no sean de daños; si no, 409 con `motivos`. Para «Reservado», una reserva activa. Un coche con reserva activa solo sale de «Reservado» a «Vendido» o «Entregado», que cierran la reserva como `vendida`; para lo demás, 409: hay que cancelarla antes |
@@ -148,7 +148,7 @@ Cuánto se le paga a cada comercial por lo vendido en un mes. La regla del clien
 Cada comercial lleva `usuario_id`, `nombre`, `rol`, `regla`, `coches` (`id`, `referencia`, `marca`, `modelo`, `fecha_venta`, `margen_cent`, `incentivo_cent`), `total_cent` y `liquidado` (`coches`, `importe_cent`, `liquidado_en` y, para gerencia, `liquidado_por`; o `null`).
 
 - Una venta cuenta para quien pasó el coche a «Vendido» (`ventasDelMes` de `informes/ventas.js`), también si es de gerencia. Salen los que vendieron algo y los comerciales activos aunque no vendieran nada.
-- `porcentaje_margen`: con pérdida o sin margen (falta la compra o el PVP), 0. El margen es el bruto de `margen.js` hasta que esté el neto.
+- `porcentaje_margen`: con pérdida o sin margen (falta la compra o el PVP), 0. El margen es el neto de `margen.js`.
 - Lo liquidado no cambia aunque luego cambie la regla o se deshaga una venta: `total_cent` es el cálculo de ahora y `liquidado.importe_cent`, lo que se pagó.
 - Reglas y liquidaciones quedan en `auditoria` (`incentivo_regla` e `incentivo_liquidado`).
 - Liquidar más de 0 € apunta el gasto de la comisión en el libro de gastos (ver «Libro de gastos»).
@@ -188,6 +188,22 @@ Los gastos de la empresa, como el libro de gastos de Pymecar. Sin `DELETE`: un l
 
 **Incentivos.** Al liquidar un incentivo de más de 0 € se apunta solo un gasto `comision`, concepto `comisiones`, con el `usuario_id` del comercial, sin IVA ni IRPF y la descripción «Incentivo de {nombre}, {mes}», en la misma transacción que la liquidación.
 
+## Coste y margen (solo gerencia)
+
+En `api/src/modules/margen.js`. Todo en céntimos y calculado al pedirlo: no se guarda.
+
+- **Costes del coche**: los cuatro de la ficha (`coste_transporte_cent`, `coste_taller_cent`, `coste_preparacion_cent`, `coste_impuestos_cent`, sin IVA) viven en el libro de gastos desde la migración `0012`, un gasto de tipo `vehiculo` por casilla con `coste_ficha`. Se siguen escribiendo y leyendo en la ficha como siempre: al cambiar uno se corrige su gasto, y vaciarlo lo deja a 0 (no se borra). `coste_otros_cent` es la suma de los demás gastos del libro con ese `vehiculo_id`, menos los de tipo `rebu` (la factura de compra, que ya es el precio de compra).
+- **Coste total** = precio de compra (en depósito, `pago_propietario_cent`) + todos los costes.
+- **IVA de la venta** (`iva_venta_cent`):
+  - REBU: (PVP − compra) × 21/121, redondeado; 0 si se vende por debajo de la compra. Comprobado con una venta real de Pymecar: 14.000 → 15.975 da 342,77.
+  - IVA general (`regimen_iva: 'deducible'`): el 21 % incluido en el PVP, PVP − PVP/1,21.
+  - Depósito: siempre REBU sobre lo pactado con el dueño, como en Pymecar (al venderlo se le compra y se vende en REBU).
+  - Sin régimen: REBU.
+- **Margen bruto** = PVP − coste total. **Margen neto** (`margen_cent`) = margen bruto − IVA de la venta.
+- Sin compra (o lo pactado) o sin PVP, todos son `null`.
+
+Las fórmulas las confirma la gestoría (duda H7).
+
 ## Usuarios (solo gerencia)
 
 | Método y ruta | Quién | Qué hace |
@@ -219,14 +235,12 @@ Necesita `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION`; sin ellas, 503. Detalle
 `GET /informes` devuelve:
 
 - `mes` y `meses` (los que tienen ventas, más el actual, para el selector).
-- `resumen`: `vendidos`, `vendidos_mes_anterior`, `facturado_cent`, `margen_cent`, `margen_medio_cent`, `ventas_sin_margen` (les falta el coste o el precio, y no se inventa) y `dias_medios_venta`.
-- `ventas`: cada coche vendido con `fecha_venta`, `vendio`, `precio_venta_cent` (su PVP), `coste_total_cent`, `margen_cent` y `dias_en_stock`.
+- `resumen`: `vendidos`, `vendidos_mes_anterior`, `facturado_cent`, `margen_cent` (neto), `margen_medio_cent`, `ventas_sin_margen` (les falta el coste o el precio, y no se inventa), `gastos_estructura_cent` (gastos del libro de ese mes que no son de ningún coche, sin IVA), `resultado_cent` (margen neto − gastos de estructura) y `dias_medios_venta`.
+- `ventas`: cada coche vendido con `fecha_venta`, `vendio`, `precio_venta_cent` (su PVP), `coste_total_cent`, `regimen` (`REBU` o `deducible`), `iva_venta_cent`, `margen_cent` (neto) y `dias_en_stock`. El CSV lleva las mismas columnas.
 - `stock`: `total`, `propios`, `deposito`, `tramos` (menos de 30, 30-60, 60-90 y más de 90 días) y `mas_antiguos` (los 5 que más llevan).
 
 Una venta es el último paso a «Vendido» (o a «Entregado», si se saltó ese paso) de un coche que sigue vendido o entregado: si se deshace la venta, deja de contar. Los meses van en UTC, como las fechas de la base.
 
 ## Pendiente
 
-- Margen neto con REBU o IVA deducible y el caso depósito: espera a las respuestas del cliente (dudas B3 y B5). Hoy `margen_cent` es el bruto.
 - Avisos (coches parados, ITV, contactos sin atender): semana 3.
-- Informes: el margen es el bruto hasta tener la regla de REBU o IVA deducible.

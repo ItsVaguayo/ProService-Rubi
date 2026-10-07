@@ -5,6 +5,7 @@
 // saltó ese paso (el paso de «Vendido» a «Entregado» no es otra venta). Solo cuentan los coches que siguen
 // vendidos o entregados: si se deshace la venta, deja de contar. Quien vendió es quien hizo ese paso.
 // Los meses van en hora UTC, como las fechas de la base.
+import { COSTES_SQL } from '../margen.js';
 
 const consultas = new WeakMap(); // una sentencia preparada por base
 
@@ -23,7 +24,7 @@ function consulta(db) {
           FROM historial_estados h JOIN venta ON venta.vehiculo_id = h.vehiculo_id AND h.fecha = venta.fecha
          WHERE h.a = 'vendido' OR (h.a = 'entregado' AND (h.de IS NULL OR h.de <> 'vendido')) -- el paso que fue la venta
       )
-      SELECT v.*, venta.fecha AS fecha_venta, COALESCE(venta.alta, v.creado_en) AS fecha_alta,
+      SELECT v.*, ${COSTES_SQL}, venta.fecha AS fecha_venta, COALESCE(venta.alta, v.creado_en) AS fecha_alta,
              quien.usuario_id AS vendio_id, u.nombre AS vendio
         FROM vehiculos v
         JOIN venta ON venta.vehiculo_id = v.id

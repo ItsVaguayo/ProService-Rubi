@@ -2,12 +2,13 @@
 // antigüedad y los coches que más llevan. Todo sale de la base: la ficha de cada coche y su historial
 // de estados. Solo gerencia (se monta con requiereRol en app.js).
 //
-// Qué cuenta como venta y quién la hizo está en ventas.js. El precio de venta es su PVP y el margen,
-// el bruto de margen.js (sin el ajuste de REBU o IVA deducible, que espera a la duda B5).
+// Qué cuenta como venta y quién la hizo está en ventas.js. El precio de venta es su PVP y el margen, el
+// neto de margen.js (después del IVA de la venta y con los gastos del coche). Los gastos de estructura
+// (los del libro que no son de ningún coche) se restan aparte para sacar el resultado del mes.
 // Los meses van en hora UTC, como las fechas de la base: una venta a las 00:30 del día 1 cuenta en el
 // mes anterior. Para unos informes de lunes no cambia nada.
 import { Router } from 'express';
-import { costeTotal, margenBruto } from '../margen.js';
+import { costeTotal, ivaDeLaVenta, margenNeto, regimenDe } from '../margen.js';
 import { ventasDelMes } from './ventas.js';
 
 const MES = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -35,13 +36,16 @@ export function rutasInformes(db) {
            COALESCE((SELECT MIN(h.fecha) FROM historial_estados h WHERE h.vehiculo_id = v.id), v.creado_en) AS fecha_alta
       FROM vehiculos v WHERE v.estado NOT IN ('vendido', 'entregado')`);
 
+  const gastosEstructura = db.prepare(`SELECT COALESCE(SUM(base_cent), 0) AS n FROM gastos
+                                         WHERE vehiculo_id IS NULL AND tipo <> 'rebu' AND substr(fecha, 1, 7) = ?`);
+
   const mesesConVentas = db.prepare(`
     SELECT DISTINCT substr(fecha, 1, 7) AS mes FROM historial_estados WHERE a IN ('vendido', 'entregado')`);
 
   const ventas = (mes) => ventasDelMes(db, mes).map((v) => ({
     id: v.id, referencia: v.referencia, matricula: v.matricula, marca: v.marca, modelo: v.modelo, version: v.version,
     propiedad: v.propiedad, estado: v.estado, fecha_venta: v.fecha_venta, vendio: v.vendio ?? null,
-    precio_venta_cent: v.pvp_cent, coste_total_cent: costeTotal(v), margen_cent: margenBruto(v),
+    precio_venta_cent: v.pvp_cent, coste_total_cent: costeTotal(v), regimen: regimenDe(v), iva_venta_cent: ivaDeLaVenta(v), margen_cent: margenNeto(v),
     dias_en_stock: dias(v.fecha_alta, fechaSql(v.fecha_venta)),
   }));
 
@@ -75,6 +79,9 @@ export function rutasInformes(db) {
         margen_cent: conMargen.length ? margen : null,
         margen_medio_cent: conMargen.length ? Math.round(margen / conMargen.length) : null,
         ventas_sin_margen: lista.length - conMargen.length, // les falta el coste o el precio: no se inventa
+        // Gastos del libro que no son de ningún coche (alquiler, luz, gestoría…), sin IVA, y lo que queda
+        gastos_estructura_cent: gastosEstructura.get(mes).n,
+        resultado_cent: conMargen.length ? margen - gastosEstructura.get(mes).n : null,
         dias_medios_venta: lista.length ? Math.round(suma('dias_en_stock') / lista.length) : null,
       },
       ventas: lista,
@@ -105,7 +112,9 @@ export function rutasInformes(db) {
       ['Vendió', (v) => v.vendio],
       ['Precio de venta (€)', (v) => euros(v.precio_venta_cent)],
       ['Coste total (€)', (v) => euros(v.coste_total_cent)],
-      ['Margen bruto (€)', (v) => euros(v.margen_cent)],
+      ['Régimen', (v) => (v.regimen === 'REBU' ? 'REBU' : 'General')],
+      ['IVA de la venta (€)', (v) => euros(v.iva_venta_cent)],
+      ['Margen neto (€)', (v) => euros(v.margen_cent)],
       ['Días en stock', (v) => v.dias_en_stock],
     ];
     const lineas = [columnas.map(([nombre]) => celda(nombre)), ...ventas(mes).map((v) => columnas.map(([, valor]) => celda(valor(v))))];
