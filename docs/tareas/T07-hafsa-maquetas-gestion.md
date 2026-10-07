@@ -51,7 +51,7 @@ Cada gasto lleva **dos datos** en vez de una categoría:
 1. **Tipo**, que dice cómo se calcula y a qué libro va. Cinco opciones:
    - **Gasto general**: factura normal con IVA (luz, publicidad, software).
    - **Gasto con IRPF**: de un autónomo o profesional con retención (gestoría, abogado, alquiler del local). Al elegirlo aparecen dos campos más: **% de retención** (por defecto 15 %; 19 % en alquileres) y su importe. El total a pagar es base + IVA − retención.
-   - **Comisiones agentes**: lo que se paga a un agente o comisionista. Se elige el agente.
+   - **Comisiones agentes**: lo que se paga a un comisionista. Se elige el proveedor (de tipo comisionista): no hay pantalla de agentes.
    - **Factura con REBU**: la compra de un coche a otro compraventa, sin IVA. Se elige el coche.
    - **Gasto vehículo**: taller, transporte, limpieza… de un coche. Se elige el coche.
 2. **Concepto**, para agrupar. La lista de Pymecar: ALQUILERES, CARBURANTES, COMISIONES, COMPRAS, ELECTRICIDAD, GESTORÍAS, PAPELERÍAS, PUBLICIDAD, VEHÍCULOS.
@@ -61,7 +61,7 @@ Al elegir el concepto se propone el tipo: Alquileres y Gestorías → con IRPF; 
 Además, en el formulario y en la lista:
 - **Nº de registro** del gasto (correlativo, lo pone el programa: «313»).
 - **Nº de la factura del proveedor** («F-26-000153»).
-- **A quién**: proveedor, agente o cliente.
+- **A quién**: proveedor o cliente (sin agentes: en Pymecar no hay ninguno).
 - En la lista, una columna de **IRPF** junto a la de IVA.
 - Las cifras de arriba, por **tipo** en vez de por categoría.
 - Sin nóminas por ahora: Pymecar no las lleva y está preguntado (no metas «Personal»).

@@ -76,6 +76,13 @@ Nuevas, para Jaume:
 - ¿Usáis la garantía «comprada» (con una aseguradora) o solo la directa?
 - ¿Las nóminas las lleva la gestoría?
 
+## Lo que no pasamos (vacío en Pymecar)
+
+Decidido el 7-oct: lo que no tiene datos en Pymecar no se lleva a la plataforma.
+
+- **Fuera:** tasaciones (la tasación de la web sigue entrando como contacto), pedidos de clientes, gestores (la gestoría es un proveedor o acreedor más) y agentes como pantalla propia (un comisionista es un proveedor de tipo `comisionista`).
+- **Se quedan aunque estén vacíos, porque los pidió Diego el 7-oct:** CRM con tareas, llamadas y visitas (T11), incentivos (T12) y comisiones como concepto de gasto. Si Diego decide quitarlos, se quitan.
+
 ## Lo que esto cambia en nuestra plataforma
 
 - **Ficha:** añadir uso anterior, última ITV, precio sin oferta, seguro de flota y revisado (con el checklist de recepción y entrega).
