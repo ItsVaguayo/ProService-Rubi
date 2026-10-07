@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proveedores · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
+    <div class="menu__enlaces">
+      <a href="index.html"><span class="menu__icono" aria-hidden="true"></span>Tablero</a>
+      <a href="coches.html"><span class="menu__icono" aria-hidden="true"></span>Coches</a>
+      <a href="coche-nuevo.html"><span class="menu__icono" aria-hidden="true"></span>Alta de vehículo</a>
+      <a href="contactos.html"><span class="menu__icono" aria-hidden="true"></span>Contactos <span class="contador">3</span></a>
+      <a href="clientes.html"><span class="menu__icono" aria-hidden="true"></span>Clientes</a>
+      <a href="crm.html"><span class="menu__icono" aria-hidden="true"></span>CRM</a>
+      <a href="agenda.html"><span class="menu__icono" aria-hidden="true"></span>Agenda</a>
+      <!-- Proveedores: solo gerencia, como el precio de compra. -->
+      <a href="proveedores.html" aria-current="page"><span class="menu__icono" aria-hidden="true"></span>Proveedores</a>
+      <!-- Dinero y administración. Incentivos lo ven los dos roles (el comercial, solo lo suyo); el resto,
+           solo gerencia. panel.js de momento solo le quita al comercial Informes y Usuarios. -->
+      <a class="menu__separado" href="gastos.html"><span class="menu__icono" aria-hidden="true"></span>Gastos</a>
+      <a href="facturas.html"><span class="menu__icono" aria-hidden="true"></span>Facturas</a>
+      <a href="incentivos.html"><span class="menu__icono" aria-hidden="true"></span>Incentivos</a>
+      <a href="informes.html"><span class="menu__icono" aria-hidden="true"></span>Informes</a>
+      <a href="usuarios.html"><span class="menu__icono" aria-hidden="true"></span>Usuarios</a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <!-- CABECERA en banda negra. Proveedores es solo de gerencia, como el precio de compra. -->
+    <header class="cabecera cabecera--portada">
+      <div>
+        <p class="portada__antetitulo">Gerencia</p>
+        <h1>Proveedores</h1>
+        <p class="contactos-resumen"><strong class="cifra">8</strong> proveedores <span>· 14 coches comprados este año</span></p>
+        <p class="nota">A quién le compramos los coches y cuánto le hemos pagado. Solo gerencia ve esta página.</p>
+      </div>
+      <div class="cabecera__acciones">
+        <a class="boton" href="#nuevo">Nuevo proveedor</a>
+      </div>
+    </header>
+
+    <!-- FILTROS. El buscador va a GET /api/proveedores?q= (nombre, NIF, teléfono y correo). -->
+    <form class="filtros filtros--coches" role="search">
+      <label class="buscador">
+        <span class="oculto">Buscar proveedor</span>
+        <input type="search" name="q" placeholder="Nombre, teléfono o NIF" autocomplete="off">
+      </label>
+      <fieldset class="segmentos" aria-label="Tipo">
+        <label><input type="radio" name="tipo" value="" checked><span>Todos</span></label>
+        <label><input type="radio" name="tipo" value="profesional"><span>Profesionales</span></label>
+        <label><input type="radio" name="tipo" value="particular"><span>Particulares</span></label>
+        <label><input type="radio" name="tipo" value="subasta"><span>Subastas</span></label>
+        <label><input type="radio" name="tipo" value="comisionista"><span>Comisionistas</span></label>
+      </fieldset>
+    </form>
+
+    <p class="lista-pie"><span class="lista-pie__cuantos">8 proveedores</span></p>
+
+    <div class="ficha">
+
+      <!-- LISTA, por nombre. Iniciales con el color del tipo. A la derecha, cuántos coches nos ha
+           vendido y cuánto le hemos pagado en total (sale de precio_compra_cent). -->
+      <div class="ficha__principal">
+        <ul class="contactos terceros">
+          <li class="contacto tercero tercero--abierto">
+            <span class="contacto__inicial tercero__inicial--profesional" aria-hidden="true">AT</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha" aria-current="true"><strong>Autos Terrassa SL</strong></a> <span class="estado tipo-tercero--profesional">Profesional</span></p>
+              <p class="contacto__datos"><span>B08765430</span><a href="tel:+34937778899">937 778 899</a><a href="mailto:compras@example.com">compras@example.com</a><span>Terrassa</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">3 coches</b>45.700 € comprados</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--profesional" aria-hidden="true">AS</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Automòbils Sant Cugat SL</strong></a> <span class="estado tipo-tercero--profesional">Profesional</span></p>
+              <p class="contacto__datos"><span>B65890121</span><a href="tel:+34935891020">935 891 020</a><span>Sant Cugat</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">4 coches</b>52.300 € comprados</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--comisionista" aria-hidden="true">JM</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Jordi Mas</strong></a> <span class="estado tipo-tercero--comisionista">Comisionista</span></p>
+              <p class="contacto__datos"><span class="nota">Sin NIF</span><a href="tel:+34655777888">655 777 888</a><span>Terrassa</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">0 coches</b>Comisión pendiente</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--particular" aria-hidden="true">PS</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Particular (Sabadell)</strong></a> <span class="estado tipo-tercero--particular">Particular</span></p>
+              <p class="contacto__datos"><span class="nota">Sin NIF</span><a href="tel:+34644555666">644 555 666</a><span>Sabadell</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">1 coche</b>15.800 € comprados</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--particular" aria-hidden="true">RF</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Ricard Fontanet Solé</strong></a> <span class="estado tipo-tercero--particular">Particular</span></p>
+              <p class="contacto__datos"><span>39871254H</span><a href="tel:+34622090311">622 090 311</a><span>Rubí</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">1 coche</b>9.800 € comprados</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--subasta" aria-hidden="true">SL</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Subastas Llobregat</strong></a> <span class="estado tipo-tercero--subasta">Subasta</span></p>
+              <p class="contacto__datos"><span>B08123457</span><a href="tel:+34933770011">933 770 011</a><span>Cornellà</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">2 coches</b>20.500 € comprados</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--subasta" aria-hidden="true">SV</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Subastas Vallès</strong></a> <span class="estado tipo-tercero--subasta">Subasta</span></p>
+              <p class="contacto__datos"><span class="nota">Sin NIF</span><a href="tel:+34931112233">931 112 233</a><span>Granollers</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">2 coches</b>26.900 € comprados</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--profesional" aria-hidden="true">VP</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Vehicles Penedès SL</strong></a> <span class="estado tipo-tercero--profesional">Profesional</span></p>
+              <p class="contacto__datos"><span>B60234564</span><a href="tel:+34938180450">938 180 450</a><span>Vilafranca</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">1 coche</b>12.100 € comprados</p>
+          </li>
+        </ul>
+
+        <!-- SIN RESULTADOS -->
+        <div class="vacio" hidden>
+          <strong>Ningún proveedor coincide con la búsqueda</strong>
+          <p class="nota">Prueba con el teléfono sin espacios o con el NIF. Si es la primera vez que le compramos, dalo de alta.</p>
+          <a class="boton" href="#nuevo">Nuevo proveedor</a>
+        </div>
+      </div>
+
+      <!-- FICHA del proveedor abierto (GET /api/proveedores/:id). Trae «coches» con su precio_compra_cent:
+           el bloque negro de abajo, como el dinero de la ficha del coche. -->
+      <aside class="ficha__lateral ficha-tercero" id="ficha" aria-label="Ficha del proveedor">
+        <section class="caja">
+          <div class="ficha-tercero__cabeza">
+            <span class="contacto__inicial tercero__inicial--profesional" aria-hidden="true">AT</span>
+            <div>
+              <h2>Autos Terrassa SL</h2>
+              <p class="ficha-tercero__linea"><span class="estado tipo-tercero--profesional">Profesional</span></p>
+            </div>
+          </div>
+          <dl class="reserva-activa">
+            <div><dt>CIF</dt><dd>B08765430</dd></div>
+            <div><dt>Teléfono</dt><dd><a href="tel:+34937778899">937 778 899</a></dd></div>
+            <div><dt>Correo</dt><dd><a href="mailto:compras@example.com">compras@example.com</a></dd></div>
+            <div><dt>Dirección</dt><dd>Ctra. de Montcada 212<br>08223 Terrassa (Barcelona)</dd></div>
+          </dl>
+          <p class="nota ficha-tercero__notas">Avisan por WhatsApp cuando les entran coches de renting. Pagan el transporte si son más de dos.</p>
+          <div class="ficha-tercero__acciones">
+            <a class="boton boton--secundario boton--pequeno" href="tel:+34937778899">Llamar</a>
+            <a class="boton boton--secundario boton--pequeno" href="#nuevo">Editar datos</a>
+          </div>
+        </section>
+
+        <section class="caja dinero">
+          <div class="caja__titulo"><h2>Coches que nos ha vendido</h2><span class="rotulo">Solo gerencia</span></div>
+          <ul class="canales canales--oscuro">
+            <li><span class="coche-celda"><a href="coche.html">Peugeot 3008 1.5 BlueHDi</a><span class="matricula">5562 LCN</span></span><span class="cifra">17.600 €</span></li>
+            <li><span class="coche-celda"><a href="coche.html">Audi A3 Sportback 30 TFSI</a><span class="matricula">8890 KZT</span></span><span class="cifra">17.900 €</span></li>
+            <li><span class="coche-celda"><a href="coche.html">Seat Ibiza 1.0 TSI FR</a><span class="matricula">1147 KYM</span></span><span class="cifra">10.200 €</span></li>
+          </ul>
+          <div class="margen">
+            <span>Pagado en total</span>
+            <strong class="cifra">45.700 €</strong>
+          </div>
+        </section>
+      </aside>
+
+    </div>
+
+    <!-- NUEVO PROVEEDOR. Campos de POST /api/proveedores (docs/api.md). Solo el nombre es obligatorio.
+         Igual que clientes, sin «cómo nos conoció» y con el tipo de proveedor. -->
+    <section class="caja form-tercero" id="nuevo" aria-labelledby="nuevo-titulo">
+      <div class="caja__titulo">
+        <h2 id="nuevo-titulo">Nuevo proveedor</h2>
+        <span class="nota"><em class="obligatorio">*</em> obligatorio</span>
+      </div>
+      <form class="rejilla">
+        <fieldset class="opciones opciones--pequenas campo--ancho">
+          <legend class="campo__nombre">Tipo</legend>
+          <label><input type="radio" name="tipo" value="profesional" checked><span>Profesional</span></label>
+          <label><input type="radio" name="tipo" value="particular"><span>Particular</span></label>
+          <label><input type="radio" name="tipo" value="subasta"><span>Subasta</span></label>
+          <label><input type="radio" name="tipo" value="comisionista"><span>Comisionista</span></label>
+        </fieldset>
+        <label class="campo campo--doble">
+          <span class="campo__nombre">Nombre o razón social <em>*</em></span>
+          <input name="nombre" maxlength="150" autocomplete="off" required>
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">NIF, NIE o CIF</span>
+          <input name="nif" autocomplete="off" placeholder="B12345674">
+          <span class="campo__ayuda">Con su letra o dígito de control.</span>
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Teléfono</span>
+          <input type="tel" name="telefono" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Correo</span>
+          <input type="email" name="email" autocomplete="off">
+        </label>
+        <label class="campo campo--doble">
+          <span class="campo__nombre">Dirección</span>
+          <input name="direccion" maxlength="200" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Código postal</span>
+          <input name="codigo_postal" maxlength="10" inputmode="numeric" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Población</span>
+          <input name="poblacion" maxlength="100" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Provincia</span>
+          <input name="provincia" maxlength="100" autocomplete="off" value="Barcelona">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">País</span>
+          <select name="pais">
+            <option value="ES" selected>España</option>
+            <option value="AD">Andorra</option>
+            <option value="DE">Alemania</option>
+            <option value="FR">Francia</option>
+            <option value="PT">Portugal</option>
+          </select>
+        </label>
+        <label class="campo campo--ancho">
+          <span class="campo__nombre">Notas</span>
+          <textarea name="notas" maxlength="2000" placeholder="Cómo trabaja, quién paga el transporte, a quién llamar…"></textarea>
+        </label>
+        <div class="form-tercero__pie campo--ancho">
+          <a class="boton boton--secundario" href="#">Cancelar</a>
+          <button class="boton" type="submit">Guardar proveedor</button>
+        </div>
+      </form>
+    </section>
+
+  </main>
+</div>
+<script type="module" src="../js/panel.js"></script>
+</body>
+</html>

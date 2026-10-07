@@ -1913,3 +1913,11 @@ a.contacto__coche:hover { background: var(--fondo); }
   .tercero__resumen b { display: inline; margin-right: 6px; }
   .form-tercero__pie .boton { flex: 1; }
 }
+
+
+/* T07 · proveedores.html --------------------------------------------------- */
+
+/* Los coches que nos ha vendido van en el bloque negro de dinero (solo gerencia) */
+.canales--oscuro li { border-bottom-color: var(--negro-3); }
+.canales--oscuro .coche-celda a { color: var(--blanco); }
+.ficha-tercero .dinero .margen strong { color: var(--blanco); }
