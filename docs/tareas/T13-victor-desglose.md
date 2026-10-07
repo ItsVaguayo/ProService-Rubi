@@ -31,12 +31,13 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - ✅ Informes y ficha con margen neto, IVA de la venta, gastos de estructura y resultado del mes (7-oct).
 
 ## 4. Bloque 3 · Facturación, cobros e impagos
-- [ ] Migración: series, facturas, líneas, cobros y datos de la empresa.
-- [ ] Emitir con número correlativo sin huecos (en una transacción); una emitida no se edita; rectificativa.
-- [ ] REBU sin IVA desglosado y con su mención; IVA general con base e IVA.
-- [ ] Cobros, estado calculado (pendiente, parcial, cobrada, vencida) y lista de impagos.
-- [ ] Anticipo al cobrar la señal de una reserva, descontado en la factura final.
-- [ ] CSV para la gestoría.
+- ✅ Migración `0013`: empresa, series, facturas y cobros (7-oct).
+- ✅ Borrador → emitir con número correlativo sin huecos y fechas que no van hacia atrás; copia congelada de empresa, cliente y coche; rectificativa por el total.
+- ✅ Importes REBU (IVA sobre el margen, como Pymecar) y general. La mención y el aspecto, en la factura imprimible.
+- ✅ Cobros, estado calculado y resumen de pendiente y vencido.
+- ✅ La señal de la reserva se aplica como cobro (Pymecar no factura las reservas aparte).
+- ✅ Libro de ingresos y libro de REBU, en pantalla y CSV.
+- [ ] Panel: `facturas.html` conectada, alta de factura, datos de la empresa y numeración, y la factura imprimible.
 
 ## 5. T09 · Factura y contratos imprimibles
 - [ ] `frontend/panel/documentos/factura.html` (REBU e IVA general, hueco del QR) y `frontend/css/documentos.css`.

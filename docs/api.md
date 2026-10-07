@@ -204,6 +204,27 @@ En `api/src/modules/margen.js`. Todo en céntimos y calculado al pedirlo: no se 
 
 Las fórmulas las confirma la gestoría (duda H7).
 
+## Facturación (solo gerencia)
+
+En `api/src/modules/facturacion`. Verifactu queda para octubre de 2028 (duda H1): `verifactu_estado` es el hueco.
+
+| Método y ruta | Qué hace |
+|---|---|
+| `GET /facturas?estado=&q=&desde=&hasta=` | Lista (borradores primero, luego por fecha). `estado`: `borrador`, `pendiente`, `parcial`, `cobrada`, `vencida`, `anulada` o `rectificativa`. `q` busca en número, cliente y matrícula. Devuelve `{ facturas, resumen }`; el resumen es de todas: `pendiente_cent`, `pendientes`, `vencido_cent`, `vencidas`, `vencida_mas_antigua`, `borradores` |
+| `GET /facturas/:id` | Una, con sus `cobros` |
+| `POST /facturas` | Borrador. Obligatorio `cliente_id`; normalmente `vehiculo_id`. Del coche salen, si no llegan, `precio_cent` (su PVP) y `regimen` (`REBU`, o `general` si el coche es `deducible`; el depósito, siempre REBU). Opcionales: `fecha` (hoy), `vencimiento`, `suplidos_cent`, `forma_pago`, `uso_destino`, `garantia_tipo` (`directa`, `comprada`, `sin`), `garantia_meses` (0-36), `km_entrega`, `observaciones`. 201 |
+| `PUT /facturas/:id` · `DELETE /facturas/:id` | Solo un borrador (emitida: 409). Los importes se recalculan |
+| `POST /facturas/:id/emitir` | Le da número (serie del año: `V26-00039`), congela una copia de la empresa, el cliente y el coche (`datos_*`) y pone al cliente como comprador del coche. 409 con `faltan` si falta la dirección fiscal de la empresa, el NIF o la dirección del cliente, el coche o su precio de compra (REBU). 409 si el coche ya está en otra factura sin rectificar o si la fecha es anterior a la última de la serie |
+| `POST /facturas/:id/rectificar` | `{ motivo }`. Rectificativa por el total, en la serie `R26`, con fecha de hoy e importes en negativo. La original queda `anulada` |
+| `POST /facturas/:id/cobros` | `{ importe_cent, forma_pago, fecha?, nota? }` o `{ senal: true }`, que aplica la señal de la reserva del coche (una vez). Nunca más de lo que queda (409) |
+| `DELETE /facturas/:id/cobros/:cobro` | Quita un cobro mal apuntado |
+| `GET /facturas/series` · `PUT /facturas/series/:serie` | Las series y su `codigo_siguiente`. `{ ultimo }` fija el último número dado, para seguir a Pymecar, solo mientras la serie no tenga facturas |
+| `GET /facturas/empresa` · `PUT /facturas/empresa` | Datos fiscales de la empresa (`direccion`, `codigo_postal`, `poblacion`, `provincia`, `telefono`, `email`, `registro_mercantil`, `iban`…). Razón social y NIF no se cambian una vez hay facturas emitidas (409) |
+| `GET /facturas/libros/ingresos` · `.csv` | Libro de ingresos: las emitidas del periodo (`?desde=&hasta=`, por defecto el año en curso) |
+| `GET /facturas/libros/rebu` · `.csv` | Libro de REBU: cada coche vendido en REBU, con la compra (fecha, proveedor, NIF, importe) y la venta |
+
+Importes (`importes.js`): en REBU el cliente ve un solo total, sin IVA desglosado, y para los libros el margen (precio − compra) se separa en base e IVA (margen 1.975 → 1.632,23 + 342,77, como Pymecar); con pérdida, 0. En general, el 21 % va dentro del precio. Los suplidos se suman al total, fuera de la base. Estado de cobro: `cobrada` sin saldo, `vencida` con saldo y el vencimiento pasado, `parcial` con algo cobrado, si no `pendiente`.
+
 ## Usuarios (solo gerencia)
 
 | Método y ruta | Quién | Qué hace |

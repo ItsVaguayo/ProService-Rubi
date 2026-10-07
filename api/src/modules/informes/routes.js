@@ -12,6 +12,7 @@ import { costeTotal, ivaDeLaVenta, margenNeto, regimenDe } from '../margen.js';
 import { ventasDelMes } from './ventas.js';
 
 import { MES } from '../../fechas.js';
+import { eurosCsv as euros, enviarCsv } from '../../csv.js';
 const DIA_MS = 86400000;
 const TRAMOS = [
   { nombre: 'Menos de 30 días', desde: 0, hasta: 30 },
@@ -95,12 +96,10 @@ export function rutasInformes(db) {
     });
   });
 
-  // Las ventas del mes para el gestor, en CSV que Excel abre bien en español: «;» entre columnas,
-  // coma decimal y BOM para los acentos.
+  // Las ventas del mes para el gestor, en CSV para Excel (csv.js)
   r.get('/ventas.csv', (req, res) => {
     const mes = mesPedido(req, res);
     if (!mes) return;
-    const euros = (cent) => (cent == null ? '' : (cent / 100).toFixed(2).replace('.', ','));
     const columnas = [
       ['Fecha de venta', (v) => v.fecha_venta.slice(0, 10)],
       ['Referencia', (v) => v.referencia],
@@ -117,19 +116,8 @@ export function rutasInformes(db) {
       ['Margen neto (€)', (v) => euros(v.margen_cent)],
       ['Días en stock', (v) => v.dias_en_stock],
     ];
-    const lineas = [columnas.map(([nombre]) => celda(nombre)), ...ventas(mes).map((v) => columnas.map(([, valor]) => celda(valor(v))))];
-    res.set('Content-Type', 'text/csv; charset=utf-8');
-    res.set('Content-Disposition', `attachment; filename="ventas-${mes}.csv"`);
-    res.send(`﻿${lineas.map((l) => l.join(';')).join('\r\n')}\r\n`);
+    enviarCsv(res, `ventas-${mes}.csv`, columnas, ventas(mes));
   });
 
   return r;
-}
-
-// Una celda de CSV. Entre comillas si lleva «;», comillas o saltos. Y si empieza por = + - @, con un
-// apóstrofo delante: así Excel no la ejecuta como fórmula (una marca escrita a mala idea, por ejemplo).
-function celda(valor) {
-  let t = valor == null ? '' : String(valor);
-  if (/^[=+\-@]/.test(t) && !/^-?\d+(,\d+)?$/.test(t)) t = `'${t}`;
-  return /[;"\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
 }

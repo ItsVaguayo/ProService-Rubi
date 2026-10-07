@@ -9,6 +9,7 @@ import { deflateSync, crc32 } from 'node:zlib';
 import { abrirDb } from '../src/db.js';
 import { crearUsuario } from '../src/modules/auth/sesiones.js';
 import { separarCostes, guardarCostes } from '../src/modules/vehiculos/costes.js';
+import { importesFactura } from '../src/modules/facturacion/importes.js';
 import { CONTRASENA_PRUEBAS, USUARIOS_PRUEBAS } from './usuarios-pruebas.js';
 
 const { values } = parseArgs({ options: { reset: { type: 'boolean', default: false } } });
@@ -219,6 +220,41 @@ db.transaction(() => {
   act.run('tarea', cliente('Oriol Batlle'), 'Mirar precios del 3008 en Coches.net para comparar.', `${dia(-2)} 10:00`, null, null, jaume, jaume);
   act.run('whatsapp', cliente('Laura Gil Ferrer'), 'Pedirle una reseña en Google.', `${dia(3)} 10:00`, null, null, comercial, jaume);
   act.run('nota', cliente('Enric Puig'), 'Se quedó un Tucson en otro concesionario. Motivo: precio.', null, new Date(Date.now() - 16 * 86400000).toISOString().slice(0, 19).replace('T', ' '), null, jaume, jaume);
+})();
+
+// Facturación (0013): la dirección de la tienda (la de su web; la fiscal la tiene que confirmar el cliente, H8),
+// la serie V26 siguiendo a Pymecar (iba por la 38) y una factura por cada coche vendido con comprador:
+// las entregadas, cobradas; la vendida más reciente, con la señal y el resto pendiente; una vencida a medias.
+db.transaction(() => {
+  db.prepare("UPDATE empresa SET direccion = 'Ctra. de Terrassa, 83', codigo_postal = '08191' WHERE id = 1").run();
+  const anio = new Date().getFullYear();
+  const serie = `V${String(anio).slice(2)}`;
+  db.prepare("INSERT INTO series (serie, tipo, anio, ultimo) VALUES (?, 'venta', ?, 38)").run(serie, anio);
+  const jaume = db.prepare("SELECT id FROM usuarios WHERE rol = 'gerencia' ORDER BY id LIMIT 1").get().id;
+  const empresa = JSON.stringify(db.prepare('SELECT * FROM empresa').get());
+  const vendidos = db.prepare(`SELECT v.*, (SELECT MAX(h.fecha) FROM historial_estados h WHERE h.vehiculo_id = v.id AND h.a = 'vendido') AS vendido_en
+                                 FROM vehiculos v WHERE v.comprador_id IS NOT NULL ORDER BY vendido_en, v.id`).all();
+  const sumarDias = (dia, n) => new Date(new Date(`${dia}T12:00:00Z`).getTime() + n * 86400000).toISOString().slice(0, 10);
+  vendidos.forEach((v, i) => {
+    const fecha = (v.vendido_en ?? v.creado_en).slice(0, 10);
+    const numero = db.prepare('UPDATE series SET ultimo = ultimo + 1 WHERE serie = ? RETURNING ultimo').get(serie).ultimo;
+    const compra = v.propiedad === 'deposito' ? v.pago_propietario_cent : v.precio_compra_cent;
+    const regimen = v.propiedad !== 'deposito' && v.regimen_iva === 'deducible' ? 'general' : 'REBU';
+    const imp = importesFactura({ regimen, precio_cent: v.pvp_cent, compra_cent: compra });
+    const cliente = db.prepare('SELECT * FROM clientes WHERE id = ?').get(v.comprador_id);
+    const vencimiento = i === 0 ? sumarDias(fecha, 10) : sumarDias(fecha, 30); // la más antigua, vencida
+    const id = db.prepare(`INSERT INTO facturas (estado, serie, numero, codigo, fecha, vencimiento, cliente_id, vehiculo_id, regimen, precio_cent, compra_cent,
+                             base_cent, iva_pct, iva_cent, total_cent, forma_pago, garantia_tipo, garantia_meses, datos_empresa, datos_cliente, datos_vehiculo,
+                             creado_por, emitida_por, emitida_en)
+                           VALUES ('emitida', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 21, ?, ?, 'transferencia', 'directa', 12, ?, ?, ?, ?, ?, ?)`)
+      .run(serie, numero, `${serie}-${String(numero).padStart(5, '0')}`, fecha, vencimiento, v.comprador_id, v.id, regimen, v.pvp_cent, compra,
+        imp.base_cent, imp.iva_cent, imp.total_cent, empresa, JSON.stringify(cliente),
+        JSON.stringify({ marca: v.marca, modelo: v.modelo, version: v.version, matricula: v.matricula, bastidor: v.bastidor, kilometros: v.kilometros, fecha_compra: v.creado_en.slice(0, 10), proveedor_nombre: v.proveedor_nombre }),
+        jaume, jaume, `${fecha} 12:00:00`).lastInsertRowid;
+    const cobro = db.prepare('INSERT INTO cobros (factura_id, fecha, importe_cent, forma_pago, creado_por) VALUES (?, ?, ?, ?, ?)');
+    if (v.estado === 'entregado' && i !== 0) cobro.run(id, sumarDias(fecha, 2), imp.total_cent, 'transferencia', jaume);
+    else cobro.run(id, fecha, 50000, 'contado', jaume); // la señal; el resto, pendiente
+  });
 })();
 
 const n = db.prepare('SELECT COUNT(*) n FROM vehiculos').get().n;
