@@ -9,6 +9,7 @@ import { rutasWordPress } from './modules/publicacion/rutas-wordpress.js';
 import { rutasUsuarios } from './modules/usuarios/routes.js';
 import { rutasContactos, rutasContactosPublicas } from './modules/contactos/routes.js';
 import { rutasInformes } from './modules/informes/routes.js';
+import { rutasActividades } from './modules/crm/routes.js';
 import { rutasClientes, rutasProveedores } from './modules/terceros/routes.js';
 import { cabecerasDeSeguridad, mismoOrigen } from './seguridad.js';
 
@@ -55,6 +56,7 @@ export function crearApp(db) {
   app.use('/api/informes', conSesion, requiereRol('gerencia'), rutasInformes(db));
   app.use('/api/clientes', conSesion, rutasClientes(db));
   app.use('/api/proveedores', conSesion, requiereRol('gerencia'), rutasProveedores(db));
+  app.use('/api/actividades', conSesion, rutasActividades(db));
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'No existe' }));
   app.use(manejarErrores);

@@ -111,6 +111,24 @@ Campos de los dos: `nombre` (o razón social), `nif`, `direccion`, `codigo_posta
 - El `nif` acepta DNI, NIE o CIF con su letra o dígito de control, y se guarda sin espacios ni guiones y en mayúsculas. Uno mal escrito: 400. Repetido: 409.
 - En la ficha del coche: `proveedor_id` (solo gerencia) y `comprador_id`. Un id que no existe: 400. Los `proveedor_nombre` y `proveedor_telefono` de antes siguen; la migración `0008` los pasó a la tabla de proveedores.
 
+## Actividades del CRM
+
+Llamadas, visitas, WhatsApp, correos, pruebas, tareas y notas de cada cliente, con su fecha, su responsable y su resultado. Los dos roles ven y apuntan todo: aquí no hay dinero.
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `GET /actividades` | con sesión | Filtros: `?cliente=id`, `?vehiculo=id`, `?responsable=yo` o un id, `?pendientes=1` (sin hacer), `?dia=AAAA-MM-DD` (las programadas ese día). Por fecha programada; las que no tienen fecha (notas), al final. Cada una con `cliente_nombre`, `contacto_nombre`, `responsable_nombre`, `vehiculo_referencia`, `vehiculo_marca` y `vehiculo_modelo`. Un filtro mal escrito da 400 |
+| `GET /actividades/:id` | con sesión | Una actividad, con los mismos nombres |
+| `POST /actividades` | con sesión | `{ tipo, descripcion, cliente_id?, contacto_id?, vehiculo_id?, programada_para?, responsable_id? }`. Hace falta `cliente_id` o `contacto_id` (un contacto de la web que aún no es cliente). Sin `responsable_id`, el responsable es quien la crea. `creado_por` sale siempre de la sesión: si llega en el cuerpo, 400. Un id que no existe, 400. 201 |
+| `PUT /actividades/:id` | con sesión | Solo `tipo`, `descripcion`, `programada_para` y `responsable_id`. El cliente, el contacto y el coche no se cambian: se crea otra actividad. Una ya hecha no se edita: 409 |
+| `PATCH /actividades/:id/hecha` | con sesión | `{ resultado? }` la marca hecha ahora (409 si ya lo estaba). `{ hecha: false }` la devuelve a pendiente y borra el resultado (409 si ya lo estaba) |
+
+- `tipo`: `llamada`, `visita`, `whatsapp`, `email`, `prueba`, `tarea` o `nota`.
+- `programada_para`: `AAAA-MM-DD HH:MM`, hora de Rubí, y tiene que existir (`2026-02-30` da 400). Vacía en una nota.
+- `hecha_en` va en UTC, como el resto de fechas de la base.
+- Cada alta, edición, «hecha» y vuelta a pendiente queda en `auditoria` (entidad `actividad`).
+- El estado comercial de cada cliente (las columnas del embudo) está en «Clientes y proveedores»: `estado_comercial`.
+
 ## Usuarios (solo gerencia)
 
 | Método y ruta | Quién | Qué hace |
