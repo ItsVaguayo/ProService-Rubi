@@ -15,9 +15,10 @@
   background: var(--blanco); box-shadow: 0 2px 18px rgba(0, 0, 0, .12); font-size: 10pt; line-height: 1.45; }
 
 /* Cabecera: la empresa a la izquierda, el número a la derecha */
-.factura__cabeza { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 6mm; border-bottom: 2px solid var(--tinta); }
+.factura__cabeza { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; }
 .factura__numero p { margin: 0; color: var(--tinta-2); }
-.factura__numero { text-align: right; }
+.factura__fechas { text-align: right; }
+.factura__fechas p { margin: 0; color: var(--tinta-2); }
 .factura__numero h1 { margin: 0 0 4px; font-size: 18pt; letter-spacing: -.01em; }
 .factura__numero .codigo { font-size: 13pt; font-weight: 700; font-variant-numeric: tabular-nums; }
 
@@ -33,7 +34,7 @@
 
 .factura__totales { width: 75mm; margin-left: auto; break-inside: avoid; }
 .factura__totales div { display: flex; justify-content: space-between; gap: 12px; padding: 4px 8px; font-variant-numeric: tabular-nums; }
-.factura__totales .total { margin-top: 4px; padding: 8px; background: var(--tinta); color: var(--blanco); font-size: 12pt; font-weight: 700; }
+.factura__totales .total { margin-top: 4px; padding: 8px; border-top: 2px solid var(--tinta); font-size: 12pt; font-weight: 700; } /* sin relleno: tinta justa */
 .factura__mencion { margin: 4mm 0 0; padding: 6px 8px; border: 1px solid var(--tinta); font-weight: 700; text-align: center; break-inside: avoid; }
 
 .factura__bloque { margin-top: 6mm; break-inside: avoid; }
@@ -49,7 +50,7 @@
 @media screen and (max-width: 860px) {
   .documento { width: auto; min-height: 0; margin: 12px; padding: 18px; }
   .factura__cabeza, .factura__partes { display: block; }
-  .factura__numero { margin-top: 12px; text-align: left; }
+  .factura__fechas { margin-top: 8px; text-align: left; }
   .factura__partes > div + div { margin-top: 12px; }
   .factura__totales { width: auto; }
   .factura__pie { position: static; margin-top: 8mm; }
@@ -97,21 +98,14 @@
 .documento--form .casilla { display: flex; gap: 8px; align-items: center; margin: 12px 0; font-size: .875rem; }
 .documento--form .nota { color: var(--tinta-3); font-size: .8125rem; }
 
-/* Cabecera de los documentos: franja negra con el logo (su «Pro» es blanco, como en su web) y los datos de la
-   empresa. Sale de borde a borde de la hoja en pantalla; en papel, dentro del margen. print-color-adjust para que
-   el negro se imprima y salga en el PDF. */
-.documento__cabecera { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: -15mm -15mm 7mm; padding: 9mm 15mm;
-  background: #151515; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.documento__cabecera img { display: block; height: 44px; }
-.documento__empresa { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-size: 8.5pt; line-height: 1.4; text-align: right; }
-.documento__empresa strong { font-size: 10.5pt; letter-spacing: .02em; }
-.documento__empresa span { color: #c5c9ce; }
+/* Cabecera de los documentos: el logo (versión para papel) y los datos de la empresa sobre blanco, con una
+   línea fina debajo. Sin fondos: casi no gasta tinta. */
+.documento__cabecera { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 0 0 7mm; padding: 0 0 5mm;
+  border-bottom: 1px solid #c9cdd2; }
+.documento__cabecera img { display: block; height: 46px; }
+.documento__empresa { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; color: var(--tinta-2); font-size: 8.5pt; line-height: 1.4; text-align: right; }
+.documento__empresa strong { color: var(--tinta); font-size: 10pt; }
 .documento__falta { margin: -4mm 0 6mm; color: var(--peligro); font-weight: 600; }
-.factura__cabeza { justify-content: flex-end; }
 @media screen and (max-width: 860px) {
-  .documento__cabecera { margin: -18px -18px 20px; padding: 18px; }
-  .documento__cabecera img { height: 34px; }
-}
-@media print {
-  .documento__cabecera { margin: 0 0 7mm; padding: 6mm 8mm; }
+  .documento__cabecera img { height: 36px; }
 }

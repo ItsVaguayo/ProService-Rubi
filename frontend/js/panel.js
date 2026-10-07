@@ -1719,12 +1719,13 @@ async function paginaCrm(usuario) {
   if (params.get('apuntar')) abrirForm(params.get('apuntar'));
 }
 
-// La cabecera de los documentos (factura y contratos): franja negra con el logo y los datos de la empresa.
-// El logo lleva «Pro» en blanco: va sobre negro, como en su web.
+// La cabecera de los documentos (factura y contratos): el logo y los datos de la empresa sobre blanco, con una
+// línea fina debajo. Poca tinta. El logo es la versión para papel (logo-proservice-papel.webp): el de la web
+// lleva «Pro» y «Rubí» en blanco, pensado para fondo oscuro.
 function cabeceraDocumento(e) {
   const linea = (...partes) => partes.filter((t) => t && String(t).trim()).map(esc).join(' · ');
   return `<header class="documento__cabecera">
-      <img src="../img/logo-proservice.webp" alt="Pro Service Rubí">
+      <img src="../img/logo-proservice-papel.webp" alt="Pro Service Rubí">
       ${e ? `<div class="documento__empresa">
         <strong>${esc(e.razon_social ?? e.nombre ?? '')}</strong>
         <span>CIF ${esc(e.nif ?? '')}</span>
@@ -2060,6 +2061,8 @@ async function paginaFactura() {
         <div class="factura__numero">
           <h1>${titulo}</h1>
           <p class="codigo">${f.codigo ? esc(f.codigo) : 'Sin número'}</p>
+        </div>
+        <div class="factura__fechas">
           <p>Fecha: ${esc(fechaLarga(f.fecha))}</p>
           ${f.vencimiento && !rectificativa ? `<p>Vencimiento: ${esc(fechaLarga(f.vencimiento))}</p>` : ''}
         </div>
