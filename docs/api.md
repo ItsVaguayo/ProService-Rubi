@@ -106,7 +106,7 @@ Clientes: los dos roles (el comercial los usa en el CRM). Proveedores: solo gere
 
 Campos de los dos: `nombre` (o razón social), `nif`, `direccion`, `codigo_postal`, `poblacion`, `provincia`, `pais` (`ES` por defecto), `telefono`, `email`, `notas`, `activo`.
 
-- Cliente: `tipo` `particular` (por defecto) o `empresa`, y `origen` (texto libre: web, tienda, teléfono…).
+- Cliente: `tipo` `particular` (por defecto) o `empresa`, `origen` (texto libre: web, tienda, teléfono…) y `estado_comercial` para el embudo del CRM: `nuevo` (por defecto), `interesado`, `me_lo_pienso`, `negociando`, `ganado` o `perdido`. `GET /clientes?estado_comercial=negociando` filtra por él.
 - Proveedor: `tipo` `profesional` (por defecto), `particular`, `subasta` o `comisionista`.
 - El `nif` acepta DNI, NIE o CIF con su letra o dígito de control, y se guarda sin espacios ni guiones y en mayúsculas. Uno mal escrito: 400. Repetido: 409.
 - En la ficha del coche: `proveedor_id` (solo gerencia) y `comprador_id`. Un id que no existe: 400. Los `proveedor_nombre` y `proveedor_telefono` de antes siguen; la migración `0008` los pasó a la tabla de proveedores.

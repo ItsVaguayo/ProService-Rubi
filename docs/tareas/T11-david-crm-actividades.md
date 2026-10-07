@@ -6,7 +6,7 @@
 
 ## Objetivo
 
-Que el panel pueda apuntar y consultar lo que se hace con cada cliente: llamadas, visitas, WhatsApp, correos, pruebas, tareas y notas, con su fecha, su responsable y su resultado. Con esto, la página `crm.html` de Hafsa (T07) enseña «lo de hoy» y la historia de cada cliente.
+Que el panel pueda apuntar y consultar lo que se hace con cada cliente: llamadas, visitas, WhatsApp, correos, pruebas, tareas y notas, con su fecha, su responsable y su resultado. Con esto, la página `crm.html` de Hafsa (T07) enseña «lo de hoy» y la historia de cada cliente. Las columnas del embudo salen de `GET /api/clientes?estado_comercial=`, que ya está hecho.
 
 Los avisos y el correo diario no son tuyos: los monta Victor encima de tu tabla.
 
@@ -45,12 +45,9 @@ CREATE TABLE actividades (
   creado_en       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX actividades_pendientes ON actividades (responsable_id, hecha_en, programada_para);
-
-ALTER TABLE clientes ADD COLUMN estado_comercial TEXT NOT NULL DEFAULT 'nuevo'
-  CHECK (estado_comercial IN ('nuevo','interesado','me_lo_pienso','negociando','ganado','perdido'));
 ```
 
-Pide a Victor que añada `estado_comercial` a la lista de campos de clientes (`terceros/campos.js`): ese módulo es suyo.
+El estado comercial del cliente (nuevo, interesado, me lo pienso, negociando, ganado, perdido) **ya existe**: lo hizo Victor en la migración `0009` y se cambia con `PUT /api/clientes/:id` y se filtra con `GET /api/clientes?estado_comercial=`. Tú no lo tocas.
 
 ### 2. Las rutas (`/api/actividades`, los dos roles)
 
