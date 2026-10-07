@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clientes · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
+    <div class="menu__enlaces">
+      <a href="index.html"><span class="menu__icono" aria-hidden="true"></span>Tablero</a>
+      <a href="coches.html"><span class="menu__icono" aria-hidden="true"></span>Coches</a>
+      <a href="coche-nuevo.html"><span class="menu__icono" aria-hidden="true"></span>Alta de vehículo</a>
+      <a href="contactos.html"><span class="menu__icono" aria-hidden="true"></span>Contactos <span class="contador">3</span></a>
+      <a href="clientes.html" aria-current="page"><span class="menu__icono" aria-hidden="true"></span>Clientes</a>
+      <a href="crm.html"><span class="menu__icono" aria-hidden="true"></span>CRM</a>
+      <a href="agenda.html"><span class="menu__icono" aria-hidden="true"></span>Agenda</a>
+      <!-- Proveedores: solo gerencia, como el precio de compra. -->
+      <a href="proveedores.html"><span class="menu__icono" aria-hidden="true"></span>Proveedores</a>
+      <!-- Dinero y administración. Incentivos lo ven los dos roles (el comercial, solo lo suyo); el resto,
+           solo gerencia. panel.js de momento solo le quita al comercial Informes y Usuarios. -->
+      <a class="menu__separado" href="gastos.html"><span class="menu__icono" aria-hidden="true"></span>Gastos</a>
+      <a href="facturas.html"><span class="menu__icono" aria-hidden="true"></span>Facturas</a>
+      <a href="incentivos.html"><span class="menu__icono" aria-hidden="true"></span>Incentivos</a>
+      <a href="informes.html"><span class="menu__icono" aria-hidden="true"></span>Informes</a>
+      <a href="usuarios.html"><span class="menu__icono" aria-hidden="true"></span>Usuarios</a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <!-- CABECERA en banda negra. Clientes lo ven los dos roles: el comercial los usa en el CRM. -->
+    <header class="cabecera cabecera--portada">
+      <div>
+        <p class="portada__antetitulo">Ventas</p>
+        <h1>Clientes</h1>
+        <p class="contactos-resumen"><strong class="cifra">8</strong> clientes <span>· 6 particulares y 2 empresas</span></p>
+        <p class="nota">Quién nos ha comprado o está a punto. Al pulsar uno se abre su ficha a la derecha.</p>
+      </div>
+      <div class="cabecera__acciones">
+        <a class="boton" href="#nuevo">Nuevo cliente</a>
+      </div>
+    </header>
+
+    <!-- FILTROS. El buscador va a GET /api/clientes?q=: busca en nombre, DNI/NIE/CIF, teléfono (sin
+         espacios) y correo. «Desactivados» es ?activos=0. -->
+    <form class="filtros filtros--coches" role="search">
+      <label class="buscador">
+        <span class="oculto">Buscar cliente</span>
+        <input type="search" name="q" placeholder="Nombre, teléfono o DNI" autocomplete="off">
+      </label>
+      <fieldset class="segmentos" aria-label="Tipo">
+        <label><input type="radio" name="tipo" value="" checked><span>Todos</span></label>
+        <label><input type="radio" name="tipo" value="particular"><span>Particulares</span></label>
+        <label><input type="radio" name="tipo" value="empresa"><span>Empresas</span></label>
+      </fieldset>
+      <fieldset class="segmentos" aria-label="Mostrar">
+        <label><input type="radio" name="activos" value="1" checked><span>Activos</span></label>
+        <label><input type="radio" name="activos" value="0"><span>También desactivados</span></label>
+      </fieldset>
+    </form>
+
+    <p class="lista-pie"><span class="lista-pie__cuantos">8 clientes activos</span></p>
+
+    <div class="ficha">
+
+      <!-- LISTA, por nombre. Cada tarjeta: iniciales (gris particular, negro empresa), tipo, de dónde
+           vino, DNI, teléfono, correo y población. A la derecha, cuántos coches nos ha comprado y cuándo
+           se habló con él por última vez. La abierta lleva tercero--abierto. -->
+      <div class="ficha__principal">
+        <ul class="contactos terceros">
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--particular" aria-hidden="true">AM</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Àlex Martín Roca</strong></a> <span class="estado tipo-tercero--particular">Particular</span> <span class="nota">Web</span></p>
+              <p class="contacto__datos"><span>45879213D</span><a href="tel:+34611408822">611 408 822</a><span>Sant Cugat</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">1 coche</b>Hablado hace 3 semanas</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--particular" aria-hidden="true">CV</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Carme Vila Puig</strong></a> <span class="estado tipo-tercero--particular">Particular</span> <span class="nota">Tienda</span></p>
+              <p class="contacto__datos"><span>38124567C</span><a href="tel:+34677310455">677 310 455</a><a href="mailto:carme.vila@example.com">carme.vila@example.com</a><span>Terrassa</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">1 coche</b><span class="dias dias--peligro">Factura vencida</span></p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--particular" aria-hidden="true">LG</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Laura Gil Ferrer</strong></a> <span class="estado tipo-tercero--particular">Particular</span> <span class="nota">Tienda</span></p>
+              <p class="contacto__datos"><span>12345678Z</span><a href="tel:+34633222111">633 222 111</a><a href="mailto:laura@example.com">laura@example.com</a><span>Rubí</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">2 coches</b>Hablado hace 5 días</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--particular" aria-hidden="true">ML</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Marta López Garcia</strong></a> <span class="estado tipo-tercero--particular">Particular</span> <span class="nota">Teléfono</span></p>
+              <p class="contacto__datos"><span>47652318K</span><a href="tel:+34699120034">699 120 034</a><span>Rubí</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">Reserva</b>Toyota C-HR · 500 € de señal</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--particular" aria-hidden="true">MS</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Marta Soler Bosch</strong></a> <span class="estado tipo-tercero--particular">Particular</span> <span class="nota">Web</span></p>
+              <p class="contacto__datos"><span class="nota">Sin DNI todavía</span><a href="tel:+34600111222">600 111 222</a><span>Castellbisbal</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">0 coches</b>Prueba el sábado</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--particular" aria-hidden="true">PS</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Pau Serra Vidal</strong></a> <span class="estado tipo-tercero--particular">Particular</span> <span class="nota">Web</span></p>
+              <p class="contacto__datos"><span>X1234567L</span><a href="tel:+34644888999">644 888 999</a><span>Rubí</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">1 coche</b>Hablado ayer</p>
+          </li>
+          <li class="contacto tercero tercero--abierto">
+            <span class="contacto__inicial tercero__inicial--empresa" aria-hidden="true">RV</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha" aria-current="true"><strong>Reformas Vallès SL</strong></a> <span class="estado tipo-tercero--empresa">Empresa</span> <span class="nota">Teléfono</span></p>
+              <p class="contacto__datos"><span>B12345674</span><a href="tel:+34937001122">937 001 122</a><a href="mailto:admin@example.com">admin@example.com</a><span>Rubí</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">2 coches</b>Hablado hoy</p>
+          </li>
+          <li class="contacto tercero">
+            <span class="contacto__inicial tercero__inicial--empresa" aria-hidden="true">TR</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Transports Ribas SL</strong></a> <span class="estado tipo-tercero--empresa">Empresa</span> <span class="nota">Tienda</span></p>
+              <p class="contacto__datos"><span>B66123456</span><a href="tel:+34936994410">936 994 410</a><a href="mailto:flota@example.com">flota@example.com</a><span>Martorell</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">2 coches</b><span class="dias dias--peligro">Factura vencida</span></p>
+          </li>
+          <!-- Desactivado: solo sale con «También desactivados». En la maqueta se deja a la vista para ver cómo queda. -->
+          <li class="contacto tercero tercero--apagado">
+            <span class="contacto__inicial tercero__inicial--particular" aria-hidden="true">JF</span>
+            <div class="contacto__cuerpo">
+              <p class="contacto__linea"><a class="tercero__nombre" href="#ficha"><strong>Joan Ferrer Mas</strong></a> <span class="estado tipo-tercero--apagado">Desactivado</span></p>
+              <p class="contacto__datos"><span>Y2345678Z</span><span>Se fue a vivir a Girona</span></p>
+            </div>
+            <p class="tercero__resumen"><b class="cifra">1 coche</b>Hablado en 2025</p>
+          </li>
+        </ul>
+
+        <!-- SIN RESULTADOS -->
+        <div class="vacio" hidden>
+          <strong>Ningún cliente coincide con la búsqueda</strong>
+          <p class="nota">Prueba con el teléfono sin espacios o con el DNI. Si es alguien nuevo, dalo de alta.</p>
+          <a class="boton" href="#nuevo">Nuevo cliente</a>
+        </div>
+      </div>
+
+      <!-- FICHA del cliente abierto (GET /api/clientes/:id): datos, coches que ha comprado, facturas y lo
+           último que se habló con él (las actividades del CRM de David, T11). -->
+      <aside class="ficha__lateral ficha-tercero" id="ficha" aria-label="Ficha del cliente">
+        <section class="caja">
+          <div class="ficha-tercero__cabeza">
+            <span class="contacto__inicial tercero__inicial--empresa" aria-hidden="true">RV</span>
+            <div>
+              <h2>Reformas Vallès SL</h2>
+              <p class="ficha-tercero__linea"><span class="estado tipo-tercero--empresa">Empresa</span> <span class="estado crm--negociando">Negociando</span></p>
+            </div>
+          </div>
+          <dl class="reserva-activa">
+            <div><dt>CIF</dt><dd>B12345674</dd></div>
+            <div><dt>Teléfono</dt><dd><a href="tel:+34937001122">937 001 122</a></dd></div>
+            <div><dt>Correo</dt><dd><a href="mailto:admin@example.com">admin@example.com</a></dd></div>
+            <div><dt>Dirección</dt><dd>Pol. Ind. Can Rosés, nave 4<br>08191 Rubí (Barcelona)</dd></div>
+            <div><dt>Vino por</dt><dd>Teléfono</dd></div>
+          </dl>
+          <p class="nota ficha-tercero__notas">Facturan a nombre de la empresa. Habla siempre con Montse, de administración.</p>
+          <div class="ficha-tercero__acciones">
+            <a class="boton boton--secundario boton--pequeno" href="tel:+34937001122">Llamar</a>
+            <a class="boton boton--secundario boton--pequeno" href="#nuevo">Editar datos</a>
+          </div>
+        </section>
+
+        <section class="caja">
+          <div class="caja__titulo"><h2>Coches que ha comprado</h2><span class="nota cifra">2</span></div>
+          <ul class="canales">
+            <li><span class="coche-celda"><a href="coche.html">Mercedes-Benz Vito 114 CDI</a><span class="matricula">6604 KCS</span></span><span class="cifra">22.900 €</span></li>
+            <li><span class="coche-celda"><a href="coche.html">Ford Transit Custom 2.0 TDCi</a><span class="matricula">5127 JXR</span></span><span class="cifra">18.400 €</span></li>
+          </ul>
+        </section>
+
+        <section class="caja">
+          <div class="caja__titulo"><h2>Facturas</h2><a class="enlace-pequeno" href="facturas.html">Ver todas</a></div>
+          <ul class="canales">
+            <li><span><b class="cifra">2026-0151</b> <span class="nota">6 oct</span></span><span><span class="cifra">22.900 €</span> <span class="estado cobro--parcial">Parcial</span></span></li>
+            <li><span><b class="cifra">2025-0388</b> <span class="nota">14 nov 2025</span></span><span><span class="cifra">18.400 €</span> <span class="estado cobro--cobrada">Cobrada</span></span></li>
+          </ul>
+        </section>
+
+        <section class="caja">
+          <div class="caja__titulo"><h2>Lo último que se habló</h2><a class="enlace-pequeno" href="crm.html">Ver en el CRM</a></div>
+          <ol class="historial">
+            <li><time>Hoy, 9:40 · Llamada · Jaume</time>Quieren la Vito rotulada antes del lunes. Les paso el presupuesto del rotulista.</li>
+            <li><time>6 oct · Visita · Jaume</time>Firman la compra de la Vito. Pagan 5.000 € ahora y el resto en 30 días.</li>
+            <li><time>2 oct · WhatsApp · Comercial</time>Preguntan por una segunda furgoneta para primavera.</li>
+          </ol>
+        </section>
+      </aside>
+
+    </div>
+
+    <!-- NUEVO CLIENTE. Los campos son los de POST /api/clientes (docs/api.md, «Clientes y proveedores»).
+         Solo el nombre es obligatorio. El DNI/NIE/CIF se comprueba con su letra: si está mal, 400; si ya
+         existe, 409 (ese cliente ya está dado de alta). -->
+    <section class="caja form-tercero" id="nuevo" aria-labelledby="nuevo-titulo">
+      <div class="caja__titulo">
+        <h2 id="nuevo-titulo">Nuevo cliente</h2>
+        <span class="nota"><em class="obligatorio">*</em> obligatorio</span>
+      </div>
+      <form class="rejilla">
+        <fieldset class="opciones opciones--pequenas campo--ancho">
+          <legend class="campo__nombre">Tipo</legend>
+          <label><input type="radio" name="tipo" value="particular" checked><span>Particular</span></label>
+          <label><input type="radio" name="tipo" value="empresa"><span>Empresa</span></label>
+        </fieldset>
+        <label class="campo campo--doble">
+          <span class="campo__nombre">Nombre y apellidos o razón social <em>*</em></span>
+          <input name="nombre" maxlength="150" autocomplete="off" required>
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">DNI, NIE o CIF</span>
+          <input name="nif" autocomplete="off" placeholder="12345678Z">
+          <span class="campo__ayuda">Con su letra. Hace falta para facturar.</span>
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Teléfono</span>
+          <input type="tel" name="telefono" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Correo</span>
+          <input type="email" name="email" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Cómo nos conoció</span>
+          <select name="origen">
+            <option value="">Sin decir</option>
+            <option>Web</option>
+            <option>Tienda</option>
+            <option>Teléfono</option>
+            <option>Portales</option>
+            <option>Recomendado</option>
+          </select>
+        </label>
+        <label class="campo campo--doble">
+          <span class="campo__nombre">Dirección</span>
+          <input name="direccion" maxlength="200" autocomplete="off" placeholder="Calle, número, piso">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Código postal</span>
+          <input name="codigo_postal" maxlength="10" inputmode="numeric" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Población</span>
+          <input name="poblacion" maxlength="100" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Provincia</span>
+          <input name="provincia" maxlength="100" autocomplete="off" value="Barcelona">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">País</span>
+          <select name="pais">
+            <option value="ES" selected>España</option>
+            <option value="AD">Andorra</option>
+            <option value="FR">Francia</option>
+            <option value="PT">Portugal</option>
+          </select>
+        </label>
+        <label class="campo campo--ancho">
+          <span class="campo__nombre">Notas</span>
+          <textarea name="notas" maxlength="2000" placeholder="Con quién hablar, cómo prefiere que le llamen…"></textarea>
+        </label>
+        <div class="form-tercero__pie campo--ancho">
+          <a class="boton boton--secundario" href="#">Cancelar</a>
+          <button class="boton" type="submit">Guardar cliente</button>
+        </div>
+      </form>
+    </section>
+
+  </main>
+</div>
+<script type="module" src="../js/panel.js"></script>
+</body>
+</html>
