@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Facturas · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
+    <div class="menu__enlaces">
+      <a href="index.html"><span class="menu__icono" aria-hidden="true"></span>Tablero</a>
+      <a href="coches.html"><span class="menu__icono" aria-hidden="true"></span>Coches</a>
+      <a href="coche-nuevo.html"><span class="menu__icono" aria-hidden="true"></span>Alta de vehículo</a>
+      <a href="contactos.html"><span class="menu__icono" aria-hidden="true"></span>Contactos <span class="contador">3</span></a>
+      <a href="clientes.html"><span class="menu__icono" aria-hidden="true"></span>Clientes</a>
+      <a href="crm.html"><span class="menu__icono" aria-hidden="true"></span>CRM</a>
+      <a href="agenda.html"><span class="menu__icono" aria-hidden="true"></span>Agenda</a>
+      <!-- Proveedores: solo gerencia, como el precio de compra. -->
+      <a href="proveedores.html"><span class="menu__icono" aria-hidden="true"></span>Proveedores</a>
+      <!-- Dinero y administración. Incentivos lo ven los dos roles (el comercial, solo lo suyo); el resto,
+           solo gerencia. panel.js de momento solo le quita al comercial Informes y Usuarios. -->
+      <a class="menu__separado" href="gastos.html"><span class="menu__icono" aria-hidden="true"></span>Gastos</a>
+      <a href="facturas.html" aria-current="page"><span class="menu__icono" aria-hidden="true"></span>Facturas</a>
+      <a href="incentivos.html"><span class="menu__icono" aria-hidden="true"></span>Incentivos</a>
+      <a href="informes.html"><span class="menu__icono" aria-hidden="true"></span>Informes</a>
+      <a href="usuarios.html"><span class="menu__icono" aria-hidden="true"></span>Usuarios</a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <!-- CABECERA en banda negra con las dos cifras que importan a la derecha: lo que nos deben
+         y, de eso, lo que ya ha pasado de fecha. Solo gerencia. -->
+    <header class="cabecera cabecera--portada cabecera--cifras">
+      <div>
+        <p class="portada__antetitulo">Gerencia</p>
+        <h1>Facturas</h1>
+        <p class="nota">Las de venta de coches, con lo cobrado de cada una. Las vencidas, primero a la vista: hay que llamar.</p>
+      </div>
+      <div class="portada__mes">
+        <p class="portada__mes-titulo">A día de hoy</p>
+        <dl class="portada__cifras">
+          <div><dt>Pendiente de cobro<small>5 facturas</small></dt><dd class="cifra">65.700 €</dd></div>
+          <div><dt>Vencido<small>2 facturas, la más antigua de agosto</small></dt><dd class="cifra baja">14.700 €</dd></div>
+        </dl>
+      </div>
+    </header>
+
+    <!-- FILTROS: estado (segmentado) y buscador por número, cliente o matrícula -->
+    <form class="filtros filtros--coches" role="search">
+      <label class="buscador">
+        <span class="oculto">Buscar factura</span>
+        <input type="search" name="q" placeholder="Número, cliente o matrícula" autocomplete="off">
+      </label>
+      <fieldset class="segmentos" aria-label="Estado">
+        <label><input type="radio" name="estado" value="" checked><span>Todas</span></label>
+        <label><input type="radio" name="estado" value="pendiente"><span><i class="punto cobro--pendiente"></i>Pendientes</span></label>
+        <label><input type="radio" name="estado" value="parcial"><span><i class="punto cobro--parcial"></i>Parciales</span></label>
+        <label><input type="radio" name="estado" value="cobrada"><span><i class="punto cobro--cobrada"></i>Cobradas</span></label>
+        <label><input type="radio" name="estado" value="vencida"><span><i class="punto cobro--vencida"></i>Vencidas</span></label>
+      </fieldset>
+    </form>
+
+    <p class="lista-pie"><span class="lista-pie__cuantos">8 facturas</span></p>
+
+    <!-- LISTA, la más reciente arriba. «Cobrado» lleva una barrita con la parte cobrada.
+         Una vencida lleva la raya roja a la izquierda y cuántos días lleva vencida. -->
+    <div class="tabla-caja">
+      <table class="tabla tabla--tarjetas tabla--facturas">
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Coche</th>
+            <th class="derecha">Total</th>
+            <th class="derecha">Cobrado</th>
+            <th>Estado</th>
+            <th><span class="oculto">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="t-titulo"><b class="cifra">2026-0151</b></td>
+            <td class="cifra" data-rotulo="Fecha">6 oct</td>
+            <td data-rotulo="Cliente"><a href="clientes.html">Reformas Vallès SL</a></td>
+            <td data-rotulo="Coche"><span class="coche-celda"><a href="coche.html">Mercedes-Benz Vito</a><span class="matricula">6604 KCS</span></span></td>
+            <td class="derecha cifra" data-rotulo="Total">22.900 €</td>
+            <td class="derecha cifra" data-rotulo="Cobrado"><span class="cobrado"><span>5.000 €</span><span class="cobrado__barra"><span style="width: 22%"></span></span></span></td>
+            <td data-rotulo="Estado"><span class="estado cobro--parcial">Parcial</span><span class="nota factura__vence">Vence el 5 nov</span></td>
+            <td class="derecha"><a class="boton boton--secundario boton--pequeno" href="#">Apuntar cobro</a></td>
+          </tr>
+          <tr>
+            <td class="t-titulo"><b class="cifra">2026-0150</b></td>
+            <td class="cifra" data-rotulo="Fecha">2 oct</td>
+            <td data-rotulo="Cliente"><a href="clientes.html">Laura Gil Ferrer</a></td>
+            <td data-rotulo="Coche"><span class="coche-celda"><a href="coche.html">Seat Ibiza 1.0 TSI</a><span class="matricula">8815 KTD</span></span></td>
+            <td class="derecha cifra" data-rotulo="Total">10.900 €</td>
+            <td class="derecha cifra" data-rotulo="Cobrado"><span class="cobrado"><span>10.900 €</span><span class="cobrado__barra cobrado__barra--entera"><span style="width: 100%"></span></span></span></td>
+            <td data-rotulo="Estado"><span class="estado cobro--cobrada">Cobrada</span></td>
+            <td class="derecha"><a class="boton boton--secundario boton--pequeno" href="#">Ver</a></td>
+          </tr>
+          <tr>
+            <td class="t-titulo"><b class="cifra">2026-0149</b></td>
+            <td class="cifra" data-rotulo="Fecha">29 sep</td>
+            <td data-rotulo="Cliente"><a href="clientes.html">Pau Serra Vidal</a></td>
+            <td data-rotulo="Coche"><span class="coche-celda"><a href="coche.html">Toyota C-HR 180H</a><span class="matricula">3392 LBN</span></span></td>
+            <td class="derecha cifra" data-rotulo="Total">25.400 €</td>
+            <td class="derecha cifra" data-rotulo="Cobrado"><span class="cobrado"><span>25.400 €</span><span class="cobrado__barra cobrado__barra--entera"><span style="width: 100%"></span></span></span></td>
+            <td data-rotulo="Estado"><span class="estado cobro--cobrada">Cobrada</span></td>
+            <td class="derecha"><a class="boton boton--secundario boton--pequeno" href="#">Ver</a></td>
+          </tr>
+          <tr>
+            <td class="t-titulo"><b class="cifra">2026-0148</b></td>
+            <td class="cifra" data-rotulo="Fecha">25 sep</td>
+            <td data-rotulo="Cliente"><a href="clientes.html">Transports Ribas SL</a></td>
+            <td data-rotulo="Coche"><span class="coche-celda"><a href="coche.html">Peugeot 3008 1.2</a><span class="matricula">4470 LDX</span></span></td>
+            <td class="derecha cifra" data-rotulo="Total">20.500 €</td>
+            <td class="derecha cifra" data-rotulo="Cobrado"><span class="cobrado"><span>0 €</span><span class="cobrado__barra"><span style="width: 0%"></span></span></span></td>
+            <td data-rotulo="Estado"><span class="estado cobro--pendiente">Pendiente</span><span class="nota factura__vence">Vence el 25 oct</span></td>
+            <td class="derecha"><a class="boton boton--secundario boton--pequeno" href="#">Apuntar cobro</a></td>
+          </tr>
+          <tr>
+            <td class="t-titulo"><b class="cifra">2026-0147</b></td>
+            <td class="cifra" data-rotulo="Fecha">18 sep</td>
+            <td data-rotulo="Cliente"><a href="clientes.html">Àlex Martín Roca</a></td>
+            <td data-rotulo="Coche"><span class="coche-celda"><a href="coche.html">Renault Clio 1.5 dCi</a><span class="matricula">6127 KWR</span></span></td>
+            <td class="derecha cifra" data-rotulo="Total">12.900 €</td>
+            <td class="derecha cifra" data-rotulo="Cobrado"><span class="cobrado"><span>300 €</span><span class="cobrado__barra"><span style="width: 2%"></span></span></span></td>
+            <td data-rotulo="Estado"><span class="estado cobro--parcial">Parcial</span><span class="nota factura__vence">Señal. Financia el resto</span></td>
+            <td class="derecha"><a class="boton boton--secundario boton--pequeno" href="#">Apuntar cobro</a></td>
+          </tr>
+          <tr class="fila-vencida">
+            <td class="t-titulo"><b class="cifra">2026-0146</b></td>
+            <td class="cifra" data-rotulo="Fecha">3 sep</td>
+            <td data-rotulo="Cliente"><a href="clientes.html">Carme Vila Puig</a></td>
+            <td data-rotulo="Coche"><span class="coche-celda"><a href="coche.html">Hyundai Tucson 1.6</a><span class="matricula">8823 LCW</span></span></td>
+            <td class="derecha cifra" data-rotulo="Total">23.800 €</td>
+            <td class="derecha cifra" data-rotulo="Cobrado"><span class="cobrado"><span>20.000 €</span><span class="cobrado__barra"><span style="width: 84%"></span></span></span></td>
+            <td data-rotulo="Estado"><span class="estado cobro--vencida">Vencida</span><span class="dias dias--peligro factura__vence">Hace 4 días</span></td>
+            <td class="derecha"><a class="boton boton--oscuro boton--pequeno" href="tel:+34677310455">Llamar</a></td>
+          </tr>
+          <tr>
+            <td class="t-titulo"><b class="cifra">2026-0145</b></td>
+            <td class="cifra" data-rotulo="Fecha">22 ago</td>
+            <td data-rotulo="Cliente"><a href="clientes.html">Marta López Garcia</a></td>
+            <td data-rotulo="Coche"><span class="coche-celda"><a href="coche.html">Opel Astra 1.5 D</a><span class="matricula">4410 KSB</span></span></td>
+            <td class="derecha cifra" data-rotulo="Total">14.500 €</td>
+            <td class="derecha cifra" data-rotulo="Cobrado"><span class="cobrado"><span>14.500 €</span><span class="cobrado__barra cobrado__barra--entera"><span style="width: 100%"></span></span></span></td>
+            <td data-rotulo="Estado"><span class="estado cobro--cobrada">Cobrada</span></td>
+            <td class="derecha"><a class="boton boton--secundario boton--pequeno" href="#">Ver</a></td>
+          </tr>
+          <tr class="fila-vencida">
+            <td class="t-titulo"><b class="cifra">2026-0144</b></td>
+            <td class="cifra" data-rotulo="Fecha">12 ago</td>
+            <td data-rotulo="Cliente"><a href="clientes.html">Transports Ribas SL</a></td>
+            <td data-rotulo="Coche"><span class="coche-celda"><a href="coche.html">Citroën C3 1.2 PureTech</a><span class="matricula">2931 KZR</span></span></td>
+            <td class="derecha cifra" data-rotulo="Total">10.900 €</td>
+            <td class="derecha cifra" data-rotulo="Cobrado"><span class="cobrado"><span>0 €</span><span class="cobrado__barra"><span style="width: 0%"></span></span></span></td>
+            <td data-rotulo="Estado"><span class="estado cobro--vencida">Vencida</span><span class="dias dias--peligro factura__vence">Hace 26 días</span></td>
+            <td class="derecha"><a class="boton boton--oscuro boton--pequeno" href="tel:+34936994410">Llamar</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="nota tabla-pie">El número sigue la serie del año sin huecos. Para corregir una factura emitida se hace una rectificativa, no se borra.</p>
+
+    <!-- SIN FACTURAS con este filtro -->
+    <div class="vacio" hidden>
+      <strong>Ninguna factura vencida</strong>
+      <p class="nota">Todo lo que ha pasado de fecha está cobrado.</p>
+    </div>
+
+  </main>
+</div>
+<script type="module" src="../js/panel.js"></script>
+</body>
+</html>

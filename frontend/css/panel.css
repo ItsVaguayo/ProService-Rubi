@@ -1964,3 +1964,65 @@ a.contacto__coche:hover { background: var(--fondo); }
   .fila-pendiente td:first-child { box-shadow: none; }
   .tabla--gastos tfoot td { padding: 0; border: 0; background: none; }
 }
+
+
+/* T07 · facturas.html ------------------------------------------------------ */
+
+/* Cuatro estados de cobro: el punto del filtro y la etiqueta */
+.cobro--pendiente { background: var(--aviso-fondo); color: var(--aviso); }
+.cobro--parcial { background: var(--reservado-fondo); color: var(--reservado); }
+.cobro--cobrada { background: var(--ok-fondo); color: var(--ok); }
+.cobro--vencida { background: var(--peligro-fondo); color: var(--peligro); }
+.punto.cobro--pendiente,
+.punto.cobro--parcial,
+.punto.cobro--cobrada,
+.punto.cobro--vencida { flex: none; background: currentColor; }
+.segmentos span .punto { margin-right: 7px; }
+
+/* Las dos cifras en la cabecera negra, a la derecha (como las del mes en el tablero) */
+.cabecera--cifras { align-items: center; }
+.cabecera--cifras > div:first-child { flex: 1 1 360px; }
+.cabecera--cifras .portada__mes { min-width: 380px; }
+/* El número no se parte por el guion; el cliente, como el coche, sin subrayar */
+.tabla--facturas .t-titulo { white-space: nowrap; }
+.tabla--facturas td > a { font-weight: 500; text-decoration: none; }
+.tabla--facturas td > a:hover { text-decoration: underline; }
+
+/* Cobrado: la cifra y una barrita con la parte cobrada */
+.cobrado { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.cobrado__barra { width: 84px; height: 5px; border-radius: var(--radio-boton); background: var(--linea); overflow: hidden; }
+.cobrado__barra span { display: block; height: 100%; background: var(--reservado); }
+.cobrado__barra--entera span { background: var(--ok); }
+.factura__vence { display: block; margin-top: 4px; font-size: .75rem; white-space: nowrap; }
+.factura__vence.dias { display: inline-block; }
+.tabla--facturas td:has(.factura__vence.dias) .estado { margin-right: 6px; }
+/* Vencida: raya roja a la izquierda */
+.fila-vencida td:first-child { box-shadow: inset 3px 0 0 var(--peligro); }
+/* El texto oculto de una cabecera (.oculto es absolute) se queda dentro de su celda: si no, escapa del
+   recorte de .tabla-caja y la página entera se desplaza de lado */
+.tabla--tarjetas th:has(.oculto) { position: relative; }
+/* Portátil pequeño y tablet: sin la columna de la fecha y con menos aire, para que quepa sin moverse de lado */
+@media (min-width: 761px) and (max-width: 1250px) {
+  .tabla--facturas th:nth-child(2),
+  .tabla--facturas td:nth-child(2) { display: none; }
+  .tabla--facturas th,
+  .tabla--facturas td { padding-left: 10px; padding-right: 10px; }
+  .tabla--facturas .factura__vence { white-space: normal; }
+  .tabla--facturas .cobrado__barra { width: 60px; }
+  .tabla--facturas .boton--pequeno { padding: 0 10px; }
+}
+
+@media (max-width: 1150px) {
+  .cabecera--cifras .portada__mes { min-width: 0; width: 100%; max-width: 520px; }
+}
+@media (max-width: 760px) {
+  .cobrado { flex-direction: row; align-items: center; gap: 10px; }
+  .cobrado__barra { width: 60px; }
+  .tabla--facturas td[data-rotulo="Estado"] { flex-wrap: wrap; }
+  .tabla--facturas td[data-rotulo="Estado"]::before { margin-right: auto; }
+  .factura__vence { display: inline; margin: 0 0 0 6px; }
+  .tabla--facturas td:last-child { justify-content: stretch; margin-top: 4px; }
+  .tabla--facturas td:last-child .boton { flex: 1; }
+  .fila-vencida { box-shadow: inset 3px 0 0 var(--peligro); }
+  .fila-vencida td:first-child { box-shadow: none; }
+}
