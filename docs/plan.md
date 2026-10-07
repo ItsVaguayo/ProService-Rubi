@@ -19,7 +19,7 @@ Lo que piden:
 
 Lo que NO quieren: rellenar la ficha por matrícula, puntuar proveedores ni cobrar la señal online. La web es solo en España.
 
-Fuera de la primera versión (Parte B del briefing): CRM con reparto de clientes por turno, calendario de pruebas, firma digital de la entrega, postventa y facturación. Solo recogemos los contactos que entran por la web.
+Fuera de la primera versión (Parte B del briefing): reparto de clientes por turno, firma digital de la entrega y postventa. El CRM, la cita previa de pruebas y la facturación entran con la [ampliación del 7-oct](#ampliación-del-7-oct).
 
 ## Fechas que mandan
 
@@ -200,6 +200,27 @@ Te toca todo lo que ve el cliente final y los portales. Tu bloque es el que quit
 - Antes de la primera sincronización: vincular las 30 fichas que ya existen con sus coches, para conservar sus URLs.
 - Jueves 29, con la migración hecha: primera sincronización y enlazar el listado en el menú. Los coches retirados redirigen solos con 301.
 - Comprobar que un coche dado de alta en el panel sale en la web en menos de cinco minutos (`WP_SINCRONIZAR_MINUTOS`).
+
+## Ampliación del 7-oct
+
+Diego añade diez bloques que convierten la plataforma en el sistema que sustituye a Pymecar entero. «Eliminar gestión de taller», que venía en la misma lista, no se hace: era de una versión anterior. Sin fechas por ahora: se va lo más rápido posible, en este orden.
+
+| # | Bloque | Victor (API, lógica y web) | Hafsa | David |
+|---|---|---|---|---|
+| 1 | Clientes y proveedores | Tablas, API, pasar un contacto a cliente | T07: `clientes.html`, `proveedores.html` | — |
+| 2 | Gastos y margen con REBU o IVA | Tabla `gastos` (coche, personal, proveedor, comisión, otros), margen neto, informes | T07: `gastos.html` | T10: casos del margen a mano |
+| 3 | Facturación, cobros e impagos | Series sin huecos, emisión, rectificativas, cobros, vencidas, anticipo de la señal | T07: `facturas.html` | T09: `factura.html` imprimible |
+| 4 | Verifactu | Adaptador a un proveedor de API Verifactu, cola y QR | — | T10: comparativa de proveedores |
+| 5 | Contratos | Reserva, compraventa, compra, compra a particular y depósito, con los datos congelados al generarlos | — | T09: plantillas imprimibles |
+| 6 | Incentivos comerciales | Reglas por comercial, cálculo mensual sobre el margen neto, liquidación como gasto | T07: `incentivos.html` | — |
+| 7 | Fondo con IA y vídeo | Cola de trabajos, quitar fondo, componer sobre el fondo de la marca, vídeo con ffmpeg | T08: prueba de herramientas y estados de las fotos | — |
+| 8 | Web, portales y redes | Vídeo en la web, feed XML para un partner de portales, publicar y retirar en Instagram y Facebook | — | T10: Meta y partners |
+| 9 | CRM y avisos | Actividades (llamadas, visitas, tareas), estado comercial, avisos del día y correo diario | T07: `crm.html` | — |
+| 10 | Cita previa de pruebas | Huecos y citas públicos para la web, sin solapes, agenda | T07: `agenda.html` | — |
+
+Reglas: un bloque es migración + módulo + tests + `docs/api.md` + página del panel + datos de prueba. Cada servicio de fuera (Verifactu, fondo con IA, Meta, portales) tiene un modo simulado para probar sin credenciales. Lo económico sigue siendo solo de gerencia, salvo que cada comercial ve sus incentivos.
+
+Lo que decide Diego está en el bloque H de [dudas.md](dudas.md#h-ampliación-del-7-oct).
 
 ## Si vamos tarde, se cae en este orden
 

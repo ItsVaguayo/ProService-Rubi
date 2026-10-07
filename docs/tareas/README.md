@@ -13,6 +13,10 @@ Las piezas difíciles (login, seguridad, servidor, migración) las monta Claude.
 | [T03 · Ronda de mejoras del frontend](T03-ronda-mejoras-frontend.md) | Los tres, cada uno en su rama | Martes 6-oct, 14:00 |
 | [T04 · Investigar los portales](T04-david-portales.md) | David | Martes 6-oct |
 | [T06 · Lista de extras](T06-hafsa-extras.md) | Hafsa | Viernes 9-oct |
+| [T07 · Maquetas del panel de gestión](T07-hafsa-maquetas-gestion.md) | Hafsa | Al acabar T06 |
+| [T08 · Fondo con IA y estados de las fotos](T08-hafsa-fondo-ia.md) | Hafsa | Al acabar T07 |
+| [T09 · Factura y contratos imprimibles](T09-david-factura-contratos.md) | David | Cuanto antes |
+| [T10 · Verifactu, Meta, partners y casos del REBU](T10-david-investigacion.md) | David | En paralelo a T09 |
 
 Cuando acabéis una, se marca aquí con ✅ y Victor os da la siguiente.
 

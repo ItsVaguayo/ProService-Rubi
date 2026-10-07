@@ -117,14 +117,35 @@ Cuando una duda se cierre, se marca con ✅, se anota la respuesta y la fecha, y
 
 ---
 
+## H. Ampliación del 7-oct
+
+Sale de la lista nueva de Diego. Las H1 a H6 son internas (Diego); las H7 en adelante, para el cliente.
+
+| # | Duda | Por qué importa | Mientras tanto | Quién |
+|---|---|---|---|---|
+| H1 | ¿Con qué proveedor de API Verifactu facturamos y quién lo paga? (comparativa en T10) | Montar un programa de facturación propio que cumpla Verifactu obliga a firmar como fabricante la declaración responsable. Con un proveedor, esa parte es suya. | Modo simulado: las facturas salen con QR de prueba y no se mandan a Hacienda. | Diego |
+| H2 | ¿Esta ampliación se cobra aparte de lo pactado? | Son diez bloques nuevos, varios con coste mensual (Verifactu, fondo con IA, redes). | Se construye igual; el precio no lo tocamos. | Diego |
+| H3 | Los textos de los contratos los redacta Claude como base. ¿Qué abogado los revisa? | Un contrato de compraventa mal hecho es responsabilidad nuestra ante el cliente. | Salen con la banda «Borrador pendiente de revisión por abogado». | Diego |
+| H4 | Herramienta del fondo con IA: rembg (gratis, en nuestro servidor) o Photoroom (de pago por foto). Prueba en T08. | Unas 240 fotos al mes. | rembg. | Diego |
+| H5 | App de Meta para publicar en sus redes: ¿a nombre de quién? (T10) | La app y el permiso los da Meta tras revisarla. | Publicación en redes en modo simulado. | Diego |
+| H6 | Partner para cargar los portales con nuestro feed (T10). | Sin partner, el feed no llega a ningún portal. | Seguimos con el anuncio listo para pegar. | Diego |
+| H7 | ¿Qué gestoría lleva sus cuentas? Necesitamos que nos confirme cómo calculan el IVA en REBU, en IVA general y en los coches en depósito. | Cambia el margen de cada coche y lo que se factura. | Las fórmulas de T10 (parte 4). | Jaume |
+| H8 | Datos fiscales de la empresa para las facturas: razón social, CIF, dirección, y si ya tienen series de facturas y por qué número van. | Las facturas nuevas tienen que seguir la numeración de Pymecar sin saltos. | Serie nueva con el año: `V2026-0001`. | Jaume |
+| H9 | ¿Cómo cobran los comerciales sus incentivos? ¿Porcentaje del margen, fijo por coche, tramos? | Sin la regla no hay cálculo. | Sin incentivo hasta que gerencia ponga la regla de cada uno. | Jaume |
+| H10 | «Comisionado» en los gastos: ¿es alguien de fuera que os trae coches o clientes? ¿Cómo se le paga? | Es una categoría de gasto y puede ser un proveedor. | Gasto de categoría comisión, unido a un proveedor de tipo comisionista. | Jaume |
+| H11 | Contratos: ¿cuáles usáis hoy? ¿Nos pasáis los que tengáis, en blanco? | Mejor partir de los suyos que de cero. | Los cinco de T09 con texto nuestro. | Jaume |
+| H12 | Pruebas de conducción: horario, cuánto dura una prueba y qué pedís al cliente (carnet, DNI). | La web solo ofrece huecos libres dentro del horario. | Lunes a viernes de 10:00 a 13:30 y de 16:30 a 19:30, sábado de 10:00 a 13:30; 30 minutos; carnet. | Jaume |
+| H13 | Correo desde el que salen los avisos (servidor SMTP o una cuenta de Google). | Sin él, los avisos solo se ven en el panel. | Solo en el panel. | Francesc |
+| H14 | El fondo del photocall y el logo en buena calidad (es la D2). Ahora también se usan para el vídeo. | Sin fondo no hay fotos ni vídeo con la marca. | Fondo gris liso. | Jaume |
+
+---
+
 ## Fuera de la primera versión
 
 Lo que el cliente pidió o mencionó y va a noviembre en adelante. Se les dice en el mismo mensaje para que no lo esperen el 29:
 
-- CRM de clientes con reparto por orden de venta y seguimiento del «me lo pienso» (8.4, 8.5).
-- Calendario de pruebas de conducción (8.6).
+- Reparto de clientes por orden de venta (8.4). El seguimiento del «me lo pienso» entra en el CRM de la ampliación.
 - Firma digital de la entrega (9.9).
 - Postventa, garantías e incidencias (9.7, 9.10).
-- Facturación (9.2, 9.3).
 - Seguros (9.6).
 - Gestión de proveedores y ofertas por WhatsApp (7.3 a 7.8).
