@@ -16,7 +16,6 @@
 
 /* Cabecera: la empresa a la izquierda, el número a la derecha */
 .factura__cabeza { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 6mm; border-bottom: 2px solid var(--tinta); }
-.factura__empresa img { height: 40px; margin-bottom: 6px; }
 .factura__empresa strong { display: block; font-size: 12pt; }
 .factura__empresa p, .factura__numero p { margin: 0; color: var(--tinta-2); }
 .factura__numero { text-align: right; }
@@ -71,7 +70,7 @@
 
 /* --- Contratos (contrato.html) --- */
 .contrato h1 { margin: 0; font-size: 15pt; text-align: center; text-transform: uppercase; letter-spacing: .02em; }
-.contrato__codigo { margin: 2px 0 0; color: var(--tinta-3); text-align: center; font-variant-numeric: tabular-nums; }
+.contrato .contrato__codigo { margin: 2px 0 0; color: var(--tinta-3); text-align: center; font-variant-numeric: tabular-nums; }
 .contrato__aviso { margin: 0 0 6mm; padding: 6px 10px; border: 1px solid #e3b341; background: #fff6d6; color: #7a5a00; font-size: 8.5pt; font-weight: 700; text-align: center; }
 .contrato__lugar { margin: 5mm 0 2mm; }
 .contrato__nota { margin: 0 0 4mm !important; color: var(--tinta-2); font-size: 8.5pt; font-style: italic; }
@@ -98,3 +97,10 @@
 .documento--form textarea { min-height: 80px; }
 .documento--form .casilla { display: flex; gap: 8px; align-items: center; margin: 12px 0; font-size: .875rem; }
 .documento--form .nota { color: var(--tinta-3); font-size: .8125rem; }
+
+/* El logo: la palabra «Pro» es blanca (está pensado para fondo oscuro, como su web), así que va sobre una
+   pastilla negra. print-color-adjust para que el fondo salga también en papel y en el PDF. */
+.documento__logo { display: inline-block; margin-bottom: 8px; padding: 8px 12px; border-radius: 6px; background: #151515;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.documento__logo img { display: block; height: 34px; }
+.contrato__marca { display: flex; justify-content: center; margin-bottom: 4mm; }

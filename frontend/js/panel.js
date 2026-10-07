@@ -2041,6 +2041,7 @@ async function paginaFactura() {
     hoja.innerHTML = `
       <header class="factura__cabeza">
         <div class="factura__empresa">
+          <span class="documento__logo"><img src="../img/logo-proservice.webp" alt="Pro Service Rubí"></span>
           <strong>${esc(empresa.razon_social)}</strong>
           <p>CIF ${esc(empresa.nif)}</p>
           <p>${direccion(empresa) || '<span style="color:var(--peligro)">Falta la dirección fiscal</span>'}</p>
@@ -2181,6 +2182,7 @@ async function paginaContrato(usuario) {
     hoja.hidden = false;
     hoja.innerHTML = `
       ${k.pendiente_abogado ? '<p class="contrato__aviso">Borrador pendiente de revisión por abogado</p>' : ''}
+      <div class="contrato__marca"><span class="documento__logo"><img src="../img/logo-proservice.webp" alt="Pro Service Rubí"></span></div>
       <h1>${esc(k.titulo)}</h1>
       <p class="contrato__codigo">${esc(c.codigo)}</p>
       <p class="contrato__lugar"><b>Lugar y fecha de celebración:</b> ${esc(k.lugar_fecha)}</p>
