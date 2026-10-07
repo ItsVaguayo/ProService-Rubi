@@ -2066,3 +2066,62 @@ a.contacto__coche:hover { background: var(--fondo); }
   .incentivo__dato:first-of-type { display: none; }
   .incentivo__accion .boton { flex: 1; }
 }
+
+
+/* T07 · crm.html ----------------------------------------------------------- */
+
+/* Hoy: una fila por actividad (hora, tipo, con quién y qué, botón) */
+.hoy { margin-bottom: 28px; padding: 0; overflow: hidden; }
+.hoy .caja__titulo { margin: 0; padding: 16px 20px 12px; }
+.hoy .caja__titulo h2 { font-size: 1rem; }
+.hoy__lista { margin: 0; padding: 0; list-style: none; }
+.actividad { display: grid; grid-template-columns: 52px 88px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 12px 20px; border-top: 1px solid var(--linea); }
+.actividad__hora { font-weight: 700; }
+.actividad .estado { justify-self: start; }
+.actividad__texto { margin: 0; color: var(--tinta-2); font-size: .875rem; }
+.actividad__texto a { margin-right: 8px; color: var(--tinta); text-decoration: none; }
+.actividad__texto a:hover { text-decoration: underline; }
+.actividad__texto .dias { margin-left: 4px; font-size: .75rem; }
+.actividad__hecha { color: var(--ok); font-size: .8125rem; font-weight: 600; white-space: nowrap; }
+.actividad--llamada { background: var(--reservado-fondo); color: var(--reservado); }
+.actividad--visita { background: var(--venta-fondo); color: var(--venta); }
+.actividad--tarea { background: var(--llegada-fondo); color: var(--llegada); }
+/* Ya pasó la hora y no está hecha: en rojo. Hecha: tachada y apagada. */
+.actividad--tarde { background: #fffafa; }
+.actividad--tarde .actividad__hora { color: var(--peligro); }
+.actividad--hecha .actividad__hora,
+.actividad--hecha .actividad__texto,
+.actividad--hecha .actividad__texto a { color: var(--tinta-3); }
+.actividad--hecha .actividad__texto { text-decoration: line-through; }
+.actividad--hecha .estado { filter: grayscale(1); opacity: .6; }
+
+/* Selector «Lo mío / De todos» sobre la banda negra */
+.segmentos--oscuro { background: var(--negro-3); }
+.segmentos--oscuro span { color: #b9bec4; }
+.segmentos--oscuro label:hover span { color: var(--blanco); }
+
+/* Embudo: las columnas del tablero, sin arrastrar el fondo. Las seis en fila desde unos 1.300 px de
+   ancho; por debajo, dos filas de tres (sin columnas escondidas por un lado); en el móvil, una debajo de otra. */
+.tablero--crm { grid-auto-columns: minmax(160px, 1fr); gap: 10px; min-height: 0; cursor: auto; }
+@media (min-width: 801px) and (max-width: 1300px) {
+  .tablero--crm { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+}
+.tablero--crm .ficha-mini .nota { font-size: .8125rem; line-height: 1.35; }
+.columna--nuevo { --color-fase: var(--llegada); }
+.columna--interesado { --color-fase: var(--reservado); }
+.columna--pienso { --color-fase: #e0a23a; }
+.columna--negociando { --color-fase: var(--negro); }
+.columna--ganado { --color-fase: var(--venta); }
+.columna--perdido { --color-fase: var(--peligro); }
+.ficha-mini--perdido { opacity: .7; }
+
+/* La etiqueta de embudo en la ficha del cliente (clientes.html) */
+.crm--negociando { background: var(--negro); color: var(--blanco); }
+
+@media (max-width: 760px) {
+  .actividad { grid-template-columns: 52px minmax(0, 1fr); gap: 6px 12px; padding: 12px 16px; }
+  .actividad .estado { grid-column: 2; grid-row: 1; }
+  .actividad__texto { grid-column: 2; }
+  .actividad .boton,
+  .actividad__hecha { grid-column: 2; justify-self: start; }
+}
