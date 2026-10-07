@@ -37,10 +37,11 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - ✅ Cobros, estado calculado y resumen de pendiente y vencido.
 - ✅ La señal de la reserva se aplica como cobro (Pymecar no factura las reservas aparte).
 - ✅ Libro de ingresos y libro de REBU, en pantalla y CSV.
-- [ ] Panel: `facturas.html` conectada, alta de factura, datos de la empresa y numeración, y la factura imprimible.
+- ✅ Panel (7-oct): `facturas.html` conectada (resumen, filtros, emitir, apuntar cobro y señal), «Nueva factura» (también desde la ficha del coche: «Facturar la venta»), datos de la empresa y numeración, y `factura.html` imprimible en A4 con `documentos.css`.
+- [ ] Pantalla de los libros (hoy solo por la API y en CSV).
 
 ## 5. T09 · Factura y contratos imprimibles
-- [ ] `frontend/panel/documentos/factura.html` (REBU e IVA general, hueco del QR) y `frontend/css/documentos.css`.
+- ✅ La factura imprimible ya está: `frontend/panel/factura.html` y `frontend/css/documentos.css` (7-oct). Sin QR hasta Verifactu (2028).
 - [ ] Los cinco contratos con la banda «pendiente de revisión por abogado».
 - [ ] Textos base de los contratos en `docs/contratos/`, para el abogado (duda H3).
 

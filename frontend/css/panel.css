@@ -1978,6 +1978,22 @@ a.contacto__coche:hover { background: var(--fondo); }
 .cobro--parcial { background: var(--reservado-fondo); color: var(--reservado); }
 .cobro--cobrada { background: var(--ok-fondo); color: var(--ok); }
 .cobro--vencida { background: var(--peligro-fondo); color: var(--peligro); }
+.cobro--borrador { background: var(--fondo); color: var(--tinta-2); box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+.cobro--anulada, .cobro--rectificativa { background: var(--fondo); color: var(--tinta-3); }
+
+/* Facturas conectadas (panel.js): apuntar un cobro en la fila, el alta y los ajustes */
+.acciones-factura { white-space: nowrap; }
+.acciones-factura .boton + .boton, .acciones-factura .boton + a { margin-left: 4px; }
+.fila-cobro td { background: var(--fondo); }
+.cobro-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 4px 0; }
+.cobro-form .campo { min-width: 150px; }
+.cobro-form__botones { display: flex; flex-wrap: wrap; gap: 8px; }
+.cabecera__acciones-factura { margin: 14px 0 0; }
+.ajustes-factura { margin-top: var(--espacio-l); }
+.facturar-coche { margin: 12px 0 0; }
+.ajustes-factura summary { cursor: pointer; padding: 4px 0; }
+.ajustes-factura form { margin-top: var(--espacio-m); }
+.ajustes-factura form + form { padding-top: var(--espacio-m); border-top: 1px solid var(--linea); }
 .punto.cobro--pendiente,
 .punto.cobro--parcial,
 .punto.cobro--cobrada,

@@ -809,6 +809,10 @@ async function paginaFicha(usuario) {
     if (!detalle) margen.append(detalle = Object.assign(document.createElement('small'), { className: 'margen__detalle nota' }));
     detalle.textContent = v.margen_cent == null ? 'Hace falta el precio de compra (o lo pactado con el dueño) y el de venta.'
       : `${euros(v.margen_bruto_cent)} antes de IVA − ${euros(v.iva_venta_cent)} de IVA ${deposito || (v.regimen_iva ?? 'REBU') === 'REBU' ? 'en REBU' : 'general'}`;
+    // Facturar la venta (abre el alta de facturas con este coche elegido)
+    if (['reservado', 'vendido', 'entregado'].includes(v.estado) && !$('[data-facturar]', margen.parentElement)) {
+      margen.insertAdjacentHTML('afterend', `<p class="facturar-coche"><a class="boton boton--pequeno" data-facturar href="facturas.html?coche=${v.id}">Facturar la venta</a></p>`);
+    }
   }
 
   pintarReserva(v, reserva);
@@ -1706,6 +1710,389 @@ async function paginaCrm(usuario) {
   if (params.get('apuntar')) abrirForm(params.get('apuntar'));
 }
 
+// --- Facturas (solo gerencia) -----------------------------------------------------------------
+
+const ESTADOS_COBRO = { borrador: 'Borrador', pendiente: 'Pendiente', parcial: 'Parcial', cobrada: 'Cobrada', vencida: 'Vencida', anulada: 'Anulada', rectificativa: 'Rectificativa' };
+const FORMAS_PAGO = { transferencia: 'Transferencia', contado: 'Contado', tarjeta: 'Tarjeta', a_la_vista: 'A la vista', pago_30: 'Pago a 30 días', pago_30_60: 'Pago a 30 y 60 días' };
+const FORMAS_COBRO = { ...FORMAS_PAGO, financiera: 'Financiera', senal: 'Señal de la reserva' };
+// Céntimos con dos decimales: en una factura no se redondea al euro
+const euros2 = (cent) => (cent == null ? '—' : `${(cent / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' })} €`);
+const aCent = (texto) => {
+  const n = Number(String(texto).trim().replace(/\./g, '').replace(',', '.'));
+  return Number.isFinite(n) ? Math.round(n * 100) : NaN;
+};
+const fechaLarga = (dia) => (dia ? new Date(`${dia}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '—');
+
+async function paginaFacturas() {
+  const filtros = $('form.filtros');
+  const tbody = $('.tabla--facturas tbody');
+  const vacio = $('.contenido > .vacio');
+  const cajaError = cajaErrorEn(filtros);
+  let facturas = [];
+
+  // Borradores en el filtro (la maqueta no los traía)
+  const segmentos = $('fieldset.segmentos', filtros);
+  if (!$('input[value="borrador"]', segmentos)) {
+    $('label:nth-child(1)', segmentos).insertAdjacentHTML('afterend', '<label><input type="radio" name="estado" value="borrador"><span>Borradores</span></label>');
+  }
+
+  const fila = (f) => {
+    const coche = f.vehiculo_id
+      ? `<span class="coche-celda"><a href="coche.html?id=${f.vehiculo_id}">${esc([f.marca, f.modelo].filter(Boolean).join(' '))}</a><span class="matricula">${matricula(f.matricula)}</span></span>`
+      : '—';
+    const parte = f.total_cent > 0 ? Math.min(100, Math.round((f.cobrado_cent / f.total_cent) * 100)) : 0;
+    const cobrado = f.tipo === 'venta' && f.estado === 'emitida'
+      ? `<span class="cobrado"><span>${euros(f.cobrado_cent)}</span><span class="cobrado__barra${parte === 100 ? ' cobrado__barra--entera' : ''}"><span style="width: ${parte}%"></span></span></span>`
+      : '—';
+    const vence = f.estado_cobro === 'vencida'
+      ? `<span class="dias dias--peligro factura__vence">${esc(mayuscula(haceCuanto(new Date(`${f.vencimiento}T23:59:59`))))}</span>`
+      : ['pendiente', 'parcial'].includes(f.estado_cobro) && f.vencimiento ? `<span class="nota factura__vence">Vence el ${esc(new Date(`${f.vencimiento}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</span>`
+        : f.rectificada_por ? `<span class="nota factura__vence">Rectificada por la ${esc(f.rectificada_por)}</span>` : '';
+    const ver = `<a class="boton boton--secundario boton--pequeno" href="factura.html?id=${f.id}">${f.estado === 'borrador' ? 'Revisar' : 'Ver'}</a>`;
+    const acciones = f.estado === 'borrador'
+      ? `${ver} <button class="boton boton--pequeno" type="button" data-emitir="${f.id}">Emitir</button>`
+      : ['pendiente', 'parcial', 'vencida'].includes(f.estado_cobro)
+        ? `${f.estado_cobro === 'vencida' && f.cliente_telefono ? `<a class="boton boton--oscuro boton--pequeno" href="tel:${esc(f.cliente_telefono.replace(/[^\d+]/g, ''))}">Llamar</a> ` : ''}<button class="boton boton--secundario boton--pequeno" type="button" data-cobrar="${f.id}">Apuntar cobro</button> ${ver}`
+        : ver;
+    return `<tr class="${f.estado_cobro === 'vencida' ? 'fila-vencida' : ''}" data-id="${f.id}">
+        <td class="t-titulo"><b class="cifra">${f.codigo ? esc(f.codigo) : '<span class="nota">Sin número</span>'}</b></td>
+        <td class="cifra" data-rotulo="Fecha">${esc(new Date(`${f.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</td>
+        <td data-rotulo="Cliente"><a href="clientes.html?id=${f.cliente_id}">${esc(f.cliente_nombre)}</a></td>
+        <td data-rotulo="Coche">${coche}</td>
+        <td class="derecha cifra" data-rotulo="Total">${euros(f.total_cent)}</td>
+        <td class="derecha cifra" data-rotulo="Cobrado">${cobrado}</td>
+        <td data-rotulo="Estado"><span class="estado cobro--${esc(f.estado_cobro)}">${esc(ESTADOS_COBRO[f.estado_cobro] ?? f.estado_cobro)}</span>${vence}</td>
+        <td class="derecha acciones-factura">${acciones}</td>
+      </tr>`;
+  };
+
+  let peticion = 0;
+  const pintar = async () => {
+    const { q = '', estado = '' } = Object.fromEntries(new FormData(filtros));
+    const esta = ++peticion;
+    const { facturas: lista, resumen } = await api(`/facturas?${new URLSearchParams({ ...(q.trim() ? { q: q.trim() } : {}), ...(estado ? { estado } : {}) })}`);
+    if (esta !== peticion) return;
+    facturas = lista;
+    tbody.innerHTML = lista.map(fila).join('');
+    $('.tabla-caja').hidden = !lista.length;
+    vacio.hidden = !!lista.length;
+    $('strong', vacio).textContent = estado === 'vencida' ? 'Ninguna factura vencida' : 'Ninguna factura con estos filtros';
+    $('p', vacio).textContent = estado === 'vencida' ? 'Todo lo que ha pasado de fecha está cobrado.' : 'Prueba con otro estado o búsqueda.';
+    $('.lista-pie__cuantos').textContent = `${lista.length} ${lista.length === 1 ? 'factura' : 'facturas'}${resumen.borradores ? ` · ${resumen.borradores} sin emitir` : ''}`;
+    const [pendiente, vencido] = document.querySelectorAll('.portada__cifras > div');
+    pendiente.innerHTML = `<dt>Pendiente de cobro<small>${resumen.pendientes} ${resumen.pendientes === 1 ? 'factura' : 'facturas'}</small></dt><dd class="cifra">${euros(resumen.pendiente_cent)}</dd>`;
+    vencido.innerHTML = `<dt>Vencido<small>${resumen.vencidas ? `${resumen.vencidas} ${resumen.vencidas === 1 ? 'factura' : 'facturas'}, desde el ${esc(new Date(`${resumen.vencida_mas_antigua}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }))}` : 'Nada vencido'}</small></dt><dd class="cifra${resumen.vencidas ? ' baja' : ''}">${euros(resumen.vencido_cent)}</dd>`;
+  };
+
+  // Apuntar un cobro: una fila debajo de la factura con el importe (lo que queda), la forma y la fecha
+  const abrirCobro = (id) => {
+    tbody.querySelector('.fila-cobro')?.remove();
+    const f = facturas.find((x) => x.id === id);
+    const tr = tbody.querySelector(`tr[data-id="${id}"]`);
+    tr.insertAdjacentHTML('afterend', `<tr class="fila-cobro"><td colspan="8">
+        <form class="cobro-form">
+          <label class="campo"><span class="campo__nombre">Importe</span><span class="con-unidad" data-unidad="€"><input name="importe" inputmode="decimal" value="${(f.saldo_cent / 100).toFixed(2).replace('.', ',')}" required></span></label>
+          <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === (f.forma_pago ?? 'transferencia') ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+          <label class="campo"><span class="campo__nombre">Fecha</span><input type="date" name="fecha" value="${diaLocal()}" required></label>
+          <div class="cobro-form__botones">
+            <button class="boton boton--pequeno" type="submit">Apuntar ${euros2(f.saldo_cent)}</button>
+            <button class="boton boton--secundario boton--pequeno" type="button" data-senal>Aplicar la señal de la reserva</button>
+            <button class="boton boton--secundario boton--pequeno" type="button" data-cerrar>Cancelar</button>
+          </div>
+        </form></td></tr>`);
+    const form = $('.fila-cobro form', tbody);
+    const enviar = $('button[type="submit"]', form);
+    form.elements.importe.addEventListener('input', () => {
+      const c = aCent(form.elements.importe.value);
+      enviar.textContent = Number.isNaN(c) ? 'Apuntar' : `Apuntar ${euros2(c)}`;
+    });
+    const guardar = async (cuerpo) => {
+      try {
+        await api(`/facturas/${id}/cobros`, { method: 'POST', body: cuerpo });
+        cajaError.hidden = true;
+        await pintar();
+      } catch (e) {
+        mostrarErrores(cajaError, e, 'No se ha podido apuntar el cobro:');
+      }
+    };
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const importe = aCent(form.elements.importe.value);
+      if (!(importe > 0)) return mostrarErrores(cajaError, { lista: ['El importe tiene que ser un número mayor que 0, por ejemplo 1.500,00'] }, 'No se ha podido apuntar el cobro:');
+      guardar({ importe_cent: importe, forma_pago: form.elements.forma_pago.value, fecha: form.elements.fecha.value });
+    });
+    $('[data-senal]', form).addEventListener('click', () => guardar({ senal: true }));
+    $('[data-cerrar]', form).addEventListener('click', () => form.closest('tr').remove());
+    form.elements.importe.focus();
+  };
+
+  tbody.addEventListener('click', async (ev) => {
+    const cobrar = ev.target.closest('[data-cobrar]');
+    if (cobrar) return abrirCobro(Number(cobrar.dataset.cobrar));
+    const emitir = ev.target.closest('[data-emitir]');
+    if (emitir) {
+      emitir.disabled = true;
+      try {
+        await api(`/facturas/${emitir.dataset.emitir}/emitir`, { method: 'POST' });
+        cajaError.hidden = true;
+        await pintar();
+      } catch (e) {
+        emitir.disabled = false;
+        mostrarErrores(cajaError, e, 'No se ha podido emitir:');
+      }
+    }
+  });
+
+  // Filtros
+  let espera;
+  filtros.addEventListener('input', (ev) => { if (ev.target.name === 'q') { clearTimeout(espera); espera = setTimeout(pintar, 250); } });
+  filtros.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintar(); });
+  filtros.addEventListener('submit', (ev) => { ev.preventDefault(); pintar(); });
+
+  // La lista primero: si se pintara al final, borraría una fila de cobro abierta mientras carga lo demás
+  await pintar();
+  await Promise.all([prepararAltaFactura(), prepararEmpresaYSeries()]);
+}
+
+// «Nueva factura»: coche (de los que aún no tienen factura), cliente y condiciones. Crea un borrador.
+async function prepararAltaFactura() {
+  const cabecera = $('.cabecera--portada > div');
+  cabecera.insertAdjacentHTML('beforeend', '<p class="cabecera__acciones-factura"><a class="boton" href="#nueva-factura" data-nueva>Nueva factura</a></p>');
+  const [coches, clientes, { facturas }] = await Promise.all([api('/vehiculos'), api('/clientes'), api('/facturas')]);
+  const facturados = new Set(facturas.filter((f) => f.tipo === 'venta' && f.estado === 'emitida' && !f.anulada).map((f) => f.vehiculo_id));
+  const posibles = coches.filter((v) => ['publicado', 'reservado', 'vendido', 'entregado'].includes(v.estado) && !facturados.has(v.id));
+  const seccion = document.createElement('section');
+  seccion.className = 'caja form-tercero';
+  seccion.id = 'nueva-factura';
+  seccion.hidden = true;
+  seccion.innerHTML = `
+    <div class="caja__titulo"><h2>Nueva factura</h2><span class="nota">Se guarda como borrador: se revisa y luego se emite</span></div>
+    <form class="rejilla">
+      <label class="campo campo--doble"><span class="campo__nombre">Coche <em>*</em></span>
+        <select name="vehiculo_id" required><option value="">Elige el coche</option>${posibles.map((v) => `<option value="${v.id}">${esc(tituloCoche(v))} · ${esc(v.matricula)} · ${esc(estado(v.estado).nombre)}</option>`).join('')}</select></label>
+      <label class="campo campo--doble"><span class="campo__nombre">Cliente <em>*</em></span>
+        <select name="cliente_id" required><option value="">Elige el cliente</option>${clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}${c.nif ? ` · ${esc(c.nif)}` : ' · sin DNI'}</option>`).join('')}</select>
+        <span class="campo__ayuda">¿No está? Dalo de alta en <a href="clientes.html#nuevo">Clientes</a> con su DNI y dirección.</span></label>
+      <label class="campo"><span class="campo__nombre">Precio de venta</span><span class="con-unidad" data-unidad="€"><input name="precio" inputmode="decimal"></span>
+        <span class="campo__ayuda">Con impuestos. Vacío: el PVP del coche.</span></label>
+      <label class="campo"><span class="campo__nombre">Régimen</span><select name="regimen"><option value="">El del coche</option><option value="REBU">REBU</option><option value="general">IVA general</option></select></label>
+      <label class="campo"><span class="campo__nombre">Gestoría (suplidos)</span><span class="con-unidad" data-unidad="€"><input name="suplidos" inputmode="decimal" placeholder="0,00"></span></label>
+      <label class="campo"><span class="campo__nombre">Fecha</span><input type="date" name="fecha" value="${diaLocal()}"></label>
+      <label class="campo"><span class="campo__nombre">Vence</span><input type="date" name="vencimiento"></label>
+      <label class="campo"><span class="campo__nombre">Forma de pago</span><select name="forma_pago">${Object.entries(FORMAS_PAGO).map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join('')}</select></label>
+      <label class="campo"><span class="campo__nombre">Garantía</span><select name="garantia_tipo"><option value="directa">Directa</option><option value="comprada">Comprada</option><option value="sin">Sin garantía</option></select></label>
+      <label class="campo"><span class="campo__nombre">Meses</span><input type="number" name="garantia_meses" min="0" max="36" value="12"></label>
+      <label class="campo"><span class="campo__nombre">Km a la entrega</span><input type="number" name="km_entrega" min="0"></label>
+      <label class="campo campo--ancho"><span class="campo__nombre">Observaciones</span><textarea name="observaciones" maxlength="2000"></textarea></label>
+      <div class="form-tercero__pie campo--ancho">
+        <button class="boton boton--secundario" type="button" data-cancelar>Cancelar</button>
+        <button class="boton" type="submit">Guardar borrador</button>
+      </div>
+    </form>`;
+  $('.tabla-caja').before(seccion);
+  const form = $('form', seccion);
+  const error = cajaErrorEn(form);
+  error.classList.add('campo--ancho');
+  // Al elegir el coche: su PVP y sus km
+  form.elements.vehiculo_id.addEventListener('change', () => {
+    const v = posibles.find((x) => String(x.id) === form.elements.vehiculo_id.value);
+    form.elements.precio.placeholder = v?.pvp_cent != null ? (v.pvp_cent / 100).toFixed(2).replace('.', ',') : '';
+    if (v?.kilometros != null && !form.elements.km_entrega.value) form.elements.km_entrega.value = v.kilometros;
+    // Si ya tiene comprador (se apuntó al venderlo), se propone
+    if (v?.comprador_id && !form.elements.cliente_id.value) form.elements.cliente_id.value = String(v.comprador_id);
+  });
+  const abrir = (ev) => { ev?.preventDefault(); seccion.hidden = false; seccion.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  $('[data-nueva]').addEventListener('click', abrir);
+  $('[data-cancelar]', form).addEventListener('click', () => { seccion.hidden = true; form.reset(); error.hidden = true; });
+  // Desde la ficha de un coche: facturas.html?coche=ID abre el alta con él elegido
+  if (params.get('coche')) {
+    form.elements.vehiculo_id.value = params.get('coche');
+    form.elements.vehiculo_id.dispatchEvent(new Event('change'));
+    abrir();
+  }
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const d = Object.fromEntries(new FormData(form));
+    const cuerpo = { vehiculo_id: Number(d.vehiculo_id), cliente_id: Number(d.cliente_id), fecha: d.fecha, forma_pago: d.forma_pago,
+      garantia_tipo: d.garantia_tipo, garantia_meses: d.garantia_meses === '' ? null : Number(d.garantia_meses) };
+    if (d.precio.trim()) cuerpo.precio_cent = aCent(d.precio);
+    if (d.suplidos.trim()) cuerpo.suplidos_cent = aCent(d.suplidos);
+    if (d.regimen) cuerpo.regimen = d.regimen;
+    if (d.vencimiento) cuerpo.vencimiento = d.vencimiento;
+    if (d.km_entrega !== '') cuerpo.km_entrega = Number(d.km_entrega);
+    if (d.observaciones.trim()) cuerpo.observaciones = d.observaciones.trim();
+    if ([cuerpo.precio_cent, cuerpo.suplidos_cent].some((c) => c !== undefined && !(c >= 0))) {
+      return mostrarErrores(error, { lista: ['Los importes van como 12.900,00'] }, 'No se ha podido guardar:');
+    }
+    try {
+      const f = await api('/facturas', { method: 'POST', body: cuerpo });
+      location.href = `factura.html?id=${f.id}`; // a revisarla antes de emitir
+    } catch (e) {
+      mostrarErrores(error, e, 'No se ha podido guardar:');
+    }
+  });
+}
+
+// Abajo, plegados: los datos fiscales de la empresa (salen en cada factura) y la numeración de las series
+async function prepararEmpresaYSeries() {
+  const [empresa, series] = await Promise.all([api('/facturas/empresa'), api('/facturas/series')]);
+  const anio = diaLocal().slice(2, 4);
+  const ventas = series.find((s) => s.serie === `V${anio}`);
+  const campo = (nombre, etiqueta, valor, extra = '') => `<label class="campo${extra}"><span class="campo__nombre">${etiqueta}</span><input name="${nombre}" value="${esc(valor ?? '')}"></label>`;
+  const sinDireccion = !empresa.direccion || !empresa.codigo_postal || !empresa.poblacion;
+  const caja = document.createElement('details');
+  caja.className = 'caja ajustes-factura';
+  caja.open = sinDireccion;
+  caja.innerHTML = `
+    <summary><b>Datos de la empresa y numeración</b>${sinDireccion ? ' <span class="estado cobro--vencida">Falta la dirección: no se puede emitir</span>' : ''}</summary>
+    <form class="rejilla" data-empresa>
+      ${campo('razon_social', 'Razón social', empresa.razon_social, ' campo--doble')}
+      ${campo('nif', 'CIF', empresa.nif)}
+      ${campo('direccion', 'Dirección fiscal', empresa.direccion, ' campo--doble')}
+      ${campo('codigo_postal', 'Código postal', empresa.codigo_postal)}
+      ${campo('poblacion', 'Población', empresa.poblacion)}
+      ${campo('provincia', 'Provincia', empresa.provincia)}
+      ${campo('telefono', 'Teléfono', empresa.telefono)}
+      ${campo('email', 'Correo', empresa.email)}
+      ${campo('iban', 'IBAN (para transferencias)', empresa.iban, ' campo--doble')}
+      ${campo('registro_mercantil', 'Registro Mercantil (pie de la factura)', empresa.registro_mercantil, ' campo--ancho')}
+      <div class="form-tercero__pie campo--ancho"><button class="boton" type="submit">Guardar datos</button></div>
+    </form>
+    <form class="rejilla" data-serie>
+      <p class="nota campo--ancho">Serie de ventas de este año: <b>V${anio}</b>. ${ventas?.emitidas
+        ? `La siguiente factura será la <b>${esc(ventas.codigo_siguiente)}</b>.`
+        : 'Antes de la primera factura, pon el último número que se dio en Pymecar para seguir sin saltos.'}</p>
+      ${ventas?.emitidas ? '' : `<label class="campo"><span class="campo__nombre">Último número de Pymecar</span><input type="number" min="0" name="ultimo" value="${ventas?.ultimo ?? 0}"></label>
+      <div class="form-tercero__pie"><button class="boton boton--secundario" type="submit">Guardar numeración</button></div>`}
+    </form>`;
+  $('.contenido').append(caja);
+  const formEmpresa = $('[data-empresa]', caja);
+  const error = cajaErrorEn(formEmpresa);
+  error.classList.add('campo--ancho');
+  formEmpresa.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const d = Object.fromEntries([...new FormData(formEmpresa)].map(([k, v]) => [k, v.trim() || null]));
+    // Razón social y NIF solo si cambian (con facturas emitidas no se pueden tocar)
+    for (const k of ['razon_social', 'nif']) if (d[k] === empresa[k]) delete d[k];
+    try {
+      Object.assign(empresa, await api('/facturas/empresa', { method: 'PUT', body: d }));
+      error.hidden = true;
+      $('summary .estado', caja)?.remove();
+      $('button[type="submit"]', formEmpresa).textContent = 'Guardado';
+      setTimeout(() => { $('button[type="submit"]', formEmpresa).textContent = 'Guardar datos'; }, 1500);
+    } catch (e) {
+      mostrarErrores(error, e, 'No se han podido guardar:');
+    }
+  });
+  $('[data-serie]', caja).addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    try {
+      const r = await api(`/facturas/series/V${anio}`, { method: 'PUT', body: { ultimo: Number(ev.target.elements.ultimo.value) } });
+      ev.target.querySelector('.nota').innerHTML = `La siguiente factura será la <b>${esc(r.codigo_siguiente)}</b>.`;
+    } catch (e) {
+      mostrarErrores(error, e, 'No se ha podido guardar la numeración:');
+    }
+  });
+}
+
+// La factura en A4 (factura.html?id=). Emitida: con la copia de los datos de cuando se emitió.
+// Borrador: con los datos de ahora y la marca de borrador; se emite desde la barra.
+async function paginaFactura() {
+  const id = Number(params.get('id'));
+  const hoja = $('.documento');
+  const barra = $('.documento-barra__acciones');
+  const cajaError = $('.documento-error');
+  if (!id) { hoja.innerHTML = '<p>Falta el número de la factura.</p>'; return; }
+
+  const pintar = async () => {
+    const f = await api(`/facturas/${id}`);
+    const [empresa, cliente, coche] = f.estado === 'emitida'
+      ? [f.datos_empresa, f.datos_cliente, f.datos_vehiculo]
+      : await Promise.all([api('/facturas/empresa'), api(`/clientes/${f.cliente_id}`), f.vehiculo_id ? api(`/vehiculos/${f.vehiculo_id}`) : null]);
+    document.title = `${f.codigo ?? 'Borrador'} · ${cliente.nombre} · ProService`;
+    const rebu = f.regimen === 'REBU';
+    const rectificativa = f.tipo === 'rectificativa';
+    const direccion = (x) => [x.direccion, [x.codigo_postal, x.poblacion].filter(Boolean).join(' ') + (x.provincia ? ` (${x.provincia})` : '')].filter((t) => t && t.trim()).map(esc).join('<br>');
+    const titulo = f.estado === 'borrador' ? 'Borrador de factura' : rectificativa ? 'Factura rectificativa' : 'Factura';
+    const lineaCoche = coche
+      ? `<b>${esc([coche.marca, coche.modelo, coche.version].filter(Boolean).join(' '))}</b>
+         <small>Matrícula ${esc(coche.matricula ?? '—')}${coche.bastidor ? ` · Bastidor ${esc(coche.bastidor)}` : ''}${coche.fecha_matriculacion ? ` · 1.ª matriculación ${esc(fechaCorta(coche.fecha_matriculacion))}` : ''}${(f.km_entrega ?? coche.kilometros) != null ? ` · ${cifra(f.km_entrega ?? coche.kilometros)} km` : ''}</small>`
+      : 'Vehículo';
+    const totales = rebu
+      ? `<div class="total"><span>Total</span><span>${euros2(f.total_cent)}</span></div>`
+      : `<div><span>Base imponible</span><span>${euros2(f.base_cent)}</span></div>
+         <div><span>IVA ${f.iva_pct} %</span><span>${euros2(f.iva_cent)}</span></div>
+         ${f.suplidos_cent ? `<div><span>Suplidos</span><span>${euros2(f.suplidos_cent)}</span></div>` : ''}
+         <div class="total"><span>Total</span><span>${euros2(f.total_cent)}</span></div>`;
+    const garantia = f.garantia_tipo === 'sin' ? 'Sin garantía.'
+      : f.garantia_tipo ? `Garantía ${f.garantia_tipo === 'comprada' ? 'contratada' : 'directa del vendedor'} de ${f.garantia_meses ?? 12} meses.` : '';
+    const rectificada = f.rectifica_id ? await api(`/facturas/${f.rectifica_id}`).catch(() => null) : null;
+    hoja.className = `documento factura${f.estado === 'borrador' ? ' documento--borrador' : ''}${f.anulada ? ' documento--anulada' : ''}`;
+    hoja.innerHTML = `
+      <header class="factura__cabeza">
+        <div class="factura__empresa">
+          <strong>${esc(empresa.razon_social)}</strong>
+          <p>CIF ${esc(empresa.nif)}</p>
+          <p>${direccion(empresa) || '<span style="color:var(--peligro)">Falta la dirección fiscal</span>'}</p>
+          <p>${[empresa.telefono, empresa.email].filter(Boolean).map(esc).join(' · ')}</p>
+        </div>
+        <div class="factura__numero">
+          <h1>${titulo}</h1>
+          <p class="codigo">${f.codigo ? esc(f.codigo) : 'Sin número'}</p>
+          <p>Fecha: ${esc(fechaLarga(f.fecha))}</p>
+          ${f.vencimiento && !rectificativa ? `<p>Vencimiento: ${esc(fechaLarga(f.vencimiento))}</p>` : ''}
+        </div>
+      </header>
+      <section class="factura__partes">
+        <div><h2>Cliente</h2><p><b>${esc(cliente.nombre)}</b></p><p>${cliente.nif ? `${cliente.tipo === 'empresa' ? 'CIF' : 'DNI/NIE'} ${esc(cliente.nif)}` : '<span style="color:var(--peligro)">Falta el DNI, NIE o CIF</span>'}</p><p>${direccion(cliente) || '<span style="color:var(--peligro)">Falta la dirección</span>'}</p></div>
+        <div><h2>Forma de pago</h2><p>${esc(FORMAS_PAGO[f.forma_pago] ?? f.forma_pago ?? '—')}</p>${f.forma_pago === 'transferencia' && empresa.iban ? `<p>IBAN ${esc(empresa.iban.replace(/(.{4})/g, '$1 ').trim())}</p>` : ''}${f.uso_destino ? `<p>Uso: ${esc(f.uso_destino)}</p>` : ''}</div>
+      </section>
+      ${rectificativa ? `<section class="factura__bloque"><h2>Rectifica</h2><p>La factura ${esc(rectificada?.codigo ?? '')}${rectificada ? ` del ${esc(fechaLarga(rectificada.fecha))}` : ''}. Motivo: ${esc(f.motivo ?? '')}</p></section>` : ''}
+      <table class="factura__lineas">
+        <thead><tr><th>Concepto</th><th class="importe">Importe</th></tr></thead>
+        <tbody>
+          <tr><td>${lineaCoche}</td><td class="importe">${euros2(rebu ? f.precio_cent : f.base_cent)}</td></tr>
+          ${f.suplidos_cent && rebu ? `<tr><td>Gastos de gestoría (suplidos)<small>Pagados por cuenta del cliente</small></td><td class="importe">${euros2(f.suplidos_cent)}</td></tr>` : ''}
+        </tbody>
+      </table>
+      <div class="factura__totales">${totales}</div>
+      ${rebu ? '<p class="factura__mencion">Régimen especial de los bienes usados</p>' : ''}
+      ${garantia || f.observaciones ? `<section class="factura__bloque"><h2>Condiciones</h2>${garantia ? `<p>${esc(garantia)}</p>` : ''}${f.observaciones ? `<p>${esc(f.observaciones)}</p>` : ''}</section>` : ''}
+      ${empresa.registro_mercantil ? `<footer class="factura__pie">${esc(empresa.registro_mercantil)}</footer>` : ''}`;
+
+    // La barra: imprimir siempre; emitir un borrador; rectificar una emitida sin rectificar
+    barra.innerHTML = `${f.estado === 'borrador' ? '<button class="boton boton--pequeno" type="button" data-emitir>Emitir factura</button>' : ''}
+      ${f.estado === 'emitida' && f.tipo === 'venta' && !f.anulada ? '<input name="motivo" placeholder="Motivo para rectificarla" maxlength="500"><button class="boton boton--secundario boton--pequeno" type="button" data-rectificar>Rectificar</button>' : ''}
+      ${f.rectificada_por ? `<span class="nota" style="color:#c5c9ce">Rectificada por la ${esc(f.rectificada_por)}</span>` : ''}
+      <button class="boton boton--secundario boton--pequeno" type="button" data-imprimir>Imprimir o guardar en PDF</button>`;
+    $('[data-imprimir]', barra).addEventListener('click', () => window.print());
+    $('[data-emitir]', barra)?.addEventListener('click', async (ev) => {
+      ev.target.disabled = true;
+      try {
+        await api(`/facturas/${id}/emitir`, { method: 'POST' });
+        cajaError.hidden = true;
+        await pintar();
+      } catch (e) {
+        ev.target.disabled = false;
+        mostrarErrores(cajaError, e, 'No se ha podido emitir:');
+      }
+    });
+    $('[data-rectificar]', barra)?.addEventListener('click', async (ev) => {
+      const motivo = $('input[name="motivo"]', barra).value.trim();
+      if (!motivo) return mostrarErrores(cajaError, { lista: ['Escribe el motivo de la rectificación.'] }, 'No se ha podido rectificar:');
+      ev.target.disabled = true;
+      try {
+        const r = await api(`/facturas/${id}/rectificar`, { method: 'POST', body: { motivo } });
+        location.href = `factura.html?id=${r.id}`;
+      } catch (e) {
+        ev.target.disabled = false;
+        mostrarErrores(cajaError, e, 'No se ha podido rectificar:');
+      }
+    });
+  };
+  await pintar();
+}
+
 // --- Informes (solo gerencia) -----------------------------------------------------------------
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -1790,6 +2177,8 @@ const PAGINAS = {
   'usuarios.html': paginaUsuarios,
   'contactos.html': paginaContactos,
   'clientes.html': paginaClientes,
+  'facturas.html': paginaFacturas,
+  'factura.html': paginaFactura,
   'crm.html': paginaCrm,
   'informes.html': paginaInformes,
 };
@@ -1798,7 +2187,7 @@ const PAGINAS = {
   if (PAGINA === 'login.html') return paginaLogin();
   try {
     const usuario = await api('/auth/yo');
-    if (usuario.rol !== 'gerencia' && ['informes.html', 'usuarios.html', 'proveedores.html', 'gastos.html', 'facturas.html'].includes(PAGINA)) return (location.href = 'index.html');
+    if (usuario.rol !== 'gerencia' && ['informes.html', 'usuarios.html', 'proveedores.html', 'gastos.html', 'facturas.html', 'factura.html'].includes(PAGINA)) return (location.href = 'index.html');
     const menu = prepararMenu(usuario);
     const pagina = PAGINAS[PAGINA];
     if (pagina) await pagina(usuario);

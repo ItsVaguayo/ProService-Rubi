@@ -1,0 +1,70 @@
+/* Documentos imprimibles (factura; luego los contratos de T09). En pantalla, una hoja centrada; en papel,
+   A4 con 15 mm de margen y sin la barra de acciones. */
+
+@page { size: A4; margin: 15mm; }
+
+.documento-pagina { margin: 0; background: #e9ebee; color: var(--tinta); }
+.documento-barra { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 16px; background: var(--negro); }
+.documento-barra .boton--secundario { color: var(--blanco); border-color: #4a4f55; background: transparent; }
+.documento-barra__acciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.documento-barra__acciones input { min-width: 260px; padding: 7px 10px; border: 0; border-radius: 6px; font: inherit; font-size: .8125rem; }
+.documento-error { max-width: 210mm; margin: 12px auto 0; }
+
+.documento { position: relative; box-sizing: border-box; width: 210mm; min-height: 297mm; margin: 20px auto 40px; padding: 15mm;
+  background: var(--blanco); box-shadow: 0 2px 18px rgba(0, 0, 0, .12); font-size: 10pt; line-height: 1.45; }
+
+/* Cabecera: la empresa a la izquierda, el número a la derecha */
+.factura__cabeza { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 6mm; border-bottom: 2px solid var(--tinta); }
+.factura__empresa img { height: 40px; margin-bottom: 6px; }
+.factura__empresa strong { display: block; font-size: 12pt; }
+.factura__empresa p, .factura__numero p { margin: 0; color: var(--tinta-2); }
+.factura__numero { text-align: right; }
+.factura__numero h1 { margin: 0 0 4px; font-size: 18pt; letter-spacing: -.01em; }
+.factura__numero .codigo { font-size: 13pt; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.factura__partes { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin: 6mm 0; }
+.factura__partes h2, .factura__bloque h2 { margin: 0 0 4px; color: var(--tinta-3); font-size: 8pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.factura__partes p { margin: 0; }
+
+.factura__lineas { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; }
+.factura__lineas th { padding: 6px 8px; border-bottom: 1px solid var(--tinta); font-size: 8pt; text-align: left; text-transform: uppercase; letter-spacing: .05em; }
+.factura__lineas td { padding: 8px; border-bottom: 1px solid var(--linea); vertical-align: top; }
+.factura__lineas .importe { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.factura__lineas small { display: block; color: var(--tinta-3); }
+
+.factura__totales { width: 75mm; margin-left: auto; break-inside: avoid; }
+.factura__totales div { display: flex; justify-content: space-between; gap: 12px; padding: 4px 8px; font-variant-numeric: tabular-nums; }
+.factura__totales .total { margin-top: 4px; padding: 8px; background: var(--tinta); color: var(--blanco); font-size: 12pt; font-weight: 700; }
+.factura__mencion { margin: 4mm 0 0; padding: 6px 8px; border: 1px solid var(--tinta); font-weight: 700; text-align: center; break-inside: avoid; }
+
+.factura__bloque { margin-top: 6mm; break-inside: avoid; }
+.factura__bloque p { margin: 0; }
+.factura__pie { position: absolute; left: 15mm; right: 15mm; bottom: 12mm; color: var(--tinta-3); font-size: 7.5pt; text-align: center; }
+
+/* Borrador: sin valor fiscal, y que se note */
+.documento--borrador::before { content: 'BORRADOR'; position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%) rotate(-28deg);
+  color: rgba(234, 45, 45, .12); font-size: 72pt; font-weight: 800; letter-spacing: .1em; pointer-events: none; }
+.documento--anulada::before { content: 'ANULADA'; position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%) rotate(-28deg);
+  color: rgba(23, 25, 28, .08); font-size: 72pt; font-weight: 800; letter-spacing: .1em; pointer-events: none; }
+
+@media screen and (max-width: 860px) {
+  .documento { width: auto; min-height: 0; margin: 12px; padding: 18px; }
+  .factura__cabeza, .factura__partes { display: block; }
+  .factura__numero { margin-top: 12px; text-align: left; }
+  .factura__partes > div + div { margin-top: 12px; }
+  .factura__totales { width: auto; }
+  .factura__pie { position: static; margin-top: 8mm; }
+}
+
+@media print {
+  .no-imprimir { display: none !important; }
+  .documento-pagina { background: none; }
+  .documento { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+  .factura__pie { position: fixed; left: 0; right: 0; bottom: 0; }
+}
+
+/* El aviso de error (en el panel vive en panel.css, que esta página no carga) */
+.documento-error { padding: 12px 16px; border-left: 3px solid var(--peligro); border-radius: 6px; background: var(--peligro-fondo); color: var(--peligro); font-size: .875rem; }
+.documento-error ul { margin: 4px 0 0; padding-left: 20px; }
+.documento-error[hidden] { display: none; }

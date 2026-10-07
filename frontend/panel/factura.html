@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Factura · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/documentos.css">
+</head>
+<body class="documento-pagina">
+
+  <!-- BARRA (no sale en papel): volver, imprimir y, según el estado, emitir o rectificar. La rellena panel.js -->
+  <nav class="documento-barra no-imprimir" aria-label="Acciones de la factura">
+    <a class="boton boton--secundario boton--pequeno" href="facturas.html">← Facturas</a>
+    <span class="documento-barra__acciones"></span>
+  </nav>
+  <div class="error error--lista no-imprimir documento-error" role="alert" hidden></div>
+
+  <!-- LA FACTURA, en A4. La rellena panel.js (paginaFactura) con GET /api/facturas/:id. Una emitida sale con
+       la copia de los datos que se guardó al emitir; un borrador, con los de ahora y la marca de borrador. -->
+  <article class="documento factura" aria-live="polite">
+    <p class="nota">Cargando la factura…</p>
+  </article>
+
+<script type="module" src="../js/panel.js"></script>
+</body>
+</html>
