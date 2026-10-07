@@ -111,6 +111,24 @@ Campos de los dos: `nombre` (o razón social), `nif`, `direccion`, `codigo_posta
 - El `nif` acepta DNI, NIE o CIF con su letra o dígito de control, y se guarda sin espacios ni guiones y en mayúsculas. Uno mal escrito: 400. Repetido: 409.
 - En la ficha del coche: `proveedor_id` (solo gerencia) y `comprador_id`. Un id que no existe: 400. Los `proveedor_nombre` y `proveedor_telefono` de antes siguen; la migración `0008` los pasó a la tabla de proveedores.
 
+## Incentivos de los comerciales
+
+Cuánto se le paga a cada comercial por lo vendido en un mes. La regla del cliente aún no se sabe (duda H9): es configurable y, sin regla, el incentivo es 0. Todo en enteros: el porcentaje en centésimas (`500` = 5 %) y el dinero en céntimos, redondeado una vez por coche.
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `GET /incentivos/reglas` | gerencia | Todos los usuarios con su regla (`tipo` y `valor` a `null` si no tienen) |
+| `PUT /incentivos/reglas/:usuarioId` | gerencia | `{ tipo, valor }`. `porcentaje_margen`: centésimas sobre el margen de cada coche, de 0 a 10.000. `fijo_por_coche`: céntimos por coche vendido. `valor` entero: con decimales, 400 |
+| `GET /incentivos?mes=AAAA-MM` | con sesión | Sin `mes`, el actual. Gerencia: `{ mes, comerciales, sin_vendedor }`. El comercial: solo él, y sus coches **sin `margen_cent`** |
+| `POST /incentivos/liquidar` | gerencia | `{ mes, usuario_id }`. Guarda lo calculado en ese momento. Un mes que no ha terminado, o ya liquidado para ese usuario: 409. 201 |
+
+Cada comercial lleva `usuario_id`, `nombre`, `rol`, `regla`, `coches` (`id`, `referencia`, `marca`, `modelo`, `fecha_venta`, `margen_cent`, `incentivo_cent`), `total_cent` y `liquidado` (`coches`, `importe_cent`, `liquidado_en` y, para gerencia, `liquidado_por`; o `null`).
+
+- Una venta cuenta para quien pasó el coche a «Vendido» (`ventasDelMes` de `informes/ventas.js`), también si es de gerencia. Salen los que vendieron algo y los comerciales activos aunque no vendieran nada.
+- `porcentaje_margen`: con pérdida o sin margen (falta la compra o el PVP), 0. El margen es el bruto de `margen.js` hasta que esté el neto.
+- Lo liquidado no cambia aunque luego cambie la regla o se deshaga una venta: `total_cent` es el cálculo de ahora y `liquidado.importe_cent`, lo que se pagó.
+- Reglas y liquidaciones quedan en `auditoria` (`incentivo_regla` e `incentivo_liquidado`).
+
 ## Usuarios (solo gerencia)
 
 | Método y ruta | Quién | Qué hace |
