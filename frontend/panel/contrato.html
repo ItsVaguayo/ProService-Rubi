@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contrato · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/documentos.css">
+</head>
+<body class="documento-pagina">
+
+  <!-- BARRA (no sale en papel): volver e imprimir. La rellena panel.js -->
+  <nav class="documento-barra no-imprimir" aria-label="Acciones del contrato">
+    <a class="boton boton--secundario boton--pequeno" href="coches.html" data-volver>← Volver</a>
+    <span class="documento-barra__acciones"></span>
+  </nav>
+  <div class="error error--lista no-imprimir documento-error" role="alert" hidden></div>
+
+  <!-- GENERAR (contrato.html?nuevo=TIPO&coche=ID o &factura=ID): lo que hace falta elegir antes de escribirlo.
+       Lo rellena panel.js. No sale en papel. -->
+  <form class="documento documento--form no-imprimir" hidden></form>
+
+  <!-- EL CONTRATO, en A4 (contrato.html?id=). Lo rellena panel.js con lo que se guardó al generarlo. -->
+  <article class="documento contrato" hidden></article>
+
+<script type="module" src="../js/panel.js"></script>
+</body>
+</html>

@@ -226,6 +226,24 @@ En `api/src/modules/facturacion`. Verifactu queda para octubre de 2028 (duda H1)
 
 Importes (`importes.js`): en REBU el cliente ve un solo total, sin IVA desglosado, y para los libros el margen (precio − compra) se separa en base e IVA (margen 1.975 → 1.632,23 + 342,77, como Pymecar); con pérdida, 0. En general, el 21 % va dentro del precio. Los suplidos se suman al total, fuera de la base. Estado de cobro: `cobrada` sin saldo, `vencida` con saldo y el vencimiento pasado, `parcial` con algo cobrado, si no `pendiente`.
 
+## Contratos
+
+En `api/src/modules/contratos`. Se generan con los datos del momento y se guardan ya escritos (`contenido`): un contrato firmado no cambia aunque cambie la ficha o la plantilla. Número correlativo del año: `C26-0001`. Se imprimen en `contrato.html?id=` y se firman en papel. Todos llevan `pendiente_abogado: true` (duda H3).
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `POST /contratos` | según el tipo | `{ tipo, … }`. 201 con el contrato escrito |
+| `GET /contratos?vehiculo=&factura=` | con sesión | Lista. El comercial no ve los de compra ni cesión |
+| `GET /contratos/:id` | con sesión | Uno, con su `contenido` (partes, vehículo, intro, secciones con cláusulas, cláusulas adicionales y firmas) |
+
+Tipos:
+- `compraventa` (los dos roles): `factura_id` de una venta emitida sin rectificar. Cliente, precio, garantía y km salen de la factura; la forma de pago, de sus cobros (y lo que falte, con la forma de la factura). `probado` (por defecto `true`), `hora`. Texto: el contrato que usan hoy en Pymecar.
+- `reserva` (los dos roles): `vehiculo_id` con reserva y `cliente_id` (la reserva solo guarda el nombre). `forma_pago` de la señal.
+- `compra` (gerencia): `vehiculo_id` de un coche propio; el vendedor es `proveedor_id` o el proveedor de la ficha. `forma_pago`, `hora`. Si el proveedor es particular, dice que no lleva IVA.
+- `cesion` (gerencia): `vehiculo_id` de un coche en depósito; el dueño es `proveedor_id` o el de la ficha. `duracion_meses` (3).
+
+Todos aceptan `fecha` (hoy) y `clausulas_adicionales`. Lo que falta (un DNI, una dirección) sale como raya para rellenar a mano.
+
 ## Usuarios (solo gerencia)
 
 | Método y ruta | Quién | Qué hace |

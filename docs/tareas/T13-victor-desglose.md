@@ -42,15 +42,15 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 
 ## 5. T09 · Factura y contratos imprimibles
 - ✅ La factura imprimible ya está: `frontend/panel/factura.html` y `frontend/css/documentos.css` (7-oct). Sin QR hasta Verifactu (2028).
-- [ ] Los cinco contratos con la banda «pendiente de revisión por abogado».
-- [ ] Textos base de los contratos en `docs/contratos/`, para el abogado (duda H3).
+- ✅ Los contratos, en `contrato.html` con `documentos.css` y la banda «pendiente de revisión por abogado» (7-oct). Son cuatro: la compra a particular y a profesional van en una plantilla.
+- ✅ Textos en `api/src/modules/contratos/plantillas.js`: compraventa = el de Pymecar; reserva, compra y cesión redactados. Pendientes del abogado (H3).
 
 ## 6. Bloque 4 · Verifactu (aplazado a 2028)
 - Hacienda lo pasa a octubre de 2028 (duda H1). En el bloque 3 solo se deja sitio: un estado por factura y el hueco del QR.
 
-## 7. Bloque 5 · Contratos
-- [ ] Migración `contratos`, numeración y datos congelados al generarlo.
-- [ ] Botones en la ficha del coche que abren las plantillas de T09 rellenas.
+## 7. ✅ Bloque 5 · Contratos
+- ✅ Migración `0014`, número `C26-0001`, datos y texto congelados al generar (7-oct).
+- ✅ Desde la factura («Contrato de compraventa»), desde la reserva del coche («Contrato de reserva») y desde el bloque de dinero de la ficha («Contrato de compra» o «de cesión»).
 
 ## 8. Bloque 7 · Fondo con IA y vídeo
 - [ ] Cola de `trabajos` en SQLite (la reutilizan Verifactu y redes).

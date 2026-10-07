@@ -68,3 +68,32 @@
 .documento-error { padding: 12px 16px; border-left: 3px solid var(--peligro); border-radius: 6px; background: var(--peligro-fondo); color: var(--peligro); font-size: .875rem; }
 .documento-error ul { margin: 4px 0 0; padding-left: 20px; }
 .documento-error[hidden] { display: none; }
+
+/* --- Contratos (contrato.html) --- */
+.contrato h1 { margin: 0; font-size: 15pt; text-align: center; text-transform: uppercase; letter-spacing: .02em; }
+.contrato__codigo { margin: 2px 0 0; color: var(--tinta-3); text-align: center; font-variant-numeric: tabular-nums; }
+.contrato__aviso { margin: 0 0 6mm; padding: 6px 10px; border: 1px solid #e3b341; background: #fff6d6; color: #7a5a00; font-size: 8.5pt; font-weight: 700; text-align: center; }
+.contrato__lugar { margin: 5mm 0 4mm; text-align: right; }
+.contrato__cuadro { width: 100%; margin: 0 0 4mm; border-collapse: collapse; break-inside: avoid; }
+.contrato__cuadro caption { padding: 0 0 3px; color: var(--tinta-3); font-size: 8pt; font-weight: 700; letter-spacing: .08em; text-align: left; text-transform: uppercase; }
+.contrato__cuadro th, .contrato__cuadro td { padding: 4px 6px; border: 1px solid #c9cdd2; text-align: left; vertical-align: top; }
+.contrato__cuadro th { width: 26%; background: #f4f5f7; font-weight: 600; }
+.contrato p { margin: 0 0 3mm; text-align: justify; }
+.contrato h2 { margin: 5mm 0 2mm; font-size: 10.5pt; text-align: center; text-transform: uppercase; letter-spacing: .04em; }
+.contrato ol { margin: 0 0 3mm; padding-left: 7mm; }
+.contrato ol > li { margin-bottom: 2mm; padding-left: 1mm; text-align: justify; }
+.contrato ol ul { margin: 1mm 0 0; padding-left: 5mm; }
+.contrato ol ul li { margin-bottom: 1mm; }
+.contrato__firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 12mm; margin-top: 10mm; break-inside: avoid; }
+.contrato__firmas div { padding-top: 22mm; border-bottom: 1px solid var(--tinta); }
+.contrato__firmas p { margin: 2mm 0 0; font-size: 8.5pt; text-align: left; }
+
+/* El formulario para generar un contrato (no sale en papel) */
+.documento--form { min-height: 0; }
+.documento--form h1 { margin: 0 0 4px; font-size: 14pt; }
+.documento--form .campo { display: flex; flex-direction: column; gap: 4px; margin: 12px 0; font-size: .875rem; }
+.documento--form .campo__nombre { font-weight: 600; }
+.documento--form select, .documento--form input, .documento--form textarea { padding: 8px 10px; border: 1px solid #c9cdd2; border-radius: 6px; font: inherit; }
+.documento--form textarea { min-height: 80px; }
+.documento--form .casilla { display: flex; gap: 8px; align-items: center; margin: 12px 0; font-size: .875rem; }
+.documento--form .nota { color: var(--tinta-3); font-size: .8125rem; }

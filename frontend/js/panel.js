@@ -809,9 +809,16 @@ async function paginaFicha(usuario) {
     if (!detalle) margen.append(detalle = Object.assign(document.createElement('small'), { className: 'margen__detalle nota' }));
     detalle.textContent = v.margen_cent == null ? 'Hace falta el precio de compra (o lo pactado con el dueño) y el de venta.'
       : `${euros(v.margen_bruto_cent)} antes de IVA − ${euros(v.iva_venta_cent)} de IVA ${deposito || (v.regimen_iva ?? 'REBU') === 'REBU' ? 'en REBU' : 'general'}`;
-    // Facturar la venta (abre el alta de facturas con este coche elegido)
-    if (['reservado', 'vendido', 'entregado'].includes(v.estado) && !$('[data-facturar]', margen.parentElement)) {
-      margen.insertAdjacentHTML('afterend', `<p class="facturar-coche"><a class="boton boton--pequeno" data-facturar href="facturas.html?coche=${v.id}">Facturar la venta</a></p>`);
+    // Facturar la venta (abre el alta de facturas con este coche elegido) y los contratos del coche
+    if (!$('[data-facturar]', margen.parentElement)) {
+      const papeles = [
+        ['reservado', 'vendido', 'entregado'].includes(v.estado) ? `<a class="boton boton--pequeno" data-facturar href="facturas.html?coche=${v.id}">Facturar la venta</a>` : '',
+        `<a class="boton boton--secundario boton--pequeno" data-facturar href="contrato.html?nuevo=${deposito ? 'cesion' : 'compra'}&coche=${v.id}">${deposito ? 'Contrato de cesión' : 'Contrato de compra'}</a>`,
+      ].join(' ');
+      margen.insertAdjacentHTML('afterend', `<p class="facturar-coche">${papeles}</p><ul class="contratos-coche"></ul>`);
+      api(`/contratos?vehiculo=${v.id}`).then((lista) => {
+        $('.contratos-coche').innerHTML = lista.map((c) => `<li><a href="contrato.html?id=${c.id}">${esc(TIPOS_CONTRATO[c.tipo])} ${esc(c.codigo)}</a> <span class="nota">${esc(fechaCorta(c.fecha))}</span></li>`).join('');
+      }, () => {});
     }
   }
 
@@ -842,6 +849,7 @@ function pintarReserva(v, reserva) {
       <div class="pila">
         <button class="boton boton--oscuro" type="button" data-vender>Marcar como vendido</button>
         <button class="boton boton--secundario" type="button" data-cancelar>Cancelar la reserva</button>
+        <a class="boton boton--secundario" href="contrato.html?nuevo=reserva&coche=${v.id}">Contrato de reserva</a>
         <p class="nota">Si se cancela, el coche vuelve a «Publicado».</p>
       </div>`;
     const vender = () =>
@@ -2027,6 +2035,7 @@ async function paginaFactura() {
     const garantia = f.garantia_tipo === 'sin' ? 'Sin garantía.'
       : f.garantia_tipo ? `Garantía ${f.garantia_tipo === 'comprada' ? 'contratada' : 'directa del vendedor'} de ${f.garantia_meses ?? 12} meses.` : '';
     const rectificada = f.rectifica_id ? await api(`/facturas/${f.rectifica_id}`).catch(() => null) : null;
+    const contratos = f.estado === 'emitida' ? await api(`/contratos?factura=${id}`).catch(() => []) : [];
     hoja.className = `documento factura${f.estado === 'borrador' ? ' documento--borrador' : ''}${f.anulada ? ' documento--anulada' : ''}`;
     hoja.innerHTML = `
       <header class="factura__cabeza">
@@ -2064,6 +2073,9 @@ async function paginaFactura() {
     barra.innerHTML = `${f.estado === 'borrador' ? '<button class="boton boton--pequeno" type="button" data-emitir>Emitir factura</button>' : ''}
       ${f.estado === 'emitida' && f.tipo === 'venta' && !f.anulada ? '<input name="motivo" placeholder="Motivo para rectificarla" maxlength="500"><button class="boton boton--secundario boton--pequeno" type="button" data-rectificar>Rectificar</button>' : ''}
       ${f.rectificada_por ? `<span class="nota" style="color:#c5c9ce">Rectificada por la ${esc(f.rectificada_por)}</span>` : ''}
+      ${f.estado === 'emitida' && f.tipo === 'venta' && !f.anulada ? (contratos.length
+        ? `<a class="boton boton--secundario boton--pequeno" href="contrato.html?id=${contratos[0].id}">Contrato ${esc(contratos[0].codigo)}</a>`
+        : `<a class="boton boton--pequeno" href="contrato.html?nuevo=compraventa&factura=${id}">Contrato de compraventa</a>`) : ''}
       <button class="boton boton--secundario boton--pequeno" type="button" data-imprimir>Imprimir o guardar en PDF</button>`;
     $('[data-imprimir]', barra).addEventListener('click', () => window.print());
     $('[data-emitir]', barra)?.addEventListener('click', async (ev) => {
@@ -2091,6 +2103,101 @@ async function paginaFactura() {
     });
   };
   await pintar();
+}
+
+// --- Contratos --------------------------------------------------------------------------------
+
+const TIPOS_CONTRATO = { reserva: 'Contrato de reserva', compraventa: 'Contrato de compraventa', compra: 'Contrato de compra', cesion: 'Contrato de cesión' };
+
+// contrato.html?id= enseña uno ya generado. contrato.html?nuevo=TIPO&coche=ID (o &factura=ID para la
+// compraventa) pide lo que falte y lo genera. Al generarse queda escrito: no cambia aunque cambie la ficha.
+async function paginaContrato(usuario) {
+  const barra = $('.documento-barra__acciones');
+  const cajaError = $('.documento-error');
+  const hoja = $('.documento.contrato');
+  const form = $('form.documento--form');
+  const id = Number(params.get('id'));
+  const volver = $('[data-volver]');
+
+  if (id) return pintarContrato(await api(`/contratos/${id}`));
+
+  const tipo = params.get('nuevo');
+  if (!TIPOS_CONTRATO[tipo]) { form.hidden = false; form.innerHTML = '<p>Falta qué contrato generar.</p>'; return; }
+  const cocheId = Number(params.get('coche')) || null;
+  const facturaId = Number(params.get('factura')) || null;
+  volver.href = facturaId ? `factura.html?id=${facturaId}` : cocheId ? `coche.html?id=${cocheId}` : 'coches.html';
+  // Lo que hay que elegir según el tipo
+  const clientes = tipo === 'reserva' ? await api('/clientes') : [];
+  const proveedores = ['compra', 'cesion'].includes(tipo) && usuario.rol === 'gerencia' ? await api('/proveedores').catch(() => []) : [];
+  const ahora = new Date();
+  form.hidden = false;
+  form.innerHTML = `
+    <h1>${esc(TIPOS_CONTRATO[tipo])}</h1>
+    <p class="nota">Se escribe con los datos de ahora y se queda así. Lo que falte (por ejemplo, un DNI) sale como una raya para rellenar a mano.</p>
+    ${tipo === 'reserva' ? `<label class="campo"><span class="campo__nombre">Cliente que reserva</span>
+      <select name="cliente_id" required><option value="">Elige el cliente</option>${clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}${c.nif ? ` · ${esc(c.nif)}` : ''}</option>`).join('')}</select>
+      <span class="nota">¿No está? Dalo de alta en <a href="clientes.html#nuevo">Clientes</a>.</span></label>
+      <label class="campo"><span class="campo__nombre">Cómo paga la señal</span><select name="forma_pago">${Object.entries(FORMAS_PAGO).map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join('')}</select></label>` : ''}
+    ${['compra', 'cesion'].includes(tipo) ? `<label class="campo"><span class="campo__nombre">${tipo === 'compra' ? 'Vendedor' : 'Dueño del coche'}</span>
+      <select name="proveedor_id"><option value="">El que tiene la ficha del coche</option>${proveedores.map((p) => `<option value="${p.id}">${esc(p.nombre)}${p.nif ? ` · ${esc(p.nif)}` : ''}</option>`).join('')}</select>
+      <span class="nota">Con su ficha de proveedor salen su DNI y su dirección.</span></label>` : ''}
+    ${tipo === 'compra' ? `<label class="campo"><span class="campo__nombre">Cómo se le paga</span><select name="forma_pago">${Object.entries(FORMAS_PAGO).map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join('')}</select></label>` : ''}
+    ${tipo === 'cesion' ? '<label class="campo"><span class="campo__nombre">Duración (meses)</span><input type="number" name="duracion_meses" min="1" max="24" value="3"></label>' : ''}
+    ${tipo === 'compraventa' ? '<label class="casilla"><input type="checkbox" name="probado" checked> El comprador ha probado el coche</label>' : ''}
+    ${['compraventa', 'compra'].includes(tipo) ? `<label class="campo"><span class="campo__nombre">Hora de la entrega</span><input type="time" name="hora" value="${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}">
+      <span class="nota">Desde esa hora, multas y responsabilidades son del que se queda el coche.</span></label>` : ''}
+    <label class="campo"><span class="campo__nombre">Cláusulas adicionales</span><textarea name="clausulas_adicionales" maxlength="4000" placeholder="Opcional. Por ejemplo: se entrega con la segunda llave y el libro de mantenimiento."></textarea></label>
+    <button class="boton" type="submit">Generar el contrato</button>`;
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const d = Object.fromEntries(new FormData(form));
+    const cuerpo = { tipo, ...(facturaId ? { factura_id: facturaId } : { vehiculo_id: cocheId }) };
+    if (d.cliente_id) cuerpo.cliente_id = Number(d.cliente_id);
+    if (d.proveedor_id) cuerpo.proveedor_id = Number(d.proveedor_id);
+    if (d.forma_pago) cuerpo.forma_pago = d.forma_pago;
+    if (d.duracion_meses) cuerpo.duracion_meses = Number(d.duracion_meses);
+    if (d.hora) cuerpo.hora = d.hora;
+    if (tipo === 'compraventa') cuerpo.probado = form.elements.probado.checked;
+    if (d.clausulas_adicionales?.trim()) cuerpo.clausulas_adicionales = d.clausulas_adicionales.trim();
+    const boton = $('button[type="submit"]', form);
+    boton.disabled = true;
+    try {
+      const c = await api('/contratos', { method: 'POST', body: cuerpo });
+      location.replace(`contrato.html?id=${c.id}`);
+    } catch (e) {
+      boton.disabled = false;
+      mostrarErrores(cajaError, e, 'No se ha podido generar:');
+    }
+  });
+
+  function pintarContrato(c) {
+    const k = c.contenido;
+    document.title = `${c.codigo} · ${TIPOS_CONTRATO[c.tipo]} · ProService`;
+    volver.href = c.factura_id && usuario.rol === 'gerencia' ? `factura.html?id=${c.factura_id}` : `coche.html?id=${c.vehiculo_id}`;
+    const v = k.vehiculo;
+    const fila = (th, td) => (td == null || td === '' ? '' : `<tr><th>${esc(th)}</th><td>${esc(td)}</td></tr>`);
+    const parrafo = (item) => (typeof item === 'string' ? esc(item) : `${esc(item.texto)}<ul>${item.lista.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`);
+    hoja.hidden = false;
+    hoja.innerHTML = `
+      ${k.pendiente_abogado ? '<p class="contrato__aviso">Borrador pendiente de revisión por abogado</p>' : ''}
+      <h1>${esc(k.titulo)}</h1>
+      <p class="contrato__codigo">${esc(c.codigo)}</p>
+      <p class="contrato__lugar">${esc(k.lugar_fecha)}</p>
+      ${k.partes.map((p) => `<table class="contrato__cuadro"><caption>${esc(p.rol)}</caption><tbody>
+        ${fila('Nombre o razón social', p.nombre)}${fila('DNI / NIE / CIF', p.nif)}${fila('Domicilio', p.domicilio)}${fila('Teléfono', p.telefono)}</tbody></table>`).join('')}
+      <table class="contrato__cuadro"><caption>Vehículo</caption><tbody>
+        ${fila('Marca y modelo', [v.marca, v.modelo, v.version].filter(Boolean).join(' '))}${fila('Matrícula', v.matricula)}${fila('Bastidor', v.bastidor)}
+        ${fila('1.ª matriculación', v.fecha_matriculacion ? fechaCorta(v.fecha_matriculacion) : null)}${fila('Kilómetros', v.kilometros != null ? `${cifra(v.kilometros)} km` : null)}
+        ${fila('Combustible', v.combustible ? mayuscula(v.combustible) : null)}${fila('Color', v.color ? mayuscula(v.color) : null)}</tbody></table>
+      ${k.intro.map((p) => `<p>${esc(p)}</p>`).join('')}
+      ${k.secciones.map((s) => `<h2>${esc(s.titulo)}</h2><ol>${s.items.map((i) => `<li>${parrafo(i)}</li>`).join('')}</ol>`).join('')}
+      ${k.clausulas_adicionales ? `<h2>Cláusulas adicionales</h2><p>${esc(k.clausulas_adicionales).replace(/\n/g, '<br>')}</p>` : ''}
+      <p>${esc(k.cierre)}</p>
+      <div class="contrato__firmas">${k.firmas.map(() => '<div></div>').join('')}</div>
+      <div class="contrato__firmas" style="margin-top:0">${k.firmas.map((f, i) => `<p><b>${esc(f)}</b><br>${esc(k.partes[i]?.nombre ?? '')}${k.partes[i]?.nif && !/^_+$/.test(k.partes[i].nif) ? ` · ${esc(k.partes[i].nif)}` : ''}</p>`).join('')}</div>`;
+    barra.innerHTML = '<button class="boton boton--secundario boton--pequeno" type="button" data-imprimir>Imprimir o guardar en PDF</button>';
+    $('[data-imprimir]', barra).addEventListener('click', () => window.print());
+  }
 }
 
 // --- Libros (solo gerencia) -------------------------------------------------------------------
@@ -2265,6 +2372,7 @@ const PAGINAS = {
   'clientes.html': paginaClientes,
   'facturas.html': paginaFacturas,
   'libros.html': paginaLibros,
+  'contrato.html': paginaContrato,
   'factura.html': paginaFactura,
   'crm.html': paginaCrm,
   'informes.html': paginaInformes,

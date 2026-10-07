@@ -1991,7 +1991,10 @@ a.contacto__coche:hover { background: var(--fondo); }
 .cobro-form__botones { display: flex; flex-wrap: wrap; gap: 8px; }
 .cabecera__acciones-factura { margin: 14px 0 0; }
 .ajustes-factura { margin-top: var(--espacio-l); }
-.facturar-coche { margin: 12px 0 0; }
+.facturar-coche { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+.contratos-coche { margin: 10px 0 0; padding: 0; list-style: none; font-size: .8125rem; }
+.contratos-coche li { margin-top: 4px; }
+.contratos-coche a { color: #e6e8eb; }
 .tabla--libro small { display: block; margin-top: 2px; font-size: .75rem; }
 .libros-periodo { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
 .ajustes-factura summary { cursor: pointer; padding: 4px 0; }
