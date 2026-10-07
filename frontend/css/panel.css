@@ -1771,3 +1771,414 @@ a.contacto__coche:hover { background: var(--fondo); }
   .bloque__cabeza .nota { padding-left: 0; }
   .portada__titular--medio { font-size: 1.625rem; }
 }
+
+
+/* ==========================================================================
+   T07 · MAQUETAS DEL PANEL DE GESTIÓN (Hafsa)
+   Clientes, proveedores, gastos, facturas, incentivos, CRM y agenda.
+   Antes de inventar, se reutiliza lo de arriba: .contacto, .tabla, .cifras,
+   .columna, .ficha-mini, .canales, .historial, .rejilla y .opciones.
+   ========================================================================== */
+
+
+/* T07 · menú (todas las páginas) -------------------------------------------- */
+
+/* Con 13 enlaces, en un portátil bajo el menú ya no cabe: se desplaza por dentro y los enlaces se juntan un poco */
+.menu { overflow-y: auto; scrollbar-width: none; }
+@media (min-width: 801px) and (max-height: 860px) {
+  .menu { gap: var(--espacio-m); }
+  .menu__enlaces a { padding-top: 6px; padding-bottom: 6px; }
+}
+.menu__enlaces a[href="clientes.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E"); } /* Clientes */
+.menu__enlaces a[href="crm.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 3H2l8 9.46V19l4 2v-8.54L22 3z'/%3E%3C/svg%3E"); } /* CRM: el embudo */
+.menu__enlaces a[href="agenda.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E"); } /* Agenda */
+.menu__enlaces a[href="proveedores.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2M15 18H9'/%3E%3Cpath d='M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14'/%3E%3Ccircle cx='17' cy='18' r='2'/%3E%3Ccircle cx='7' cy='18' r='2'/%3E%3C/svg%3E"); } /* Proveedores */
+.menu__enlaces a[href="gastos.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z'/%3E%3Cpath d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 17.5v-11'/%3E%3C/svg%3E"); } /* Gastos */
+.menu__enlaces a[href="facturas.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/%3E%3Cpath d='M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8'/%3E%3C/svg%3E"); } /* Facturas */
+.menu__enlaces a[href="incentivos.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='6'/%3E%3Cpath d='M15.48 12.89 17 22l-5-3-5 3 1.52-9.11'/%3E%3C/svg%3E"); } /* Incentivos */
+
+
+/* T07 · comunes a las siete páginas ------------------------------------------ */
+
+/* Cifras de arriba con 2, 3 o 6 datos (la de informes lleva 4) */
+.cifras--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cifras--6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.cifras__dato--alerta strong { color: var(--peligro); }
+/* Una cifra que filtra la lista: se nota que se puede pulsar */
+.cifras__dato--enlace { color: inherit; text-decoration: none; transition: background .15s; }
+.cifras__dato--enlace:hover { background: #fafbfb; }
+.cifras--6 .rotulo { display: flex; align-items: center; gap: 6px; }
+/* Con seis datos y céntimos, la cifra más pequeña y en una línea: el « €» no se queda solo abajo */
+.cifras--6 .cifras__dato strong { font-size: 1.375rem; white-space: nowrap; }
+
+/* La cabecera negra seguida de otra versión de la misma página (incentivos): sin margen negativo */
+.cabecera--seguida { margin: 0 0 var(--espacio-l); padding: 32px; border-radius: var(--radio); }
+
+/* Un formulario en caja con su pie de botones (nuevo cliente, nuevo proveedor) */
+.obligatorio { color: var(--rojo); font-style: normal; }
+
+/* Tabla que en el móvil pasa a tarjetas, como la de coches. Cada celda lleva su nombre en
+   data-rotulo y sale como «nombre … valor»; la celda .t-titulo va arriba, sin nombre. */
+@media (max-width: 760px) {
+  .tabla--tarjetas thead { display: none; }
+  .tabla--tarjetas tr { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-bottom: 1px solid var(--linea); }
+  .tabla--tarjetas tbody tr:last-child { border-bottom: 0; }
+  .tabla--tarjetas tfoot tr { border-top: 1px solid var(--linea); border-bottom: 0; background: #fafbfb; }
+  .tabla--tarjetas td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0; border: 0; text-align: right; }
+  .tabla--tarjetas td::before { content: attr(data-rotulo); color: var(--tinta-3); font-size: .8125rem; font-weight: 400; text-align: left; white-space: nowrap; }
+  .tabla--tarjetas td:empty { display: none; }
+  .tabla--tarjetas td.t-titulo { justify-content: flex-start; text-align: left; }
+  .tabla--tarjetas td.t-titulo::before { content: none; }
+  .tabla-caja:has(> .tabla--tarjetas) { overflow-x: visible; }
+}
+
+@media (max-width: 1150px) {
+  .cifras--6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cifras--6 .cifras__dato:nth-child(4) { border-left: 0; }
+  .cifras--6 .cifras__dato:nth-child(n+4) { border-top: 1px solid var(--linea); }
+}
+@media (max-width: 800px) {
+  .cifras--3,
+  .cifras--6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cifras--6 .cifras__dato { border-top: 1px solid var(--linea); border-left: 1px solid var(--linea); }
+  .cifras--6 .cifras__dato:nth-child(-n+2) { border-top: 0; }
+  .cifras--6 .cifras__dato:nth-child(odd) { border-left: 0; }
+  .cifras--6 .cifras__dato,
+  .cifras--3 .cifras__dato { padding: 14px 16px; }
+  .cifras--6 .cifras__dato strong,
+  .cifras--3 .cifras__dato strong { font-size: 1.25rem; }
+  .cifras--3 .cifras__dato:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .cabecera--seguida { margin-left: calc(var(--espacio-m) * -1); margin-right: calc(var(--espacio-m) * -1); padding: 28px var(--espacio-m); border-radius: 0; }
+}
+
+
+/* T07 · clientes.html (proveedores.html usa lo mismo) ------------------------- */
+
+/* Tarjetas de .contacto, sin la columna del coche: iniciales, datos y un resumen a la derecha */
+.tercero { grid-template-columns: 44px minmax(0, 1fr) auto; }
+.tercero__nombre { color: inherit; text-decoration: none; }
+.tercero__nombre:hover strong { text-decoration: underline; }
+/* Toda la tarjeta se puede pulsar: el enlace del nombre la cubre entera */
+.tercero__nombre::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.tercero .contacto__datos a { position: relative; z-index: 1; }
+.tercero--abierto { border-color: var(--tinta); box-shadow: inset 0 0 0 1px var(--tinta); }
+.tercero--abierto:hover { border-color: var(--tinta); }
+
+.tercero__resumen { margin: 0; color: var(--tinta-3); font-size: .8125rem; text-align: right; }
+.tercero__resumen b { display: block; color: var(--tinta); font-size: .9375rem; }
+
+/* Un color por tipo: iniciales y etiqueta */
+.tercero__inicial--particular { background: var(--llegada-fondo); color: var(--llegada); }
+.tercero__inicial--empresa { background: var(--negro); color: var(--blanco); }
+.tercero__inicial--profesional { background: var(--reservado-fondo); color: var(--reservado); }
+.tercero__inicial--subasta { background: var(--preparacion-fondo); color: var(--preparacion); }
+.tercero__inicial--comisionista { background: var(--venta-fondo); color: var(--venta); }
+.tipo-tercero--particular { background: var(--llegada-fondo); color: var(--llegada); }
+.tipo-tercero--empresa { background: var(--fondo); color: var(--tinta); box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
+.tipo-tercero--profesional { background: var(--reservado-fondo); color: var(--reservado); }
+.tipo-tercero--subasta { background: var(--preparacion-fondo); color: var(--preparacion); }
+.tipo-tercero--comisionista { background: var(--venta-fondo); color: var(--venta); }
+.tipo-tercero--apagado { background: var(--fondo); color: var(--tinta-3); }
+
+/* Desactivado: se ve, pero apagado */
+.tercero--apagado { background: transparent; }
+.tercero--apagado .contacto__inicial { filter: grayscale(1); opacity: .5; }
+.tercero--apagado .contacto__linea strong,
+.tercero--apagado .tercero__resumen b { color: var(--tinta-3); }
+
+/* Ficha a la derecha: se queda a la vista al bajar por la lista */
+.ficha-tercero { position: sticky; top: var(--espacio-l); }
+.ficha-tercero__cabeza { display: flex; align-items: center; gap: 14px; margin-bottom: var(--espacio-m); }
+.ficha-tercero__cabeza h2 { font-size: 1.25rem; }
+.ficha-tercero__linea { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+.ficha-tercero .reserva-activa a { text-decoration: none; }
+.ficha-tercero .reserva-activa a:hover { text-decoration: underline; }
+.ficha-tercero__notas { margin: 0 0 var(--espacio-m); padding: 10px 12px; border-radius: var(--radio-pequeno); background: var(--fondo); }
+.ficha-tercero__acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.ficha-tercero .canales li { gap: 12px; }
+.ficha-tercero .canales li > span:last-child { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; white-space: nowrap; }
+.ficha-tercero .historial li:last-child { padding-bottom: 0; }
+.ficha-tercero .caja__titulo .rotulo { white-space: nowrap; }
+
+/* Formulario de alta, debajo de la lista */
+.form-tercero { margin-top: var(--espacio-l); scroll-margin-top: var(--espacio-l); }
+.form-tercero__pie { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; padding-top: 4px; }
+
+@media (max-width: 1150px) {
+  .ficha-tercero { position: static; }
+}
+@media (max-width: 600px) {
+  .tercero { grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 14px 16px; }
+  .tercero__resumen { grid-column: 2; text-align: left; }
+  .tercero__resumen b { display: inline; margin-right: 6px; }
+  .form-tercero__pie .boton { flex: 1; }
+}
+
+
+/* T07 · proveedores.html --------------------------------------------------- */
+
+/* Los coches que nos ha vendido van en el bloque negro de dinero (solo gerencia) */
+.canales--oscuro li { border-bottom-color: var(--negro-3); }
+.canales--oscuro .coche-celda a { color: var(--blanco); }
+.ficha-tercero .dinero .margen strong { color: var(--blanco); }
+
+
+/* T07 · gastos.html -------------------------------------------------------- */
+
+/* Un color por categoría: el punto, la etiqueta y la cifra de arriba */
+.categoria--vehiculo { background: var(--reservado-fondo); color: var(--reservado); }
+.categoria--personal { background: var(--llegada-fondo); color: var(--llegada); }
+.categoria--proveedor { background: var(--preparacion-fondo); color: var(--preparacion); }
+.categoria--comision { background: var(--venta-fondo); color: var(--venta); }
+.categoria--otros { background: var(--vendido-fondo); color: var(--vendido); }
+.punto.categoria--vehiculo,
+.punto.categoria--personal,
+.punto.categoria--proveedor,
+.punto.categoria--comision,
+.punto.categoria--otros { flex: none; background: currentColor; }
+
+/* Formulario corto: la categoría en una fila y los datos debajo, tantos por fila como quepan */
+.gasto-form { margin-bottom: var(--espacio-l); }
+.gasto-form__campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; align-items: end; }
+.gasto-form__categoria { grid-column: 1 / -1; }
+.gasto-form__categoria span { gap: 7px; }
+.gasto-form__concepto { grid-column: span 2; }
+.gasto-form__pie { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 12px 20px; padding-top: 14px; border-top: 1px solid var(--linea); }
+.gasto-form__pie .casilla { margin-right: auto; }
+.gasto-form__total { margin: 0; }
+.gasto-form__total b { color: var(--tinta); }
+/* El coche solo se pide si la categoría es «Coche». Sin JavaScript, con :has */
+.gasto-form__campos:not(:has(input[name="categoria"][value="vehiculo"]:checked)) .solo-vehiculo { display: none; }
+
+/* Filtros en la cabecera de la lista */
+.filtros--gastos { margin: 0; }
+.tabla--gastos .coche-celda .nota { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.tabla--gastos tfoot td { padding: 12px 16px; border-top: 1px solid var(--linea); background: #fafbfb; font-weight: 600; }
+/* Sin pagar: raya ámbar a la izquierda */
+.fila-pendiente td:first-child { box-shadow: inset 3px 0 0 var(--aviso); }
+
+@media (max-width: 760px) {
+  .gasto-form__concepto { grid-column: 1 / -1; }
+  .gasto-form__pie .boton { flex-basis: 100%; }
+  .fila-pendiente { box-shadow: inset 3px 0 0 var(--aviso); }
+  .fila-pendiente td:first-child { box-shadow: none; }
+  .tabla--gastos tfoot td { padding: 0; border: 0; background: none; }
+}
+
+
+/* T07 · facturas.html ------------------------------------------------------ */
+
+/* Cuatro estados de cobro: el punto del filtro y la etiqueta */
+.cobro--pendiente { background: var(--aviso-fondo); color: var(--aviso); }
+.cobro--parcial { background: var(--reservado-fondo); color: var(--reservado); }
+.cobro--cobrada { background: var(--ok-fondo); color: var(--ok); }
+.cobro--vencida { background: var(--peligro-fondo); color: var(--peligro); }
+.punto.cobro--pendiente,
+.punto.cobro--parcial,
+.punto.cobro--cobrada,
+.punto.cobro--vencida { flex: none; background: currentColor; }
+.segmentos span .punto { margin-right: 7px; }
+
+/* Las dos cifras en la cabecera negra, a la derecha (como las del mes en el tablero) */
+.cabecera--cifras { align-items: center; }
+.cabecera--cifras > div:first-child { flex: 1 1 360px; }
+.cabecera--cifras .portada__mes { min-width: 380px; }
+/* El número no se parte por el guion; el cliente, como el coche, sin subrayar */
+.tabla--facturas .t-titulo { white-space: nowrap; }
+.tabla--facturas td > a { font-weight: 500; text-decoration: none; }
+.tabla--facturas td > a:hover { text-decoration: underline; }
+
+/* Cobrado: la cifra y una barrita con la parte cobrada */
+.cobrado { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.cobrado__barra { width: 84px; height: 5px; border-radius: var(--radio-boton); background: var(--linea); overflow: hidden; }
+.cobrado__barra span { display: block; height: 100%; background: var(--reservado); }
+.cobrado__barra--entera span { background: var(--ok); }
+.factura__vence { display: block; margin-top: 4px; font-size: .75rem; white-space: nowrap; }
+.factura__vence.dias { display: inline-block; }
+.tabla--facturas td:has(.factura__vence.dias) .estado { margin-right: 6px; }
+/* Vencida: raya roja a la izquierda */
+.fila-vencida td:first-child { box-shadow: inset 3px 0 0 var(--peligro); }
+/* El texto oculto de una cabecera (.oculto es absolute) se queda dentro de su celda: si no, escapa del
+   recorte de .tabla-caja y la página entera se desplaza de lado */
+.tabla--tarjetas th:has(.oculto) { position: relative; }
+/* Portátil pequeño y tablet: sin la columna de la fecha y con menos aire, para que quepa sin moverse de lado */
+@media (min-width: 761px) and (max-width: 1250px) {
+  .tabla--facturas th:nth-child(2),
+  .tabla--facturas td:nth-child(2) { display: none; }
+  .tabla--facturas th,
+  .tabla--facturas td { padding-left: 10px; padding-right: 10px; }
+  .tabla--facturas .factura__vence { white-space: normal; }
+  .tabla--facturas .cobrado__barra { width: 60px; }
+  .tabla--facturas .boton--pequeno { padding: 0 10px; }
+}
+
+@media (max-width: 1150px) {
+  .cabecera--cifras .portada__mes { min-width: 0; width: 100%; max-width: 520px; }
+}
+@media (max-width: 760px) {
+  .cobrado { flex-direction: row; align-items: center; gap: 10px; }
+  .cobrado__barra { width: 60px; }
+  .tabla--facturas td[data-rotulo="Estado"] { flex-wrap: wrap; }
+  .tabla--facturas td[data-rotulo="Estado"]::before { margin-right: auto; }
+  .factura__vence { display: inline; margin: 0 0 0 6px; }
+  .tabla--facturas td:last-child { justify-content: stretch; margin-top: 4px; }
+  .tabla--facturas td:last-child .boton { flex: 1; }
+  .fila-vencida { box-shadow: inset 3px 0 0 var(--peligro); }
+  .fila-vencida td:first-child { box-shadow: none; }
+}
+
+
+/* T07 · incentivos.html ---------------------------------------------------- */
+
+.incentivos { display: flex; flex-direction: column; gap: var(--espacio-m); }
+
+/* Cabeza de cada comercial: quién y su regla, coches, importe y la acción */
+.incentivo { padding: 0; overflow: hidden; }
+.incentivo__cabeza { display: grid; grid-template-columns: 44px minmax(0, 1fr) 90px 110px 190px; align-items: center; gap: 18px; padding: 18px 20px; }
+.incentivo__quien h2 { font-size: 1rem; }
+.incentivo__quien .nota { margin: 2px 0 0; font-size: .8125rem; }
+.incentivo__dato { display: flex; flex-direction: column; margin: 0; }
+.incentivo__dato b { font-size: 1.25rem; letter-spacing: -.01em; }
+.incentivo__accion { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.incentivo__accion .nota { font-size: .75rem; }
+.incentivo .tabla-caja { border: 0; border-top: 1px solid var(--linea); border-radius: 0; }
+.incentivo--liquidado .incentivo__cabeza { background: #fafbfb; }
+.incentivo--sin-regla { border-color: #e0a23a; }
+/* Botón que aún no se puede usar (liquidar sin regla, confirmar una prueba ya confirmada) */
+.incentivo .boton:disabled,
+.prueba .boton:disabled { opacity: .45; cursor: not-allowed; }
+.incentivo .boton:disabled:hover { background: var(--rojo); border-color: var(--rojo); }
+.prueba .boton--oscuro:disabled:hover { background: var(--negro); border-color: var(--negro); }
+
+/* Separador entre la versión de gerencia y la del comercial (solo en la maqueta) */
+.version-separador { display: flex; align-items: center; gap: 14px; margin: 48px 0 var(--espacio-l); color: var(--tinta-3); font-size: .75rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.version-separador::before,
+.version-separador::after { content: ""; flex: 1; border-top: 2px dashed var(--linea-fuerte); }
+.version-incentivos > * + * { margin-top: var(--espacio-l); }
+.version-incentivos .cifras { margin-bottom: 0; }
+
+@media (max-width: 1150px) {
+  .incentivo__cabeza { grid-template-columns: 44px minmax(0, 1fr) auto auto; }
+  .incentivo__accion { grid-column: 2 / -1; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; align-items: center; }
+}
+@media (max-width: 600px) {
+  .incentivo__cabeza { grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px 14px; padding: 16px; }
+  .incentivo__dato:first-of-type { display: none; }
+  .incentivo__accion .boton { flex: 1; }
+}
+
+
+/* T07 · crm.html ----------------------------------------------------------- */
+
+/* Hoy: una fila por actividad (hora, tipo, con quién y qué, botón) */
+.hoy { margin-bottom: 28px; padding: 0; overflow: hidden; }
+.hoy .caja__titulo { margin: 0; padding: 16px 20px 12px; }
+.hoy .caja__titulo h2 { font-size: 1rem; }
+.hoy__lista { margin: 0; padding: 0; list-style: none; }
+.actividad { display: grid; grid-template-columns: 52px 88px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 12px 20px; border-top: 1px solid var(--linea); }
+.actividad__hora { font-weight: 700; }
+.actividad .estado { justify-self: start; }
+.actividad__texto { margin: 0; color: var(--tinta-2); font-size: .875rem; }
+.actividad__texto a { margin-right: 8px; color: var(--tinta); text-decoration: none; }
+.actividad__texto a:hover { text-decoration: underline; }
+.actividad__texto .dias { margin-left: 4px; font-size: .75rem; }
+.actividad__hecha { color: var(--ok); font-size: .8125rem; font-weight: 600; white-space: nowrap; }
+.actividad--llamada { background: var(--reservado-fondo); color: var(--reservado); }
+.actividad--visita { background: var(--venta-fondo); color: var(--venta); }
+.actividad--tarea { background: var(--llegada-fondo); color: var(--llegada); }
+/* Ya pasó la hora y no está hecha: en rojo. Hecha: tachada y apagada. */
+.actividad--tarde { background: #fffafa; }
+.actividad--tarde .actividad__hora { color: var(--peligro); }
+.actividad--hecha .actividad__hora,
+.actividad--hecha .actividad__texto,
+.actividad--hecha .actividad__texto a { color: var(--tinta-3); }
+.actividad--hecha .actividad__texto { text-decoration: line-through; }
+.actividad--hecha .estado { filter: grayscale(1); opacity: .6; }
+
+/* Selector «Lo mío / De todos» sobre la banda negra */
+.segmentos--oscuro { background: var(--negro-3); }
+.segmentos--oscuro span { color: #b9bec4; }
+.segmentos--oscuro label:hover span { color: var(--blanco); }
+
+/* Embudo: las columnas del tablero, sin arrastrar el fondo. Las seis en fila desde unos 1.300 px de
+   ancho; por debajo, dos filas de tres (sin columnas escondidas por un lado); en el móvil, una debajo de otra. */
+.tablero--crm { grid-auto-columns: minmax(160px, 1fr); gap: 10px; min-height: 0; cursor: auto; }
+@media (min-width: 801px) and (max-width: 1300px) {
+  .tablero--crm { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+}
+.tablero--crm .ficha-mini .nota { font-size: .8125rem; line-height: 1.35; }
+.columna--nuevo { --color-fase: var(--llegada); }
+.columna--interesado { --color-fase: var(--reservado); }
+.columna--pienso { --color-fase: #e0a23a; }
+.columna--negociando { --color-fase: var(--negro); }
+.columna--ganado { --color-fase: var(--venta); }
+.columna--perdido { --color-fase: var(--peligro); }
+.ficha-mini--perdido { opacity: .7; }
+
+/* La etiqueta de embudo en la ficha del cliente (clientes.html) */
+.crm--negociando { background: var(--negro); color: var(--blanco); }
+
+@media (max-width: 760px) {
+  .actividad { grid-template-columns: 52px minmax(0, 1fr); gap: 6px 12px; padding: 12px 16px; }
+  .actividad .estado { grid-column: 2; grid-row: 1; }
+  .actividad__texto { grid-column: 2; }
+  .actividad .boton,
+  .actividad__hecha { grid-column: 2; justify-self: start; }
+}
+
+
+/* T07 · agenda.html -------------------------------------------------------- */
+
+/* Leyenda de los estados */
+.leyenda-pruebas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin: 0 0 var(--espacio-m); padding: 0; list-style: none; font-size: .8125rem; font-weight: 500; }
+.leyenda-pruebas li { display: flex; align-items: center; gap: 7px; }
+.leyenda-pruebas .nota { margin-left: auto; font-size: .8125rem; font-weight: 400; }
+
+/* Cuatro estados: el punto de la leyenda, la etiqueta y el borde de la prueba */
+.estado-prueba--pedida { background: var(--aviso-fondo); color: var(--aviso); }
+.estado-prueba--confirmada { background: var(--reservado-fondo); color: var(--reservado); }
+.estado-prueba--hecha { background: var(--ok-fondo); color: var(--ok); }
+.estado-prueba--no-vino { background: var(--peligro-fondo); color: var(--peligro); }
+.punto.estado-prueba--pedida,
+.punto.estado-prueba--confirmada,
+.punto.estado-prueba--hecha,
+.punto.estado-prueba--no-vino { flex: none; background: currentColor; }
+
+/* La semana: seis columnas, de lunes a sábado */
+.semana { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.dia { display: flex; flex-direction: column; gap: 8px; min-height: 220px; padding: 10px; border-top: 3px solid var(--linea-fuerte); border-radius: 4px 4px var(--radio) var(--radio); background: #ebedef; }
+.dia__titulo { display: flex; align-items: baseline; gap: 6px; padding: 2px 4px 4px; font-size: .8125rem; font-weight: 600; letter-spacing: 0; }
+.dia__titulo .cifra { color: var(--tinta-3); }
+.dia__hoy { margin-left: auto; padding: 0 8px; border-radius: var(--radio-boton); background: var(--rojo); color: var(--blanco); font-size: .6875rem; font-weight: 700; }
+.dia--hoy { border-top-color: var(--rojo); background: #e4e7ea; }
+.dia--pasado { opacity: .75; }
+
+/* Una prueba: hora y estado, coche, cliente y botones */
+.prueba { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--linea); border-left: 3px solid var(--color-prueba, var(--linea-fuerte)); border-radius: 8px; background: var(--blanco); font-size: .8125rem; }
+.prueba p { margin: 0; }
+.prueba--pedida { --color-prueba: #e0a23a; }
+.prueba--confirmada { --color-prueba: var(--reservado); }
+.prueba--hecha { --color-prueba: var(--ok); }
+.prueba--no-vino { --color-prueba: var(--peligro); }
+.prueba--no-vino .prueba__coche b,
+.prueba--no-vino .prueba__cliente { color: var(--tinta-3); }
+.prueba__linea { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px; }
+.prueba__hora { font-size: .9375rem; font-weight: 700; }
+.prueba__linea .estado { padding: 1px 8px; font-size: .75rem; }
+.prueba__coche { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.prueba__coche .matricula { font-size: .75rem; }
+.prueba__cliente { color: var(--tinta-2); }
+.prueba__cliente a { color: var(--tinta-3); text-decoration: none; white-space: nowrap; }
+.prueba__cliente a:hover { color: var(--tinta); text-decoration: underline; }
+.prueba__acciones { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--linea); }
+
+@media (max-width: 1150px) {
+  .semana { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .prueba__acciones { flex-direction: row; flex-wrap: wrap; }
+  .prueba__acciones .boton { flex: 1; }
+}
+@media (max-width: 800px) {
+  .semana { grid-template-columns: minmax(0, 1fr); }
+  .dia { min-height: 0; }
+  .leyenda-pruebas .nota { flex-basis: 100%; margin-left: 0; }
+}

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CRM · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
+    <div class="menu__enlaces">
+      <a href="index.html"><span class="menu__icono" aria-hidden="true"></span>Tablero</a>
+      <a href="coches.html"><span class="menu__icono" aria-hidden="true"></span>Coches</a>
+      <a href="coche-nuevo.html"><span class="menu__icono" aria-hidden="true"></span>Alta de vehículo</a>
+      <a href="contactos.html"><span class="menu__icono" aria-hidden="true"></span>Contactos <span class="contador">3</span></a>
+      <a href="clientes.html"><span class="menu__icono" aria-hidden="true"></span>Clientes</a>
+      <a href="crm.html" aria-current="page"><span class="menu__icono" aria-hidden="true"></span>CRM</a>
+      <a href="agenda.html"><span class="menu__icono" aria-hidden="true"></span>Agenda</a>
+      <!-- Proveedores: solo gerencia, como el precio de compra. -->
+      <a href="proveedores.html"><span class="menu__icono" aria-hidden="true"></span>Proveedores</a>
+      <!-- Dinero y administración. Incentivos lo ven los dos roles (el comercial, solo lo suyo); el resto,
+           solo gerencia. panel.js de momento solo le quita al comercial Informes y Usuarios. -->
+      <a class="menu__separado" href="gastos.html"><span class="menu__icono" aria-hidden="true"></span>Gastos</a>
+      <a href="facturas.html"><span class="menu__icono" aria-hidden="true"></span>Facturas</a>
+      <a href="incentivos.html"><span class="menu__icono" aria-hidden="true"></span>Incentivos</a>
+      <a href="informes.html"><span class="menu__icono" aria-hidden="true"></span>Informes</a>
+      <a href="usuarios.html"><span class="menu__icono" aria-hidden="true"></span>Usuarios</a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <!-- CABECERA en banda negra. El CRM lo usan los dos roles. -->
+    <header class="cabecera cabecera--portada">
+      <div>
+        <p class="portada__antetitulo">Ventas</p>
+        <h1>CRM</h1>
+        <p class="contactos-resumen"><strong class="cifra">6</strong> cosas para hoy <span class="portada__alerta">· 1 con retraso</span></p>
+        <p class="nota">En qué punto está cada cliente y qué hay que hacer hoy con ellos.</p>
+      </div>
+      <div class="cabecera__acciones">
+        <fieldset class="segmentos segmentos--oscuro" aria-label="De quién">
+          <label><input type="radio" name="responsable" value="yo" checked><span>Lo mío</span></label>
+          <label><input type="radio" name="responsable" value=""><span>De todos</span></label>
+        </fieldset>
+        <a class="boton" href="#">Apuntar actividad</a>
+      </div>
+    </header>
+
+    <!-- HOY: llamadas, visitas y tareas programadas para hoy, por hora (GET /api/actividades?dia=…, T11
+         de David). «Hecho» la marca hecha (PATCH /api/actividades/:id/hecha). La que ya pasó de hora
+         sin hacer va en rojo; la hecha se queda apagada y tachada. -->
+    <section class="caja hoy" aria-labelledby="hoy-titulo">
+      <div class="caja__titulo">
+        <h2 id="hoy-titulo">Hoy, miércoles 7</h2>
+        <span class="nota">1 de 6 hechas</span>
+      </div>
+      <ul class="hoy__lista">
+        <li class="actividad actividad--hecha">
+          <time class="actividad__hora cifra">9:30</time>
+          <span class="estado actividad--llamada">Llamada</span>
+          <p class="actividad__texto"><a href="clientes.html"><strong>Reformas Vallès SL</strong></a>Pasarles el presupuesto del rotulista para la Vito.</p>
+          <span class="actividad__hecha">Hecha a las 9:40</span>
+        </li>
+        <li class="actividad actividad--tarde">
+          <time class="actividad__hora cifra">10:00</time>
+          <span class="estado actividad--tarea">Tarea</span>
+          <p class="actividad__texto"><a href="clientes.html"><strong>Marta López Garcia</strong></a>Pedir a la financiera la respuesta del préstamo del C-HR. <span class="dias dias--peligro">Hace 1 h</span></p>
+          <button class="boton boton--oscuro boton--pequeno" type="button">Hecho</button>
+        </li>
+        <li class="actividad">
+          <time class="actividad__hora cifra">11:30</time>
+          <span class="estado actividad--llamada">Llamada</span>
+          <p class="actividad__texto"><a href="clientes.html"><strong>Jordi Camps</strong></a>Explicarle la financiación del Golf a 48 meses.</p>
+          <button class="boton boton--oscuro boton--pequeno" type="button">Hecho</button>
+        </li>
+        <li class="actividad">
+          <time class="actividad__hora cifra">12:00</time>
+          <span class="estado actividad--visita">Visita</span>
+          <p class="actividad__texto"><a href="clientes.html"><strong>Sílvia Moreno</strong></a>Viene a ver el Kia Niro con su pareja. Tenerlo lavado y en la puerta.</p>
+          <button class="boton boton--oscuro boton--pequeno" type="button">Hecho</button>
+        </li>
+        <li class="actividad">
+          <time class="actividad__hora cifra">17:30</time>
+          <span class="estado actividad--llamada">Llamada</span>
+          <p class="actividad__texto"><a href="clientes.html"><strong>Oriol Batlle</strong></a>¿Se ha decidido por el 3008? Puedo bajar a 21.500 € si cierra esta semana.</p>
+          <button class="boton boton--oscuro boton--pequeno" type="button">Hecho</button>
+        </li>
+        <li class="actividad">
+          <time class="actividad__hora cifra">18:30</time>
+          <span class="estado actividad--tarea">Tarea</span>
+          <p class="actividad__texto"><a href="clientes.html"><strong>Nuria Pons</strong></a>Tasar su Opel Corsa de 2016: mirar precios en Coches.net y Wallapop.</p>
+          <button class="boton boton--oscuro boton--pequeno" type="button">Hecho</button>
+        </li>
+      </ul>
+    </section>
+
+    <!-- EMBUDO: una columna por estado_comercial (GET /api/clientes?estado_comercial=…). Las tarjetas
+         son como las del tablero de coches: cliente, el coche que le interesa, la próxima cosa que
+         hay que hacer y los días desde la última vez que se habló con él (en ámbar más de 7, en rojo
+         más de 14). Pasar un cliente a otra columna es PUT /api/clientes/:id { estado_comercial }. -->
+    <div class="tablero-cabecera">
+      <div>
+        <h2>Embudo</h2>
+        <p class="tablero-cabecera__pista">10 clientes con algo en marcha. Los ganados y perdidos se quedan 30 días.</p>
+      </div>
+    </div>
+
+    <section class="tablero tablero--crm" aria-label="Clientes por estado comercial">
+
+      <div class="columna columna--nuevo">
+        <h2 class="columna__titulo">Nuevo <span class="cifra">2</span></h2>
+        <a class="ficha-mini" href="clientes.html">
+          <span class="ficha-mini__cuerpo">
+            <span class="ficha-mini__coche">Jordi Camps</span>
+            <span class="nota">Volkswagen Golf · pregunta por financiación</span>
+          </span>
+          <span class="ficha-mini__datos"><span>Llamar hoy 11:30</span><span class="dias cifra">Hoy</span></span>
+        </a>
+        <a class="ficha-mini" href="clientes.html">
+          <span class="ficha-mini__cuerpo">
+            <span class="ficha-mini__coche">Marta Soler Bosch</span>
+            <span class="nota">Seat Ateca · quiere probarlo</span>
+          </span>
+          <span class="ficha-mini__datos"><span>Prueba el sábado 10:30</span><span class="dias cifra">1 día</span></span>
+        </a>
+      </div>
+
+      <div class="columna columna--interesado">
+        <h2 class="columna__titulo">Interesado <span class="cifra">2</span></h2>
+        <a class="ficha-mini" href="clientes.html">
+          <span class="ficha-mini__cuerpo">
+            <span class="ficha-mini__coche">Sílvia Moreno</span>
+            <span class="nota">Kia Niro · viene con su pareja</span>
+          </span>
+          <span class="ficha-mini__datos"><span>Visita hoy 12:00</span><span class="dias cifra">2 días</span></span>
+        </a>
+        <a class="ficha-mini" href="clientes.html">
+          <span class="ficha-mini__cuerpo">
+            <span class="ficha-mini__coche">Nuria Pons</span>
+            <span class="nota">Deja su Opel Corsa como parte del pago</span>
+          </span>
+          <span class="ficha-mini__datos"><span>Tasar hoy</span><span class="dias cifra">3 días</span></span>
+        </a>
+      </div>
+
+      <div class="columna columna--pienso">
+        <h2 class="columna__titulo">Me lo pienso <span class="cifra">1</span></h2>
+        <a class="ficha-mini" href="clientes.html">
+          <span class="ficha-mini__cuerpo">
+            <span class="ficha-mini__coche">Oriol Batlle</span>
+            <span class="nota">Peugeot 3008 · lo compara con uno de Sabadell</span>
+          </span>
+          <span class="ficha-mini__datos"><span>Llamar hoy 17:30</span><span class="dias dias--aviso cifra">9 días</span></span>
+        </a>
+      </div>
+
+      <div class="columna columna--negociando">
+        <h2 class="columna__titulo">Negociando <span class="cifra">2</span></h2>
+        <a class="ficha-mini" href="clientes.html">
+          <span class="ficha-mini__cuerpo">
+            <span class="ficha-mini__coche">Marta López Garcia</span>
+            <span class="nota">Toyota C-HR · reservado, 500 € de señal</span>
+          </span>
+          <span class="ficha-mini__datos"><span>Respuesta del préstamo</span><span class="dias cifra">Ayer</span></span>
+        </a>
+        <a class="ficha-mini" href="clientes.html">
+          <span class="ficha-mini__cuerpo">
+            <span class="ficha-mini__coche">Reformas Vallès SL</span>
+            <span class="nota">Segunda furgoneta para primavera</span>
+          </span>
+          <span class="ficha-mini__datos"><span>Sin nada programado</span><span class="dias cifra">Hoy</span></span>
+        </a>
+      </div>
+
+      <div class="columna columna--ganado">
+        <h2 class="columna__titulo">Ganado <span class="cifra">2</span></h2>
+        <a class="ficha-mini" href="clientes.html">
+          <span class="ficha-mini__cuerpo">
+            <span class="ficha-mini__coche">Laura Gil Ferrer</span>
+            <span class="nota">Seat Ibiza · entregado el 2 oct</span>
+          </span>
+          <span class="ficha-mini__datos"><span>Llamar en un mes</span><span class="dias cifra">5 días</span></span>
+        </a>
+        <a class="ficha-mini" href="clientes.html">
+          <span class="ficha-mini__cuerpo">
+            <span class="ficha-mini__coche">Pau Serra Vidal</span>
+            <span class="nota">Toyota C-HR · entregado el 29 sep</span>
+          </span>
+          <span class="ficha-mini__datos"><span>Pedir reseña en Google</span><span class="dias cifra">Ayer</span></span>
+        </a>
+      </div>
+
+      <div class="columna columna--perdido">
+        <h2 class="columna__titulo">Perdido <span class="cifra">1</span></h2>
+        <a class="ficha-mini ficha-mini--perdido" href="clientes.html">
+          <span class="ficha-mini__cuerpo">
+            <span class="ficha-mini__coche">Enric Puig</span>
+            <span class="nota">Se quedó un Tucson en otro concesionario</span>
+          </span>
+          <span class="ficha-mini__datos"><span>Motivo: precio</span><span class="dias dias--peligro cifra">16 días</span></span>
+        </a>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+<script type="module" src="../js/panel.js"></script>
+</body>
+</html>

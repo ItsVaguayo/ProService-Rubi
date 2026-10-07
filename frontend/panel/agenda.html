@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agenda · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
+    <div class="menu__enlaces">
+      <a href="index.html"><span class="menu__icono" aria-hidden="true"></span>Tablero</a>
+      <a href="coches.html"><span class="menu__icono" aria-hidden="true"></span>Coches</a>
+      <a href="coche-nuevo.html"><span class="menu__icono" aria-hidden="true"></span>Alta de vehículo</a>
+      <a href="contactos.html"><span class="menu__icono" aria-hidden="true"></span>Contactos <span class="contador">3</span></a>
+      <a href="clientes.html"><span class="menu__icono" aria-hidden="true"></span>Clientes</a>
+      <a href="crm.html"><span class="menu__icono" aria-hidden="true"></span>CRM</a>
+      <a href="agenda.html" aria-current="page"><span class="menu__icono" aria-hidden="true"></span>Agenda</a>
+      <!-- Proveedores: solo gerencia, como el precio de compra. -->
+      <a href="proveedores.html"><span class="menu__icono" aria-hidden="true"></span>Proveedores</a>
+      <!-- Dinero y administración. Incentivos lo ven los dos roles (el comercial, solo lo suyo); el resto,
+           solo gerencia. panel.js de momento solo le quita al comercial Informes y Usuarios. -->
+      <a class="menu__separado" href="gastos.html"><span class="menu__icono" aria-hidden="true"></span>Gastos</a>
+      <a href="facturas.html"><span class="menu__icono" aria-hidden="true"></span>Facturas</a>
+      <a href="incentivos.html"><span class="menu__icono" aria-hidden="true"></span>Incentivos</a>
+      <a href="informes.html"><span class="menu__icono" aria-hidden="true"></span>Informes</a>
+      <a href="usuarios.html"><span class="menu__icono" aria-hidden="true"></span>Usuarios</a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <!-- CABECERA en banda negra, con el paso de semana a la derecha -->
+    <header class="cabecera cabecera--portada">
+      <div>
+        <p class="portada__antetitulo">Pruebas de conducción</p>
+        <h1>Semana del 5 al 10 de octubre</h1>
+        <p class="contactos-resumen"><strong class="cifra">10</strong> pruebas <span class="portada__alerta">· 3 sin confirmar</span></p>
+        <p class="nota">Las que se piden desde la web llegan como «Pedida»: llama al cliente y confírmala. Cada prueba dura 30 minutos.</p>
+      </div>
+      <div class="cabecera__acciones">
+        <a class="boton boton--secundario" href="#" aria-label="Semana anterior">← Anterior</a>
+        <a class="boton boton--secundario" href="#">Hoy</a>
+        <a class="boton boton--secundario" href="#" aria-label="Semana siguiente">Siguiente →</a>
+      </div>
+    </header>
+
+    <!-- LEYENDA de los cuatro estados, con el mismo color que el borde de cada prueba -->
+    <ul class="leyenda-pruebas">
+      <li><i class="punto estado-prueba--pedida"></i>Pedida</li>
+      <li><i class="punto estado-prueba--confirmada"></i>Confirmada</li>
+      <li><i class="punto estado-prueba--hecha"></i>Hecha</li>
+      <li><i class="punto estado-prueba--no-vino"></i>No vino</li>
+      <li class="nota">Horario: de lunes a viernes, de 10:00 a 13:30 y de 16:30 a 19:30; sábado, de 10:00 a 13:30.</li>
+    </ul>
+
+    <!-- LA SEMANA, de lunes a sábado. Cada prueba: hora, coche, cliente y estado.
+         «Confirmar» y «Cambiar hora» en las que aún no han pasado (en la confirmada, «Confirmar»
+         sale desactivado). Los días pasados se ven más apagados; hoy lleva la raya roja.
+         En el móvil, los días van uno debajo de otro. -->
+    <div class="semana">
+
+      <section class="dia dia--pasado" aria-labelledby="dia-5">
+        <h2 class="dia__titulo" id="dia-5">Lunes <span class="cifra">5</span></h2>
+        <article class="prueba prueba--hecha">
+          <p class="prueba__linea"><time class="prueba__hora cifra">10:30</time><span class="estado estado-prueba--hecha">Hecha</span></p>
+          <p class="prueba__coche"><b>Toyota C-HR</b><span class="matricula">7390 KXB</span></p>
+          <p class="prueba__cliente">Marta López Garcia</p>
+        </article>
+        <article class="prueba prueba--hecha">
+          <p class="prueba__linea"><time class="prueba__hora cifra">17:00</time><span class="estado estado-prueba--hecha">Hecha</span></p>
+          <p class="prueba__coche"><b>Peugeot 3008</b><span class="matricula">5562 LCN</span></p>
+          <p class="prueba__cliente">Oriol Batlle</p>
+        </article>
+      </section>
+
+      <section class="dia dia--pasado" aria-labelledby="dia-6">
+        <h2 class="dia__titulo" id="dia-6">Martes <span class="cifra">6</span></h2>
+        <article class="prueba prueba--no-vino">
+          <p class="prueba__linea"><time class="prueba__hora cifra">11:00</time><span class="estado estado-prueba--no-vino">No vino</span></p>
+          <p class="prueba__coche"><b>Renault Clio</b><span class="matricula">9018 LDF</span></p>
+          <p class="prueba__cliente">Laia Font · <a href="tel:+34688402277">688 402 277</a></p>
+        </article>
+      </section>
+
+      <section class="dia dia--hoy" aria-labelledby="dia-7">
+        <h2 class="dia__titulo" id="dia-7">Miércoles <span class="cifra">7</span> <span class="dia__hoy">Hoy</span></h2>
+        <article class="prueba prueba--confirmada">
+          <p class="prueba__linea"><time class="prueba__hora cifra">12:00</time><span class="estado estado-prueba--confirmada">Confirmada</span></p>
+          <p class="prueba__coche"><b>Kia Niro</b><span class="matricula">3380 LGH</span></p>
+          <p class="prueba__cliente">Sílvia Moreno · <a href="tel:+34651230984">651 230 984</a></p>
+          <div class="prueba__acciones">
+            <button class="boton boton--oscuro boton--pequeno" type="button" disabled>Confirmar</button>
+            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
+          </div>
+        </article>
+        <article class="prueba prueba--pedida">
+          <p class="prueba__linea"><time class="prueba__hora cifra">18:00</time><span class="estado estado-prueba--pedida">Pedida</span></p>
+          <p class="prueba__coche"><b>Volkswagen Golf</b><span class="matricula">2215 LBC</span></p>
+          <p class="prueba__cliente">Jordi Camps · <a href="tel:+34617554102">617 554 102</a></p>
+          <div class="prueba__acciones">
+            <button class="boton boton--oscuro boton--pequeno" type="button">Confirmar</button>
+            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="dia" aria-labelledby="dia-8">
+        <h2 class="dia__titulo" id="dia-8">Jueves <span class="cifra">8</span></h2>
+        <article class="prueba prueba--pedida">
+          <p class="prueba__linea"><time class="prueba__hora cifra">17:30</time><span class="estado estado-prueba--pedida">Pedida</span></p>
+          <p class="prueba__coche"><b>Seat Ibiza</b><span class="matricula">1147 KYM</span></p>
+          <p class="prueba__cliente">Àngel Serrano · <a href="tel:+34630778015">630 778 015</a></p>
+          <div class="prueba__acciones">
+            <button class="boton boton--oscuro boton--pequeno" type="button">Confirmar</button>
+            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="dia" aria-labelledby="dia-9">
+        <h2 class="dia__titulo" id="dia-9">Viernes <span class="cifra">9</span></h2>
+        <article class="prueba prueba--confirmada">
+          <p class="prueba__linea"><time class="prueba__hora cifra">10:00</time><span class="estado estado-prueba--confirmada">Confirmada</span></p>
+          <p class="prueba__coche"><b>Peugeot 3008</b><span class="matricula">5562 LCN</span></p>
+          <p class="prueba__cliente">Oriol Batlle · segunda prueba</p>
+          <div class="prueba__acciones">
+            <button class="boton boton--oscuro boton--pequeno" type="button" disabled>Confirmar</button>
+            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
+          </div>
+        </article>
+        <article class="prueba prueba--confirmada">
+          <p class="prueba__linea"><time class="prueba__hora cifra">18:30</time><span class="estado estado-prueba--confirmada">Confirmada</span></p>
+          <p class="prueba__coche"><b>Kia Niro</b><span class="matricula">3380 LGH</span></p>
+          <p class="prueba__cliente">Pere Vidal · <a href="tel:+34664019283">664 019 283</a></p>
+          <div class="prueba__acciones">
+            <button class="boton boton--oscuro boton--pequeno" type="button" disabled>Confirmar</button>
+            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="dia" aria-labelledby="dia-10">
+        <h2 class="dia__titulo" id="dia-10">Sábado <span class="cifra">10</span></h2>
+        <article class="prueba prueba--pedida">
+          <p class="prueba__linea"><time class="prueba__hora cifra">10:30</time><span class="estado estado-prueba--pedida">Pedida</span></p>
+          <p class="prueba__coche"><b>Seat Ateca</b><span class="matricula">4821 LKM</span></p>
+          <p class="prueba__cliente">Marta Soler Bosch · <a href="tel:+34600111222">600 111 222</a></p>
+          <div class="prueba__acciones">
+            <button class="boton boton--oscuro boton--pequeno" type="button">Confirmar</button>
+            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
+          </div>
+        </article>
+        <article class="prueba prueba--confirmada">
+          <p class="prueba__linea"><time class="prueba__hora cifra">12:00</time><span class="estado estado-prueba--confirmada">Confirmada</span></p>
+          <p class="prueba__coche"><b>Renault Clio</b><span class="matricula">9018 LDF</span></p>
+          <p class="prueba__cliente">Laia Font · la del martes, otra vez</p>
+          <div class="prueba__acciones">
+            <button class="boton boton--oscuro boton--pequeno" type="button" disabled>Confirmar</button>
+            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
+          </div>
+        </article>
+      </section>
+
+    </div>
+
+  </main>
+</div>
+<script type="module" src="../js/panel.js"></script>
+</body>
+</html>
