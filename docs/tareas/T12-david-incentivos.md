@@ -12,7 +12,7 @@ La regla del cliente aún no la sabemos (duda H9). Por eso se hace configurable:
 
 ## Antes de empezar
 
-1. `api/src/modules/informes/routes.js`: la consulta `ventasDelMes` ya sabe qué coches se vendieron en un mes y quién los pasó a «Vendido». No la copies: pide a Victor que la saque a una función que puedas importar (`ventasDelMes(db, mes)`).
+1. `api/src/modules/informes/ventas.js`: `ventasDelMes(db, mes)` ya te da los coches vendidos en un mes, con la fila entera del coche, `vendio_id` (el id del usuario que lo vendió) y `vendio` (su nombre). Impórtala, no la copies. Sus tests están en `api/test/ventas.test.js`.
 2. `api/src/modules/margen.js`: hoy da el margen bruto. Victor está haciendo el margen neto (con REBU o IVA). Usa la función que haya; cuando salga la nueva, se cambia en una línea.
 3. `docs/datos/margenes.csv` (de T10): casos del margen calculados a mano. Úsalos en tus tests.
 

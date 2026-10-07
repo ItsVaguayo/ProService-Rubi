@@ -11,10 +11,17 @@ function rutasTercero(db, { tabla, entidad, campos, extra }) {
   const leer = db.prepare(`SELECT * FROM ${tabla} WHERE id = ?`);
 
   // ?q= busca en nombre, NIF, teléfono y correo · ?activos=0 incluye los desactivados
+  // ?estado_comercial= (solo clientes) para las columnas del embudo del CRM
   r.get('/', (req, res) => {
     const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
     const filtros = req.query.activos === '0' ? [] : ['activo = 1'];
     const valores = [];
+    if (req.query.estado_comercial !== undefined) {
+      const estados = campos.estado_comercial?.opciones;
+      if (!estados?.includes(req.query.estado_comercial)) return res.status(400).json({ error: 'estado_comercial no válido' });
+      filtros.push('estado_comercial = ?');
+      valores.push(req.query.estado_comercial);
+    }
     if (q) {
       const comoNif = q.toUpperCase().replace(/[\s.-]/g, '');
       const comoTelefono = q.replace(/[\s().-]/g, '');

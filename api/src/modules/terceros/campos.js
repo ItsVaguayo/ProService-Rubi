@@ -19,7 +19,12 @@ const COMUNES = {
   activo: { booleano: true },
 };
 
-export const CAMPOS_CLIENTE = { ...COMUNES, tipo: { opciones: ['particular', 'empresa'] }, origen: { max: 50 } };
+export const ESTADOS_COMERCIALES = ['nuevo', 'interesado', 'me_lo_pienso', 'negociando', 'ganado', 'perdido'];
+
+export const CAMPOS_CLIENTE = {
+  ...COMUNES, tipo: { opciones: ['particular', 'empresa'] }, origen: { max: 50 },
+  estado_comercial: { opciones: ESTADOS_COMERCIALES }, // embudo del CRM (0009)
+};
 export const CAMPOS_PROVEEDOR = { ...COMUNES, tipo: { opciones: ['profesional', 'particular', 'subasta', 'comisionista'] } };
 
 // Devuelve { datos, errores }. Con `parcial` (edición) no se exige el nombre.
@@ -49,7 +54,7 @@ export function limpiarTercero(cuerpo, campos, { parcial = false } = {}) {
 
   if (!parcial && datos.nombre == null && !errores.some((e) => e.includes('nombre'))) errores.push('Falta el nombre');
   if (parcial && 'nombre' in datos && datos.nombre == null) errores.push('nombre no puede quedar vacío');
-  if ('tipo' in datos && datos.tipo == null) errores.push('tipo no puede quedar vacío');
+  for (const campo of ['tipo', 'estado_comercial']) if (campo in datos && datos[campo] == null) errores.push(`${campo} no puede quedar vacío`);
   if ('pais' in datos && datos.pais == null) errores.push('pais no puede quedar vacío');
   if ('activo' in datos && datos.activo == null) errores.push('activo no puede quedar vacío');
   return { datos, errores };

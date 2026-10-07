@@ -119,3 +119,18 @@ test('migración 0008: los proveedores escritos a mano pasan a la tabla', async 
   assert.deepEqual(filas.map((f) => f.nombre), ['Autos Terrassa', 'Autos Terrassa', 'Particular', null]);
   db.close();
 });
+
+test('clientes: estado comercial del embudo', () =>
+  conServidor(async ({ pide }) => {
+    const { id, estado_comercial } = (await pide('/clientes', { method: 'POST', como: 'comercial', body: { nombre: 'Marta' } })).json;
+    assert.equal(estado_comercial, 'nuevo', 'por defecto');
+    await pide('/clientes', { method: 'POST', body: { nombre: 'Iván', estado_comercial: 'negociando' } });
+
+    assert.equal((await pide(`/clientes/${id}`, { method: 'PUT', body: { estado_comercial: 'me_lo_pienso' }, como: 'comercial' })).json.estado_comercial, 'me_lo_pienso');
+    assert.equal((await pide(`/clientes/${id}`, { method: 'PUT', body: { estado_comercial: 'raro' } })).status, 400);
+    assert.equal((await pide(`/clientes/${id}`, { method: 'PUT', body: { estado_comercial: null } })).status, 400);
+
+    assert.deepEqual((await pide('/clientes?estado_comercial=negociando')).json.map((c) => c.nombre), ['Iván']);
+    assert.equal((await pide('/clientes?estado_comercial=raro')).status, 400);
+    assert.equal((await pide('/proveedores?estado_comercial=nuevo')).status, 400, 'los proveedores no tienen embudo');
+  }));

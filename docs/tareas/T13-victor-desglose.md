@@ -10,9 +10,9 @@ Lo de arriba desbloquea a los demás; por eso va primero.
 Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú podéis crear la vuestra a la vez sin pisaros. Test en `api/test/migraciones.test.js`.
 
 ## 1. Desbloquear a David y a Hafsa
-- [ ] Añadir `estado_comercial` a `CAMPOS_CLIENTE` (`api/src/modules/terceros/campos.js`) cuando entre la migración de T11.
-- [ ] Sacar `ventasDelMes` de `api/src/modules/informes/routes.js` a una función exportada (`informes/ventas.js`) para la T12 de David.
-- [ ] Revisar los PR de T07 (Hafsa), T11 y T12 (David).
+- ✅ `estado_comercial` en clientes (migración `0009`, campo y filtro `?estado_comercial=`), hecho aparte para que David no espere (7-oct).
+- ✅ `ventasDelMes(db, mes)` en `api/src/modules/informes/ventas.js`, con `vendio_id` para la T12 (7-oct). De paso, arreglado: si «Vendido» y «Entregado» caían en el mismo segundo, la venta se atribuía a quien entregó.
+- [ ] Revisar los PR de T07 (Hafsa), T11 y T12 (David) cuando lleguen.
 
 ## 2. T10 · Investigación (antes de los bloques 4 y 8)
 - [ ] Parte 1: Verifactu → `docs/verifactu.md`.
