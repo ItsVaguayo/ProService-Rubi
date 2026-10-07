@@ -6,7 +6,7 @@ Revisado el 7-oct-2026 entrando con el usuario de gerencia, **solo mirando**: no
 
 1. **El stock es mucho menor de lo que dice el briefing.** Pymecar tiene 76 coches desde 2024 y hoy unos **8 en stock** (valorados en 29.561 €). Han vendido 38 en 2026 hasta el 1-oct, **unos 4 al mes**, no 12. Rotación media: 37,6 días. El briefing hablaba de 50 en stock (10 propios y 40 de terceros) y 12 ventas al mes. Hay que preguntarlo: o meten en Pymecar solo una parte, o el briefing exageró.
 2. **El depósito funciona distinto de lo que habíamos supuesto.** Lo llaman **«Cesión de vehículos para venta»**: 17 cesiones desde 2024, casi todas de un mismo compraventa profesional, y alguna de particulares. Hoy no hay ninguna activa (stock cedido: 0 €). Al venderse, el coche cedido **entra como compra** («procedencia: cesión») y se vende en **REBU**, como uno propio. El margen es venta − lo pactado con el cedente, y el IVA va sobre esa diferencia. Cierra la duda B3.
-3. **Facturan con una sola empresa:** PROSERVICE OCASIÓN SL, B56845381 (sigla PRO).
+3. **Facturan con una sola empresa:** PROSERVICE OCASIÓN SL, B56845381 (sigla PRO), con domicilio fiscal en C/ Llull 321, planta 4, 08191 Rubí (Barcelona), según la cabecera de sus contratos.
 4. **Calculadora de cuota:** 7,5 % de interés anual y 10 años de plazo. Cierra B13 y E2.
 5. **Pymecar puede publicar en portales a través de Inventario.pro** (hay un campo para su API key y en cada coche un «Publicar en web» y «Publicar en portales»). **No lo usan:** la clave está vacía y el coche revisado tenía las dos en NO.
 6. **Muchas pantallas están vacías:** agentes (0), comisiones a agentes (0), gestores (0), tasaciones (0), pedidos (0), tareas (0). Contactos: 15, el último de 2025. Lo de CRM, tasaciones y comisiones no lo usan hoy.
@@ -43,7 +43,7 @@ En la lista: filtros por entrada (COM compra / CES cesión), reservado, **seguro
 
 - Serie **`V26`** (`V25` el año pasado), número de cinco cifras: `V26-00038` (en la lista del coche sale como `F-V26-00038`). La 38 fue el 1-oct.
 - La factura de venta lleva: cliente, forma de pago, coche, **uso destino** (particular o profesional), precio neto, subvención, descuento, **régimen (REBU o general)**, base, IVA (0, 10 o 21 %), total, **gastos de gestoría como suplidos**, total de la operación, **entrega de un coche como parte del pago**, financiación sí/no, hasta dos formas de pago adicionales con importe, **garantía** (comprada, directa o sin garantía, de 1 a 36 meses, con fecha de fin), comisión sí/no y **datos del contrato** (fecha, hora, km, otros usos, cláusulas adicionales) y observaciones.
-- **El contrato se imprime desde la factura** (botón «Contrato»), igual que la solicitud de provisional y la revisión de componentes. No hay contratos sueltos.
+- **El contrato se imprime desde la factura** (botón «Contrato»), igual que la solicitud de provisional y la revisión de componentes. No hay contratos sueltos. Su cabecera: lugar, fecha y hora; la nota del RDL 1/2007 (consumidores); vendedor y comprador con domicilio, municipio, código postal y provincia; y el vehículo con clase, marca y modelo, uso anterior, estado, última ITV, matrícula, bastidor, próxima ITV, km, primera matriculación y combustible. Dice que lleva un anexo con el estado del vehículo (su «Revisión componentes»): nosotros aún no lo generamos.
 - Hay botón de **Devolución** (rectificativa).
 - **Reservas:** 2 en total, de 500 € de señal, ninguna facturada. Llevan forma de pago.
 - Formas de pago: a la vista, contado (efectivo), pago a 30 días, a 30 y 60 días, tarjeta y transferencia.

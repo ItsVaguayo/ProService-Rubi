@@ -767,7 +767,8 @@ async function paginaFicha(usuario) {
     fila('Tracción', nombre(v.traccion)), fila('Emisiones', v.emisiones_co2 != null ? `${v.emisiones_co2} g/km` : null, true),
     fila('Etiqueta DGT', v.etiqueta_dgt), fila('Carrocería', nombre(v.carroceria)),
     fila('Puertas / plazas', v.puertas || v.plazas ? `${v.puertas ?? '—'} / ${v.plazas ?? '—'}` : null, true), fila('Color', nombre(v.color_exterior)),
-    fila('Tapicería', nombre(v.tapiceria)), fila('Llantas', v.llantas), fila('ITV hasta', v.itv_caducidad && fechaCorta(v.itv_caducidad), true),
+    fila('Tapicería', nombre(v.tapiceria)), fila('Llantas', v.llantas), fila('ITV hasta', v.itv_caducidad && fechaCorta(v.itv_caducidad), true), fila('Última ITV', v.itv_ultima && fechaCorta(v.itv_ultima), true),
+    fila('Uso anterior', v.uso_anterior && mayuscula(v.uso_anterior), true),
     fila('Última revisión', v.ultima_revision && fechaCorta(v.ultima_revision), true), fila('Garantía', v.garantia_meses != null ? `${v.garantia_meses} meses` : null, true),
     fila('Llaves', v.num_llaves, true),
   ].join('');
@@ -2182,13 +2183,19 @@ async function paginaContrato(usuario) {
       ${k.pendiente_abogado ? '<p class="contrato__aviso">Borrador pendiente de revisión por abogado</p>' : ''}
       <h1>${esc(k.titulo)}</h1>
       <p class="contrato__codigo">${esc(c.codigo)}</p>
-      <p class="contrato__lugar">${esc(k.lugar_fecha)}</p>
-      ${k.partes.map((p) => `<table class="contrato__cuadro"><caption>${esc(p.rol)}</caption><tbody>
-        ${fila('Nombre o razón social', p.nombre)}${fila('DNI / NIE / CIF', p.nif)}${fila('Domicilio', p.domicilio)}${fila('Teléfono', p.telefono)}</tbody></table>`).join('')}
-      <table class="contrato__cuadro"><caption>Vehículo</caption><tbody>
-        ${fila('Marca y modelo', [v.marca, v.modelo, v.version].filter(Boolean).join(' '))}${fila('Matrícula', v.matricula)}${fila('Bastidor', v.bastidor)}
-        ${fila('1.ª matriculación', v.fecha_matriculacion ? fechaCorta(v.fecha_matriculacion) : null)}${fila('Kilómetros', v.kilometros != null ? `${cifra(v.kilometros)} km` : null)}
-        ${fila('Combustible', v.combustible ? mayuscula(v.combustible) : null)}${fila('Color', v.color ? mayuscula(v.color) : null)}</tbody></table>
+      <p class="contrato__lugar"><b>Lugar y fecha de celebración:</b> ${esc(k.lugar_fecha)}</p>
+      ${k.nota_legal ? `<p class="contrato__nota">${esc(k.nota_legal)}</p>` : ''}
+      ${k.partes.map((p) => `<table class="contrato__cuadro"><caption>Datos del ${esc(p.rol.toLowerCase())}</caption><tbody>
+        ${fila('Nombre o razón social', p.nombre)}${fila('CIF / NIF / NIE', p.nif)}${fila('Domicilio', p.domicilio)}${fila('Municipio', p.municipio)}
+        ${fila('Código postal', p.codigo_postal)}${fila('Provincia', p.provincia)}${fila('Teléfono', p.telefono)}</tbody></table>`).join('')}
+      <table class="contrato__cuadro"><caption>Identificación del vehículo y estado actual del mismo</caption><tbody>
+        ${fila('Clase de vehículo', v.clase)}${fila('Marca y modelo', [v.marca, v.modelo, v.version].filter(Boolean).join(' '))}
+        ${'uso_anterior' in v ? fila('Uso anterior', v.uso_anterior ? mayuscula(v.uso_anterior) : '____________') : ''}${fila('Estado', v.estado)}
+        ${'itv_ultima' in v ? fila('Fecha última ITV del vehículo', v.itv_ultima ?? '____________') : ''}${fila('Matrícula', v.matricula)}${fila('Número de bastidor', v.bastidor)}
+        ${'itv_proxima' in v ? fila('Fecha 1.ª revisión ITV a realizar por el comprador', v.itv_proxima ?? '____________') : ''}
+        ${fila('Kilómetros recorridos', v.kilometros != null ? cifra(v.kilometros) : null)}
+        ${fila('Primera matriculación', v.primera_matriculacion ?? (v.fecha_matriculacion ? fechaCorta(v.fecha_matriculacion) : null))}
+        ${fila('Combustible del vehículo', v.combustible ? v.combustible.toUpperCase() : null)}${fila('Color', v.color ? mayuscula(v.color) : null)}</tbody></table>
       ${k.intro.map((p) => `<p>${esc(p)}</p>`).join('')}
       ${k.secciones.map((s) => `<h2>${esc(s.titulo)}</h2><ol>${s.items.map((i) => `<li>${parrafo(i)}</li>`).join('')}</ol>`).join('')}
       ${k.clausulas_adicionales ? `<h2>Cláusulas adicionales</h2><p>${esc(k.clausulas_adicionales).replace(/\n/g, '<br>')}</p>` : ''}

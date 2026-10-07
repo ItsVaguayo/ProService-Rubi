@@ -94,7 +94,8 @@ test('emitir: número correlativo de la serie del año, copia de los datos y el 
   }));
 
 test('emitir: falta algo → 409 con la lista de lo que falta', () =>
-  conServidor(async ({ pide }) => {
+  conServidor(async ({ db, pide }) => {
+    db.prepare('UPDATE empresa SET direccion = NULL WHERE id = 1').run(); // la 0015 la rellena: aquí se quita
     const c = (await pide('/clientes', { method: 'POST', body: { nombre: 'Sin datos' } })).json;
     const v = (await pide('/vehiculos', { method: 'POST', body: { ...coche, precio_compra_cent: null } })).json;
     const b = (await borrador(pide, { cliente_id: c.id, vehiculo_id: v.id })).json;

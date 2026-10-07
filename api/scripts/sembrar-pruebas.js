@@ -222,11 +222,10 @@ db.transaction(() => {
   act.run('nota', cliente('Enric Puig'), 'Se quedó un Tucson en otro concesionario. Motivo: precio.', null, new Date(Date.now() - 16 * 86400000).toISOString().slice(0, 19).replace('T', ' '), null, jaume, jaume);
 })();
 
-// Facturación (0013): la dirección de la tienda (la de su web; la fiscal la tiene que confirmar el cliente, H8),
+// Facturación (0013): el domicilio fiscal ya lo pone la migración 0015 (el de sus contratos de Pymecar),
 // la serie V26 siguiendo a Pymecar (iba por la 38) y una factura por cada coche vendido con comprador:
 // las entregadas, cobradas; la vendida más reciente, con la señal y el resto pendiente; una vencida a medias.
 db.transaction(() => {
-  db.prepare("UPDATE empresa SET direccion = 'Ctra. de Terrassa, 83', codigo_postal = '08191' WHERE id = 1").run();
   const anio = new Date().getFullYear();
   const serie = `V${String(anio).slice(2)}`;
   db.prepare("INSERT INTO series (serie, tipo, anio, ultimo) VALUES (?, 'venta', ?, 38)").run(serie, anio);

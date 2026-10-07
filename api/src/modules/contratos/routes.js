@@ -44,7 +44,7 @@ export function rutasContratos(db) {
       const pagos = [...cobros, ...(f.total_cent - cobrado > 0 ? [{ forma: f.forma_pago ?? 'transferencia', importe_cent: f.total_cent - cobrado }] : [])];
       return {
         fila: { vehiculo_id: v.id, factura_id: f.id, cliente_id: f.cliente_id },
-        datos: { cliente: JSON.parse(f.datos_cliente), vehiculo: datosCoche(JSON.parse(f.datos_vehiculo) ?? v, f.km_entrega),
+        datos: { cliente: JSON.parse(f.datos_cliente), vehiculo: datosCoche({ ...v, ...JSON.parse(f.datos_vehiculo) }, f.km_entrega),
           precio_cent: f.total_cent, pagos, garantia_tipo: f.garantia_tipo, garantia_meses: f.garantia_meses, probado: b.probado !== false },
       };
     },

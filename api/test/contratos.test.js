@@ -38,7 +38,7 @@ test('compraventa: sale de la factura, con el texto de Pymecar, y no cambia aunq
     assert.equal(r.json.contenido.vehiculo.kilometros, 45100, 'los km de la entrega');
     assert.equal(r.json.contenido.partes[1].nif, '12345678Z');
     assert.equal(r.json.contenido.pendiente_abogado, true);
-    assert.match(r.json.contenido.lugar_fecha, /a las 17:30 horas/);
+    assert.match(r.json.contenido.lugar_fecha, /\(17:30 horas\)/);
 
     await pide(`/clientes/${c.id}`, { method: 'PUT', body: { direccion: 'Otra calle' } });
     assert.ok(!textoDe((await pide(`/contratos/${r.json.id}`)).json).includes('Otra calle'), 'congelado');
@@ -91,4 +91,19 @@ test('validación', () =>
     for (const body of [{ tipo: 'otro' }, { tipo: 'compraventa' }, { tipo: 'compra' }, { tipo: 'compra', vehiculo_id: 1, hora: '25:00' }, { tipo: 'reserva', vehiculo_id: 1, fecha: '2026-02-30' }]) {
       assert.ok([400, 404].includes((await pide('/contratos', { method: 'POST', body })).status), JSON.stringify(body));
     }
+  }));
+
+test('cabecera como en Pymecar: lugar y fecha, nota de consumidores, domicilio por partes y la ITV', () =>
+  conServidor(async ({ pide }) => {
+    assert.equal((await pide('/facturas/empresa')).json.direccion, 'C/ Llull, 321, planta 4', 'el domicilio fiscal de sus contratos (0015)');
+    const { f, v } = await vendidoConFactura(pide);
+    await pide(`/vehiculos/${v.id}`, { method: 'PUT', body: { uso_anterior: 'particular', itv_ultima: '2026-01-01', itv_caducidad: '2028-01-01', fecha_matriculacion: '2022-01-15' } });
+    const k = (await pide('/contratos', { method: 'POST', body: { tipo: 'compraventa', factura_id: f.id, fecha: '2026-10-01', hora: '17:51' } })).json.contenido;
+    assert.equal(k.titulo, 'Contrato de compraventa de un vehículo usado');
+    assert.equal(k.lugar_fecha, 'RUBÍ a 1 de octubre del 2026 (17:51 horas)');
+    assert.match(k.nota_legal, /Real Decreto Legislativo 1\/2007/);
+    assert.deepEqual([k.partes[0].domicilio, k.partes[0].municipio, k.partes[0].codigo_postal], ['Ctra. de Terrassa, 83', 'Rubí', '08191'], 'la que puso el test');
+    assert.deepEqual([k.vehiculo.uso_anterior, k.vehiculo.itv_ultima, k.vehiculo.itv_proxima, k.vehiculo.primera_matriculacion, k.vehiculo.clase],
+      ['particular', '01/01/2026', '01/01/2028', '03 / 2021', 'Turismo'], 'la primera matriculación sale de la copia de la factura');
+    assert.equal((await pide(`/vehiculos/${v.id}`, { method: 'PUT', body: { uso_anterior: 'taxi' } })).status, 400);
   }));

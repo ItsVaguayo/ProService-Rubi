@@ -8,14 +8,19 @@
 // garantía parecen de la ley anterior a la reforma de 2021: que lo mire antes de usarlo.
 
 export const TITULOS = {
-  reserva: 'Contrato de reserva de vehículo',
-  compraventa: 'Contrato de compraventa de vehículo usado',
-  compra: 'Contrato de compra de vehículo usado',
-  cesion: 'Contrato de cesión de vehículo para su venta',
+  reserva: 'Contrato de reserva de un vehículo usado',
+  compraventa: 'Contrato de compraventa de un vehículo usado',
+  compra: 'Contrato de compra de un vehículo usado',
+  cesion: 'Contrato de cesión de un vehículo para su venta',
 };
+
+// La nota de la cabecera del contrato de compraventa de Pymecar
+const NOTA_CONSUMIDORES = 'Modelo de contrato adaptado al Real Decreto Legislativo 1/2007, de 16 de noviembre, Ley general para la defensa de los consumidores y usuarios, aplicable exclusivamente a los compradores que sean personas físicas y que el uso del vehículo sea particular.';
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 export const fechaEscrita = (dia) => { const [a, m, d] = dia.split('-').map(Number); return `${d} de ${MESES[m - 1]} de ${a}`; };
+// «RUBÍ a 1 de octubre del 2026 (17:51 horas)», como en Pymecar
+const lugarYFecha = (dia, hora) => { const [a, m, d] = dia.split('-').map(Number); return `RUBÍ a ${d} de ${MESES[m - 1]} del ${a}${hora ? ` (${hora} horas)` : ''}`; };
 // 15.975 € o 15.975,50 €: como en los contratos de Pymecar
 export function eurosTexto(cent) {
   if (cent == null) return '__________ €';
@@ -25,22 +30,35 @@ export function eurosTexto(cent) {
 const hueco = (valor, largo = 20) => (valor == null || valor === '' ? '_'.repeat(largo) : String(valor));
 const FORMAS = { transferencia: 'TRANSFERENCIA', contado: 'CONTADO', tarjeta: 'TARJETA', a_la_vista: 'A LA VISTA', pago_30: 'PAGO A 30 DÍAS', pago_30_60: 'PAGO A 30 Y 60 DÍAS', financiera: 'FINANCIACIÓN', senal: 'SEÑAL' };
 
-// Una parte del contrato (empresa, cliente, proveedor o dueño). Lo que falte sale como hueco para rellenar a mano.
+// Una parte del contrato (empresa, cliente, proveedor o dueño), con los mismos datos que la cabecera de los
+// contratos de Pymecar. Lo que falte sale como hueco para rellenar a mano.
 export function parte(rol, x, { empresa = false } = {}) {
   return {
     rol,
     nombre: hueco(empresa ? x?.razon_social : x?.nombre, 40),
     nif: hueco(x?.nif, 12),
-    domicilio: hueco([x?.direccion, [x?.codigo_postal, x?.poblacion].filter(Boolean).join(' ') + (x?.provincia ? ` (${x.provincia})` : '')]
-      .map((t) => t?.trim()).filter(Boolean).join(', ') || null, 50),
+    domicilio: hueco(x?.direccion, 40),
+    municipio: hueco(x?.poblacion, 20),
+    codigo_postal: hueco(x?.codigo_postal, 6),
+    provincia: hueco(x?.provincia, 15),
     telefono: x?.telefono ?? null,
   };
 }
 
+// La clase del vehículo, como en Pymecar (TURISMOS), a partir de la carrocería de la ficha
+const claseDe = (carroceria) => (/industrial|furgon|comercial/i.test(carroceria ?? '') ? 'Vehículo comercial' : 'Turismo');
+// 'AAAA-MM-DD' → 'MM / AAAA', como la primera matriculación en Pymecar
+const mesAnio = (dia) => (dia ? `${dia.slice(5, 7)} / ${dia.slice(0, 4)}` : null);
+const diaEsp = (dia) => (dia ? dia.split('-').reverse().join('/') : null);
+
 export function datosCoche(v, km) {
   return {
-    marca: v.marca, modelo: v.modelo, version: v.version ?? null, matricula: v.matricula, bastidor: hueco(v.bastidor, 17),
-    fecha_matriculacion: v.fecha_matriculacion ?? null, kilometros: km ?? v.kilometros ?? null, combustible: v.combustible ?? null, color: v.color_exterior ?? null,
+    clase: claseDe(v.carroceria), marca: v.marca, modelo: v.modelo, version: v.version ?? null,
+    uso_anterior: v.uso_anterior ?? null, estado: 'Usado',
+    itv_ultima: diaEsp(v.itv_ultima), itv_proxima: diaEsp(v.itv_caducidad),
+    matricula: v.matricula, bastidor: hueco(v.bastidor, 17),
+    kilometros: km ?? v.kilometros ?? null, primera_matriculacion: mesAnio(v.fecha_matriculacion),
+    combustible: v.combustible ?? null, color: v.color_exterior ?? null,
   };
 }
 
@@ -175,7 +193,8 @@ const PLANTILLAS = { compraventa, reserva, compra, cesion };
 export function escribirContrato(tipo, d) {
   const cuerpo = PLANTILLAS[tipo](d);
   return {
-    tipo, titulo: TITULOS[tipo], lugar_fecha: `En Rubí, a ${fechaEscrita(d.fecha)}${d.hora ? `, a las ${d.hora} horas` : ''}`,
+    tipo, titulo: TITULOS[tipo], lugar_fecha: lugarYFecha(d.fecha, d.hora),
+    nota_legal: tipo === 'compraventa' ? NOTA_CONSUMIDORES : null,
     pendiente_abogado: true, vehiculo: d.vehiculo, ...cuerpo,
     clausulas_adicionales: d.clausulas_adicionales ?? null,
     cierre,

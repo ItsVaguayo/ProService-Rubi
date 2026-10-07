@@ -73,7 +73,8 @@
 .contrato h1 { margin: 0; font-size: 15pt; text-align: center; text-transform: uppercase; letter-spacing: .02em; }
 .contrato__codigo { margin: 2px 0 0; color: var(--tinta-3); text-align: center; font-variant-numeric: tabular-nums; }
 .contrato__aviso { margin: 0 0 6mm; padding: 6px 10px; border: 1px solid #e3b341; background: #fff6d6; color: #7a5a00; font-size: 8.5pt; font-weight: 700; text-align: center; }
-.contrato__lugar { margin: 5mm 0 4mm; text-align: right; }
+.contrato__lugar { margin: 5mm 0 2mm; }
+.contrato__nota { margin: 0 0 4mm !important; color: var(--tinta-2); font-size: 8.5pt; font-style: italic; }
 .contrato__cuadro { width: 100%; margin: 0 0 4mm; border-collapse: collapse; break-inside: avoid; }
 .contrato__cuadro caption { padding: 0 0 3px; color: var(--tinta-3); font-size: 8pt; font-weight: 700; letter-spacing: .08em; text-align: left; text-transform: uppercase; }
 .contrato__cuadro th, .contrato__cuadro td { padding: 4px 6px; border: 1px solid #c9cdd2; text-align: left; vertical-align: top; }

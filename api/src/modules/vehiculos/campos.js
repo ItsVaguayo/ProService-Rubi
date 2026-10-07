@@ -37,6 +37,8 @@ export const CAMPOS = {
   // 3.4 Estado y documentación
   ultima_revision: { tipo: 'fecha' },
   itv_caducidad: { tipo: 'fecha' },
+  itv_ultima: { tipo: 'fecha' }, // 0015, como en Pymecar: sale en el contrato
+  uso_anterior: { tipo: 'texto' }, // 0015: particular o profesional (la base lo comprueba)
   danos: { tipo: 'texto' },
   garantia_meses: { tipo: 'entero' },
   ubicacion: { tipo: 'texto' },
