@@ -39,3 +39,39 @@ Siete páginas nuevas del panel, en HTML y CSS, con datos de ejemplo escritos a 
 - En 390 px de ancho no hay barra de desplazamiento horizontal.
 - El dinero sale siempre con el mismo formato: `12.450 €` (punto de miles, sin decimales salvo en gastos e impuestos).
 - PR hacia `develop` con «T07» en la descripción.
+
+## Segunda vuelta (después del PR #11)
+
+El 7-oct se miró Pymecar, el programa que usan hoy, y dos maquetas tienen que parecerse más a lo que ya conocen. Un PR aparte, con «T07b» en la descripción.
+
+### `gastos.html`: el modelo de Pymecar
+
+Cada gasto lleva **dos datos** en vez de una categoría:
+
+1. **Tipo**, que dice cómo se calcula y a qué libro va. Cinco opciones:
+   - **Gasto general**: factura normal con IVA (luz, publicidad, software).
+   - **Gasto con IRPF**: de un autónomo o profesional con retención (gestoría, abogado, alquiler del local). Al elegirlo aparecen dos campos más: **% de retención** (por defecto 15 %; 19 % en alquileres) y su importe. El total a pagar es base + IVA − retención.
+   - **Comisiones agentes**: lo que se paga a un agente o comisionista. Se elige el agente.
+   - **Factura con REBU**: la compra de un coche a otro compraventa, sin IVA. Se elige el coche.
+   - **Gasto vehículo**: taller, transporte, limpieza… de un coche. Se elige el coche.
+2. **Concepto**, para agrupar. La lista de Pymecar: ALQUILERES, CARBURANTES, COMISIONES, COMPRAS, ELECTRICIDAD, GESTORÍAS, PAPELERÍAS, PUBLICIDAD, VEHÍCULOS.
+
+Al elegir el concepto se propone el tipo: Alquileres y Gestorías → con IRPF; Comisiones → Comisiones agentes; Vehículos → Gasto vehículo; Compras → Factura con REBU; el resto → Gasto general. Jaume lo puede cambiar.
+
+Además, en el formulario y en la lista:
+- **Nº de registro** del gasto (correlativo, lo pone el programa: «313»).
+- **Nº de la factura del proveedor** («F-26-000153»).
+- **A quién**: proveedor, agente o cliente.
+- En la lista, una columna de **IRPF** junto a la de IVA.
+- Las cifras de arriba, por **tipo** en vez de por categoría.
+- Sin nóminas por ahora: Pymecar no las lleva y está preguntado (no metas «Personal»).
+
+### `facturas.html`: la numeración real
+
+Las facturas de venta van como en Pymecar: serie del año, guion y cinco cifras. **`V26-00038`**, `V26-00039`… Cambia los números de ejemplo a ese formato.
+
+### Cómo sé que está bien
+
+- En gastos no queda ninguna de las categorías viejas (Coche, Personal, Proveedor, Comisión, Otros).
+- Al elegir «Gasto con IRPF» se ven los campos de la retención (en la maqueta pueden estar siempre visibles, con un comentario que diga que solo salen con ese tipo).
+- PR hacia `develop` con «T07b».

@@ -13,7 +13,7 @@ Las piezas difíciles (login, seguridad, servidor, migración) las monta Claude.
 | [T03 · Ronda de mejoras del frontend](T03-ronda-mejoras-frontend.md) | Los tres, cada uno en su rama | Martes 6-oct, 14:00 |
 | [T04 · Investigar los portales](T04-david-portales.md) | David | Martes 6-oct |
 | [T06 · Lista de extras](T06-hafsa-extras.md) | Hafsa | Viernes 9-oct |
-| [T07 · Maquetas del panel de gestión](T07-hafsa-maquetas-gestion.md) | Hafsa | Al acabar T06 |
+| ✅ [T07 · Maquetas del panel de gestión](T07-hafsa-maquetas-gestion.md) | Hafsa | Hecha (PR #11). Falta la segunda vuelta (T07b): gastos y facturas como en Pymecar |
 | [T08 · Fondo con IA y estados de las fotos](T08-hafsa-fondo-ia.md) | Hafsa | Al acabar T07 |
 | [T09 · Factura y contratos imprimibles](T09-victor-factura-contratos.md) | Victor | Cuanto antes |
 | [T10 · Verifactu, Meta, partners y casos del REBU](T10-victor-investigacion.md) | Victor | La parte 1, cuanto antes |

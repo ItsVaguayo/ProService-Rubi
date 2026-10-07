@@ -118,7 +118,9 @@ function prepararMenu(usuario) {
   }
   const contador = actualizarContadorContactos();
   if (usuario.rol !== 'gerencia') {
-    document.querySelectorAll('a[href="informes.html"], a[href="usuarios.html"]').forEach((a) => a.remove());
+    // Lo de dinero y administración solo es de gerencia (la API también se lo niega). Incentivos sí: cada uno ve lo suyo.
+    document.querySelectorAll(['informes', 'usuarios', 'proveedores', 'gastos', 'facturas'].map((p) => `a[href="${p}.html"]`).join(', '))
+      .forEach((a) => a.remove());
   }
   resalteDelMenu();
   return contador;
