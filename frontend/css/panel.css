@@ -2099,6 +2099,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 .segmentos--oscuro { background: var(--negro-3); }
 .segmentos--oscuro span { color: #b9bec4; }
 .segmentos--oscuro label:hover span { color: var(--blanco); }
+.segmentos--oscuro label input:checked + span { color: var(--tinta); } /* la elegida, oscura también con el ratón encima */
 
 /* Embudo: las columnas del tablero, sin arrastrar el fondo. Las seis en fila desde unos 1.300 px de
    ancho; por debajo, dos filas de tres (sin columnas escondidas por un lado); en el móvil, una debajo de otra. */

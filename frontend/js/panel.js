@@ -1412,6 +1412,248 @@ async function paginaClientes() {
   if (primero) await abrir(primero, { sinHistorial: true });
 }
 
+// --- CRM ---------------------------------------------------------------------------------------
+
+// Columna del embudo de cada estado comercial (las clases de la maqueta)
+const COLUMNA_CRM = { nuevo: 'nuevo', interesado: 'interesado', me_lo_pienso: 'pienso', negociando: 'negociando', ganado: 'ganado', perdido: 'perdido' };
+const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+// 'AAAA-MM-DD' en hora de aquí (programada_para va en hora de Rubí, no en UTC)
+const diaLocal = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const horaLocal = (d) => d.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit' });
+
+// Arriba, lo de hoy (y lo atrasado sin hacer); abajo, el embudo de clientes, que se mueve arrastrando.
+async function paginaCrm(usuario) {
+  const gerencia = usuario.rol === 'gerencia';
+  const deQuien = $('.cabecera__acciones .segmentos');
+  const hoyCaja = $('.hoy');
+  const tablero = $('.tablero--crm');
+  const cajaError = document.createElement('div');
+  cajaError.className = 'error error--lista';
+  cajaError.setAttribute('role', 'alert');
+  cajaError.hidden = true;
+  hoyCaja.before(cajaError);
+
+  // --- Hoy ---
+  const pintarHoy = async () => {
+    const responsable = $('input[name="responsable"]:checked', deQuien)?.value ?? 'yo'; // 'yo' o '' (de todos)
+    const filtro = responsable ? `&responsable=${encodeURIComponent(responsable)}` : '';
+    const hoy = diaLocal();
+    const [deHoy, pendientes] = await Promise.all([api(`/actividades?dia=${hoy}${filtro}`), api(`/actividades?pendientes=1${filtro}`)]);
+    // Lo atrasado: sin hacer y programado antes de hoy
+    const atrasadas = pendientes.filter((a) => a.programada_para && a.programada_para.slice(0, 10) < hoy);
+    const lista = [...atrasadas, ...deHoy];
+    const ahora = new Date();
+    const tarde = (a) => !a.hecha_en && new Date(a.programada_para.replace(' ', 'T')) < ahora;
+    const fila = (a) => {
+      const cuando = new Date(a.programada_para.replace(' ', 'T'));
+      const quien = a.cliente_id
+        ? `<a href="clientes.html?id=${a.cliente_id}"><strong>${esc(a.cliente_nombre)}</strong></a>`
+        : `<a href="contactos.html"><strong>${esc(a.contacto_nombre ?? 'Contacto')}</strong></a>`;
+      const retraso = tarde(a) ? ` <span class="dias dias--peligro">${esc(mayuscula(haceCuanto(cuando)))}</span>` : '';
+      const otraPersona = !responsable && a.responsable_nombre ? ` <span class="nota">· ${esc(a.responsable_nombre)}</span>` : '';
+      const fin = a.hecha_en
+        ? `<span class="actividad__hecha">Hecha a las ${esc(horaLocal(fechaSql(a.hecha_en)))}</span>`
+        : `<button class="boton boton--oscuro boton--pequeno" type="button" data-hecha="${a.id}">Hecho</button>`;
+      const hora = a.programada_para.slice(0, 10) < hoy ? cuando.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : a.programada_para.slice(11, 16).replace(/^0/, '');
+      return `<li class="actividad${a.hecha_en ? ' actividad--hecha' : ''}${tarde(a) ? ' actividad--tarde' : ''}">
+          <time class="actividad__hora cifra">${esc(hora)}</time>
+          <span class="estado actividad--${esc(a.tipo)}">${esc(TIPOS_ACTIVIDAD[a.tipo] ?? a.tipo)}</span>
+          <p class="actividad__texto">${quien}${esc(a.descripcion)}${otraPersona}${retraso}</p>
+          ${fin}
+        </li>`;
+    };
+    const hechas = lista.filter((a) => a.hecha_en).length;
+    const conRetraso = lista.filter(tarde).length;
+    $('#hoy-titulo').textContent = `Hoy, ${DIAS_SEMANA[ahora.getDay()]} ${ahora.getDate()}`;
+    $('.caja__titulo .nota', hoyCaja).textContent = lista.length ? `${hechas} de ${lista.length} ${lista.length === 1 ? 'hecha' : 'hechas'}` : '';
+    $('.hoy__lista', hoyCaja).innerHTML = lista.length
+      ? lista.map(fila).join('')
+      : `<li class="actividad"><span></span><span></span><p class="actividad__texto">Nada programado para hoy${responsable ? '' : ' en todo el equipo'}.</p></li>`;
+    const pendientesHoy = lista.length - hechas;
+    $('.contactos-resumen').innerHTML = `<strong class="cifra">${pendientesHoy}</strong> ${pendientesHoy === 1 ? 'cosa' : 'cosas'} para hoy${conRetraso ? ` <span class="portada__alerta">· ${conRetraso} con retraso</span>` : ''}`;
+  };
+
+  hoyCaja.addEventListener('click', async (ev) => {
+    const boton = ev.target.closest('[data-hecha]');
+    if (!boton) return;
+    boton.disabled = true;
+    try {
+      await api(`/actividades/${boton.dataset.hecha}/hecha`, { method: 'PATCH', body: {} });
+      cajaError.hidden = true;
+      await Promise.all([pintarHoy(), pintarEmbudo()]);
+    } catch (e) {
+      boton.disabled = false;
+      mostrarErrores(cajaError, e, 'No se ha podido marcar como hecha:');
+    }
+  });
+  deQuien.addEventListener('change', () => pintarHoy().catch((e) => mostrarErrores(cajaError, e, 'No se ha podido cargar:')));
+
+  // --- Embudo ---
+  let clientes = new Map();
+  const pintarEmbudo = async () => {
+    const [lista, pendientes] = await Promise.all([api('/clientes'), api('/actividades?pendientes=1')]);
+    clientes = new Map(lista.map((c) => [String(c.id), c]));
+    // La próxima cosa que hay que hacer con cada cliente: la pendiente más temprana
+    const proxima = new Map();
+    for (const a of pendientes) {
+      if (!a.cliente_id) continue;
+      const otra = proxima.get(a.cliente_id);
+      if (!otra || (a.programada_para ?? '9999') < (otra.programada_para ?? '9999')) proxima.set(a.cliente_id, a);
+    }
+    // Los ganados y perdidos solo se quedan 30 días (desde su último cambio)
+    const reciente = (c) => !['ganado', 'perdido'].includes(c.estado_comercial) || diasDesde(c.actualizado_en) <= 30;
+    const visibles = lista.filter(reciente);
+    const tarjeta = (c) => {
+      const p = proxima.get(c.id);
+      const siguiente = p
+        ? `${TIPOS_ACTIVIDAD[p.tipo] ?? p.tipo}${p.programada_para ? ` ${p.programada_para.slice(0, 10) === diaLocal() ? `hoy ${p.programada_para.slice(11, 16)}` : new Date(p.programada_para.replace(' ', 'T')).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}` : ''}`
+        : 'Sin nada programado';
+      const dias = c.ultima_actividad ? diasDesde(c.ultima_actividad) : null;
+      const textoDias = dias == null ? 'Sin hablar' : dias === 0 ? 'Hoy' : dias === 1 ? 'Ayer' : `${dias} días`;
+      const claseDias = dias == null ? '' : dias > 14 ? ' dias--peligro' : dias > 7 ? ' dias--aviso' : '';
+      const nota = p?.descripcion ?? c.notas ?? (c.n_coches ? `${c.n_coches} ${c.n_coches === 1 ? 'coche comprado' : 'coches comprados'}` : '');
+      return `<a class="ficha-mini${c.estado_comercial === 'perdido' ? ' ficha-mini--perdido' : ''}" href="clientes.html?id=${c.id}" draggable="true" data-id="${c.id}">
+          <span class="ficha-mini__cuerpo">
+            <span class="ficha-mini__coche">${esc(c.nombre)}</span>
+            ${nota ? `<span class="nota">${esc(nota)}</span>` : ''}
+          </span>
+          <span class="ficha-mini__datos"><span>${esc(siguiente)}</span><span class="dias cifra${claseDias}">${esc(textoDias)}</span></span>
+        </a>`;
+    };
+    tablero.innerHTML = Object.entries(ESTADOS_COMERCIALES).map(([id, nombre]) => {
+      const suyos = visibles.filter((c) => c.estado_comercial === id);
+      return `<div class="columna columna--${COLUMNA_CRM[id]}" data-estado="${id}">
+          <h2 class="columna__titulo">${esc(nombre)} <span class="cifra">${suyos.length}</span></h2>
+          ${suyos.map(tarjeta).join('')}
+        </div>`;
+    }).join('');
+    const enMarcha = visibles.filter((c) => !['ganado', 'perdido'].includes(c.estado_comercial)).length;
+    $('.tablero-cabecera__pista').textContent = `${enMarcha} ${enMarcha === 1 ? 'cliente' : 'clientes'} con algo en marcha. Arrastra una tarjeta para cambiarla de columna. Los ganados y perdidos se quedan 30 días.`;
+  };
+
+  // Arrastrar una tarjeta a otra columna cambia su estado comercial (PUT /api/clientes/:id)
+  let arrastrado = null;
+  const limpiar = () => tablero.querySelectorAll('.columna--encima').forEach((c) => c.classList.remove('columna--encima'));
+  tablero.addEventListener('dragstart', (ev) => {
+    const ficha = ev.target.closest?.('.ficha-mini');
+    if (!ficha) return;
+    arrastrado = clientes.get(ficha.dataset.id);
+    ev.dataTransfer.effectAllowed = 'move';
+    ev.dataTransfer.setData('text/plain', ficha.dataset.id);
+    ficha.classList.add('ficha-mini--arrastrando');
+  });
+  tablero.addEventListener('dragend', (ev) => {
+    ev.target.closest?.('.ficha-mini')?.classList.remove('ficha-mini--arrastrando');
+    limpiar();
+    arrastrado = null;
+  });
+  tablero.addEventListener('dragover', (ev) => {
+    const columna = ev.target.closest?.('.columna');
+    if (!columna || !arrastrado || columna.dataset.estado === arrastrado.estado_comercial) return;
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = 'move';
+    if (!columna.classList.contains('columna--encima')) { limpiar(); columna.classList.add('columna--encima'); }
+  });
+  tablero.addEventListener('dragleave', (ev) => {
+    const columna = ev.target.closest?.('.columna');
+    if (columna && !columna.contains(ev.relatedTarget)) columna.classList.remove('columna--encima');
+  });
+  tablero.addEventListener('drop', async (ev) => {
+    const columna = ev.target.closest?.('.columna');
+    const c = arrastrado;
+    if (!columna || !c) return;
+    ev.preventDefault();
+    limpiar();
+    if (columna.dataset.estado === c.estado_comercial) return;
+    try {
+      await api(`/clientes/${c.id}`, { method: 'PUT', body: { estado_comercial: columna.dataset.estado } });
+      cajaError.hidden = true;
+      await pintarEmbudo();
+    } catch (e) {
+      mostrarErrores(cajaError, e, `No se ha podido mover a ${c.nombre}:`);
+    }
+  });
+
+  // --- Apuntar actividad ---
+  const boton = $('.cabecera__acciones a.boton');
+  const seccion = document.createElement('section');
+  seccion.className = 'caja form-tercero form-actividad';
+  seccion.hidden = true;
+  const responsables = gerencia ? (await api('/usuarios').catch(() => [])).filter((u) => u.activo) : [];
+  const ahoraMas = new Date(Date.now() + 3600000);
+  seccion.innerHTML = `
+    <div class="caja__titulo"><h2>Apuntar actividad</h2><span class="nota"><em class="obligatorio">*</em> obligatorio</span></div>
+    <form class="rejilla">
+      <label class="campo">
+        <span class="campo__nombre">Tipo <em>*</em></span>
+        <select name="tipo" required>${Object.entries(TIPOS_ACTIVIDAD).map(([id, n]) => `<option value="${id}">${esc(n)}</option>`).join('')}</select>
+      </label>
+      <label class="campo campo--doble">
+        <span class="campo__nombre">Cliente <em>*</em></span>
+        <select name="cliente_id" required><option value="">Elige el cliente</option></select>
+        <span class="campo__ayuda">¿No está? Dalo de alta en <a href="clientes.html#nuevo">Clientes</a>.</span>
+      </label>
+      <label class="campo">
+        <span class="campo__nombre">Cuándo</span>
+        <input type="datetime-local" name="programada_para" value="${diaLocal(ahoraMas)}T${String(ahoraMas.getHours()).padStart(2, '0')}:00">
+        <span class="campo__ayuda">Vacío en una nota.</span>
+      </label>
+      ${gerencia ? `<label class="campo">
+        <span class="campo__nombre">Quién</span>
+        <select name="responsable_id">${responsables.map((u) => `<option value="${u.id}"${u.id === usuario.id ? ' selected' : ''}>${esc(u.nombre)}</option>`).join('')}</select>
+      </label>` : ''}
+      <label class="campo campo--ancho">
+        <span class="campo__nombre">Qué hay que hacer <em>*</em></span>
+        <textarea name="descripcion" maxlength="2000" required placeholder="Llamarle para explicarle la financiación del Golf a 48 meses"></textarea>
+      </label>
+      <div class="form-tercero__pie campo--ancho">
+        <button class="boton boton--secundario" type="button" data-cancelar>Cancelar</button>
+        <button class="boton" type="submit">Apuntar</button>
+      </div>
+    </form>`;
+  hoyCaja.before(seccion);
+  const form = $('form', seccion);
+  const errorForm = cajaErrorEn(form);
+  errorForm.classList.add('campo--ancho');
+  const cerrar = () => { seccion.hidden = true; form.reset(); errorForm.hidden = true; };
+
+  boton.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    if (!seccion.hidden) return cerrar();
+    const select = form.elements.cliente_id;
+    select.length = 1;
+    for (const c of [...clientes.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))) select.add(new Option(c.nombre, c.id));
+    seccion.hidden = false;
+    seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    form.elements.tipo.focus();
+  });
+  $('[data-cancelar]', form).addEventListener('click', cerrar);
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const d = Object.fromEntries(new FormData(form));
+    const cuerpo = {
+      tipo: d.tipo,
+      cliente_id: Number(d.cliente_id),
+      descripcion: d.descripcion.trim(),
+      programada_para: d.programada_para ? d.programada_para.replace('T', ' ') : null,
+      ...(d.responsable_id ? { responsable_id: Number(d.responsable_id) } : {}),
+    };
+    const enviar = $('button[type="submit"]', form);
+    enviar.disabled = true;
+    try {
+      await api('/actividades', { method: 'POST', body: cuerpo });
+      cerrar();
+      await Promise.all([pintarHoy(), pintarEmbudo()]);
+    } catch (e) {
+      mostrarErrores(errorForm, e, 'No se ha podido apuntar:');
+    } finally {
+      enviar.disabled = false;
+    }
+  });
+
+  await Promise.all([pintarHoy(), pintarEmbudo()]);
+}
+
 // --- Informes (solo gerencia) -----------------------------------------------------------------
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -1493,6 +1735,7 @@ const PAGINAS = {
   'usuarios.html': paginaUsuarios,
   'contactos.html': paginaContactos,
   'clientes.html': paginaClientes,
+  'crm.html': paginaCrm,
   'informes.html': paginaInformes,
 };
 

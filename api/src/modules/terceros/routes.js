@@ -78,9 +78,9 @@ export function rutasClientes(db) {
   return rutasTercero(db, {
     tabla: 'clientes', entidad: 'cliente', campos: CAMPOS_CLIENTE,
     extra: (c) => ({ coches: coches.all(c.id), contactos: contactos.all(c.id) }),
-    // Para la lista: cuántos coches ha comprado y cuándo se habló con él por última vez (CRM)
+    // Para la lista: cuántos coches ha comprado y cuándo se habló con él por última vez (lo hecho en el CRM)
     resumen: `, (SELECT COUNT(*) FROM vehiculos v WHERE v.comprador_id = clientes.id) AS n_coches,
-               (SELECT MAX(COALESCE(a.hecha_en, a.creado_en)) FROM actividades a WHERE a.cliente_id = clientes.id) AS ultima_actividad`,
+               (SELECT MAX(a.hecha_en) FROM actividades a WHERE a.cliente_id = clientes.id) AS ultima_actividad`,
   });
 }
 

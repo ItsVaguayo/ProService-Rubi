@@ -143,9 +143,12 @@ test('clientes y proveedores: la lista trae cuántos coches y la última activid
     let [fila] = (await pide('/clientes')).json;
     assert.equal(fila.n_coches, 1);
     assert.equal(fila.ultima_actividad, null);
-    await pide('/actividades', { method: 'POST', body: { tipo: 'llamada', cliente_id: c.id, descripcion: 'Llamar' } });
+    const { id: llamada } = (await pide('/actividades', { method: 'POST', body: { tipo: 'llamada', cliente_id: c.id, descripcion: 'Llamar' } })).json;
     [fila] = (await pide('/clientes')).json;
-    assert.ok(fila.ultima_actividad, 'sin hacer: cuenta cuándo se apuntó');
+    assert.equal(fila.ultima_actividad, null, 'apuntada pero sin hacer: todavía no se ha hablado');
+    await pide(`/actividades/${llamada}/hecha`, { method: 'PATCH', body: {} });
+    [fila] = (await pide('/clientes')).json;
+    assert.ok(fila.ultima_actividad, 'hecha: cuenta');
     assert.equal((await pide('/proveedores')).json[0].n_coches, 1);
     assert.equal((await pide(`/clientes/${c.id}`)).json.coches[0].pvp_cent, coche.pvp_cent);
   }));

@@ -189,6 +189,33 @@ db.transaction(() => {
   db.prepare("SELECT id FROM vehiculos WHERE estado IN ('vendido', 'entregado') ORDER BY id").all()
     .forEach((v, i) => db.prepare('UPDATE vehiculos SET comprador_id = ? WHERE id = ?').run(clientes[i % clientes.length], v.id));
   db.prepare("UPDATE contactos SET cliente_id = (SELECT id FROM clientes WHERE nombre = 'Pau Serra Vidal') WHERE nombre = 'Nuria Pons'").run();
+
+  // CRM (0009 y 0010): más clientes, repartidos por el embudo, y actividades de hoy, atrasadas y hechas
+  const mas = [
+    ['particular', 'Jordi Camps', null, '611 222 333', 'web', 'nuevo'],
+    ['particular', 'Sílvia Moreno', null, '651 230 984', 'tienda', 'interesado'],
+    ['particular', 'Oriol Batlle', null, '622 444 555', 'teléfono', 'me_lo_pienso'],
+    ['particular', 'Enric Puig', null, '633 777 888', 'web', 'perdido'],
+  ];
+  for (const [tipo, nombre, nif, tel, origen, estado] of mas) {
+    db.prepare('INSERT INTO clientes (tipo, nombre, nif, telefono, origen, estado_comercial, poblacion) VALUES (?, ?, ?, ?, ?, ?, ?)').run(tipo, nombre, nif, tel, origen, estado, 'Rubí');
+  }
+  db.prepare("UPDATE clientes SET estado_comercial = 'ganado' WHERE nombre IN ('Laura Gil Ferrer', 'Pau Serra Vidal')").run();
+  db.prepare("UPDATE clientes SET estado_comercial = 'negociando' WHERE nombre = 'Reformas Vallès SL'").run();
+  const cliente = (nombre) => db.prepare('SELECT id FROM clientes WHERE nombre = ?').get(nombre).id;
+  const jaume = db.prepare("SELECT id FROM usuarios WHERE rol = 'gerencia' ORDER BY id LIMIT 1").get().id;
+  const comercial = db.prepare("SELECT id FROM usuarios WHERE rol = 'comercial' ORDER BY id LIMIT 1").get().id;
+  // Hora de aquí, como la guarda el panel: 'AAAA-MM-DD HH:MM'
+  const dia = (n) => { const d = new Date(Date.now() + n * 86400000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const act = db.prepare(`INSERT INTO actividades (tipo, cliente_id, descripcion, programada_para, hecha_en, resultado, responsable_id, creado_por)
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+  act.run('llamada', cliente('Reformas Vallès SL'), 'Pasarles el presupuesto del rotulista para la Vito.', `${dia(0)} 09:30`, new Date(Date.now() - 3600000).toISOString().slice(0, 19).replace('T', ' '), 'Les va bien, lo hablan el lunes', jaume, jaume);
+  act.run('llamada', cliente('Jordi Camps'), 'Explicarle la financiación del Golf a 48 meses.', `${dia(0)} 11:30`, null, null, comercial, jaume);
+  act.run('visita', cliente('Sílvia Moreno'), 'Viene a ver el Kia con su pareja. Tenerlo lavado y en la puerta.', `${dia(0)} 12:00`, null, null, comercial, comercial);
+  act.run('llamada', cliente('Oriol Batlle'), '¿Se ha decidido por el 3008? Puedo bajar 400 € si cierra esta semana.', `${dia(0)} 17:30`, null, null, jaume, jaume);
+  act.run('tarea', cliente('Oriol Batlle'), 'Mirar precios del 3008 en Coches.net para comparar.', `${dia(-2)} 10:00`, null, null, jaume, jaume);
+  act.run('whatsapp', cliente('Laura Gil Ferrer'), 'Pedirle una reseña en Google.', `${dia(3)} 10:00`, null, null, comercial, jaume);
+  act.run('nota', cliente('Enric Puig'), 'Se quedó un Tucson en otro concesionario. Motivo: precio.', null, new Date(Date.now() - 16 * 86400000).toISOString().slice(0, 19).replace('T', ' '), null, jaume, jaume);
 })();
 
 const n = db.prepare('SELECT COUNT(*) n FROM vehiculos').get().n;
