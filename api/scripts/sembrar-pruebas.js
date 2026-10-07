@@ -168,6 +168,29 @@ db.transaction(() => {
   ins.run('Nuria Pons', '622 555 666', null, 'tasacion', null, 'Opel Corsa 2016, 98.000 km. Lo daría como parte del pago.', '-2 days', new Date(Date.now() - 86400000).toISOString().slice(0, 19).replace('T', ' '), 1);
 })();
 
+// Clientes y proveedores (0008). Los proveedores escritos en la ficha se unen a su fila; uno sin coches.
+db.transaction(() => {
+  const ins = db.prepare('INSERT INTO proveedores (tipo, nombre, nif, telefono, poblacion) VALUES (?, ?, ?, ?, ?)');
+  const tipos = { 'Subastas Vallès': 'subasta', 'Particular (Sabadell)': 'particular' };
+  for (const { proveedor_nombre: nombre, proveedor_telefono: telefono } of db.prepare(
+    'SELECT DISTINCT proveedor_nombre, proveedor_telefono FROM vehiculos WHERE proveedor_nombre IS NOT NULL').all()) {
+    const id = ins.run(tipos[nombre] ?? 'profesional', nombre, null, telefono, null).lastInsertRowid;
+    db.prepare('UPDATE vehiculos SET proveedor_id = ? WHERE proveedor_nombre = ? AND proveedor_telefono IS ?').run(id, nombre, telefono);
+  }
+  ins.run('comisionista', 'Jordi Mas (comisionista)', null, '655 777 888', 'Terrassa');
+
+  const cli = db.prepare('INSERT INTO clientes (tipo, nombre, nif, telefono, email, direccion, codigo_postal, poblacion, provincia, origen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  const clientes = [
+    cli.run('particular', 'Laura Gil Ferrer', '12345678Z', '633 222 111', 'laura@example.com', 'C/ Major 12', '08191', 'Rubí', 'Barcelona', 'tienda').lastInsertRowid,
+    cli.run('particular', 'Pau Serra Vidal', 'X1234567L', '644 888 999', null, 'Av. Barcelona 40, 2º 1ª', '08191', 'Rubí', 'Barcelona', 'web').lastInsertRowid,
+    cli.run('empresa', 'Reformas Vallès SL', 'B12345674', '937 001 122', 'admin@example.com', 'Pol. Ind. Can Rosés, nave 4', '08191', 'Rubí', 'Barcelona', 'teléfono').lastInsertRowid,
+  ];
+  // Los vendidos se reparten entre los clientes, para que sus fichas tengan coches
+  db.prepare("SELECT id FROM vehiculos WHERE estado IN ('vendido', 'entregado') ORDER BY id").all()
+    .forEach((v, i) => db.prepare('UPDATE vehiculos SET comprador_id = ? WHERE id = ?').run(clientes[i % clientes.length], v.id));
+  db.prepare("UPDATE contactos SET cliente_id = (SELECT id FROM clientes WHERE nombre = 'Pau Serra Vidal') WHERE nombre = 'Nuria Pons'").run();
+})();
+
 const n = db.prepare('SELECT COUNT(*) n FROM vehiculos').get().n;
 const f = db.prepare('SELECT COUNT(*) n FROM fotos').get().n;
 console.log(`Base de pruebas sembrada en ${RUTA_DB}: ${n} coches, ${f} fotos en ${DIR_FOTOS}`);

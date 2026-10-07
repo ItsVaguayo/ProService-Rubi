@@ -68,6 +68,7 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 | `GET /contactos?estado=sin_atender&tipo=prueba` | con sesión | `estado`: `sin_atender` (por defecto, el que más espera primero), `atendidos` o `todos`. `tipo`: `informacion`, `prueba`, `financiacion` o `tasacion`. Cada contacto lleva la matrícula, marca y modelo del coche y quién lo atendió |
 | `GET /contactos/sin-atender` | con sesión | `{ total }`, para el contador del menú |
 | `PATCH /contactos/:id` | con sesión | `{ atendido: true }` lo marca con fecha y usuario; `false` lo devuelve a pendiente |
+| `POST /contactos/:id/cliente` | con sesión | Pasa el contacto a cliente. Si ya hay un cliente con ese teléfono o ese correo, lo une a él: `{ cliente_id, creado: false }` (200). Si no, lo crea con origen `web`: `{ cliente_id, creado: true }` (201) |
 
 **El formulario de la web** manda:
 
@@ -90,6 +91,25 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 - Como mucho 5 envíos por IP cada 10 minutos (429). Se cambia con `CONTACTOS_POR_IP`.
 - A la web solo se le devuelve `{ ok: true }`, nunca datos internos.
 - Si el formulario está en otro dominio (proservicerubi.com), ese dominio tiene que estar en `CORS_ORIGENES`.
+
+## Clientes y proveedores
+
+Clientes: los dos roles (el comercial los usa en el CRM). Proveedores: solo gerencia, como el precio de compra.
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `GET /clientes?q=` | con sesión | Lista por nombre. `q` busca en nombre, NIF, teléfono (sin espacios) y correo. `activos=0` incluye los desactivados. Como mucho 500 |
+| `GET /clientes/:id` | con sesión | La ficha, con `coches` (los que ha comprado: `vehiculos.comprador_id`) y `contactos` (los de la web unidos a él) |
+| `POST /clientes` | con sesión | Alta. Solo `nombre` es obligatorio. 201 |
+| `PUT /clientes/:id` | con sesión | Cambia los campos que lleguen. `{ activo: false }` lo desactiva: no se borra nunca |
+| `GET /proveedores?q=` · `GET /proveedores/:id` · `POST /proveedores` · `PUT /proveedores/:id` | gerencia | Igual que clientes. La ficha trae `coches` con su `precio_compra_cent` |
+
+Campos de los dos: `nombre` (o razón social), `nif`, `direccion`, `codigo_postal`, `poblacion`, `provincia`, `pais` (`ES` por defecto), `telefono`, `email`, `notas`, `activo`.
+
+- Cliente: `tipo` `particular` (por defecto) o `empresa`, y `origen` (texto libre: web, tienda, teléfono…).
+- Proveedor: `tipo` `profesional` (por defecto), `particular`, `subasta` o `comisionista`.
+- El `nif` acepta DNI, NIE o CIF con su letra o dígito de control, y se guarda sin espacios ni guiones y en mayúsculas. Uno mal escrito: 400. Repetido: 409.
+- En la ficha del coche: `proveedor_id` (solo gerencia) y `comprador_id`. Un id que no existe: 400. Los `proveedor_nombre` y `proveedor_telefono` de antes siguen; la migración `0008` los pasó a la tabla de proveedores.
 
 ## Usuarios (solo gerencia)
 

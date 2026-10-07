@@ -50,6 +50,10 @@ export const CAMPOS = {
   // Coches propios: a quién se le compró (migración 0004)
   proveedor_nombre: { tipo: 'texto', dinero: true },
   proveedor_telefono: { tipo: 'texto', dinero: true },
+  proveedor_id: { tipo: 'entero', dinero: true }, // ficha de proveedores (0008)
+
+  // A quién se vendió (0008)
+  comprador_id: { tipo: 'entero' },
 
   // 3.5 Dinero
   precio_compra_cent: { tipo: 'cent', dinero: true },

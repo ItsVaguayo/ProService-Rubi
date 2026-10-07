@@ -110,5 +110,29 @@ export function rutasContactos(db) {
     res.json(leer.get(c.id));
   });
 
+  // Pasar a cliente: crea la ficha con lo que dejó en el formulario, o la une a la de un cliente
+  // que ya tenga ese teléfono o ese correo, para no duplicarlo.
+  r.post('/:id/cliente', (req, res) => {
+    const c = leer.get(req.params.id);
+    if (!c) return res.status(404).json({ error: 'No existe' });
+    if (c.cliente_id) return res.json({ cliente_id: c.cliente_id, creado: false });
+    const telefono = c.telefono.replace(/[\s().-]/g, '');
+    const resultado = db.transaction(() => {
+      const existente = db.prepare(`SELECT id FROM clientes
+                                     WHERE replace(replace(replace(replace(replace(telefono, ' ', ''), '-', ''), '.', ''), '(', ''), ')', '') = ?
+                                        OR (? IS NOT NULL AND email = ? COLLATE NOCASE)
+                                     ORDER BY id LIMIT 1`).get(telefono, c.email, c.email);
+      let clienteId = existente?.id;
+      if (!clienteId) {
+        clienteId = Number(db.prepare("INSERT INTO clientes (nombre, telefono, email, origen) VALUES (?, ?, ?, 'web')")
+          .run(c.nombre, c.telefono, c.email).lastInsertRowid);
+        registrar(db, { usuarioId: req.usuario.id, entidad: 'cliente', entidadId: clienteId, accion: 'alta', despues: { desde_contacto: c.id } });
+      }
+      db.prepare('UPDATE contactos SET cliente_id = ? WHERE id = ?').run(clienteId, c.id);
+      return { cliente_id: clienteId, creado: !existente };
+    })();
+    res.status(resultado.creado ? 201 : 200).json(resultado);
+  });
+
   return r;
 }
