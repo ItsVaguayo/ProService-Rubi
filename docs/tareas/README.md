@@ -19,6 +19,8 @@ Las piezas difíciles (login, seguridad, servidor, migración) las monta Claude.
 | [T10 · Verifactu, Meta, partners y casos del REBU](T10-victor-investigacion.md) | Victor | La parte 1, cuanto antes |
 | ✅ [T11 · API de actividades del CRM](T11-david-crm-actividades.md) | David | Hecha (PR #9) |
 | ✅ [T12 · API de incentivos de los comerciales](T12-david-incentivos.md) | David | Hecha (PR #10) |
+| [T14 · API de gastos (el libro de gastos)](T14-david-gastos.md) | David | Cuanto antes |
+| [T15 · Campos nuevos de proveedores](T15-david-proveedores.md) | David | Después de T14 |
 | [T13 · La parte de Victor, desglosada](T13-victor-desglose.md) | Victor | En orden |
 
 Cuando acabéis una, se marca aquí con ✅ y Victor os da la siguiente.

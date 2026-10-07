@@ -23,10 +23,10 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - [ ] Pasar a Diego las dudas H1, H5 y H6 con lo encontrado.
 
 ## 3. Bloque 2 · Gastos y margen con REBU
-- [ ] Migración `gastos`: coche, personal, proveedor, comisión y otros; base, IVA, deducible, pagado.
-- [ ] Los cuatro `coste_*` de la ficha pasan a filas de `gastos`; la API los sigue aceptando y devolviendo.
+- [ ] Tabla `gastos` con el modelo de Pymecar: **T14 de David**.
+- [ ] Tuyo, después de la T14: los cuatro `coste_*` de la ficha pasan a filas de `gastos`; la API los sigue aceptando y devolviendo.
 - [ ] `margenNeto` en `api/src/modules/margen.js` (REBU, IVA general y depósito), probado con `margenes.csv`.
-- [ ] Rutas `/api/gastos` (solo gerencia) y una función para que la T12 apunte la comisión al liquidar.
+- [ ] Rutas `/api/gastos`, el libro y la comisión al liquidar: **ahora es la T14 de David**. Tú revisas su PR y luego sumas los gastos de cada coche a su coste.
 - [ ] Informes con margen neto, gastos del mes y resultado.
 
 ## 4. Bloque 3 · Facturación, cobros e impagos
