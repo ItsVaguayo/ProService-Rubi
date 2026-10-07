@@ -18,7 +18,7 @@ La regla del cliente aún no la sabemos (duda H9). Por eso se hace configurable:
 
 ## Ficheros
 
-- `api/migraciones/NNNN_incentivos.sql` (número, el que te dé Victor).
+- `api/migraciones/NNNN_incentivos.sql`, con `NNNN` el siguiente número libre en `develop` cuando la crees.
 - `api/src/modules/incentivos/calculo.js` y `api/src/modules/incentivos/routes.js` (el módulo es tuyo).
 - `api/test/incentivos.test.js`.
 - Una línea en `api/src/app.js` y una sección en `docs/api.md`.

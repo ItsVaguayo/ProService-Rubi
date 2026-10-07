@@ -14,10 +14,11 @@ export function abrirDb(ruta = process.env.DB_PATH || './data/proservice.db') {
   return db;
 }
 
-// Aplica en orden las migraciones api/migraciones/NNNN_nombre.sql que falten.
-// La versión aplicada se guarda en PRAGMA user_version. Cada migración va en su
-// transacción: o entra entera o no entra.
-export function migrar(db) {
+// Aplica en orden las migraciones api/migraciones/NNNN_nombre.sql que falten. Cada una se apunta por
+// su nombre en migraciones_aplicadas, así una que llega tarde con un número más bajo (dos ramas que
+// crean su migración a la vez) también se aplica. Cada migración va en su transacción: o entra
+// entera o no entra. PRAGMA user_version sigue guardando el número más alto, como antes.
+export function migrar(db, dir = DIR_MIGRACIONES) {
   const actual = db.pragma('user_version', { simple: true });
 
   if (actual === 0 && db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'vehiculos'").get()) {
@@ -27,17 +28,26 @@ export function migrar(db) {
     );
   }
 
-  const ficheros = readdirSync(DIR_MIGRACIONES)
+  const ficheros = readdirSync(dir)
     .filter((f) => /^\d{4}_[\w-]+\.sql$/.test(f))
     .sort();
 
+  db.exec("CREATE TABLE IF NOT EXISTS migraciones_aplicadas (fichero TEXT PRIMARY KEY, aplicada_en TEXT NOT NULL DEFAULT (datetime('now')))");
+  // Bases de antes de esta tabla: lo que tenía hasta su user_version ya estaba aplicado
+  if (actual > 0 && !db.prepare('SELECT 1 FROM migraciones_aplicadas LIMIT 1').get()) {
+    const marcar = db.prepare('INSERT INTO migraciones_aplicadas (fichero) VALUES (?)');
+    db.transaction(() => { for (const f of ficheros) if (Number(f.slice(0, 4)) <= actual) marcar.run(f); })();
+  }
+
+  const aplicada = db.prepare('SELECT 1 FROM migraciones_aplicadas WHERE fichero = ?');
   for (const fichero of ficheros) {
+    if (aplicada.get(fichero)) continue;
     const version = Number(fichero.slice(0, 4));
-    if (version <= actual) continue;
-    const sql = readFileSync(new URL(fichero, DIR_MIGRACIONES), 'utf8');
+    const sql = readFileSync(new URL(fichero, dir), 'utf8');
     db.transaction(() => {
       db.exec(sql);
-      db.pragma(`user_version = ${version}`);
+      db.prepare('INSERT INTO migraciones_aplicadas (fichero) VALUES (?)').run(fichero);
+      if (version > db.pragma('user_version', { simple: true })) db.pragma(`user_version = ${version}`);
     })();
   }
 }

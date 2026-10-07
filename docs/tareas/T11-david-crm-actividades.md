@@ -19,7 +19,7 @@ Los avisos y el correo diario no son tuyos: los monta Victor encima de tu tabla.
 
 ## Ficheros
 
-- Crear `api/migraciones/NNNN_actividades.sql`. **El número te lo da Victor** cuando vayas a abrir el PR: las migraciones se aplican en orden y una con el número cambiado de sitio deja otras sin aplicar.
+- Crear `api/migraciones/NNNN_actividades.sql`, con `NNNN` el siguiente número libre en `develop` cuando la crees. Si otra rama usa el mismo número no pasa nada: cada migración se apunta por su nombre y se aplica igual.
 - Crear `api/src/modules/crm/campos.js` y `api/src/modules/crm/routes.js` (el módulo `crm` es tuyo).
 - Crear `api/test/actividades.test.js`.
 - Una línea en `api/src/app.js` para montar las rutas (Victor la revisa).

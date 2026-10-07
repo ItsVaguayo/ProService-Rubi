@@ -70,7 +70,7 @@ npm run wordpress --workspace api -- sincronizar   # publica, actualiza y retira
 - **El comercial nunca recibe dinero interno**: la API quita compra, costes, precio mínimo, régimen de IVA, datos del dueño en depósito, proveedor y margen. No basta con esconderlo en el panel.
 - **Solo se escriben los campos de `api/src/modules/vehiculos/campos.js`**. Un campo que no esté ahí da 400. Para añadir uno: migración + `campos.js`.
 - **Alta con matrícula, marca y modelo.** El resto se exige al pasar a «Publicado», junto con 15 fotos (`OBLIGATORIOS_PUBLICAR` y `FOTOS_MINIMAS`).
-- **La base de datos se cambia con migraciones** numeradas en `api/migraciones/`. Se aplican solas al arrancar. Si tenías una base del antiguo `schema.sql`, bórrala (`api/data/proservice.db*`): solo tenía datos de prueba.
+- **La base de datos se cambia con migraciones** numeradas en `api/migraciones/`. Se aplican solas al arrancar, cada una una sola vez, apuntada por su nombre en `migraciones_aplicadas`: una que llega tarde con un número más bajo también se aplica. Si tenías una base del antiguo `schema.sql`, bórrala (`api/data/proservice.db*`): solo tenía datos de prueba.
 - **Cada alta, edición y cambio de estado queda en `auditoria`**, con usuario y valores de antes y después.
 - **Qué post de WordPress es cada coche** se guarda en `wp_posts`, y qué foto subida en `wp_medios`: cada foto se sube una vez y un coche sin cambios no se reenvía.
 
