@@ -196,6 +196,9 @@ export function escribirContrato(tipo, d) {
     tipo, titulo: TITULOS[tipo], lugar_fecha: lugarYFecha(d.fecha, d.hora),
     nota_legal: tipo === 'compraventa' ? NOTA_CONSUMIDORES : null,
     pendiente_abogado: true, vehiculo: d.vehiculo, ...cuerpo,
+    // Para la cabecera del documento
+    empresa: { razon_social: d.empresa.razon_social, nif: d.empresa.nif, direccion: d.empresa.direccion, codigo_postal: d.empresa.codigo_postal,
+      poblacion: d.empresa.poblacion, provincia: d.empresa.provincia, telefono: d.empresa.telefono, email: d.empresa.email },
     clausulas_adicionales: d.clausulas_adicionales ?? null,
     cierre,
   };

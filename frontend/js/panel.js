@@ -1719,6 +1719,21 @@ async function paginaCrm(usuario) {
   if (params.get('apuntar')) abrirForm(params.get('apuntar'));
 }
 
+// La cabecera de los documentos (factura y contratos): franja negra con el logo y los datos de la empresa.
+// El logo lleva «Pro» en blanco: va sobre negro, como en su web.
+function cabeceraDocumento(e) {
+  const linea = (...partes) => partes.filter((t) => t && String(t).trim()).map(esc).join(' · ');
+  return `<header class="documento__cabecera">
+      <img src="../img/logo-proservice.webp" alt="Pro Service Rubí">
+      ${e ? `<div class="documento__empresa">
+        <strong>${esc(e.razon_social ?? e.nombre ?? '')}</strong>
+        <span>CIF ${esc(e.nif ?? '')}</span>
+        <span>${linea(e.direccion ?? e.domicilio, [e.codigo_postal, e.poblacion ?? e.municipio].filter((t) => t && !/^_+$/.test(t)).join(' '))}</span>
+        <span>${linea(e.telefono, e.email)}</span>
+      </div>` : ''}
+    </header>`;
+}
+
 // --- Facturas (solo gerencia) -----------------------------------------------------------------
 
 const ESTADOS_COBRO = { borrador: 'Borrador', pendiente: 'Pendiente', parcial: 'Parcial', cobrada: 'Cobrada', vencida: 'Vencida', anulada: 'Anulada', rectificativa: 'Rectificativa' };
@@ -2039,14 +2054,9 @@ async function paginaFactura() {
     const contratos = f.estado === 'emitida' ? await api(`/contratos?factura=${id}`).catch(() => []) : [];
     hoja.className = `documento factura${f.estado === 'borrador' ? ' documento--borrador' : ''}${f.anulada ? ' documento--anulada' : ''}`;
     hoja.innerHTML = `
+      ${cabeceraDocumento(empresa)}
+      ${direccion(empresa) ? '' : '<p class="documento__falta">Falta la dirección fiscal de la empresa: sin ella no se emite.</p>'}
       <header class="factura__cabeza">
-        <div class="factura__empresa">
-          <span class="documento__logo"><img src="../img/logo-proservice.webp" alt="Pro Service Rubí"></span>
-          <strong>${esc(empresa.razon_social)}</strong>
-          <p>CIF ${esc(empresa.nif)}</p>
-          <p>${direccion(empresa) || '<span style="color:var(--peligro)">Falta la dirección fiscal</span>'}</p>
-          <p>${[empresa.telefono, empresa.email].filter(Boolean).map(esc).join(' · ')}</p>
-        </div>
         <div class="factura__numero">
           <h1>${titulo}</h1>
           <p class="codigo">${f.codigo ? esc(f.codigo) : 'Sin número'}</p>
@@ -2181,8 +2191,8 @@ async function paginaContrato(usuario) {
     const parrafo = (item) => (typeof item === 'string' ? esc(item) : `${esc(item.texto)}<ul>${item.lista.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`);
     hoja.hidden = false;
     hoja.innerHTML = `
+      ${cabeceraDocumento(k.empresa ?? k.partes.find((p) => /PROSERVICE/i.test(p.nombre)))}
       ${k.pendiente_abogado ? '<p class="contrato__aviso">Borrador pendiente de revisión por abogado</p>' : ''}
-      <div class="contrato__marca"><span class="documento__logo"><img src="../img/logo-proservice.webp" alt="Pro Service Rubí"></span></div>
       <h1>${esc(k.titulo)}</h1>
       <p class="contrato__codigo">${esc(c.codigo)}</p>
       <p class="contrato__lugar"><b>Lugar y fecha de celebración:</b> ${esc(k.lugar_fecha)}</p>

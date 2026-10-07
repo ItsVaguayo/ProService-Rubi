@@ -16,8 +16,7 @@
 
 /* Cabecera: la empresa a la izquierda, el número a la derecha */
 .factura__cabeza { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 6mm; border-bottom: 2px solid var(--tinta); }
-.factura__empresa strong { display: block; font-size: 12pt; }
-.factura__empresa p, .factura__numero p { margin: 0; color: var(--tinta-2); }
+.factura__numero p { margin: 0; color: var(--tinta-2); }
 .factura__numero { text-align: right; }
 .factura__numero h1 { margin: 0 0 4px; font-size: 18pt; letter-spacing: -.01em; }
 .factura__numero .codigo { font-size: 13pt; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -98,9 +97,21 @@
 .documento--form .casilla { display: flex; gap: 8px; align-items: center; margin: 12px 0; font-size: .875rem; }
 .documento--form .nota { color: var(--tinta-3); font-size: .8125rem; }
 
-/* El logo: la palabra «Pro» es blanca (está pensado para fondo oscuro, como su web), así que va sobre una
-   pastilla negra. print-color-adjust para que el fondo salga también en papel y en el PDF. */
-.documento__logo { display: inline-block; margin-bottom: 8px; padding: 8px 12px; border-radius: 6px; background: #151515;
-  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.documento__logo img { display: block; height: 34px; }
-.contrato__marca { display: flex; justify-content: center; margin-bottom: 4mm; }
+/* Cabecera de los documentos: franja negra con el logo (su «Pro» es blanco, como en su web) y los datos de la
+   empresa. Sale de borde a borde de la hoja en pantalla; en papel, dentro del margen. print-color-adjust para que
+   el negro se imprima y salga en el PDF. */
+.documento__cabecera { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: -15mm -15mm 7mm; padding: 9mm 15mm;
+  background: #151515; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.documento__cabecera img { display: block; height: 44px; }
+.documento__empresa { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-size: 8.5pt; line-height: 1.4; text-align: right; }
+.documento__empresa strong { font-size: 10.5pt; letter-spacing: .02em; }
+.documento__empresa span { color: #c5c9ce; }
+.documento__falta { margin: -4mm 0 6mm; color: var(--peligro); font-weight: 600; }
+.factura__cabeza { justify-content: flex-end; }
+@media screen and (max-width: 860px) {
+  .documento__cabecera { margin: -18px -18px 20px; padding: 18px; }
+  .documento__cabecera img { height: 34px; }
+}
+@media print {
+  .documento__cabecera { margin: 0 0 7mm; padding: 6mm 8mm; }
+}
