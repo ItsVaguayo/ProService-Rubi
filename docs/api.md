@@ -146,6 +146,42 @@ Cada comercial lleva `usuario_id`, `nombre`, `rol`, `regla`, `coches` (`id`, `re
 - `porcentaje_margen`: con pérdida o sin margen (falta la compra o el PVP), 0. El margen es el bruto de `margen.js` hasta que esté el neto.
 - Lo liquidado no cambia aunque luego cambie la regla o se deshaga una venta: `total_cent` es el cálculo de ahora y `liquidado.importe_cent`, lo que se pagó.
 - Reglas y liquidaciones quedan en `auditoria` (`incentivo_regla` e `incentivo_liquidado`).
+- Liquidar más de 0 € apunta el gasto de la comisión en el libro de gastos (ver «Libro de gastos»).
+
+## Libro de gastos (solo gerencia)
+
+Los gastos de la empresa, como el libro de gastos de Pymecar. Sin `DELETE`: un libro registro no se borra; un gasto mal apuntado se corrige con `PUT`.
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `GET /gastos?mes=AAAA-MM` | gerencia | Los del mes (sin `mes`, el actual), del más reciente al más antiguo. Filtros: `tipo`, `concepto`, `vehiculo=id`, `pagado=1` o `0`. Devuelve `{ mes, gastos, totales }` |
+| `GET /gastos/:id` | gerencia | Uno, con `proveedor_nombre`, `cliente_nombre`, `usuario_nombre` y los datos del coche |
+| `POST /gastos` | gerencia | Alta. Ver abajo. 201 |
+| `PUT /gastos/:id` | gerencia | Cambia lo que llegue, recalcula los importes y vuelve a comprobar las reglas con el gasto entero. `numero` no se cambia nunca |
+| `PATCH /gastos/:id/pagado` | gerencia | `{ pagado: true, forma_pago? }` pone la fecha de hoy; `{ pagado: false }` la quita (la forma de pago se queda) |
+
+**Alta.** `{ fecha, concepto, base_cent, tipo?, iva_pct?, irpf_pct?, descripcion?, factura_proveedor?, proveedor_id?, cliente_id?, usuario_id?, vehiculo_id?, forma_pago? }`
+
+- `concepto`: `alquileres`, `carburantes`, `comisiones`, `compras`, `electricidad`, `gestorias`, `papelerias`, `publicidad` o `vehiculos`.
+- Sin `tipo`, sale del concepto: `alquileres` y `gestorias` → `irpf`; `comisiones` → `comision`; `vehiculos` → `vehiculo`; `compras` → `rebu`; el resto → `general`.
+- `iva_pct`: 0, 4, 10 o 21 (por defecto 21; 0 en REBU). `irpf_pct`: 0, 7, 15 o 19 (por defecto 0; en `irpf`, 15, y 19 si es un alquiler).
+- `forma_pago`: `a_la_vista`, `contado`, `pago_30`, `pago_30_60`, `tarjeta` o `transferencia`.
+- **Los importes los calcula el servidor**, en céntimos: `iva_cent = round(base × IVA ÷ 100)`, `irpf_cent = round(base × IRPF ÷ 100)` y `total_cent = base + IVA − IRPF`. Si llegan `iva_cent`, `irpf_cent` o `total_cent` en el cuerpo: 400.
+- **Número de registro**: el siguiente al más alto, dentro de la misma transacción del alta (dos altas a la vez no cogen el mismo). Con los gastos de Pymecar cargados (van por el 313), sigue desde ahí.
+
+**Reglas por tipo** (400 si no se cumplen, también al editar):
+
+| Tipo | Regla |
+|---|---|
+| `general` | Sin IRPF |
+| `irpf` | Con IRPF (7, 15 o 19) |
+| `comision` | `proveedor_id` (un comisionista) o `usuario_id` (un comercial) |
+| `rebu` | `vehiculo_id`, y sin IVA ni IRPF |
+| `vehiculo` | `vehiculo_id` |
+
+**Totales** (de la lista que se devuelve, con sus filtros): `gastos`, `base_cent`, `iva_cent`, `irpf_cent`, `total_cent`, `por_tipo` (lo mismo por cada tipo que tenga gastos), `pendientes` y `pendiente_cent` (lo que falta por pagar).
+
+**Incentivos.** Al liquidar un incentivo de más de 0 € se apunta solo un gasto `comision`, concepto `comisiones`, con el `usuario_id` del comercial, sin IVA ni IRPF y la descripción «Incentivo de {nombre}, {mes}», en la misma transacción que la liquidación.
 
 ## Usuarios (solo gerencia)
 

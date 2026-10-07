@@ -5,6 +5,7 @@ import { Router } from 'express';
 import { registrar } from '../auditoria.js';
 import { requiereRol } from '../auth/sesiones.js';
 import { calcularIncentivos, MES, TIPOS_REGLA } from './calculo.js';
+import { apuntarGasto } from '../gastos/apuntar.js';
 
 const esGerencia = (u) => u?.rol === 'gerencia';
 const mesActual = () => new Date().toISOString().slice(0, 7); // UTC, como ventasDelMes
@@ -80,7 +81,15 @@ export function rutasIncentivos(db) {
         .run(mes, usuario_id, coches, importe, req.usuario.id).lastInsertRowid);
       registrar(db, { usuarioId: req.usuario.id, entidad: 'incentivo_liquidado', entidadId: id, accion: 'alta',
         despues: { mes, usuario_id, coches, importe_cent: importe, regla: c?.regla ?? null } });
-      // TODO(Victor): cuando exista la tabla de gastos (bloque 2), apuntar aquí un gasto de categoría «comision».
+      // Lo pagado va al libro de gastos (T14), en la misma transacción: o entran los dos o ninguno.
+      // Fecha de hoy (cuando se liquida) y sin IVA ni IRPF, como pide la T14. Si el comercial es externo y
+      // factura (duda F5), llevaría IVA: se cambia aquí.
+      if (importe > 0) {
+        apuntarGasto(db, {
+          fecha: new Date().toISOString().slice(0, 10), tipo: 'comision', concepto: 'comisiones', usuario_id,
+          base_cent: importe, iva_pct: 0, irpf_pct: 0, descripcion: `Incentivo de ${usuario.get(usuario_id).nombre}, ${mes}`,
+        }, req.usuario.id);
+      }
       return db.prepare('SELECT * FROM incentivos_liquidados WHERE id = ?').get(id);
     })();
     if (!resultado) return res.status(409).json({ error: 'Ese mes ya está liquidado para este comercial' });
