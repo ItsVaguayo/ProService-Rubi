@@ -21,11 +21,20 @@ const sumarDias = (dia, n) => new Date(Date.parse(`${dia}T00:00:00Z`) + n * DIA_
 const diaEsp = (dia) => dia.slice(0, 10).split('-').reverse().join('/');
 const euros = (cent) => `${(cent / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' })} €`;
 const coche = (v) => `${v.marca} ${v.modelo} ${v.matricula}`;
+// Antes de recogerlos no son nuestros: su ITV todavía no nos toca
+const SIN_ITV = ['pendiente_recoger', 'en_transporte', 'vendido', 'entregado'];
 
 /** 'AAAA-MM-DD HH:MM' de ahora en Rubí: el formato de actividades.programada_para. */
 const ahoraLocal = (ahora = new Date()) => new Intl.DateTimeFormat('sv-SE', {
   timeZone: ZONA, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
 }).format(ahora);
+
+/** Milisegundos UTC de una hora de Rubí ('AAAA-MM-DD' o 'AAAA-MM-DD HH:MM'), para ordenar con las de la base. */
+function instanteLocal(s) {
+  const comoUtc = Date.parse(`${s.slice(0, 16).replace(' ', 'T')}${s.length > 10 ? '' : 'T00:00'}Z`);
+  const enRubi = Date.parse(`${ahoraLocal(new Date(comoUtc)).replace(' ', 'T')}Z`);
+  return comoUtc - (enRubi - comoUtc);
+}
 
 export function rutasAvisos(db) {
   const r = Router();
@@ -33,7 +42,8 @@ export function rutasAvisos(db) {
   const consultas = {
     // programada_para va en hora de Rubí; hecha_en vacía = pendiente
     tareas: db.prepare(`
-      SELECT a.id, a.descripcion, a.programada_para, a.responsable_id, u.nombre AS responsable_nombre,
+      SELECT a.id, a.descripcion, a.programada_para, a.responsable_id, a.cliente_id, a.contacto_id,
+             u.nombre AS responsable_nombre,
              COALESCE(c.nombre, k.nombre) AS quien
         FROM actividades a
         JOIN usuarios u ON u.id = a.responsable_id
@@ -62,7 +72,7 @@ export function rutasAvisos(db) {
     // itv_caducidad es un día de aquí ('AAAA-MM-DD')
     itv: db.prepare(`
       SELECT id, marca, modelo, matricula, itv_caducidad FROM vehiculos
-       WHERE estado NOT IN ('vendido', 'entregado') AND itv_caducidad IS NOT NULL AND itv_caducidad <= ?`),
+       WHERE estado NOT IN (${SIN_ITV.map(() => '?').join(', ')}) AND itv_caducidad IS NOT NULL AND itv_caducidad <= ?`),
     // Emitidas de venta con vencimiento pasado; el saldo y si está anulada, con estadoCobro de facturación
     facturas: db.prepare(`
       SELECT f.id, f.codigo, f.tipo, f.estado, f.vencimiento, f.total_cent, c.nombre AS cliente_nombre,
@@ -76,6 +86,8 @@ export function rutasAvisos(db) {
     const gerencia = esGerencia(req.usuario);
     const hoy = hoyLocal();
     const avisos = [];
+    // fecha va tal cual sale de la base; orden, en ms UTC, porque hay horas de Rubí y horas UTC mezcladas
+    const enUtc = (s) => fechaSql(s).getTime();
 
     // 1. Tareas vencidas: de un día anterior, alta; de hoy, media
     const soloDe = gerencia ? null : req.usuario.id;
@@ -84,7 +96,8 @@ export function rutasAvisos(db) {
       const de = gerencia ? ` · ${t.responsable_nombre}` : '';
       avisos.push({
         tipo: 'tareas_vencidas', gravedad: t.programada_para.slice(0, 10) < hoy ? 'alta' : 'media',
-        texto: `Tarea vencida: ${t.descripcion}${para}${de}`, enlace: 'crm.html', fecha: t.programada_para,
+        texto: `Tarea vencida: ${t.descripcion}${para}${de}`, fecha: t.programada_para, orden: instanteLocal(t.programada_para),
+        enlace: t.cliente_id ? `clientes.html?id=${t.cliente_id}` : t.contacto_id ? `contactos.html?id=${t.contacto_id}` : 'crm.html',
       });
     }
 
@@ -92,7 +105,8 @@ export function rutasAvisos(db) {
     for (const c of consultas.contactos.all(`-${HORAS_SIN_ATENDER} hours`)) {
       avisos.push({
         tipo: 'contactos_sin_atender', gravedad: 'alta',
-        texto: `${c.nombre} escribió por la web (${c.tipo}) y sigue sin atender`, enlace: 'contactos.html', fecha: c.recibido_en,
+        texto: `${c.nombre} escribió por la web (${c.tipo}) y sigue sin atender`, enlace: `contactos.html?id=${c.id}`,
+        fecha: c.recibido_en, orden: enUtc(c.recibido_en),
       });
     }
 
@@ -101,7 +115,7 @@ export function rutasAvisos(db) {
       const dias = diasDesde(v.desde);
       avisos.push({
         tipo: 'coches_parados', gravedad: dias >= DIAS_PARADO_ALTA ? 'alta' : 'media',
-        texto: `${coche(v)} lleva ${dias} días publicado`, enlace: `coche.html?id=${v.id}`, fecha: v.desde,
+        texto: `${coche(v)} lleva ${dias} días publicado`, enlace: `coche.html?id=${v.id}`, fecha: v.desde, orden: enUtc(v.desde),
       });
     }
 
@@ -109,17 +123,18 @@ export function rutasAvisos(db) {
     for (const v of consultas.vendidosPublicados.all()) {
       avisos.push({
         tipo: 'vendidos_publicados', gravedad: 'alta',
-        texto: `${coche(v)} está ${v.estado} y sigue por retirar en ${v.canales}`, enlace: `coche.html?id=${v.id}`, fecha: v.desde,
+        texto: `${coche(v)} está ${v.estado} y sigue por retirar en ${v.canales}`, enlace: `coche.html?id=${v.id}`,
+        fecha: v.desde, orden: enUtc(v.desde),
       });
     }
 
     // 5. ITV caducada (alta) o que caduca pronto (media), de los coches en stock
-    for (const v of consultas.itv.all(sumarDias(hoy, DIAS_ITV))) {
+    for (const v of consultas.itv.all(...SIN_ITV, sumarDias(hoy, DIAS_ITV))) {
       const caducada = v.itv_caducidad < hoy;
       avisos.push({
         tipo: 'itv', gravedad: caducada ? 'alta' : 'media',
         texto: `${coche(v)}: la ITV ${caducada ? 'caducó' : 'caduca'} el ${diaEsp(v.itv_caducidad)}`,
-        enlace: `coche.html?id=${v.id}`, fecha: v.itv_caducidad,
+        enlace: `coche.html?id=${v.id}`, fecha: v.itv_caducidad, orden: instanteLocal(v.itv_caducidad),
       });
     }
 
@@ -130,14 +145,14 @@ export function rutasAvisos(db) {
         avisos.push({
           tipo: 'cobros_vencidos', gravedad: 'alta',
           texto: `${f.codigo} de ${f.cliente_nombre}: ${euros(f.total_cent - f.cobrado_cent)} sin cobrar`,
-          enlace: `factura.html?id=${f.id}`, fecha: f.vencimiento,
+          enlace: `factura.html?id=${f.id}`, fecha: f.vencimiento, orden: instanteLocal(f.vencimiento),
         });
       }
     }
 
     // Lo grave primero y, dentro, lo más antiguo
-    avisos.sort((a, b) => GRAVEDAD[a.gravedad] - GRAVEDAD[b.gravedad] || a.fecha.localeCompare(b.fecha));
-    res.json(avisos);
+    avisos.sort((a, b) => GRAVEDAD[a.gravedad] - GRAVEDAD[b.gravedad] || a.orden - b.orden);
+    res.json(avisos.map(({ orden, ...aviso }) => aviso));
   });
 
   return r;

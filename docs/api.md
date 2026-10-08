@@ -256,17 +256,17 @@ Cada aviso lleva `tipo`, `gravedad` (`alta` o `media`), `texto` (corto, para la 
 
 | `tipo` | Cuándo sale | `gravedad` | `enlace` | `fecha` |
 |---|---|---|---|---|
-| `tareas_vencidas` | Actividad de tipo `tarea` sin hacer (`hecha_en` vacía) con `programada_para` antes de ahora | `alta` si es de un día anterior; `media` si es de hoy | `crm.html` | `programada_para` (hora de Rubí) |
-| `contactos_sin_atender` | Contacto de la web sin `atendido_en` y recibido hace más de 24 h | `alta` | `contactos.html` | `recibido_en` (UTC) |
+| `tareas_vencidas` | Actividad de tipo `tarea` sin hacer (`hecha_en` vacía) con `programada_para` antes de ahora | `alta` si es de un día anterior; `media` si es de hoy | `clientes.html?id=` si es de un cliente, `contactos.html?id=` si es de un contacto y `crm.html` si no es de nadie | `programada_para` (hora de Rubí) |
+| `contactos_sin_atender` | Contacto de la web sin `atendido_en` y recibido hace más de 24 h | `alta` | `contactos.html?id=` (la página baja hasta ese contacto y lo marca) | `recibido_en` (UTC) |
 | `coches_parados` | Coche en «Publicado» desde hace más de 60 días, contados desde la **primera** vez que pasó a «Publicado» en el historial (una reserva cancelada no pone el contador a cero); sin historial, desde el alta | `alta` desde 90 días; `media` de 60 a 90 | `coche.html?id=` | esa fecha (UTC) |
 | `vendidos_publicados` | Coche vendido o entregado con alguna publicación en `retirar`. Un aviso por coche, con los canales en el texto | `alta` | `coche.html?id=` | la `actualizado_en` más antigua de esas publicaciones (UTC) |
-| `itv` | Coche en stock (ni vendido ni entregado) con `itv_caducidad` pasada o en los próximos 30 días. Sin fecha de ITV, no hay aviso | `alta` si ya caducó; `media` si caduca pronto | `coche.html?id=` | `itv_caducidad` (día de aquí) |
+| `itv` | Coche que ya está en el patio: ni por recoger ni en transporte (todavía no es nuestro), ni vendido ni entregado, con `itv_caducidad` pasada o en los próximos 30 días. Sin fecha de ITV, no hay aviso | `alta` si ya caducó; `media` si caduca pronto | `coche.html?id=` | `itv_caducidad` (día de aquí) |
 | `cobros_vencidos` | **Solo gerencia.** Factura de venta emitida, sin anular, con saldo pendiente y `vencimiento` pasado (el `estado_cobro` `vencida` de facturación) | `alta` | `factura.html?id=` | `vencimiento` |
 
 - **El comercial** solo ve sus tareas (`responsable_id` suyo) y los avisos de coches y contactos. Nunca `cobros_vencidos` ni ningún importe: ninguno de sus textos lleva dinero.
 - Gerencia ve las tareas de todos, con el nombre del responsable al final del texto.
 - Los umbrales son constantes arriba de `api/src/modules/avisos/routes.js`: `DIAS_PARADO` (60), `DIAS_PARADO_ALTA` (90), `HORAS_SIN_ATENDER` (24) y `DIAS_ITV` (30).
-- `fecha` viene en el formato de su columna: `AAAA-MM-DD HH:MM:SS` en UTC para las marcas de la base, `AAAA-MM-DD HH:MM` en hora de Rubí para las tareas y `AAAA-MM-DD` para la ITV y el vencimiento.
+- `fecha` viene en el formato de su columna: `AAAA-MM-DD HH:MM:SS` en UTC para las marcas de la base, `AAAA-MM-DD HH:MM` en hora de Rubí para las tareas y `AAAA-MM-DD` para la ITV y el vencimiento. El orden no compara estos textos: los pasa todos a la misma hora (UTC) antes de ordenar.
 
 Ejemplo (gerencia):
 
@@ -275,7 +275,7 @@ Ejemplo (gerencia):
   { "tipo": "cobros_vencidos", "gravedad": "alta", "texto": "V26-00041 de Laura Gil: 7.500,00 € sin cobrar",
     "enlace": "factura.html?id=7", "fecha": "2026-10-05" },
   { "tipo": "contactos_sin_atender", "gravedad": "alta", "texto": "Marta Ruiz escribió por la web (prueba) y sigue sin atender",
-    "enlace": "contactos.html", "fecha": "2026-10-06 17:42:10" },
+    "enlace": "contactos.html?id=31", "fecha": "2026-10-06 17:42:10" },
   { "tipo": "itv", "gravedad": "alta", "texto": "Seat Ibiza 1234BCD: la ITV caducó el 07/10/2026",
     "enlace": "coche.html?id=12", "fecha": "2026-10-07" },
   { "tipo": "vendidos_publicados", "gravedad": "alta", "texto": "Renault Clio 5678FGH está vendido y sigue por retirar en coches_net, wallapop",
@@ -283,7 +283,7 @@ Ejemplo (gerencia):
   { "tipo": "coches_parados", "gravedad": "media", "texto": "Peugeot 208 4321JKL lleva 71 días publicado",
     "enlace": "coche.html?id=3", "fecha": "2026-07-29 10:02:33" },
   { "tipo": "tareas_vencidas", "gravedad": "media", "texto": "Tarea vencida: Llamar por la financiación (Laura Gil) · Comercial",
-    "enlace": "crm.html", "fecha": "2026-10-08 09:30" }
+    "enlace": "clientes.html?id=5", "fecha": "2026-10-08 09:30" }
 ]
 ```
 

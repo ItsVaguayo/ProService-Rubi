@@ -7,6 +7,10 @@ import { hoyLocal } from '../src/fechas.js';
 const DIA_MS = 86400000;
 const diaMas = (n) => new Date(Date.parse(`${hoyLocal()}T00:00:00Z`) + n * DIA_MS).toISOString().slice(0, 10);
 const deTipo = (avisos, tipo) => avisos.filter((a) => a.tipo === tipo);
+/** 'AAAA-MM-DD HH:MM' en hora de Rubí de hace tantos minutos, como actividades.programada_para */
+const haceMinutos = (min) => new Intl.DateTimeFormat('sv-SE', {
+  timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+}).format(new Date(Date.now() - min * 60000));
 
 let siguiente = 1;
 /** Un coche directo en la base. publicadoHace: días desde que pasó a «Publicado» (en el historial). */
@@ -54,7 +58,7 @@ test('tareas vencidas: sin hacer y con fecha pasada; el comercial solo ve las su
     assert.deepEqual(gerencia.map((a) => a.fecha), ['2026-01-04 10:00', '2026-01-05 10:00'], 'de la más vieja a la más nueva');
     assert.deepEqual(gerencia[1], {
       tipo: 'tareas_vencidas', gravedad: 'alta', texto: 'Tarea vencida: Llamar por la financiación (Laura Gil) · Comercial',
-      enlace: 'crm.html', fecha: '2026-01-05 10:00',
+      enlace: `clientes.html?id=${cliente}`, fecha: '2026-01-05 10:00',
     });
 
     const suyas = deTipo((await pide('/avisos', { como: 'comercial' })).json, 'tareas_vencidas');
@@ -62,10 +66,29 @@ test('tareas vencidas: sin hacer y con fecha pasada; el comercial solo ve las su
     assert.equal(suyas[0].texto, 'Tarea vencida: Llamar por la financiación (Laura Gil)');
   }));
 
+test('tareas vencidas: de hoy, media; el enlace lleva al cliente, al contacto o al CRM', (t) => {
+  const programada = haceMinutos(1);
+  if (programada.slice(0, 10) !== hoyLocal()) return t.skip('justo pasada la medianoche no hay hora vencida de hoy');
+  return conServidor(async ({ db, pide }) => {
+    const jaume = idDe(db, 'jaume@ejemplo.com');
+    const contacto = Number(db.prepare("INSERT INTO contactos (nombre, telefono, tipo) VALUES ('Marta', '600000000', 'prueba')").run().lastInsertRowid);
+    const ins = db.prepare(`INSERT INTO actividades (tipo, contacto_id, descripcion, programada_para, responsable_id, creado_por)
+                            VALUES ('tarea', ?, ?, ?, ?, ?)`);
+    ins.run(contacto, 'Llamar a Marta', programada, jaume, jaume);
+    ins.run(null, 'Ordenar el patio', '2026-01-05 10:00', jaume, jaume);
+
+    const avisos = deTipo((await pide('/avisos')).json, 'tareas_vencidas');
+    assert.deepEqual(avisos.map((a) => [a.texto, a.gravedad, a.enlace]), [
+      ['Tarea vencida: Ordenar el patio · Jaume', 'alta', 'crm.html'],
+      ['Tarea vencida: Llamar a Marta (Marta) · Jaume', 'media', `contactos.html?id=${contacto}`],
+    ]);
+  });
+});
+
 test('contactos de la web sin atender con más de 24 horas', () =>
   conServidor(async ({ db, pide }) => {
     const ins = db.prepare("INSERT INTO contactos (nombre, telefono, tipo, recibido_en, atendido_en) VALUES (?, '600000000', 'prueba', datetime('now', ?), ?)");
-    ins.run('Viejo', '-30 hours', null);
+    const viejo = Number(ins.run('Viejo', '-30 hours', null).lastInsertRowid);
     ins.run('Reciente', '-2 hours', null);
     ins.run('Atendido', '-30 hours', '2026-01-01 10:00:00');
 
@@ -73,7 +96,7 @@ test('contactos de la web sin atender con más de 24 horas', () =>
       const avisos = deTipo((await pide('/avisos', { como })).json, 'contactos_sin_atender');
       assert.equal(avisos.length, 1, como);
       assert.equal(avisos[0].gravedad, 'alta');
-      assert.equal(avisos[0].enlace, 'contactos.html');
+      assert.equal(avisos[0].enlace, `contactos.html?id=${viejo}`);
       assert.match(avisos[0].texto, /^Viejo escribió por la web \(prueba\)/);
     }
   }));
@@ -119,6 +142,8 @@ test('ITV de los coches en stock: caducada (alta) o en los próximos 30 días (m
     const pronto = meterCoche(db, { estado: 'reservado', itv: diaMas(10) });
     meterCoche(db, { estado: 'en_taller', itv: diaMas(60) });
     meterCoche(db, { estado: 'vendido', itv: diaMas(-3) });
+    meterCoche(db, { estado: 'pendiente_recoger', itv: diaMas(-3) }); // aún no es nuestro
+    meterCoche(db, { estado: 'en_transporte', itv: diaMas(-3) });
     meterCoche(db, { estado: 'en_taller' }); // sin fecha de ITV
 
     const avisos = deTipo((await pide('/avisos', { como: 'comercial' })).json, 'itv');
@@ -166,6 +191,17 @@ test('cobros vencidos: gerencia los ve con el importe; el comercial, ni el aviso
     assert.deepEqual(deTipo(comercial.json, 'cobros_vencidos'), []);
     const texto = JSON.stringify(comercial.json);
     assert.ok(!/€|_cent|V26-/.test(texto), 'ni importes ni facturas');
+  }));
+
+test('dentro de la misma gravedad, de lo más antiguo a lo más nuevo aunque unas horas sean de Rubí y otras UTC', () =>
+  conServidor(async ({ db, pide }) => {
+    const jaume = idDe(db, 'jaume@ejemplo.com');
+    // La tarea es una hora más antigua, pero su hora de Rubí escrita va por delante de la UTC del contacto
+    db.prepare(`INSERT INTO actividades (tipo, descripcion, programada_para, responsable_id, creado_por)
+                VALUES ('tarea', 'Antigua', ?, ?, ?)`).run(haceMinutos(30 * 60), jaume, jaume);
+    db.prepare("INSERT INTO contactos (nombre, telefono, tipo, recibido_en) VALUES ('Nuevo', '600000000', 'prueba', datetime('now', '-29 hours'))").run();
+    const avisos = (await pide('/avisos')).json;
+    assert.deepEqual(avisos.map((a) => a.tipo), ['tareas_vencidas', 'contactos_sin_atender']);
   }));
 
 test('lo grave va primero', () =>

@@ -1165,6 +1165,8 @@ async function paginaContactos() {
   const vacio = $('.vacio');
   // Los coches, para enseñar la foto y el modelo del que pregunta cada uno
   const coches = new Map((await api('/vehiculos').catch(() => [])).map((v) => [v.id, v]));
+  // ?id= viene de un aviso del tablero: ese contacto sale marcado y se baja hasta él
+  const destacado = Number(params.get('id')) || null;
 
   // Resumen de la cabecera: siempre de los que esperan, se filtre lo que se filtre
   const resumen = async () => {
@@ -1191,7 +1193,7 @@ async function paginaContactos() {
          <button class="boton boton--secundario boton--pequeno" type="button" data-atendido="${c.id}" data-valor="false">Volver a pendiente</button>`
       : `<a class="boton boton--secundario boton--pequeno" href="tel:${esc(tel)}">Llamar</a>
          <button class="boton boton--oscuro boton--pequeno" type="button" data-atendido="${c.id}" data-valor="true">Marcar atendido</button>`;
-    return `<li class="contacto${urgente ? ' contacto--urgente' : ''}${c.atendido_en ? ' contacto--atendido' : ''}">
+    return `<li class="contacto${urgente ? ' contacto--urgente' : ''}${c.atendido_en ? ' contacto--atendido' : ''}${c.id === destacado ? ' contacto--destacado' : ''}" id="contacto-${c.id}">
         <span class="contacto__inicial contacto__inicial--${esc(c.tipo)}" aria-hidden="true">${esc(iniciales(c.nombre))}</span>
         <div class="contacto__cuerpo">
           <p class="contacto__linea"><strong>${esc(c.nombre)}</strong>
@@ -1231,6 +1233,7 @@ async function paginaContactos() {
   });
   form.addEventListener('change', pintar);
   await Promise.all([pintar(), resumen()]);
+  if (destacado) document.getElementById(`contacto-${destacado}`)?.scrollIntoView({ block: 'center' });
 }
 
 // --- Clientes ----------------------------------------------------------------------------------
