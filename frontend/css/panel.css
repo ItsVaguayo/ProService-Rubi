@@ -2376,3 +2376,86 @@ a.contacto__coche:hover { background: var(--fondo); }
 @media (max-width: 800px) {
   .video-coche { padding: 16px; }
 }
+
+
+/* T07b · menú: icono de Avisos (una campana) ----------------------------- */
+.menu__enlaces a[href="avisos.html"] .menu__icono { --icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9'/%3E%3Cpath d='M10.3 21a1.94 1.94 0 0 0 3.4 0'/%3E%3C/svg%3E"); } /* Avisos */
+
+
+/* T07b · gastos.html: tipos de Pymecar ------------------------------------ */
+
+/* Un color por tipo: el punto, la etiqueta y la cifra de arriba */
+.gasto--general { background: var(--llegada-fondo); color: var(--llegada); }
+.gasto--irpf { background: var(--preparacion-fondo); color: var(--preparacion); }
+.gasto--comision { background: var(--venta-fondo); color: var(--venta); }
+.gasto--rebu { background: var(--vendido-fondo); color: var(--vendido); }
+.gasto--vehiculo { background: var(--reservado-fondo); color: var(--reservado); }
+.punto.gasto--general,
+.punto.gasto--irpf,
+.punto.gasto--comision,
+.punto.gasto--rebu,
+.punto.gasto--vehiculo { flex: none; background: currentColor; }
+
+.gasto-form .caja__titulo .nota b { color: var(--tinta); }
+.gasto-form__quien,
+.gasto-form__tercero { grid-column: span 2; }
+
+/* Lo que depende del tipo, sin JavaScript (con :has):
+   el coche, con «Gasto vehículo» y «Factura con REBU»; la retención, solo con «Gasto con IRPF» */
+.gasto-form__campos--tipo:not(:has(input[name="tipo"][value="vehiculo"]:checked, input[name="tipo"][value="rebu"]:checked)) .solo-coche { display: none; }
+.gasto-form__campos--tipo:not(:has(input[name="tipo"][value="irpf"]:checked)) .solo-irpf { display: none; }
+.solo-irpf .campo__nombre { color: var(--preparacion); }
+
+/* Filtro por concepto, junto a los segmentos */
+.filtros--gastos .filtros-gastos__concepto { min-width: 0; }
+
+/* En la lista: el nº de registro en gris, y el tipo con el concepto debajo, como en el libro */
+.gasto-registro { color: var(--tinta-3); }
+.gasto-tipo { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.gasto-concepto { color: var(--tinta-3); font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; }
+
+@media (max-width: 760px) {
+  .gasto-form__quien,
+  .gasto-form__tercero { grid-column: 1 / -1; }
+  .gasto-tipo { align-items: flex-end; }
+}
+
+
+/* T07b · avisos.html ------------------------------------------------------ */
+
+.filtros--avisos { margin-bottom: var(--espacio-l); }
+
+.avisos-grupo { margin-bottom: var(--espacio-l); }
+.avisos-grupo__titulo { display: flex; align-items: baseline; gap: 8px; margin: 0 0 10px; font-size: 1rem; }
+.avisos-grupo__n { color: var(--tinta-3); font-size: .875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.avisos { margin: 0; padding: 0; list-style: none; background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio); overflow: hidden; }
+
+/* Un aviso: el texto y, debajo, el tipo y la fecha; a la derecha, el botón */
+.aviso { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 20px; padding: 14px 20px; border-top: 1px solid var(--linea); }
+.aviso:first-child { border-top: 0; }
+.aviso:hover { background: #fafbfb; }
+.aviso__texto { margin: 0; color: var(--tinta); font-weight: 600; overflow-wrap: anywhere; }
+.aviso__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 4px 0 0; color: var(--tinta-3); font-size: .8125rem; }
+.aviso__tipo { display: inline-flex; align-items: center; gap: 6px; color: var(--tinta-2); font-weight: 500; }
+.aviso__accion { white-space: nowrap; }
+
+/* Gravedad: solo una raya a la izquierda. Alta en rojo, media en ámbar. El resto de la fila, neutro. */
+.aviso::before { content: ""; position: absolute; top: 12px; bottom: 12px; left: 0; width: 3px; border-radius: 0 3px 3px 0; background: var(--aviso); }
+.aviso--alta::before { background: var(--peligro); }
+
+/* El punto de cada tipo, con los colores de los estados (sin rojo: ese es de la gravedad) */
+.aviso-tipo--tarea { color: var(--reservado); }
+.aviso-tipo--contacto { color: var(--venta); }
+.aviso-tipo--parado { color: var(--preparacion); }
+.aviso-tipo--vendido { color: var(--vendido); }
+.aviso-tipo--itv { color: var(--llegada); }
+.aviso-tipo--cobro { color: var(--azul-matricula); }
+
+/* Sin avisos: el .vacio de siempre, con el botón al tablero */
+.avisos-vacio .boton { margin-top: 4px; }
+
+@media (max-width: 600px) {
+  .aviso { grid-template-columns: minmax(0, 1fr); padding: 14px 16px 14px 18px; }
+  .aviso__accion { justify-self: start; }
+}
