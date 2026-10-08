@@ -1626,7 +1626,7 @@ async function paginaCrm(usuario) {
   // lados para no salirse del borde inclinado. «Perdido» va aparte, debajo: no es un paso del embudo.
   tablero.className = 'embudo-crm';
   const TRAMOS = ['nuevo', 'interesado', 'me_lo_pienso', 'negociando', 'ganado'];
-  const ANCHOS = [100, 88, 76, 64, 52, 42]; // el último es el borde de abajo de «Ganado»
+  const ANCHOS = [100, 92, 84, 76, 68, 60]; // el último es el borde de abajo de «Ganado». Poca pendiente: el embudo va en media página
   const formaTramo = (id) => {
     const i = TRAMOS.indexOf(id);
     if (i < 0) return '';
