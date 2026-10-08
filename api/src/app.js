@@ -14,6 +14,7 @@ import { rutasIncentivos } from './modules/incentivos/routes.js';
 import { rutasGastos } from './modules/gastos/routes.js';
 import { rutasFacturas } from './modules/facturacion/routes.js';
 import { rutasContratos } from './modules/contratos/routes.js';
+import { rutasAvisos } from './modules/avisos/routes.js';
 import { rutasClientes, rutasProveedores } from './modules/terceros/routes.js';
 import { cabecerasDeSeguridad, mismoOrigen } from './seguridad.js';
 
@@ -65,6 +66,7 @@ export function crearApp(db) {
   app.use('/api/gastos', conSesion, requiereRol('gerencia'), rutasGastos(db));
   app.use('/api/facturas', conSesion, requiereRol('gerencia'), rutasFacturas(db));
   app.use('/api/contratos', conSesion, rutasContratos(db)); // compra y cesión, solo gerencia (dentro)
+  app.use('/api/avisos', conSesion, rutasAvisos(db)); // los dos roles; cobros e importes, solo gerencia (dentro)
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'No existe' }));
   app.use(manejarErrores);
