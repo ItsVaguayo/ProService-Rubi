@@ -1649,13 +1649,13 @@ async function paginaCrm(usuario) {
     $('.crm-cifra__nota', cierre).textContent = ganados + perdidos ? `${ganados} de ${ganados + perdidos} cerrados` : 'sin cerrados en 30 días';
     $('.cifra', sinHablar).textContent = callados;
     sinHablar.classList.toggle('crm-cifra--alerta', callados > 0);
-    // La barra: un trozo por fase abierta, del color de su tramo, con su número
+    // La barra: un trozo por fase abierta, más largo cuantos más clientes tiene
     // y debajo la leyenda con el nombre de cada fase
     const fases = ['nuevo', 'interesado', 'me_lo_pienso', 'negociando'].map((id) => [id, de(id).length]).filter(([, n]) => n);
     $('.crm-barra', grande).innerHTML = fases
-      .map(([id, n]) => `<span class="columna--${COLUMNA_CRM[id]}" style="flex-grow:${n}" title="${esc(ESTADOS_COMERCIALES[id])}: ${n}">${n}</span>`).join('');
+      .map(([id, n]) => `<span class="crm-fase--${COLUMNA_CRM[id]}" style="flex-grow:${n}" title="${esc(ESTADOS_COMERCIALES[id])}: ${n}"></span>`).join('');
     $('.crm-leyenda', grande).innerHTML = fases
-      .map(([id]) => `<span class="columna--${COLUMNA_CRM[id]}">${esc(ESTADOS_COMERCIALES[id])}</span>`).join('');
+      .map(([id, n]) => `<span class="crm-fase--${COLUMNA_CRM[id]}">${esc(ESTADOS_COMERCIALES[id])}<strong>${n}</strong></span>`).join('');
   };
 
   // El embudo: cada estado es un tramo que se estrecha hacia «Ganado», con sus clientes dentro.
