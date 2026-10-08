@@ -111,6 +111,16 @@
       </ul>
     </section>
 
+    <!-- PRÓXIMOS 7 DÍAS: lo pendiente de mañana en adelante, agrupado por día (sale de
+         GET /api/actividades?pendientes=1). «Mañana» pasa la actividad a mañana a la misma hora. -->
+    <section class="caja hoy proximos" aria-labelledby="proximos-titulo">
+      <div class="caja__titulo">
+        <h2 id="proximos-titulo">Próximos 7 días</h2>
+        <span class="nota"></span>
+      </div>
+      <ul class="hoy__lista"></ul>
+    </section>
+
     <!-- EMBUDO: una columna por estado_comercial (GET /api/clientes?estado_comercial=…). Las tarjetas
          son como las del tablero de coches: cliente, el coche que le interesa, la próxima cosa que
          hay que hacer y los días desde la última vez que se habló con él (en ámbar más de 7, en rojo

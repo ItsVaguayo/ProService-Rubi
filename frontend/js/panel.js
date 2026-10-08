@@ -1476,7 +1476,8 @@ async function paginaCrm(usuario) {
   cajaError.hidden = true;
   hoyCaja.before(cajaError);
 
-  // --- Hoy ---
+  // --- Hoy y próximos días ---
+  const proxCaja = $('.proximos');
   const pintarHoy = async () => {
     const responsable = $('input[name="responsable"]:checked', deQuien)?.value ?? 'yo'; // 'yo' o '' (de todos)
     const filtro = responsable ? `&responsable=${encodeURIComponent(responsable)}` : '';
@@ -1487,21 +1488,28 @@ async function paginaCrm(usuario) {
     const lista = [...atrasadas, ...deHoy];
     const ahora = new Date();
     const tarde = (a) => !a.hecha_en && new Date(a.programada_para.replace(' ', 'T')) < ahora;
-    const fila = (a) => {
+    // En «Hoy», «Mañana» la pasa a mañana; en los próximos días, «+1 día» la mueve un día desde el suyo
+    const fila = (a, enProximos = false) => {
       const cuando = new Date(a.programada_para.replace(' ', 'T'));
       const quien = a.cliente_id
         ? `<a href="clientes.html?id=${a.cliente_id}"><strong>${esc(a.cliente_nombre)}</strong></a>`
-        : `<a href="contactos.html"><strong>${esc(a.contacto_nombre ?? 'Contacto')}</strong></a>`;
+        : a.contacto_id
+          ? `<a href="contactos.html?id=${a.contacto_id}"><strong>${esc(a.contacto_nombre ?? 'Contacto')}</strong></a>`
+          : '';
       const retraso = tarde(a) ? ` <span class="dias dias--peligro">${esc(mayuscula(haceCuanto(cuando)))}</span>` : '';
       const otraPersona = !responsable && a.responsable_nombre ? ` <span class="nota">· ${esc(a.responsable_nombre)}</span>` : '';
       const fin = a.hecha_en
         ? `<span class="actividad__hecha">Hecha a las ${esc(horaLocal(fechaSql(a.hecha_en)))}</span>`
-        : `<button class="boton boton--oscuro boton--pequeno" type="button" data-hecha="${a.id}">Hecho</button>`;
+        : `<span class="actividad__botones">
+            <button class="boton boton--secundario boton--pequeno" type="button" data-posponer="${a.id}" title="${enProximos ? 'Moverla al día siguiente' : 'Pasarla a mañana'}, a la misma hora">${enProximos ? '+1 día' : 'Mañana'}</button>
+            <button class="boton boton--oscuro boton--pequeno" type="button" data-hecha="${a.id}">Hecho</button>
+          </span>`;
       const hora = a.programada_para.slice(0, 10) < hoy ? cuando.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : a.programada_para.slice(11, 16).replace(/^0/, '');
+      const resultado = a.hecha_en && a.resultado ? `<span class="actividad__resultado">${esc(a.resultado)}</span>` : '';
       return `<li class="actividad${a.hecha_en ? ' actividad--hecha' : ''}${tarde(a) ? ' actividad--tarde' : ''}">
           <time class="actividad__hora cifra">${esc(hora)}</time>
           <span class="estado actividad--${esc(a.tipo)}">${esc(TIPOS_ACTIVIDAD[a.tipo] ?? a.tipo)}</span>
-          <p class="actividad__texto">${quien}${esc(a.descripcion)}${otraPersona}${retraso}</p>
+          <p class="actividad__texto">${quien}${esc(a.descripcion)}${otraPersona}${retraso}${resultado}</p>
           ${fin}
         </li>`;
     };
@@ -1510,25 +1518,58 @@ async function paginaCrm(usuario) {
     $('#hoy-titulo').textContent = `Hoy, ${DIAS_SEMANA[ahora.getDay()]} ${ahora.getDate()}`;
     $('.caja__titulo .nota', hoyCaja).textContent = lista.length ? `${hechas} de ${lista.length} ${lista.length === 1 ? 'hecha' : 'hechas'}` : '';
     $('.hoy__lista', hoyCaja).innerHTML = lista.length
-      ? lista.map(fila).join('')
-      : `<li class="actividad"><span></span><span></span><p class="actividad__texto">Nada programado para hoy${responsable ? '' : ' en todo el equipo'}.</p></li>`;
+      ? lista.map((a) => fila(a)).join('')
+      : `<li class="actividad actividad--vacia"><p class="actividad__texto">Nada programado para hoy${responsable ? '' : ' en todo el equipo'}.</p></li>`;
     const pendientesHoy = lista.length - hechas;
     $('.contactos-resumen').innerHTML = `<strong class="cifra">${pendientesHoy}</strong> por hacer hoy${conRetraso ? ` <span class="portada__alerta">· ${conRetraso} con retraso</span>` : ''}`;
+
+    // Los próximos 7 días, agrupados por día
+    const limite = diaLocal(new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 7));
+    const proximas = pendientes.filter((a) => a.programada_para && a.programada_para.slice(0, 10) > hoy && a.programada_para.slice(0, 10) <= limite);
+    const manana = diaLocal(new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1));
+    const nombreDia = (dia) => {
+      const d = new Date(`${dia}T12:00`);
+      const nombre = `${DIAS_SEMANA[d.getDay()]} ${d.getDate()}`;
+      return dia === manana ? `Mañana, ${nombre}` : mayuscula(nombre);
+    };
+    const porDia = new Map();
+    for (const a of proximas) {
+      const dia = a.programada_para.slice(0, 10);
+      porDia.set(dia, [...(porDia.get(dia) ?? []), a]);
+    }
+    $('.caja__titulo .nota', proxCaja).textContent = proximas.length ? `${proximas.length} ${proximas.length === 1 ? 'pendiente' : 'pendientes'}` : '';
+    $('.hoy__lista', proxCaja).innerHTML = proximas.length
+      ? [...porDia].map(([dia, suyas]) => `<li class="actividad-dia">${esc(nombreDia(dia))}</li>${suyas.map((a) => fila(a, true)).join('')}`).join('')
+      : `<li class="actividad actividad--vacia"><p class="actividad__texto">Nada programado para los próximos 7 días${responsable ? '' : ' en todo el equipo'}.</p></li>`;
   };
 
-  hoyCaja.addEventListener('click', async (ev) => {
-    const boton = ev.target.closest('[data-hecha]');
+  // «Hecho» y «Mañana» en las dos cajas
+  const alPulsar = async (ev) => {
+    const boton = ev.target.closest('[data-hecha], [data-posponer]');
     if (!boton) return;
     boton.disabled = true;
     try {
-      await api(`/actividades/${boton.dataset.hecha}/hecha`, { method: 'PATCH', body: {} });
+      if (boton.dataset.hecha) {
+        await api(`/actividades/${boton.dataset.hecha}/hecha`, { method: 'PATCH', body: {} });
+      } else {
+        // Un día después del suyo y, como poco, mañana (la atrasada no se queda en el pasado). Misma hora.
+        const a = await api(`/actividades/${boton.dataset.posponer}`);
+        const d = new Date();
+        const manana = diaLocal(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1));
+        const [an, mes, di] = a.programada_para.slice(0, 10).split('-').map(Number);
+        const siguiente = diaLocal(new Date(an, mes - 1, di + 1));
+        const dia = siguiente > manana ? siguiente : manana;
+        await api(`/actividades/${a.id}`, { method: 'PUT', body: { programada_para: `${dia} ${a.programada_para.slice(11, 16)}` } });
+      }
       cajaError.hidden = true;
       await Promise.all([pintarHoy(), pintarEmbudo()]);
     } catch (e) {
       boton.disabled = false;
-      mostrarErrores(cajaError, e, 'No se ha podido marcar como hecha:');
+      mostrarErrores(cajaError, e, boton.dataset.hecha ? 'No se ha podido marcar como hecha:' : 'No se ha podido pasar a mañana:');
     }
-  });
+  };
+  hoyCaja.addEventListener('click', alPulsar);
+  proxCaja.addEventListener('click', alPulsar);
   deQuien.addEventListener('change', () => pintarHoy().catch((e) => mostrarErrores(cajaError, e, 'No se ha podido cargar:')));
 
   // --- Embudo ---

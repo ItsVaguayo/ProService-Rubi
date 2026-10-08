@@ -200,6 +200,14 @@ db.transaction(() => {
     ['particular', 'Sílvia Moreno', null, '651 230 984', 'tienda', 'interesado'],
     ['particular', 'Oriol Batlle', null, '622 444 555', 'teléfono', 'me_lo_pienso'],
     ['particular', 'Enric Puig', null, '633 777 888', 'web', 'perdido'],
+    ['particular', 'Montse Ribas', null, '644 101 202', 'web', 'nuevo'],
+    ['particular', 'Albert Ferrer', null, '655 303 404', 'tienda', 'nuevo'],
+    ['particular', 'Carla Vidal', null, '666 505 606', 'web', 'interesado'],
+    ['particular', 'Xavi Soler', null, '677 707 808', 'teléfono', 'interesado'],
+    ['particular', 'Núria Casals', null, '688 909 010', 'web', 'me_lo_pienso'],
+    ['empresa', 'Jardineria Rubí SL', 'B65432109', '935 887 766', 'teléfono', 'negociando'],
+    ['particular', 'Pere Martí', null, '699 121 314', 'tienda', 'negociando'],
+    ['particular', 'Anna Roig', null, '610 151 617', 'web', 'perdido'],
   ];
   for (const [tipo, nombre, nif, tel, origen, estado] of mas) {
     db.prepare('INSERT INTO clientes (tipo, nombre, nif, telefono, origen, estado_comercial, poblacion) VALUES (?, ?, ?, ?, ?, ?, ?)').run(tipo, nombre, nif, tel, origen, estado, 'Rubí');
@@ -220,6 +228,30 @@ db.transaction(() => {
   act.run('tarea', cliente('Oriol Batlle'), 'Mirar precios del 3008 en Coches.net para comparar.', `${dia(-2)} 10:00`, null, null, jaume, jaume);
   act.run('whatsapp', cliente('Laura Gil Ferrer'), 'Pedirle una reseña en Google.', `${dia(3)} 10:00`, null, null, comercial, jaume);
   act.run('nota', cliente('Enric Puig'), 'Se quedó un Tucson en otro concesionario. Motivo: precio.', null, new Date(Date.now() - 16 * 86400000).toISOString().slice(0, 19).replace('T', ' '), null, jaume, jaume);
+
+  // Más recordatorios de prueba: atrasados, de hoy (de los dos), hechos con resultado y de los próximos días
+  const haceHoras = (h) => new Date(Date.now() - h * 3600000).toISOString().slice(0, 19).replace('T', ' ');
+  act.run('llamada', cliente('Montse Ribas'), 'Preguntó por el Ibiza en la web. Llamarla para ofrecerle una prueba.', `${dia(-1)} 16:00`, null, null, comercial, comercial);
+  act.run('tarea', cliente('Pere Martí'), 'Pedir a la financiera la respuesta del préstamo.', `${dia(-3)} 12:00`, null, null, jaume, jaume);
+  act.run('whatsapp', cliente('Carla Vidal'), 'Mandarle las fotos del interior del Kia y el informe de la revisión.', `${dia(0)} 10:00`, haceHoras(2), 'Le han gustado; quiere venir el sábado', comercial, comercial);
+  act.run('prueba', cliente('Xavi Soler'), 'Prueba del Golf. Depósito lleno y el seguro de prueba a mano.', `${dia(0)} 13:00`, null, null, comercial, jaume);
+  act.run('email', cliente('Jardineria Rubí SL'), 'Enviar la oferta de las dos furgonetas con la tasación de la vieja.', `${dia(0)} 16:00`, null, null, jaume, jaume);
+  act.run('tarea', cliente('Núria Casals'), 'Preparar comparativa del 3008 frente al Tucson que le ofrecen en Sabadell.', `${dia(0)} 18:30`, null, null, comercial, comercial);
+  act.run('visita', cliente('Albert Ferrer'), 'Viene con su Corsa para tasarlo. Llevarlo al taller antes de darle precio.', `${dia(1)} 10:30`, null, null, comercial, jaume);
+  act.run('llamada', cliente('Pere Martí'), 'Confirmar la fecha de entrega del C-HR.', `${dia(1)} 12:00`, null, null, jaume, jaume);
+  act.run('prueba', cliente('Carla Vidal'), 'Prueba del Kia con su pareja.', `${dia(2)} 11:00`, null, null, comercial, comercial);
+  act.run('tarea', cliente('Jardineria Rubí SL'), 'Mirar si la Vito del proveedor llega antes de fin de mes.', `${dia(2)} 17:00`, null, null, jaume, jaume);
+  act.run('whatsapp', cliente('Jordi Camps'), 'Recordarle que traiga la última nómina para la financiación.', `${dia(3)} 09:30`, null, null, comercial, comercial);
+  act.run('llamada', cliente('Núria Casals'), 'Llamar después de que pruebe el de Sabadell. Margen hasta 300 €.', `${dia(4)} 18:00`, null, null, comercial, jaume);
+  act.run('email', cliente('Reformas Vallès SL'), 'Mandar la propuesta de la segunda furgoneta para primavera.', `${dia(5)} 10:00`, null, null, jaume, jaume);
+  act.run('llamada', cliente('Pau Serra Vidal'), 'Llamada del mes: qué tal va con el C-HR.', `${dia(6)} 11:00`, null, null, comercial, jaume);
+  act.run('tarea', cliente('Montse Ribas'), 'Si no contesta, mandarle un WhatsApp con dos coches parecidos.', `${dia(9)} 10:00`, null, null, comercial, comercial);
+  act.run('llamada', cliente('Anna Roig'), 'No le daban la financiación.', `${dia(-12)} 11:00`, haceHoras(12 * 24), 'Se lo ha comprado su hermano', jaume, jaume);
+  // Dos de contactos de la web que aún no son clientes
+  const actContacto = db.prepare(`INSERT INTO actividades (tipo, contacto_id, descripcion, programada_para, responsable_id, creado_por)
+                                  VALUES (?, (SELECT id FROM contactos WHERE nombre = ?), ?, ?, ?, ?)`);
+  actContacto.run('llamada', 'Iván Roca', 'Devolverle la llamada: quiere saber la cuota a 60 meses.', `${dia(0)} 15:30`, comercial, comercial);
+  actContacto.run('tarea', 'Marta Soler', 'Buscarle un Ateca con menos de 60.000 km.', `${dia(1)} 17:30`, jaume, jaume);
 })();
 
 // Facturación (0013): el domicilio fiscal ya lo pone la migración 0015 (el de sus contratos de Pymecar),

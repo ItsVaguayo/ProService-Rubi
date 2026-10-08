@@ -2112,9 +2112,19 @@ a.contacto__coche:hover { background: var(--fondo); }
 .actividad__texto a:hover { text-decoration: underline; }
 .actividad__texto .dias { margin-left: 4px; font-size: .75rem; }
 .actividad__hecha { color: var(--ok); font-size: .8125rem; font-weight: 600; white-space: nowrap; }
+.actividad__botones { display: flex; gap: 6px; }
+.actividad__resultado { display: inline-block; width: 100%; margin-top: 2px; color: var(--tinta-3); font-size: .8125rem; text-decoration: none; }
+.actividad__resultado::before { content: '→ '; }
+.actividad--vacia { grid-template-columns: 1fr; color: var(--tinta-3); }
+/* Cabecera de cada día en «Próximos 7 días» */
+.actividad-dia { padding: 10px 20px 6px; border-top: 1px solid var(--linea); background: var(--fondo); color: var(--tinta-2); font-size: .75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .actividad--llamada { background: var(--reservado-fondo); color: var(--reservado); }
 .actividad--visita { background: var(--venta-fondo); color: var(--venta); }
 .actividad--tarea { background: var(--llegada-fondo); color: var(--llegada); }
+.actividad--whatsapp { background: var(--ok-fondo); color: var(--ok); }
+.actividad--email { background: var(--vendido-fondo); color: var(--vendido); }
+.actividad--prueba { background: var(--preparacion-fondo); color: var(--preparacion); }
+.actividad--nota { background: var(--fondo); color: var(--tinta-3); }
 /* Ya pasó la hora y no está hecha: en rojo. Hecha: tachada y apagada. */
 .actividad--tarde { background: #fffafa; }
 .actividad--tarde .actividad__hora { color: var(--peligro); }
@@ -2163,7 +2173,8 @@ a.contacto__coche:hover { background: var(--fondo); }
   content: 'Arrastra aquí'; color: var(--tinta-3); font-size: .75rem;
 }
 @media (max-width: 760px) {
-  .embudo-crm .columna--tramo { padding-inline: calc(var(--lado) + 4px); }
+  /* En el móvil, sin trapecio: los tramos de abajo se quedaban sin sitio para las tarjetas */
+  .embudo-crm .columna--tramo { width: 100% !important; clip-path: none !important; padding-inline: 12px; border-radius: var(--radio); }
   .embudo-crm .ficha-mini { flex-basis: 100%; }
   .embudo-crm .columna--fuera { width: 100%; }
 }
@@ -2190,7 +2201,9 @@ a.contacto__coche:hover { background: var(--fondo); }
   .actividad .estado { grid-column: 2; grid-row: 1; }
   .actividad__texto { grid-column: 2; }
   .actividad .boton,
+  .actividad__botones,
   .actividad__hecha { grid-column: 2; justify-self: start; }
+  .actividad-dia { padding-inline: 16px; }
 }
 
 
