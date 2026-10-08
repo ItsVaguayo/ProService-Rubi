@@ -1476,8 +1476,19 @@ async function paginaCrm(usuario) {
   cajaError.hidden = true;
   hoyCaja.before(cajaError);
 
-  // --- Hoy y próximos días ---
-  const proxCaja = $('.proximos');
+  // --- Hoy y próximos días: la misma caja, con una pestaña para cada lista ---
+  const hoyLista = $('.hoy__lista[data-vista="hoy"]', hoyCaja);
+  const proxLista = $('.hoy__lista[data-vista="proximos"]', hoyCaja);
+  const pestanas = $('.hoy__pestanas', hoyCaja);
+  const [cuentaHoy, cuentaProx] = hoyCaja.querySelectorAll('.hoy__cuenta');
+  let notaHechas = '';
+  const verPestana = () => {
+    const vista = $('input[name="vista"]:checked', pestanas).value;
+    hoyLista.hidden = vista !== 'hoy';
+    proxLista.hidden = vista !== 'proximos';
+    $('.caja__titulo > .nota', hoyCaja).textContent = vista === 'hoy' ? notaHechas : '';
+  };
+  pestanas.addEventListener('change', verPestana);
   const pintarHoy = async () => {
     const responsable = $('input[name="responsable"]:checked', deQuien)?.value ?? 'yo'; // 'yo' o '' (de todos)
     const filtro = responsable ? `&responsable=${encodeURIComponent(responsable)}` : '';
@@ -1516,8 +1527,8 @@ async function paginaCrm(usuario) {
     const hechas = lista.filter((a) => a.hecha_en).length;
     const conRetraso = lista.filter(tarde).length;
     $('#hoy-titulo').textContent = `Hoy, ${DIAS_SEMANA[ahora.getDay()]} ${ahora.getDate()}`;
-    $('.caja__titulo .nota', hoyCaja).textContent = lista.length ? `${hechas} de ${lista.length} ${lista.length === 1 ? 'hecha' : 'hechas'}` : '';
-    $('.hoy__lista', hoyCaja).innerHTML = lista.length
+    notaHechas = lista.length ? `${hechas} de ${lista.length} ${lista.length === 1 ? 'hecha' : 'hechas'}` : '';
+    hoyLista.innerHTML = lista.length
       ? lista.map((a) => fila(a)).join('')
       : `<li class="actividad actividad--vacia"><p class="actividad__texto">Nada programado para hoy${responsable ? '' : ' en todo el equipo'}.</p></li>`;
     const pendientesHoy = lista.length - hechas;
@@ -1537,10 +1548,12 @@ async function paginaCrm(usuario) {
       const dia = a.programada_para.slice(0, 10);
       porDia.set(dia, [...(porDia.get(dia) ?? []), a]);
     }
-    $('.caja__titulo .nota', proxCaja).textContent = proximas.length ? `${proximas.length} ${proximas.length === 1 ? 'pendiente' : 'pendientes'}` : '';
-    $('.hoy__lista', proxCaja).innerHTML = proximas.length
+    proxLista.innerHTML = proximas.length
       ? [...porDia].map(([dia, suyas]) => `<li class="actividad-dia">${esc(nombreDia(dia))}</li>${suyas.map((a) => fila(a, true)).join('')}`).join('')
       : `<li class="actividad actividad--vacia"><p class="actividad__texto">Nada programado para los próximos 7 días${responsable ? '' : ' en todo el equipo'}.</p></li>`;
+    cuentaHoy.textContent = pendientesHoy || '';
+    cuentaProx.textContent = proximas.length || '';
+    verPestana();
   };
 
   // «Hecho» y «Mañana» en las dos cajas
@@ -1569,7 +1582,6 @@ async function paginaCrm(usuario) {
     }
   };
   hoyCaja.addEventListener('click', alPulsar);
-  proxCaja.addEventListener('click', alPulsar);
   deQuien.addEventListener('change', () => pintarHoy().catch((e) => mostrarErrores(cajaError, e, 'No se ha podido cargar:')));
 
   // --- Embudo ---

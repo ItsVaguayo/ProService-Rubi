@@ -2110,7 +2110,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 .actividad__texto { margin: 0; color: var(--tinta-2); font-size: .875rem; }
 .actividad__texto a { margin-right: 8px; color: var(--tinta); text-decoration: none; }
 .actividad__texto a:hover { text-decoration: underline; }
-.actividad__texto .dias { margin-left: 4px; font-size: .75rem; }
+.actividad__texto .dias { margin-left: 4px; font-size: .75rem; white-space: nowrap; }
 .actividad__hecha { color: var(--ok); font-size: .8125rem; font-weight: 600; white-space: nowrap; }
 .actividad__botones { display: flex; gap: 6px; }
 .actividad__resultado { display: inline-block; width: 100%; margin-top: 2px; color: var(--tinta-3); font-size: .8125rem; text-decoration: none; }
@@ -2134,15 +2134,24 @@ a.contacto__coche:hover { background: var(--fondo); }
 .actividad--hecha .actividad__texto { text-decoration: line-through; }
 .actividad--hecha .estado { filter: grayscale(1); opacity: .6; }
 
-/* Rejilla de la página: «Hoy» y «Próximos 7 días» a la izquierda, el embudo a la derecha desde arriba.
-   Por debajo de 1.180 px, una sola columna con el embudo entre «Hoy» y los próximos días. */
-.crm-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'hoy' 'embudo' 'proximos'; gap: 20px; align-items: start; }
-.crm-rejilla > .hoy { grid-area: hoy; margin-bottom: 0; }
-.crm-rejilla > .proximos { grid-area: proximos; }
-.crm-rejilla > .crm-embudo { grid-area: embudo; }
+/* Rejilla de la página: la agenda (hoy y próximos 7 días, en pestañas) a la izquierda y el embudo a la
+   derecha, los dos desde arriba. Por debajo de 1.180 px, una sola columna con la agenda encima. */
+.crm-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+.crm-rejilla > .hoy { margin-bottom: 0; }
 @media (min-width: 1180px) {
-  .crm-rejilla { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-rows: auto 1fr; grid-template-areas: 'hoy embudo' 'proximos embudo'; }
-  .crm-rejilla > .crm-embudo { align-self: stretch; }
+  .crm-rejilla { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
+}
+/* Las pestañas «Hoy» y «Próximos 7 días» hacen de título de la caja; el número es lo pendiente */
+.hoy .caja__titulo { flex-wrap: wrap; row-gap: 8px; }
+/* (los span de dentro no son pestañas: sin el alto ni el relleno de .segmentos span) */
+.hoy__pestanas { flex-wrap: nowrap; }
+.hoy__pestanas > label > span { white-space: nowrap; }
+.hoy__pestanas span span { display: inline; min-height: 0; padding: 0; border-radius: 0; background: none; box-shadow: none; color: inherit; font-size: inherit; }
+.hoy__pestanas .hoy__cuenta { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; background: var(--rojo); color: var(--blanco); font-size: .6875rem; font-weight: 700; line-height: 1; }
+.hoy__pestanas .hoy__cuenta:empty { display: none; }
+.hoy__pestanas input:not(:checked) + span .hoy__cuenta { background: var(--tinta-3); }
+@media (max-width: 760px) {
+  .hoy__pestanas > label > span { padding: 0 10px; }
 }
 /* En la columna estrecha, cada actividad en dos líneas: hora, tipo y botones arriba; el texto debajo.
    En el móvil manda su propia regla (más abajo), por eso solo desde 761 px. */

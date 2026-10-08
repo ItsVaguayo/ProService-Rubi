@@ -63,18 +63,21 @@
       </div>
     </header>
 
-    <!-- En pantalla ancha, dos columnas: a la izquierda lo de hoy y los próximos días; a la derecha el
-         embudo en su caja, a la misma altura que «Hoy». En estrecho, una columna: hoy, embudo, próximos. -->
+    <!-- En pantalla ancha, dos columnas: a la izquierda la agenda (hoy y, en otra pestaña, los próximos
+         7 días); a la derecha el embudo en su caja, a la misma altura. En estrecho, la agenda encima. -->
     <div class="crm-rejilla">
     <!-- HOY: llamadas, visitas y tareas programadas para hoy, por hora (GET /api/actividades?dia=…, T11
          de David). «Hecho» la marca hecha (PATCH /api/actividades/:id/hecha). La que ya pasó de hora
          sin hacer va en rojo; la hecha se queda apagada y tachada. -->
-    <section class="caja hoy" aria-labelledby="hoy-titulo">
+    <section class="caja hoy" aria-label="Agenda: hoy y próximos 7 días">
       <div class="caja__titulo">
-        <h2 id="hoy-titulo">Hoy, miércoles 7</h2>
+        <fieldset class="segmentos hoy__pestanas" aria-label="Qué día">
+          <label><input type="radio" name="vista" value="hoy" checked><span><span id="hoy-titulo">Hoy, miércoles 7</span> <span class="hoy__cuenta cifra">5</span></span></label>
+          <label><input type="radio" name="vista" value="proximos"><span>Próximos 7 días <span class="hoy__cuenta cifra"></span></span></label>
+        </fieldset>
         <span class="nota">1 de 6 hechas</span>
       </div>
-      <ul class="hoy__lista">
+      <ul class="hoy__lista" data-vista="hoy">
         <li class="actividad actividad--hecha">
           <time class="actividad__hora cifra">9:30</time>
           <span class="estado actividad--llamada">Llamada</span>
@@ -112,17 +115,11 @@
           <button class="boton boton--oscuro boton--pequeno" type="button">Hecho</button>
         </li>
       </ul>
+      <!-- PRÓXIMOS 7 DÍAS, en la misma caja: lo pendiente de mañana en adelante, agrupado por día (sale de
+           GET /api/actividades?pendientes=1). «+1 día» la mueve un día, a la misma hora. -->
+      <ul class="hoy__lista" data-vista="proximos" hidden></ul>
     </section>
 
-    <!-- PRÓXIMOS 7 DÍAS: lo pendiente de mañana en adelante, agrupado por día (sale de
-         GET /api/actividades?pendientes=1). «Mañana» pasa la actividad a mañana a la misma hora. -->
-    <section class="caja hoy proximos" aria-labelledby="proximos-titulo">
-      <div class="caja__titulo">
-        <h2 id="proximos-titulo">Próximos 7 días</h2>
-        <span class="nota"></span>
-      </div>
-      <ul class="hoy__lista"></ul>
-    </section>
 
     <!-- EMBUDO: una columna por estado_comercial (GET /api/clientes?estado_comercial=…). Las tarjetas
          son como las del tablero de coches: cliente, el coche que le interesa, la próxima cosa que
