@@ -61,6 +61,21 @@
         </fieldset>
         <a class="boton" href="#">Apuntar actividad</a>
       </div>
+      <!-- CIFRAS del embudo, de todo el equipo (no cambian con «Lo mío»). Las rellena panel.js con los
+           mismos clientes que el embudo: en marcha (con una barra por fase), negociando, ganados y
+           perdidos de los últimos 30 días, % de cierre y los que llevan más de 7 días sin hablar. -->
+      <dl class="crm-cifras" aria-label="El embudo en cifras">
+        <div class="crm-cifra crm-cifra--grande">
+          <dt>Clientes en marcha</dt>
+          <dd class="cifra">10</dd>
+          <dd class="crm-barra" aria-hidden="true"></dd>
+          <dd class="crm-leyenda"></dd>
+        </div>
+        <div class="crm-cifra"><dt>Negociando</dt><dd class="cifra">2</dd><dd class="crm-cifra__nota">a punto de cerrar</dd></div>
+        <div class="crm-cifra"><dt>Ganados</dt><dd class="cifra">2</dd><dd class="crm-cifra__nota">últimos 30 días</dd></div>
+        <div class="crm-cifra"><dt>Cierre</dt><dd class="cifra">50 %</dd><dd class="crm-cifra__nota">ganados frente a perdidos</dd></div>
+        <div class="crm-cifra crm-cifra--alerta"><dt>Sin hablar</dt><dd class="cifra">3</dd><dd class="crm-cifra__nota">más de 7 días</dd></div>
+      </dl>
     </header>
 
     <!-- En pantalla ancha, dos columnas: a la izquierda la agenda (hoy y, en otra pestaña, los próximos

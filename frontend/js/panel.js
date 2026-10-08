@@ -1630,7 +1630,32 @@ async function paginaCrm(usuario) {
         </div>`;
     }).join('');
     const enMarcha = visibles.filter((c) => !['ganado', 'perdido'].includes(c.estado_comercial)).length;
+    pintarCifras(visibles);
     $('.tablero-cabecera__pista').textContent = `${enMarcha} ${enMarcha === 1 ? 'cliente' : 'clientes'} en marcha. Arrastra un cliente a otro tramo para cambiar su estado.`;
+  };
+
+  // Las cifras de la cabecera, con los mismos clientes que el embudo (ganados y perdidos: 30 días)
+  const pintarCifras = (visibles) => {
+    const de = (id) => visibles.filter((c) => c.estado_comercial === id);
+    const abiertos = visibles.filter((c) => !['ganado', 'perdido'].includes(c.estado_comercial));
+    const ganados = de('ganado').length;
+    const perdidos = de('perdido').length;
+    const callados = abiertos.filter((c) => !c.ultima_actividad || diasDesde(c.ultima_actividad) > 7).length;
+    const [grande, negociando, ganadosCaja, cierre, sinHablar] = document.querySelectorAll('.crm-cifra');
+    $('.cifra', grande).textContent = abiertos.length;
+    $('.cifra', negociando).textContent = de('negociando').length;
+    $('.cifra', ganadosCaja).textContent = ganados;
+    $('.cifra', cierre).textContent = ganados + perdidos ? `${Math.round((ganados / (ganados + perdidos)) * 100)} %` : '—';
+    $('.crm-cifra__nota', cierre).textContent = ganados + perdidos ? `${ganados} de ${ganados + perdidos} cerrados` : 'sin cerrados en 30 días';
+    $('.cifra', sinHablar).textContent = callados;
+    sinHablar.classList.toggle('crm-cifra--alerta', callados > 0);
+    // La barra: un trozo por fase abierta, del color de su tramo, con su número
+    // y debajo la leyenda con el nombre de cada fase
+    const fases = ['nuevo', 'interesado', 'me_lo_pienso', 'negociando'].map((id) => [id, de(id).length]).filter(([, n]) => n);
+    $('.crm-barra', grande).innerHTML = fases
+      .map(([id, n]) => `<span class="columna--${COLUMNA_CRM[id]}" style="flex-grow:${n}" title="${esc(ESTADOS_COMERCIALES[id])}: ${n}">${n}</span>`).join('');
+    $('.crm-leyenda', grande).innerHTML = fases
+      .map(([id]) => `<span class="columna--${COLUMNA_CRM[id]}">${esc(ESTADOS_COMERCIALES[id])}</span>`).join('');
   };
 
   // El embudo: cada estado es un tramo que se estrecha hacia «Ganado», con sus clientes dentro.

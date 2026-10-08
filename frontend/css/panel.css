@@ -2180,6 +2180,35 @@ a.contacto__coche:hover { background: var(--fondo); }
   .crm-embudo .embudo-crm .columna--fuera { width: 100%; }
 }
 
+/* Cifras del embudo en la banda negra: una fila de cajas de cristal, la primera más ancha y con la
+   barra de fases (cada trozo del color de su tramo del embudo) */
+.crm-cifras { display: grid; grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr)); gap: 12px; flex-basis: 100%; margin: 14px 0 0; }
+.crm-cifra { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border: 1px solid rgb(255 255 255 / .1); border-radius: var(--radio); background: rgb(255 255 255 / .04); }
+.crm-cifra dt { order: -1; color: rgb(255 255 255 / .6); font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.crm-cifra dd { margin: 0; }
+.crm-cifra .cifra { color: var(--blanco); font-size: 2.25rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+.crm-cifra--grande .cifra { font-size: 3rem; }
+.crm-cifra__nota { color: rgb(255 255 255 / .45); font-size: .75rem; }
+.crm-cifra--alerta { border-color: rgb(240 138 138 / .35); background: rgb(240 138 138 / .07); }
+.crm-cifra--alerta .cifra { color: #f08a8a; }
+.crm-barra { display: flex; gap: 3px; margin-top: 8px !important; }
+.crm-barra span { min-width: 24px; overflow: hidden; padding: 4px 8px; text-align: center; border-radius: 4px; background: var(--color-fase); color: var(--blanco); font-size: .6875rem; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.crm-barra .columna--pienso { color: var(--tinta); }
+/* «Negociando» es negro: sobre la banda negra no se vería, aquí va en blanco */
+.crm-barra .columna--negociando, .crm-leyenda .columna--negociando { --color-fase: #e9ebee; }
+.crm-barra .columna--negociando { color: var(--tinta); }
+.crm-leyenda { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px !important; color: rgb(255 255 255 / .6); font-size: .75rem; }
+.crm-leyenda span::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 2px; background: var(--color-fase); }
+@media (max-width: 1100px) {
+  .crm-cifras { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .crm-cifra--grande { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .crm-cifra { padding: 12px 14px; }
+  .crm-cifra .cifra { font-size: 1.75rem; }
+  .crm-cifra--grande .cifra { font-size: 2.25rem; }
+}
+
 /* Selector «Lo mío / De todos» sobre la banda negra */
 .segmentos--oscuro { background: var(--negro-3); }
 .segmentos--oscuro span { color: #b9bec4; }
