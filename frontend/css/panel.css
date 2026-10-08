@@ -2134,12 +2134,14 @@ a.contacto__coche:hover { background: var(--fondo); }
 .actividad--hecha .actividad__texto { text-decoration: line-through; }
 .actividad--hecha .estado { filter: grayscale(1); opacity: .6; }
 
-/* Rejilla de la página: la agenda (hoy y próximos 7 días, en pestañas) a la izquierda y el embudo a la
-   derecha, los dos desde arriba. Por debajo de 1.180 px, una sola columna con la agenda encima. */
+/* La página en una columna: la agenda (hoy y próximos 7 días, en pestañas) arriba y el embudo debajo.
+   La agenda tiene siempre el mismo alto en las dos pestañas; si hay más, se baja con su propia barra. */
 .crm-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
 .crm-rejilla > .hoy { margin-bottom: 0; }
-@media (min-width: 1180px) {
-  .crm-rejilla { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
+.hoy .hoy__lista { height: 340px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--linea) transparent; }
+.hoy .actividad-dia { position: sticky; top: 0; z-index: 1; } /* el día se queda arriba al bajar */
+@media (max-width: 760px) {
+  .hoy .hoy__lista { height: 420px; }
 }
 /* Las pestañas «Hoy» y «Próximos 7 días» hacen de título de la caja; el número es lo pendiente */
 .hoy .caja__titulo { flex-wrap: wrap; row-gap: 8px; }
@@ -2153,7 +2155,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 @media (max-width: 760px) {
   .hoy__pestanas > label > span { padding: 0 10px; }
 }
-/* En la columna estrecha, cada actividad en dos líneas: hora, tipo y botones arriba; el texto debajo.
+/* Si la caja queda estrecha, cada actividad en dos líneas: hora, tipo y botones arriba; el texto debajo.
    En el móvil manda su propia regla (más abajo), por eso solo desde 761 px. */
 .hoy { container-type: inline-size; }
 @media (min-width: 761px) { @container (max-width: 620px) {
@@ -2170,7 +2172,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 .crm-embudo .tablero-cabecera__pista { margin: 0; }
 .crm-embudo { padding: 18px; }
 .crm-embudo .embudo-crm .columna--tramo { padding-inline: calc(var(--lado) + 6px); }
-.crm-embudo .embudo-crm .ficha-mini { flex-basis: 150px; }
+.crm-embudo .embudo-crm .ficha-mini { flex-basis: 190px; }
 .crm-embudo .embudo-crm .ficha-mini .nota { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .crm-embudo .embudo-crm .columna--fuera { width: 60%; }
 @media (max-width: 760px) {
