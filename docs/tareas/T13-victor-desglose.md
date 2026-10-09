@@ -64,14 +64,14 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - [ ] Adaptador de Meta en simulado: publicar al pasar a «Publicado» y retirar al vender (como `publicacion/retirada.js`).
 
 ## 10. Bloque 10 · Cita previa
-- [ ] Migración `citas` y `horario_pruebas` (por defecto, el horario de la duda H12).
-- [ ] Huecos y alta pública con el antispam de `contactos/routes.js`, sin solapes.
+- ✅ Migración `0018`: `citas` y `horario_pruebas` con el horario de la duda H12; sin solapes por índice único (9-oct).
+- ✅ `GET /api/citas/huecos` y `POST /api/citas/pedir` públicos, con el antispam de contactos; la petición entra pedida y apunta su contacto (9-oct).
 - [ ] Formulario en la ficha de la web y en `wordpress-pruebas/`.
-- [ ] Conectar `agenda.html` de Hafsa.
+- ✅ `agenda.html` conectada (9-oct): semana con paso adelante y atrás, confirmar, cambiar hora, cancelar, hecha y no vino, «Nueva prueba» y «Dar cita» desde un contacto de Contactos.
 
 ## 11. Bloque 9 · Avisos
 - ✅ `modules/avisos` y `GET /api/avisos` (PR #15, 8-oct): tareas vencidas, contactos sin atender, coches parados, ITV, vendidos aún publicados y cobros vencidos.
-- [ ] Citas de mañana: cuando exista la tabla `citas` (bloque 10).
+- ✅ Avisos de pruebas de hoy y de mañana; en rojo las que siguen sin confirmar (9-oct).
 - [ ] Correo diario (duda H13: falta el SMTP).
 
 ## 12. Conectar las maquetas de Hafsa
@@ -81,6 +81,6 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - ✅ `gastos.html` (9-oct): el mes con sus cifras por tipo (pulsar una filtra), alta con el tipo propuesto por el concepto, total en vivo, «Ya está pagado» y «Sin pagar» que se pulsa para pagarlo. Desde la ficha del coche, `gastos.html?vehiculo=`.
 - ✅ `incentivos.html` (9-oct): gerencia ve a cada comercial con su regla (se cambia ahí), sus coches con margen y «Liquidar» con doble pulsación. El comercial ve lo suyo, sin margen ni porcentaje. La API añade `matricula` y `pvp_cent` a cada coche.
 - ✅ `proveedores.html` (9-oct): lista con lo comprado a cada uno (la API añade `comprado_cent`), ficha con sus coches, alta y edición con los campos de la T15 (clase, móvil, IBAN, forma de pago, persona de contacto), desactivar y volver a activar.
-- [ ] El resto, conforme sale su bloque: `agenda.html` (bloque 10) y `anuncio.html`.
+- [ ] `anuncio.html` y el bloque «Dónde está publicado» de la ficha (la API de portales llegó con el PR #18).
 
 Cada bloque es: migración, módulo, tests, `docs/api.md`, página del panel y datos de prueba. Marca con ✅ lo que acabes.

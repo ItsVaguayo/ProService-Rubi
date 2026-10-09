@@ -2660,3 +2660,12 @@ html.cargando:not(.listo) body::before {
   .tabla tbody tr:active, .fila-coche:active, .para-hoy li a:active, .aviso:active, .cifras__dato--enlace:active { background-color: var(--fondo-pulsado); }
   .ficha-mini:active, .contacto:active { transform: scale(0.98); transition: transform 100ms var(--ease-out); }
 }
+
+/* Agenda conectada (bloque 10) */
+.aviso-tipo--cita { color: var(--reservado); }
+.dia__vacio { margin: 4px 0 0; font-size: .8125rem; }
+.prueba__notas { margin: 0; font-size: .8125rem; }
+.prueba__mover { display: grid; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--linea); }
+.prueba__mover .campo { margin: 0; }
+.prueba__coche a { color: inherit; text-decoration: none; }
+@media (hover: hover) and (pointer: fine) { .prueba__coche a:hover b { text-decoration: underline; } }

@@ -244,6 +244,23 @@ Tipos:
 
 Todos aceptan `fecha` (hoy) y `clausulas_adicionales`. Lo que falta (un DNI, una dirección) sale como raya para rellenar a mano.
 
+## Cita previa de pruebas de conducción
+
+Las pide la web o se apuntan desde la agenda del panel. Una prueba dura 30 minutos y empieza en punto o y media, dentro del horario de `horario_pruebas` (por defecto el de la duda H12: de lunes a viernes de 10:00 a 13:30 y de 16:30 a 19:30; sábado de 10:00 a 13:30). Las horas van en hora de Rubí, `AAAA-MM-DD HH:MM`. **Sin solapes**: dos citas vivas (pedida o confirmada) no pueden empezar a la vez, porque las acompaña una persona; lo impide la base.
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `GET /citas/huecos?desde=AAAA-MM-DD&dias=14` | público | Las horas libres, `{ duracion_min, dias: [{ dia, horas: ['10:00', …] }] }`. Sin días vacíos. Con dos horas de margen: no ofrece lo que empieza antes |
+| `POST /citas/pedir` | público | La web pide una prueba: `{ coche (id o referencia), inicio, nombre, telefono, email?, mensaje?, privacidad: true, web: '' }`. Solo coches publicados. Entra **pedida** y además apunta un contacto de tipo `prueba` (sale en Contactos, en los avisos y en el correo al comercial). La misma protección que los contactos: 5 por IP cada 10 minutos y el campo trampa `web`. Hora ya cogida: 409 |
+| `GET /citas/libres?desde=&dias=` | con sesión | Lo mismo que `huecos`, sin el margen de dos horas (para el panel) |
+| `GET /citas?desde=&hasta=` | con sesión | Las citas del periodo (los dos días incluidos; por defecto, de hoy a dentro de 7 días), con `marca`, `modelo`, `version`, `matricula`, `referencia`, `cliente_nombre`. Sin las canceladas, salvo `?canceladas=1` |
+| `POST /citas` | con sesión | `{ vehiculo_id, inicio, nombre?, telefono?, email?, cliente_id?, contacto_id?, notas?, estado? }`. Entra **confirmada** (se ha hablado con el cliente), salvo `estado: 'pedida'`. Con `cliente_id` o `contacto_id`, el nombre y el teléfono salen de ahí si no llegan, y el contacto queda atendido. 201 |
+| `PATCH /citas/:id` | con sesión | `{ estado?, inicio?, notas? }`. `estado`: `confirmada`, `hecha`, `no_vino` o `cancelada` (no vuelve a `pedida`; una cancelada no revive). La hora solo se cambia en una cita viva |
+
+- Los dos roles: la agenda no lleva dinero.
+- Cada alta y cambio queda en `auditoria` (entidad `cita`).
+- **Avisos** (`GET /avisos`, tipo `citas`): las pruebas de hoy que aún no han empezado y las de mañana. `alta` si siguen sin confirmar (hay que llamar), `media` si están confirmadas. Enlace a `agenda.html?semana=AAAA-MM-DD`.
+
 ## Avisos del panel
 
 Lo que hay que atender hoy, calculado al pedirlo con lo que ya hay en la base: no tiene tabla propia. El correo diario (duda H13) y las citas de mañana van aparte.
@@ -261,6 +278,7 @@ Cada aviso lleva `tipo`, `gravedad` (`alta` o `media`), `texto` (corto, para la 
 | `coches_parados` | Coche en «Publicado» desde hace más de 60 días, contados desde la **primera** vez que pasó a «Publicado» en el historial (una reserva cancelada no pone el contador a cero); sin historial, desde el alta | `alta` desde 90 días; `media` de 60 a 90 | `coche.html?id=` | esa fecha (UTC) |
 | `vendidos_publicados` | Coche vendido o entregado con alguna publicación en `retirar`. Un aviso por coche, con los canales en el texto | `alta` | `coche.html?id=` | la `actualizado_en` más antigua de esas publicaciones (UTC) |
 | `itv` | Coche que ya está en el patio: ni por recoger ni en transporte (todavía no es nuestro), ni vendido ni entregado, con `itv_caducidad` pasada o en los próximos 30 días. Sin fecha de ITV, no hay aviso | `alta` si ya caducó; `media` si caduca pronto | `coche.html?id=` | `itv_caducidad` (día de aquí) |
+| `citas` | Prueba de conducción de hoy (aún no empezada) o de mañana, pedida o confirmada | `alta` si está pedida (sin confirmar); `media` si está confirmada | `agenda.html?semana=` | `inicio` (hora de Rubí) |
 | `cobros_vencidos` | **Solo gerencia.** Factura de venta emitida, sin anular, con saldo pendiente y `vencimiento` pasado (el `estado_cobro` `vencida` de facturación) | `alta` | `factura.html?id=` | `vencimiento` |
 
 - **El comercial** solo ve sus tareas (`responsable_id` suyo) y los avisos de coches y contactos. Nunca `cobros_vencidos` ni ningún importe: ninguno de sus textos lleva dinero.

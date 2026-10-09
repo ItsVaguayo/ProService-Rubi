@@ -69,6 +69,11 @@ export function calculadorDeAvisos(db) {
                COALESCE((SELECT MIN(h.fecha) FROM historial_estados h WHERE h.vehiculo_id = v.id AND h.a = 'publicado'), v.creado_en) AS desde
           FROM vehiculos v WHERE v.estado = 'publicado')
        WHERE desde <= datetime('now', ?)`),
+    // Pruebas de conducción de hoy (las que aún no han empezado) y de mañana, vivas (bloque 10)
+    citas: db.prepare(`
+      SELECT c.id, c.inicio, c.estado, c.nombre, v.marca, v.modelo, v.matricula
+        FROM citas c JOIN vehiculos v ON v.id = c.vehiculo_id
+       WHERE c.estado IN ('pedida', 'confirmada') AND c.inicio > ? AND c.inicio < ?`),
     vendidosPublicados: db.prepare(`
       SELECT v.id, v.marca, v.modelo, v.matricula, v.estado,
              GROUP_CONCAT(p.canal, ', ') AS canales, MIN(p.actualizado_en) AS desde
@@ -141,6 +146,18 @@ export function calculadorDeAvisos(db) {
         tipo: 'itv', gravedad: caducada ? 'alta' : 'media',
         texto: `${coche(v)}: la ITV ${caducada ? 'caducó' : 'caduca'} el ${diaEsp(v.itv_caducidad)}`,
         enlace: `coche.html?id=${v.id}`, fecha: v.itv_caducidad, orden: instanteLocal(v.itv_caducidad),
+      });
+    }
+
+    // 5b. Pruebas de hoy y de mañana: en rojo las que siguen sin confirmar (hay que llamar), si no, pendiente
+    const pasado = new Date(Date.parse(`${hoy}T12:00:00Z`) + 2 * 86400000).toISOString().slice(0, 10);
+    for (const c of consultas.citas.all(ahoraLocal(), `${pasado} 00:00`)) {
+      const cuando = c.inicio.slice(0, 10) === hoy ? 'Hoy' : 'Mañana';
+      const sinConfirmar = c.estado === 'pedida';
+      avisos.push({
+        tipo: 'citas', gravedad: sinConfirmar ? 'alta' : 'media',
+        texto: `${cuando} a las ${c.inicio.slice(11)}, prueba del ${coche(c)} con ${c.nombre}${sinConfirmar ? ': sin confirmar' : ''}`,
+        enlace: `agenda.html?semana=${c.inicio.slice(0, 10)}`, fecha: c.inicio, orden: instanteLocal(c.inicio),
       });
     }
 

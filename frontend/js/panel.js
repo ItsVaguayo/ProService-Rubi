@@ -391,7 +391,7 @@ async function paginaTablero(usuario = usuarioTablero) {
 
   // Para hoy: los avisos (urgentes primero) y lo que solo sabe el tablero: entregar, fotos y taller
   const tareas = [];
-  const IR_AVISO = { tareas_vencidas: 'Ver', contactos_sin_atender: 'Llamar', coches_parados: 'Revisar precio', vendidos_publicados: 'Retirar', itv: 'Ver', cobros_vencidos: 'Cobrar' };
+  const IR_AVISO = { citas: 'Ver agenda', tareas_vencidas: 'Ver', contactos_sin_atender: 'Llamar', coches_parados: 'Revisar precio', vendidos_publicados: 'Retirar', itv: 'Ver', cobros_vencidos: 'Cobrar' };
   for (const a of (avisos ?? []).filter(enUbicacion)) tareas.push({ texto: a.texto, url: a.enlace, ir: IR_AVISO[a.tipo] ?? 'Ver', urgente: a.gravedad === 'alta' });
   const hoy = (texto, v, ir, urgente) => tareas.push({ texto, url: urlCoche(v), ir, urgente });
   for (const v of enTablero) {
@@ -1290,7 +1290,10 @@ async function paginaContactos() {
       ? `<span class="nota">Atendido${c.atendido_por_nombre ? ` por ${esc(c.atendido_por_nombre)}` : ''} · ${esc(fechaHora(c.atendido_en))}</span>
          <button class="boton boton--secundario boton--pequeno" type="button" data-atendido="${c.id}" data-valor="false">Volver a pendiente</button>`
       : `<a class="boton boton--secundario boton--pequeno" href="tel:${esc(tel)}">Llamar</a>
-         <button class="boton boton--oscuro boton--pequeno" type="button" data-atendido="${c.id}" data-valor="true">Marcar atendido</button>`;
+         ${c.tipo === 'prueba' ? (c.cita_inicio
+           ? `<a class="boton boton--secundario boton--pequeno" href="agenda.html?semana=${esc(c.cita_inicio.slice(0, 10))}">Ver la cita</a>`
+           : `<a class="boton boton--oscuro boton--pequeno" href="agenda.html?contacto=${c.id}">Dar cita</a>`) : ''}
+         <button class="boton boton--${c.tipo === 'prueba' && !c.cita_inicio ? 'secundario' : 'oscuro'} boton--pequeno" type="button" data-atendido="${c.id}" data-valor="true">Marcar atendido</button>`;
     return `<li class="contacto${urgente ? ' contacto--urgente' : ''}${c.atendido_en ? ' contacto--atendido' : ''}${c.id === destacado ? ' contacto--destacado' : ''}" id="contacto-${c.id}">
         <span class="contacto__inicial contacto__inicial--${esc(c.tipo)}" aria-hidden="true">${esc(iniciales(c.nombre))}</span>
         <div class="contacto__cuerpo">
@@ -3566,6 +3569,207 @@ async function paginaProveedores() {
   if (primero) await abrir(primero, { sinHistorial: true });
 }
 
+// --- Agenda de pruebas de conducción (los dos roles) ---------------------------------------------
+
+const DIA_RE = /^\d{4}-\d{2}-\d{2}$/;
+const ESTADOS_PRUEBA = { pedida: 'Pedida', confirmada: 'Confirmada', hecha: 'Hecha', no_vino: 'No vino', cancelada: 'Cancelada' };
+const MESES_LARGOS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const sumarDiasLocal = (dia, n) => { const [a, m, d] = dia.split('-').map(Number); return diaLocal(new Date(a, m - 1, d + n)); };
+/** El lunes de la semana de ese día */
+const lunesDe = (dia) => { const d = new Date(`${dia}T12:00:00`); return sumarDiasLocal(dia, -((d.getDay() + 6) % 7)); };
+/** «'AAAA-MM-DD HH:MM'» de ahora, en la hora del navegador (en Rubí, la de Rubí) */
+const ahoraTexto = () => { const d = new Date(); return `${diaLocal(d)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+
+async function paginaAgenda() {
+  const hoy = diaLocal();
+  const pedida = params.get('semana');
+  const lunes = lunesDe(DIA_RE.test(pedida ?? '') ? pedida : hoy);
+  const sabado = sumarDiasLocal(lunes, 5);
+  const semana = $('.semana');
+  const cajaError = document.createElement('div');
+  cajaError.className = 'error error--lista';
+  cajaError.setAttribute('role', 'alert');
+  cajaError.hidden = true;
+  semana.before(cajaError);
+
+  // Cabecera: la semana y el paso de una a otra
+  const [ini, fin] = [new Date(`${lunes}T12:00:00`), new Date(`${sabado}T12:00:00`)];
+  $('main h1').textContent = ini.getMonth() === fin.getMonth()
+    ? `Semana del ${ini.getDate()} al ${fin.getDate()} de ${MESES_LARGOS[fin.getMonth()]}`
+    : `Semana del ${ini.getDate()} de ${MESES_LARGOS[ini.getMonth()]} al ${fin.getDate()} de ${MESES_LARGOS[fin.getMonth()]}`;
+  const [anterior, deHoy, siguiente] = document.querySelectorAll('.cabecera__acciones a.boton--secundario');
+  anterior.href = `?semana=${sumarDiasLocal(lunes, -7)}`;
+  deHoy.href = 'agenda.html';
+  siguiente.href = `?semana=${sumarDiasLocal(lunes, 7)}`;
+
+  // Lo que hace falta para apuntar o mover: coches en stock, clientes y huecos libres de dos semanas
+  const [coches, clientes] = await Promise.all([api('/vehiculos'), api('/clientes').catch(() => [])]);
+  const enStock = coches.filter((v) => !['vendido', 'entregado'].includes(v.estado)).sort((a, b) => tituloCoche(a).localeCompare(tituloCoche(b), 'es'));
+  const opcionesHuecos = async () => {
+    const { dias } = await api(`/citas/libres?desde=${hoy}&dias=14`);
+    return dias.map(({ dia, horas }) => `<optgroup label="${esc(mayuscula(new Date(`${dia}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })))}">
+      ${horas.map((h) => `<option value="${dia} ${h}">${h}</option>`).join('')}</optgroup>`).join('');
+  };
+
+  let citas = [];
+  const tarjeta = (c) => {
+    const pasada = c.inicio <= ahoraTexto();
+    const viva = ['pedida', 'confirmada'].includes(c.estado);
+    const tel = c.telefono ? ` · <a href="tel:${esc(c.telefono.replace(/[^\d+]/g, ''))}">${esc(telefonoBonito(c.telefono))}</a>` : '';
+    let acciones = '';
+    if (viva && pasada) {
+      acciones = `<button class="boton boton--oscuro boton--pequeno" type="button" data-estado="hecha">Hecha</button>
+        <button class="boton boton--secundario boton--pequeno" type="button" data-estado="no_vino">No vino</button>`;
+    } else if (viva) {
+      acciones = `${c.estado === 'pedida' ? '<button class="boton boton--oscuro boton--pequeno" type="button" data-estado="confirmada">Confirmar</button>' : ''}
+        <button class="boton boton--secundario boton--pequeno" type="button" data-mover>Cambiar hora</button>
+        <button class="boton boton--secundario boton--pequeno prueba__cancelar" type="button" data-cancelar>Cancelar</button>`;
+    }
+    return `<article class="prueba prueba--${c.estado.replace('_', '-')}" data-id="${c.id}">
+        <p class="prueba__linea"><time class="prueba__hora cifra" datetime="${esc(c.inicio)}">${esc(c.inicio.slice(11).replace(/^0/, ''))}</time>
+          <span class="estado estado-prueba--${c.estado.replace('_', '-')}">${esc(ESTADOS_PRUEBA[c.estado])}</span></p>
+        <p class="prueba__coche"><a href="coche.html?id=${c.vehiculo_id}"><b>${esc(`${c.marca} ${c.modelo}`)}</b></a><span class="matricula">${matricula(c.matricula)}</span></p>
+        <p class="prueba__cliente">${c.cliente_id ? `<a href="clientes.html?id=${c.cliente_id}">${esc(c.nombre)}</a>` : esc(c.nombre)}${tel}${c.origen === 'web' ? ' <span class="nota">· pedida en la web</span>' : ''}</p>
+        ${c.notas ? `<p class="nota prueba__notas dos-lineas" title="${esc(c.notas)}">${esc(c.notas)}</p>` : ''}
+        ${acciones ? `<div class="prueba__acciones">${acciones}</div>` : ''}
+      </article>`;
+  };
+
+  const pintar = async () => {
+    citas = await api(`/citas?desde=${lunes}&hasta=${sabado}`);
+    const dias = Array.from({ length: 6 }, (_, i) => sumarDiasLocal(lunes, i));
+    semana.innerHTML = dias.map((dia) => {
+      const d = new Date(`${dia}T12:00:00`);
+      const suyas = citas.filter((c) => c.inicio.startsWith(dia));
+      const clase = dia === hoy ? ' dia--hoy' : dia < hoy ? ' dia--pasado' : '';
+      return `<section class="dia${clase}" aria-labelledby="dia-${dia}">
+          <h2 class="dia__titulo" id="dia-${dia}">${esc(mayuscula(DIAS_SEMANA[d.getDay()]))} <span class="cifra">${d.getDate()}</span>${dia === hoy ? ' <span class="dia__hoy">Hoy</span>' : ''}</h2>
+          ${suyas.map(tarjeta).join('') || '<p class="nota dia__vacio">Sin pruebas</p>'}
+        </section>`;
+    }).join('');
+    const sinConfirmar = citas.filter((c) => c.estado === 'pedida').length;
+    $('.contactos-resumen').innerHTML = `<strong class="cifra">${citas.length}</strong> ${citas.length === 1 ? 'prueba' : 'pruebas'}${sinConfirmar ? ` <span class="portada__alerta">· ${sinConfirmar} sin confirmar</span>` : ''}`;
+  };
+
+  const cambiar = async (id, cuerpo, texto) => {
+    try {
+      await api(`/citas/${id}`, { method: 'PATCH', body: cuerpo });
+      cajaError.hidden = true;
+      avisar(texto);
+      await pintar();
+    } catch (e) {
+      mostrarErrores(cajaError, e, 'No se ha podido cambiar:');
+    }
+  };
+
+  semana.addEventListener('click', async (ev) => {
+    const art = ev.target.closest('.prueba');
+    if (!art) return;
+    const id = Number(art.dataset.id);
+    const boton = ev.target.closest('button');
+    if (!boton) return;
+    if (boton.dataset.estado) {
+      boton.disabled = true;
+      return cambiar(id, { estado: boton.dataset.estado }, { confirmada: 'Prueba confirmada', hecha: 'Prueba hecha', no_vino: 'Apuntado: no vino' }[boton.dataset.estado]);
+    }
+    if (boton.hasAttribute('data-cancelar')) {
+      // Cancelar libera la hora: dos pulsaciones
+      if (!boton.dataset.seguro) { boton.dataset.seguro = '1'; boton.textContent = '¿Cancelar la prueba?'; return; }
+      boton.disabled = true;
+      return cambiar(id, { estado: 'cancelada' }, 'Prueba cancelada: la hora queda libre');
+    }
+    if (boton.hasAttribute('data-mover')) {
+      art.querySelector('.prueba__mover')?.remove();
+      art.insertAdjacentHTML('beforeend', `<form class="prueba__mover despliega">
+          <label class="campo"><span class="campo__nombre">Nueva hora</span><select name="inicio" required><option value="">Cargando…</option></select></label>
+          <div class="prueba__acciones"><button class="boton boton--oscuro boton--pequeno" type="submit">Guardar</button>
+          <button class="boton boton--secundario boton--pequeno" type="button" data-cerrar>No cambiar</button></div>
+        </form>`);
+      const form = $('.prueba__mover', art);
+      form.elements.inicio.innerHTML = `<option value="">Elige día y hora</option>${await opcionesHuecos()}`;
+      form.elements.inicio.focus();
+      $('[data-cerrar]', form).addEventListener('click', () => form.remove());
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (form.elements.inicio.value) cambiar(id, { inicio: form.elements.inicio.value }, `Prueba pasada al ${form.elements.inicio.selectedOptions[0].parentElement.label.toLowerCase()} a las ${form.elements.inicio.value.slice(11)}`);
+      });
+    }
+  });
+
+  // Nueva prueba: coche, hora libre y quién (un cliente o nombre y teléfono). Desde un contacto de la web
+  // (?contacto=id) o desde un coche (?coche=id), con eso ya puesto.
+  const seccion = document.createElement('section');
+  seccion.className = 'caja form-tercero despliega';
+  seccion.id = 'nueva-prueba';
+  seccion.hidden = true;
+  seccion.innerHTML = `
+    <div class="caja__titulo"><h2>Nueva prueba de conducción</h2><span class="nota">Entra confirmada: se apunta tras hablar con el cliente</span></div>
+    <form class="rejilla">
+      <label class="campo campo--doble"><span class="campo__nombre">Coche <em>*</em></span>
+        <select name="vehiculo_id" required><option value="">Elige el coche</option>${enStock.map((v) => `<option value="${v.id}">${esc(tituloCoche(v))} · ${matricula(v.matricula)}${v.estado !== 'publicado' ? ` · ${esc(estado(v.estado).nombre)}` : ''}</option>`).join('')}</select></label>
+      <label class="campo campo--doble"><span class="campo__nombre">Día y hora <em>*</em></span>
+        <select name="inicio" required><option value="">Cargando…</option></select>
+        <span class="campo__ayuda">Solo las horas libres dentro del horario de pruebas.</span></label>
+      <label class="campo campo--doble"><span class="campo__nombre">Cliente</span>
+        <select name="cliente_id"><option value="">No es cliente todavía</option>${clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('')}</select></label>
+      <label class="campo"><span class="campo__nombre">Nombre</span><input name="nombre" maxlength="100" autocomplete="off"></label>
+      <label class="campo"><span class="campo__nombre">Teléfono</span><input type="tel" name="telefono" autocomplete="off"></label>
+      <label class="campo campo--ancho"><span class="campo__nombre">Notas</span><textarea name="notas" maxlength="2000" placeholder="Viene con su pareja; tener el coche lavado y en la puerta"></textarea></label>
+      <div class="form-tercero__pie campo--ancho">
+        <button class="boton boton--secundario" type="button" data-cancelar>Cancelar</button>
+        <button class="boton" type="submit">Apuntar prueba</button>
+      </div>
+    </form>`;
+  $('.leyenda-pruebas').before(seccion);
+  const form = $('form', seccion);
+  const errorForm = cajaErrorEn(form);
+  errorForm.classList.add('campo--ancho');
+  let contactoId = null;
+  const abrir = async () => {
+    seccion.hidden = false;
+    form.elements.inicio.innerHTML = `<option value="">Elige día y hora</option>${await opcionesHuecos()}`;
+    seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  $('[data-nueva-prueba]').addEventListener('click', (ev) => { ev.preventDefault(); abrir(); });
+  $('[data-cancelar]', form).addEventListener('click', () => { seccion.hidden = true; form.reset(); contactoId = null; errorForm.hidden = true; });
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const d = Object.fromEntries(new FormData(form));
+    const cuerpo = { vehiculo_id: Number(d.vehiculo_id), inicio: d.inicio };
+    if (d.cliente_id) cuerpo.cliente_id = Number(d.cliente_id);
+    if (contactoId) cuerpo.contacto_id = contactoId;
+    for (const k of ['nombre', 'telefono', 'notas']) if (d[k].trim()) cuerpo[k] = d[k].trim();
+    try {
+      await api('/citas', { method: 'POST', body: cuerpo });
+      avisar(contactoId ? 'Prueba apuntada y contacto atendido' : 'Prueba apuntada');
+      seccion.hidden = true;
+      form.reset();
+      contactoId = null;
+      // A la semana de la prueba, si es otra
+      if (lunesDe(cuerpo.inicio.slice(0, 10)) !== lunes) { avisarAlVolver('Prueba apuntada'); location.href = `?semana=${cuerpo.inicio.slice(0, 10)}`; return; }
+      await pintar();
+    } catch (e) {
+      mostrarErrores(errorForm, e, 'No se ha podido apuntar:');
+    }
+  });
+  if (params.get('contacto') || params.get('coche')) {
+    await abrir();
+    if (params.get('coche')) form.elements.vehiculo_id.value = params.get('coche');
+    if (params.get('contacto')) {
+      const c = (await api('/contactos?estado=todos')).find((x) => x.id === Number(params.get('contacto')));
+      if (c) {
+        contactoId = c.id;
+        form.elements.nombre.value = c.nombre;
+        form.elements.telefono.value = c.telefono;
+        if (c.vehiculo_id) form.elements.vehiculo_id.value = String(c.vehiculo_id);
+        if (c.mensaje) form.elements.notas.value = c.mensaje;
+      }
+    }
+  }
+
+  await pintar();
+}
+
 // --- Avisos (los dos roles; el comercial, sin cobros: la API no se los manda) ------------------
 
 const TIPOS_AVISO = {
@@ -3574,11 +3778,12 @@ const TIPOS_AVISO = {
   coches_parados: { nombre: 'Coche parado', punto: 'parado' },
   vendidos_publicados: { nombre: 'Vendido y publicado', punto: 'vendido' },
   itv: { nombre: 'ITV', punto: 'itv' },
+  citas: { nombre: 'Prueba de conducción', punto: 'cita' },
   cobros_vencidos: { nombre: 'Cobro vencido', punto: 'cobro' },
 };
 
 // El botón según adónde lleva el enlace
-const accionAviso = (enlace) => ({ factura: 'Ver factura', coche: 'Ver coche', contactos: 'Ver contacto', clientes: 'Ver cliente' })[enlace.split('.')[0]] ?? 'Ver en el CRM';
+const accionAviso = (enlace) => ({ factura: 'Ver factura', coche: 'Ver coche', contactos: 'Ver contacto', clientes: 'Ver cliente', agenda: 'Ver agenda' })[enlace.split('.')[0]] ?? 'Ver en el CRM';
 
 // La línea gris de abajo. «fecha» viene como su columna: UTC con segundos, hora de Rubí (tareas) o un día.
 function cuandoAviso(a) {
@@ -3676,6 +3881,7 @@ const PAGINAS = {
   'factura.html': paginaFactura,
   'crm.html': paginaCrm,
   'avisos.html': paginaAvisos,
+  'agenda.html': paginaAgenda,
   'proveedores.html': paginaProveedores,
   'incentivos.html': paginaIncentivos,
   'gastos.html': paginaGastos,

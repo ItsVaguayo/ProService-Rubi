@@ -344,6 +344,51 @@ db.transaction(() => {
   });
 })();
 
+// Agenda de pruebas (bloque 10): de hace tres días a dentro de una semana, con todos los estados. Las horas,
+// en punto o y media dentro del horario; el domingo no hay pruebas. Una pedida desde la web lleva su contacto.
+db.transaction(() => {
+  const jaume = db.prepare("SELECT id FROM usuarios WHERE rol = 'gerencia' ORDER BY id LIMIT 1").get().id;
+  const coche = (matricula) => db.prepare('SELECT id FROM vehiculos WHERE matricula = ?').get(matricula)?.id
+    ?? db.prepare("SELECT id FROM vehiculos WHERE estado = 'publicado' ORDER BY id LIMIT 1").get().id;
+  const publicados = db.prepare("SELECT id FROM vehiculos WHERE estado = 'publicado' ORDER BY id").all().map((v) => v.id);
+  const dia = (n) => { const d = new Date(Date.now() + n * 86400000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const domingo = (n) => new Date(Date.now() + n * 86400000).getDay() === 0;
+  const sabado = (n) => new Date(Date.now() + n * 86400000).getDay() === 6;
+  const ins = db.prepare(`INSERT INTO citas (vehiculo_id, inicio, estado, nombre, telefono, cliente_id, contacto_id, origen, notas, creado_por)
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const cliente = (nombre) => db.prepare('SELECT id FROM clientes WHERE nombre = ?').get(nombre)?.id ?? null;
+  const PLAN = [
+    [-3, '10:30', 'hecha', 'Marta López Garcia', '611 000 111', null, null],
+    [-3, '17:00', 'hecha', 'Oriol Batlle', '622 444 555', 'Oriol Batlle', null],
+    [-2, '11:00', 'no_vino', 'Laia Font', '688 402 277', null, null],
+    [-1, '12:00', 'hecha', 'Sílvia Moreno', '651 230 984', 'Sílvia Moreno', 'Viene con su pareja'],
+    [0, '18:00', 'confirmada', 'Xavi Soler', '677 707 808', 'Xavi Soler', 'Depósito lleno y seguro de prueba a mano'],
+    [0, '18:30', 'pedida', 'Jordi Camps', '611 222 333', 'Jordi Camps', null],
+    [1, '10:00', 'pedida', 'Marta Soler Bosch', '600 111 222', null, 'web'],
+    [1, '12:00', 'confirmada', 'Carla Vidal', '666 505 606', 'Carla Vidal', 'Prueba del Kia con su pareja'],
+    [2, '17:30', 'confirmada', 'Àngel Serrano', '630 778 015', null, null],
+    [3, '10:30', 'pedida', 'Pere Vidal', '664 019 283', null, null],
+    [5, '11:00', 'confirmada', 'Núria Casals', '688 909 010', 'Núria Casals', 'Segunda prueba: quiere comparar con el de Sabadell'],
+  ];
+  PLAN.forEach(([n, hora, estado, nombre, telefono, nombreCliente, nota], i) => {
+    let d = n;
+    while (domingo(d) || (sabado(d) && hora >= '14:00')) d += 1; // fuera de horario: al siguiente día con horario
+    const vehiculo = publicados[i % publicados.length];
+    let contactoId = null;
+    if (nota === 'web') {
+      contactoId = Number(db.prepare("INSERT INTO contactos (nombre, telefono, tipo, vehiculo_id, mensaje, recibido_en) VALUES (?, ?, 'prueba', ?, ?, datetime('now', '-5 hours'))")
+        .run(nombre, telefono, vehiculo, `Pide prueba el ${dia(d).split('-').reverse().join('/')} a las ${hora}.`).lastInsertRowid);
+    }
+    try {
+      ins.run(vehiculo, `${dia(d)} ${hora}`, estado, nombre, telefono, nombreCliente ? cliente(nombreCliente) : null, contactoId,
+        nota === 'web' ? 'web' : 'panel', nota === 'web' ? null : nota, nota === 'web' ? null : jaume);
+    } catch { /* dos cayeron a la misma hora al saltar el domingo: se queda la primera */ }
+  });
+  // Y una petición de prueba de la web sin hora: para «Dar cita» desde Contactos
+  db.prepare("INSERT INTO contactos (nombre, telefono, tipo, vehiculo_id, mensaje, recibido_en) VALUES ('Laia Puig', '699 321 654', 'prueba', ?, '¿Puedo probarlo el sábado por la mañana?', datetime('now', '-2 hours'))")
+    .run(coche('2215LBC'));
+})();
+
 const n = db.prepare('SELECT COUNT(*) n FROM vehiculos').get().n;
 const f = db.prepare('SELECT COUNT(*) n FROM fotos').get().n;
 console.log(`Base de pruebas sembrada en ${RUTA_DB}: ${n} coches, ${f} fotos en ${DIR_FOTOS}`);

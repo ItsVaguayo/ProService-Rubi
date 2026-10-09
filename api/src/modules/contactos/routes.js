@@ -74,7 +74,9 @@ export function rutasContactosPublicas(db) {
 
 export function rutasContactos(db) {
   const r = Router();
-  const SELECT = `SELECT c.*, v.matricula, v.marca, v.modelo, u.nombre AS atendido_por_nombre
+  // cita_inicio: la prueba de conducción que salió de este contacto (bloque 10), si la hay y no se canceló
+  const SELECT = `SELECT c.*, v.matricula, v.marca, v.modelo, u.nombre AS atendido_por_nombre,
+                         (SELECT k.inicio FROM citas k WHERE k.contacto_id = c.id AND k.estado <> 'cancelada' ORDER BY k.id DESC LIMIT 1) AS cita_inicio
                     FROM contactos c
                     LEFT JOIN vehiculos v ON v.id = c.vehiculo_id
                     LEFT JOIN usuarios u ON u.id = c.atendido_por`;

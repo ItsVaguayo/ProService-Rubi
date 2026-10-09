@@ -17,6 +17,7 @@ import { rutasContratos } from './modules/contratos/routes.js';
 import { rutasAvisos } from './modules/avisos/routes.js';
 import { rutasPortales } from './modules/publicacion/rutas-portales.js';
 import { rutasCorreos } from './modules/correo/routes.js';
+import { rutasCitas, rutasCitasPublicas } from './modules/citas/routes.js';
 import { rutasClientes, rutasProveedores } from './modules/terceros/routes.js';
 import { cabecerasDeSeguridad, mismoOrigen } from './seguridad.js';
 
@@ -47,6 +48,7 @@ export function crearApp(db) {
   app.get('/api/salud', (_req, res) => res.json({ ok: true }));
   app.use('/api/auth', rutasAuth(db));
   app.use('/api/contactos', rutasContactosPublicas(db)); // solo POST: el formulario de la web
+  app.use('/api/citas', rutasCitasPublicas(db)); // solo GET /huecos y POST /pedir: la cita previa de la web
   // Solo en el sistema de pruebas (npm run dev:pruebas): los usuarios de prueba para la nota del login
   // (y nunca con NODE_ENV=production, aunque alguien deje ACCESO_PRUEBAS puesto por error)
   if (process.env.ACCESO_PRUEBAS && process.env.NODE_ENV !== 'production') {
@@ -71,6 +73,7 @@ export function crearApp(db) {
   app.use('/api/avisos', conSesion, rutasAvisos(db)); // los dos roles; cobros e importes, solo gerencia (dentro)
   app.use('/api/portales', conSesion, rutasPortales(db)); // los dos roles: el anuncio no lleva dinero interno
   app.use('/api/correos', conSesion, requiereRol('gerencia'), rutasCorreos(db));
+  app.use('/api/citas', conSesion, rutasCitas(db)); // los dos roles: la agenda de pruebas no lleva dinero
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'No existe' }));
   app.use(manejarErrores);
