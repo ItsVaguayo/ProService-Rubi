@@ -29,6 +29,19 @@ html:not(.listo) .contenido > :not(header),
 html:not(.listo) .contenido > header > *,
 html:not(.listo) .menu__usuario,
 html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-js 0s 1.5s forwards; }
+/* Con el JavaScript ya en marcha (.cargando), lo de la maqueta no sale nunca: se espera a los datos de
+   verdad, aunque la red del patio tarde más de 1,5 s. Arriba, una raya que avanza dice que está cargando. */
+html.cargando:not(.listo) .contenido > :not(header),
+html.cargando:not(.listo) .contenido > header > *,
+html.cargando:not(.listo) .menu__usuario,
+html.cargando:not(.listo) .menu__enlaces .contador { animation: none; opacity: 0; }
+html.cargando:not(.listo) body::before {
+  content: ''; position: fixed; inset: 0 0 auto; z-index: 50; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--rojo-boton), transparent); background-size: 40% 100%; background-repeat: no-repeat;
+  animation: cargando-raya 1.1s ease-in-out infinite;
+}
+@keyframes cargando-raya { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+@media (prefers-reduced-motion: reduce) { html.cargando:not(.listo) body::before { animation: none; background: var(--rojo-boton); opacity: .5; } }
 @keyframes mostrar-sin-js { to { opacity: 1; } }
 
 .entra { animation: entrar .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 45ms); }
@@ -63,12 +76,14 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
   display: grid;
   grid-template-columns: 248px 1fr;
   min-height: 100vh;
+  min-height: 100dvh; /* en el móvil, la altura que se ve de verdad (sin la barra del navegador) */
 }
 
 .menu {
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   gap: var(--espacio-l);
@@ -109,7 +124,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
   text-decoration: none;
 }
 
-.menu__enlaces a:hover { background: var(--negro-2); color: var(--blanco); }
+@media (hover: hover) and (pointer: fine) { .menu__enlaces a:hover { background: var(--negro-2); color: var(--blanco); } }
 
 /* Icono de cada enlace: una máscara SVG pintada con el color del texto, así sigue al gris,
    al blanco del hover y al de la página actual. Se elige por el href del enlace. */
@@ -161,9 +176,9 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 /* De vuelta a la página actual al sacar el ratón: más lento y suave */
 .menu__resalte--volviendo { transition: transform .5s cubic-bezier(.4, 0, .2, 1), height .5s cubic-bezier(.4, 0, .2, 1), opacity .15s; }
 .menu__enlaces--resalte a { z-index: 1; transition: color .15s, padding-left .2s ease-out; }
-.menu__enlaces--resalte a:hover,
 .menu__enlaces--resalte a[aria-current="page"] { background: transparent; }
-.menu__enlaces--resalte a:hover { padding-left: 16px; }
+@media (hover: hover) and (pointer: fine) { .menu__enlaces--resalte a:hover { background: transparent; } }
+@media (hover: hover) and (pointer: fine) { .menu__enlaces--resalte a:hover { padding-left: 16px; } }
 
 .menu__enlaces a.menu__separado { margin-top: 12px; }
 .menu__enlaces a.menu__separado::after {
@@ -268,7 +283,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 .portada__cifras .baja { color: #f08a8a; }
 
 .boton--claro { background: var(--blanco); border-color: var(--blanco); color: var(--tinta); }
-.boton--claro:hover { background: var(--rojo); border-color: var(--rojo); color: var(--blanco); }
+@media (hover: hover) and (pointer: fine) { .boton--claro:hover { background: var(--rojo); border-color: var(--rojo); color: var(--blanco); } }
 
 /* Cabecera de las demás páginas en la misma banda negra: título a la izquierda,
    botones a la derecha. Se usa con class="cabecera cabecera--portada". */
@@ -288,14 +303,11 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 /* Sobre negro: el enlace de volver, los botones secundarios y los campos */
 .cabecera--portada .volver,
 .ficha-cabecera .volver { margin: 0; color: rgb(255 255 255 / .6); }
-.cabecera--portada .volver:hover,
-.ficha-cabecera .volver:hover { color: var(--blanco); }
+@media (hover: hover) and (pointer: fine) { .cabecera--portada .volver:hover, .ficha-cabecera .volver:hover { color: var(--blanco); } }
 .cabecera--portada .boton--secundario,
 .portada .boton--secundario,
 .ficha-cabecera .boton--secundario { background: transparent; border-color: rgb(255 255 255 / .35); color: var(--blanco); }
-.cabecera--portada .boton--secundario:hover,
-.portada .boton--secundario:hover,
-.ficha-cabecera .boton--secundario:hover { background: rgb(255 255 255 / .08); border-color: var(--blanco); }
+@media (hover: hover) and (pointer: fine) { .cabecera--portada .boton--secundario:hover, .portada .boton--secundario:hover, .ficha-cabecera .boton--secundario:hover { background: rgb(255 255 255 / .08); border-color: var(--blanco); } }
 .cabecera--portada .campo__nombre { color: #d0d4d8; }
 .cabecera--portada .campo select { border-color: transparent; }
 
@@ -329,7 +341,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
   transition: background .2s;
 }
 .estados__paso:last-child { border-right: 0; }
-.estados__paso:hover { background: var(--fondo); }
+@media (hover: hover) and (pointer: fine) { .estados__paso:hover { background: var(--fondo); } }
 .estados__orden { color: var(--gris-marca); font-size: .6875rem; font-weight: 500; }
 .estados__n { font-size: 1.875rem; font-weight: 700; line-height: 1; }
 .estados__paso--vacio .estados__n { color: var(--linea-fuerte); }
@@ -346,7 +358,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 .estados__paso--vendido { --color-fase: var(--vendido); }
 
 .volver { display: inline-block; margin-bottom: var(--espacio-m); color: var(--tinta-3); font-size: .875rem; text-decoration: none; }
-.volver:hover { color: var(--tinta); }
+@media (hover: hover) and (pointer: fine) { .volver:hover { color: var(--tinta); } }
 
 /* Bloque blanco genérico */
 .caja {
@@ -383,7 +395,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
   border-top: 1px solid var(--linea);
   text-decoration: none;
 }
-.para-hoy li a:hover { background: #fafbfb; }
+@media (hover: hover) and (pointer: fine) { .para-hoy li a:hover { background: #fafbfb; } }
 
 .para-hoy__cifra {
   display: grid;
@@ -427,7 +439,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
   font-weight: 500;
   text-decoration: none;
 }
-.pestanas a:hover { color: var(--tinta); }
+@media (hover: hover) and (pointer: fine) { .pestanas a:hover { color: var(--tinta); } }
 .pestanas a[aria-current="page"] { background: var(--blanco); color: var(--tinta); font-weight: 600; box-shadow: 0 1px 2px rgba(23, 25, 28, .08); }
 
 /* Flechas para saltar columnas */
@@ -446,7 +458,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
   cursor: pointer;
   transition: background .15s, border-color .15s, opacity .15s;
 }
-.tablero-flecha:hover:not(:disabled) { border-color: var(--tinta); }
+@media (hover: hover) and (pointer: fine) { .tablero-flecha:hover:not(:disabled) { border-color: var(--tinta); } }
 .tablero-flecha:disabled { opacity: .35; cursor: default; }
 
 /* El marco lleva el degradado de los bordes: avisa de que hay más columnas por ese lado */
@@ -537,7 +549,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
   text-decoration: none;
   transition: border-color .15s, box-shadow .15s, transform .15s;
 }
-.ficha-mini:hover { border-color: var(--linea-fuerte); box-shadow: 0 4px 14px rgba(23, 25, 28, .08); transform: translateY(-1px); }
+@media (hover: hover) and (pointer: fine) { .ficha-mini:hover { border-color: var(--linea-fuerte); box-shadow: 0 4px 14px rgba(23, 25, 28, .08); transform: translateY(-1px); } }
 /* Las tarjetas de la maqueta no llevan foto: ocupan todo el ancho */
 .ficha-mini:not(:has(.ficha-mini__foto)) { grid-template-columns: 1fr; }
 
@@ -599,7 +611,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
   cursor: pointer;
   transition: background .15s, color .15s;
 }
-.columna__mas:hover { background: rgb(255 255 255 / .7); color: var(--tinta); }
+@media (hover: hover) and (pointer: fine) { .columna__mas:hover { background: rgb(255 255 255 / .7); color: var(--tinta); } }
 
 .columna__vacia {
   margin: 0;
@@ -627,7 +639,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 
 .coche-celda { display: flex; flex-direction: column; gap: 2px; }
 .coche-celda a { font-weight: 600; text-decoration: none; }
-.coche-celda a:hover { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) { .coche-celda a:hover { text-decoration: underline; } }
 .coche-celda .nota { font-size: .8125rem; }
 
 /* Miniatura de la foto principal en el listado */
@@ -673,11 +685,11 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 /* Debajo de los filtros: cuántos salen y quitar filtros */
 .lista-pie { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; color: var(--tinta-3); font-size: .8125rem; }
 .enlace { padding: 0; border: 0; background: none; color: var(--tinta-2); font: inherit; text-decoration: underline; cursor: pointer; }
-.enlace:hover { color: var(--rojo); }
+@media (hover: hover) and (pointer: fine) { .enlace:hover { color: var(--rojo); } }
 
 /* Cabeceras que ordenan, con flecha en la que manda */
 .ordenar { padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
-.ordenar:hover { color: var(--tinta); }
+@media (hover: hover) and (pointer: fine) { .ordenar:hover { color: var(--tinta); } }
 .ordenar::after { content: "↕"; margin-left: 4px; opacity: .35; }
 .ordenar[aria-sort="ascending"]::after { content: "↑"; opacity: 1; }
 .ordenar[aria-sort="descending"]::after { content: "↓"; opacity: 1; }
@@ -685,10 +697,10 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 
 /* Una fila por coche; toda la fila abre la ficha */
 .fila-coche { cursor: pointer; transition: background .12s; }
-.fila-coche:hover { background: #fafbfc; }
+@media (hover: hover) and (pointer: fine) { .fila-coche:hover { background: #fafbfc; } }
 .fila-coche .miniatura { display: block; width: 84px; height: 56px; }
 .fila-coche__titulo { color: var(--tinta); font-weight: 600; text-decoration: none; }
-.fila-coche:hover .fila-coche__titulo { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) { .fila-coche:hover .fila-coche__titulo { text-decoration: underline; } }
 .fila-coche__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 6px; }
 .fila-coche__meta .nota { font-size: .8125rem; }
 .fila-coche--entregado { opacity: .6; }
@@ -730,7 +742,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 .segmentos label { position: relative; cursor: pointer; }
 .segmentos input { position: absolute; opacity: 0; pointer-events: none; }
 .segmentos span { display: inline-flex; align-items: center; min-height: 32px; padding: 0 16px; border-radius: var(--radio-boton); color: var(--tinta-2); font-size: .8125rem; font-weight: 600; transition: background .15s, color .15s, box-shadow .15s; }
-.segmentos label:hover span { color: var(--tinta); }
+@media (hover: hover) and (pointer: fine) { .segmentos label:hover span { color: var(--tinta); } }
 .segmentos input:checked + span { background: var(--blanco); color: var(--tinta); box-shadow: 0 1px 3px rgba(23, 25, 28, .12); }
 .segmentos input:focus-visible + span { outline: 2px solid var(--rojo); outline-offset: 2px; }
 .tipos-contacto span { gap: 7px; min-height: 32px; }
@@ -760,7 +772,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
   border-radius: var(--radio);
   transition: border-color .15s, box-shadow .15s;
 }
-.contacto:hover { border-color: var(--linea-fuerte); box-shadow: 0 2px 10px rgba(23, 25, 28, .05); }
+@media (hover: hover) and (pointer: fine) { .contacto:hover { border-color: var(--linea-fuerte); box-shadow: 0 2px 10px rgba(23, 25, 28, .05); } }
 /* El que se abre desde un aviso del tablero (contactos.html?id=) */
 .contacto--destacado { border-color: var(--negro); box-shadow: 0 0 0 1px var(--negro); }
 /* Más de un día sin atender: una barra roja a la izquierda */
@@ -790,11 +802,12 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 .contacto__mensaje--vacio { color: var(--tinta-3); font-style: italic; }
 .contacto__datos { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; font-size: .8125rem; }
 .contacto__datos a { color: var(--tinta-3); text-decoration: none; }
-.contacto__datos a:hover { color: var(--tinta); text-decoration: underline; }
+@media (max-width: 760px) { .contacto__datos a[href^="tel:"] { padding: 8px 0; } } /* el teléfono, pulsable con el dedo */
+@media (hover: hover) and (pointer: fine) { .contacto__datos a:hover { color: var(--tinta); text-decoration: underline; } }
 
 /* El coche por el que pregunta: foto, modelo y matrícula */
 .contacto__coche { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 6px; border-radius: var(--radio-pequeno); color: inherit; text-decoration: none; }
-a.contacto__coche:hover { background: var(--fondo); }
+@media (hover: hover) and (pointer: fine) { a.contacto__coche:hover { background: var(--fondo); } }
 .contacto__coche img { flex: none; width: 64px; height: 48px; object-fit: cover; border-radius: 6px; background: #2a2b2f; }
 .contacto__coche > span { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
 .contacto__coche b { overflow: hidden; max-width: 100%; font-size: .8125rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
@@ -868,7 +881,7 @@ a.contacto__coche:hover { background: var(--fondo); }
   transition: border-color .15s, background .15s;
 }
 .rol-opcion + .rol-opcion { margin-top: 8px; }
-.rol-opcion:hover { border-color: var(--linea-fuerte); }
+@media (hover: hover) and (pointer: fine) { .rol-opcion:hover { border-color: var(--linea-fuerte); } }
 .rol-opcion:has(input:checked) { border-color: var(--tinta); background: var(--fondo); }
 .rol-opcion input { flex: none; width: auto; margin: 3px 0 0; accent-color: var(--rojo); }
 .rol-opcion span { display: flex; flex-direction: column; gap: 2px; color: var(--tinta-2); font-size: .8125rem; line-height: 1.4; }
@@ -898,10 +911,10 @@ a.contacto__coche:hover { background: var(--fondo); }
 .ficha-cabecera h1 { color: var(--blanco); }
 .ficha-cabecera .nota,
 .ficha-cabecera .enlace-pequeno { color: rgb(255 255 255 / .65); }
-.ficha-cabecera .enlace-pequeno:hover { color: var(--blanco); }
+@media (hover: hover) and (pointer: fine) { .ficha-cabecera .enlace-pequeno:hover { color: var(--blanco); } }
 .ficha-cabecera .rotulo { color: #a7adb3; }
 .ficha-cabecera .boton--oscuro { background: var(--blanco); border-color: var(--blanco); color: var(--tinta); }
-.ficha-cabecera .boton--oscuro:hover { background: var(--rojo); border-color: var(--rojo); color: var(--blanco); }
+@media (hover: hover) and (pointer: fine) { .ficha-cabecera .boton--oscuro:hover { background: var(--rojo); border-color: var(--rojo); color: var(--blanco); } }
 
 .ficha-cabecera__foto { aspect-ratio: 4 / 3; width: 100%; object-fit: cover; border-radius: 8px; background: var(--fondo); }
 
@@ -915,7 +928,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 .cambiar-estado { display: flex; flex-direction: column; gap: var(--espacio-s); min-width: 220px; }
 .cambiar-estado__fila { display: flex; gap: var(--espacio-s); }
 .enlace-pequeno { color: var(--tinta-3); font-size: .8125rem; text-align: center; }
-.enlace-pequeno:hover { color: var(--tinta); }
+@media (hover: hover) and (pointer: fine) { .enlace-pequeno:hover { color: var(--tinta); } }
 .cambiar-estado select {
   flex: 1;
   min-height: 40px;
@@ -977,7 +990,7 @@ a.contacto__coche:hover { background: var(--fondo); }
   text-decoration: none;
   white-space: nowrap;
 }
-.saltos a:hover { color: var(--tinta); border-bottom-color: var(--linea-fuerte); }
+@media (hover: hover) and (pointer: fine) { .saltos a:hover { color: var(--tinta); border-bottom-color: var(--linea-fuerte); } }
 
 /* Lista de datos: nombre arriba, valor debajo, en rejilla */
 .datos {
@@ -1084,6 +1097,8 @@ a.contacto__coche:hover { background: var(--fondo); }
 
 /* Historial de cambios de estado */
 .historial { margin: 0; padding: 0; list-style: none; font-size: .875rem; }
+.historial__hecho { margin-top: 6px; }
+.historial--tarde time { color: var(--peligro); }
 .historial li { position: relative; padding: 0 0 14px 18px; }
 .historial li::before {
   content: "";
@@ -1135,8 +1150,8 @@ a.contacto__coche:hover { background: var(--fondo); }
   cursor: pointer;
   transition: border-color .15s, background .15s;
 }
-.subida:hover,
 .subida:focus-within { border-color: var(--tinta); background: #fafbfb; }
+@media (hover: hover) and (pointer: fine) { .subida:hover { border-color: var(--tinta); background: #fafbfb; } }
 .subida__titulo { font-weight: 700; }
 /* Con fotos arrastradas encima */
 .subida--encima { border-color: var(--rojo); background: var(--rojo-suave); }
@@ -1199,8 +1214,7 @@ a.contacto__coche:hover { background: var(--fondo); }
   background: var(--blanco);
   cursor: pointer;
 }
-.foto-fila__mover button:hover,
-.foto-fila__quitar:hover { border-color: var(--tinta-3); }
+@media (hover: hover) and (pointer: fine) { .foto-fila__mover button:hover, .foto-fila__quitar:hover { border-color: var(--tinta-3); } }
 .foto-fila__mover button:disabled { opacity: .35; cursor: default; }
 .foto-fila__quitar { color: var(--peligro); font-size: .8125rem; font-weight: 600; }
 
@@ -1315,7 +1329,7 @@ a.contacto__coche:hover { background: var(--fondo); }
   text-decoration: none;
   transition: color .2s, border-color .2s;
 }
-.indice-alta a:hover { border-left-color: var(--tinta); color: var(--tinta); }
+@media (hover: hover) and (pointer: fine) { .indice-alta a:hover { border-left-color: var(--tinta); color: var(--tinta); } }
 .indice-alta__n { color: var(--gris-marca); font-size: .6875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 /* Cuántos datos para publicar faltan en el bloque */
 .indice-alta small {
@@ -1414,7 +1428,7 @@ a.contacto__coche:hover { background: var(--fondo); }
   font-weight: 500;
   transition: background .15s, border-color .15s, color .15s;
 }
-.opciones label:hover span { border-color: var(--tinta-3); color: var(--tinta); }
+@media (hover: hover) and (pointer: fine) { .opciones label:hover span { border-color: var(--tinta-3); color: var(--tinta); } }
 .opciones input:checked + span { background: var(--tinta); border-color: var(--tinta); color: var(--blanco); }
 .opciones input:focus-visible + span { outline: 2px solid var(--rojo); outline-offset: 2px; }
 
@@ -1452,7 +1466,7 @@ a.contacto__coche:hover { background: var(--fondo); }
   transition: background .15s, border-color .15s, color .15s;
 }
 .chip span::before { content: "+"; color: var(--tinta-3); font-weight: 600; }
-.chip:hover span { border-color: var(--tinta-3); }
+@media (hover: hover) and (pointer: fine) { .chip:hover span { border-color: var(--tinta-3); } }
 .chip input:checked + span { background: var(--tinta); border-color: var(--tinta); color: var(--blanco); }
 .chip input:checked + span::before { content: "✓"; color: var(--blanco); }
 .chip input:focus-visible + span { outline: 2px solid var(--rojo); outline-offset: 2px; }
@@ -1525,6 +1539,7 @@ a.contacto__coche:hover { background: var(--fondo); }
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--fondo);
 }
 
@@ -1623,7 +1638,7 @@ a.contacto__coche:hover { background: var(--fondo); }
   font-weight: 600;
   cursor: pointer;
 }
-.login__ver:hover { background: var(--fondo); color: var(--tinta); }
+@media (hover: hover) and (pointer: fine) { .login__ver:hover { background: var(--fondo); color: var(--tinta); } }
 .login__ver:focus-visible { outline: 2px solid var(--rojo); outline-offset: 1px; }
 .login__mayus { color: var(--aviso); font-size: .8125rem; font-weight: 500; }
 
@@ -1677,7 +1692,9 @@ a.contacto__coche:hover { background: var(--fondo); }
 
 @media (max-width: 1150px) {
   .ficha,
-  .portales { grid-template-columns: 1fr; }
+  .portales { grid-template-columns: minmax(0, 1fr); } /* minmax: una tabla ancha no estira la página */
+  /* Ficha del coche en una columna: arriba el dinero, la reserva y la publicación; después datos y fotos */
+  .ficha:has(#dinero) .ficha__lateral { order: -1; }
   .ficha-cabecera { grid-template-columns: 160px 1fr; }
   .cambiar-estado { grid-column: 1 / -1; }
   .recorrido { grid-template-columns: repeat(5, 1fr); row-gap: 14px; }
@@ -1814,7 +1831,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 .cifras__dato--alerta strong { color: var(--peligro); }
 /* Una cifra que filtra la lista: se nota que se puede pulsar */
 .cifras__dato--enlace { color: inherit; text-decoration: none; transition: background .15s; }
-.cifras__dato--enlace:hover { background: #fafbfb; }
+@media (hover: hover) and (pointer: fine) { .cifras__dato--enlace:hover { background: #fafbfb; } }
 .cifras--6 .rotulo { display: flex; align-items: center; gap: 6px; }
 /* Con seis datos y céntimos, la cifra más pequeña y en una línea: el « €» no se queda solo abajo */
 .cifras--6 .cifras__dato strong { font-size: 1.375rem; white-space: nowrap; }
@@ -1865,12 +1882,12 @@ a.contacto__coche:hover { background: var(--fondo); }
 /* Tarjetas de .contacto, sin la columna del coche: iniciales, datos y un resumen a la derecha */
 .tercero { grid-template-columns: 44px minmax(0, 1fr) auto; }
 .tercero__nombre { color: inherit; text-decoration: none; }
-.tercero__nombre:hover strong { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) { .tercero__nombre:hover strong { text-decoration: underline; } }
 /* Toda la tarjeta se puede pulsar: el enlace del nombre la cubre entera */
 .tercero__nombre::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
 .tercero .contacto__datos a { position: relative; z-index: 1; }
 .tercero--abierto { border-color: var(--tinta); box-shadow: inset 0 0 0 1px var(--tinta); }
-.tercero--abierto:hover { border-color: var(--tinta); }
+@media (hover: hover) and (pointer: fine) { .tercero--abierto:hover { border-color: var(--tinta); } }
 
 .tercero__resumen { margin: 0; color: var(--tinta-3); font-size: .8125rem; text-align: right; }
 .tercero__resumen b { display: block; color: var(--tinta); font-size: .9375rem; }
@@ -1900,7 +1917,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 .ficha-tercero__cabeza h2 { font-size: 1.25rem; }
 .ficha-tercero__linea { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
 .ficha-tercero .reserva-activa a { text-decoration: none; }
-.ficha-tercero .reserva-activa a:hover { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) { .ficha-tercero .reserva-activa a:hover { text-decoration: underline; } }
 .ficha-tercero__notas { margin: 0 0 var(--espacio-m); padding: 10px 12px; border-radius: var(--radio-pequeno); background: var(--fondo); }
 .ficha-tercero__acciones { display: flex; flex-wrap: wrap; gap: 8px; }
 .ficha-tercero .canales li { gap: 12px; }
@@ -2015,7 +2032,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 /* El número no se parte por el guion; el cliente, como el coche, sin subrayar */
 .tabla--facturas .t-titulo { white-space: nowrap; }
 .tabla--facturas td > a { font-weight: 500; text-decoration: none; }
-.tabla--facturas td > a:hover { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) { .tabla--facturas td > a:hover { text-decoration: underline; } }
 
 /* Cobrado: la cifra y una barrita con la parte cobrada */
 .cobrado { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 5px; }
@@ -2080,8 +2097,8 @@ a.contacto__coche:hover { background: var(--fondo); }
 /* Botón que aún no se puede usar (liquidar sin regla, confirmar una prueba ya confirmada) */
 .incentivo .boton:disabled,
 .prueba .boton:disabled { opacity: .45; cursor: not-allowed; }
-.incentivo .boton:disabled:hover { background: var(--rojo); border-color: var(--rojo); }
-.prueba .boton--oscuro:disabled:hover { background: var(--negro); border-color: var(--negro); }
+@media (hover: hover) and (pointer: fine) { .incentivo .boton:disabled:hover { background: var(--rojo); border-color: var(--rojo); } }
+@media (hover: hover) and (pointer: fine) { .prueba .boton--oscuro:disabled:hover { background: var(--negro); border-color: var(--negro); } }
 
 /* Separador entre la versión de gerencia y la del comercial (solo en la maqueta) */
 .version-separador { display: flex; align-items: center; gap: 14px; margin: 48px 0 var(--espacio-l); color: var(--tinta-3); font-size: .75rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
@@ -2113,7 +2130,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 .actividad .estado { justify-self: start; }
 .actividad__texto { margin: 0; color: var(--tinta-2); font-size: .875rem; }
 .actividad__texto a { margin-right: 8px; color: var(--tinta); text-decoration: none; }
-.actividad__texto a:hover { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) { .actividad__texto a:hover { text-decoration: underline; } }
 .actividad__texto .dias { margin-left: 4px; font-size: .75rem; white-space: nowrap; }
 .actividad__hecha { color: var(--ok); font-size: .8125rem; font-weight: 600; white-space: nowrap; }
 .actividad__botones { display: flex; gap: 6px; }
@@ -2145,7 +2162,8 @@ a.contacto__coche:hover { background: var(--fondo); }
 .hoy .hoy__lista { height: 340px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--linea) transparent; }
 .hoy .actividad-dia { position: sticky; top: 0; z-index: 1; } /* el día se queda arriba al bajar */
 @media (max-width: 760px) {
-  .hoy .hoy__lista { height: 420px; }
+  /* En el móvil, sin barra propia: una lista con scroll dentro de la página escondía tareas de hoy */
+  .hoy .hoy__lista { height: auto; overflow: visible; }
 }
 /* Las pestañas «Hoy» y «Próximos 7 días» hacen de título de la caja; el número es lo pendiente */
 .hoy .caja__titulo { flex-wrap: wrap; row-gap: 8px; }
@@ -2221,7 +2239,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 /* Selector «Lo mío / De todos» sobre la banda negra */
 .segmentos--oscuro { background: var(--negro-3); }
 .segmentos--oscuro span { color: #b9bec4; }
-.segmentos--oscuro label:hover span { color: var(--blanco); }
+@media (hover: hover) and (pointer: fine) { .segmentos--oscuro label:hover span { color: var(--blanco); } }
 .segmentos--oscuro label input:checked + span { color: var(--tinta); } /* la elegida, oscura también con el ratón encima */
 
 /* Embudo: las columnas del tablero, sin arrastrar el fondo. Las seis en fila desde unos 1.300 px de
@@ -2333,7 +2351,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 .prueba__coche .matricula { font-size: .75rem; }
 .prueba__cliente { color: var(--tinta-2); }
 .prueba__cliente a { color: var(--tinta-3); text-decoration: none; white-space: nowrap; }
-.prueba__cliente a:hover { color: var(--tinta); text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) { .prueba__cliente a:hover { color: var(--tinta); text-decoration: underline; } }
 .prueba__acciones { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--linea); }
 
 @media (max-width: 1150px) {
@@ -2504,10 +2522,11 @@ a.contacto__coche:hover { background: var(--fondo); }
 .gasto-form__campos--tipo:not(:has(input[name="tipo"][value="vehiculo"]:checked, input[name="tipo"][value="rebu"]:checked)) .solo-coche { display: none; }
 .gasto-form__campos--tipo:not(:has(input[name="tipo"][value="irpf"]:checked)) .solo-irpf { display: none; }
 .solo-irpf .campo__nombre { color: var(--preparacion); }
-/* «Sin pagar» es un botón: se pulsa y queda pagado hoy */
-.gasto-pagar { border: 0; font: inherit; cursor: pointer; }
-.gasto-pagar:hover { filter: brightness(.95); }
-.gasto-pagar:hover::after { content: ' · pagar'; }
+/* «Sin pagar» y «Pagado» son botones: la primera pulsación pregunta, la segunda cambia el pago */
+.gasto-pago { border: 0; font: inherit; cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .gasto-pago:hover { filter: brightness(.95); } }
+.gasto-pago--pregunta { background: var(--negro); color: var(--blanco); }
+@media (max-width: 760px) { .gasto-pago { min-height: 40px; padding-inline: 14px; } }
 /* El recién apuntado, marcado un momento */
 .fila-nueva td { animation: fila-nueva 2.4s ease-out; }
 @keyframes fila-nueva { from { background: var(--aviso-fondo); } }
@@ -2543,7 +2562,7 @@ a.contacto__coche:hover { background: var(--fondo); }
 /* Un aviso: el texto y, debajo, el tipo y la fecha; a la derecha, el botón */
 .aviso { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 20px; padding: 14px 20px; border-top: 1px solid var(--linea); }
 .aviso:first-child { border-top: 0; }
-.aviso:hover { background: #fafbfb; }
+@media (hover: hover) and (pointer: fine) { .aviso:hover { background: #fafbfb; } }
 .aviso__texto { margin: 0; color: var(--tinta); font-weight: 600; overflow-wrap: anywhere; }
 .aviso__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 4px 0 0; color: var(--tinta-3); font-size: .8125rem; }
 .aviso__tipo { display: inline-flex; align-items: center; gap: 6px; color: var(--tinta-2); font-weight: 500; }
@@ -2555,11 +2574,11 @@ a.contacto__coche:hover { background: var(--fondo); }
 
 /* El punto de cada tipo, con los colores de los estados (sin rojo: ese es de la gravedad) */
 .aviso-tipo--tarea { color: var(--reservado); }
-.aviso-tipo--contacto { color: var(--venta); }
+.aviso-tipo--contacto { color: var(--aviso); } /* el verde es «bien» en el resto del panel */
 .aviso-tipo--parado { color: var(--preparacion); }
 .aviso-tipo--vendido { color: var(--vendido); }
 .aviso-tipo--itv { color: var(--llegada); }
-.aviso-tipo--cobro { color: var(--azul-matricula); }
+.aviso-tipo--cobro { color: var(--peligro); }
 
 /* Sin avisos: el .vacio de siempre, con el botón al tablero */
 .avisos-vacio .boton { margin-top: 4px; }
@@ -2567,4 +2586,62 @@ a.contacto__coche:hover { background: var(--fondo); }
 @media (max-width: 600px) {
   .aviso { grid-template-columns: minmax(0, 1fr); padding: 14px 16px 14px 18px; }
   .aviso__accion { justify-self: start; }
+}
+
+/* Gastos en el móvil: el formulario plegado tras «Apuntar un gasto» */
+.gasto-form__abrir { display: none; width: 100%; }
+@media (max-width: 760px) {
+  .gasto-form__abrir { display: inline-flex; }
+  .gasto-form--plegado > form,
+  .gasto-form--plegado > .caja__titulo { display: none; }
+}
+
+/* Informes · gráficas de columnas (graficaColumnas en panel.js). Énfasis: el mes elegido en rojo de marca,
+   el resto en gris (#878f98, 3:1 sobre blanco). Texto siempre en tinta, nunca del color de la columna. */
+.graficas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-bottom: var(--espacio-l); }
+@media (max-width: 1000px) { .graficas { grid-template-columns: minmax(0, 1fr); } }
+.grafica .caja__titulo h2 { font-size: 1rem; }
+.grafica__lienzo { position: relative; }
+.grafica__svg { display: block; overflow: visible; }
+.grafica__rejilla { stroke: var(--linea); stroke-width: 1; }
+.grafica__rejilla--cero { stroke: var(--linea-fuerte); }
+.grafica__eje, .grafica__mes { fill: var(--tinta-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+.grafica__mes--elegido { fill: var(--tinta); font-weight: 700; }
+.grafica__valor { fill: var(--tinta); font-size: 12px; font-weight: 700; }
+.grafica__columna { fill: #878f98; transition: opacity .15s; }
+.grafica__punto--elegido .grafica__columna { fill: var(--rojo-boton); }
+.grafica__diana { fill: transparent; }
+.grafica__punto { cursor: default; outline: none; }
+.grafica__punto--activo .grafica__diana { fill: rgb(23 25 28 / .04); }
+.grafica__punto:focus-visible .grafica__diana { stroke: var(--azul-matricula); stroke-width: 2; }
+.grafica__tip { position: absolute; top: 0; z-index: 3; display: grid; gap: 2px; min-width: 150px; padding: 8px 10px; border: 1px solid var(--linea); border-radius: 6px; background: var(--blanco); box-shadow: 0 6px 18px rgb(23 25 28 / .12); font-size: .75rem; color: var(--tinta-2); pointer-events: none; }
+.grafica__tip strong { color: var(--tinta-3); font-weight: 600; }
+.grafica__tip b { color: var(--tinta); font-variant-numeric: tabular-nums; }
+.grafica__tabla { margin-top: 8px; font-size: .8125rem; }
+.grafica__tabla summary { cursor: pointer; color: var(--tinta-3); }
+.grafica__tabla .tabla { margin-top: 8px; }
+
+/* Nueva factura: lo que saldrá en ella, en vivo */
+.factura-previa { display: grid; gap: 6px; padding: 14px 16px; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--fondo); font-size: .875rem; }
+.factura-previa__titulo { margin: 0 0 2px; color: var(--tinta-2); font-weight: 600; }
+.factura-previa div { display: flex; justify-content: space-between; gap: 12px; }
+.factura-previa div span:first-child { color: var(--tinta-2); }
+
+#nueva-factura { margin-bottom: var(--espacio-l); }
+
+/* Facturas: la columna del cliente con sitio para una razón social (antes, ocho líneas en una columna estrecha) */
+.celda-cliente { min-width: 120px; max-width: 220px; }
+.tabla--gastos .coche-celda .nota.dos-lineas { display: -webkit-box; }
+
+/* Gastos en el móvil: el formulario entra al desplegarlo (en escritorio está siempre: no se anima) */
+@media (max-width: 760px) {
+  .gasto-form:not(.gasto-form--plegado) > form { transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
+  @starting-style { .gasto-form:not(.gasto-form--plegado) > form { opacity: 0; transform: translateY(-6px); } }
+  /* Menú del móvil: los enlaces se funden en 120 ms al abrirlo (se abre a menudo: casi imperceptible) */
+  .menu:has(.menu__movil[open]) .menu__buscar,
+  .menu:has(.menu__movil[open]) .menu__enlaces { transition: opacity 120ms var(--ease-out); }
+  @starting-style {
+    .menu:has(.menu__movil[open]) .menu__buscar,
+    .menu:has(.menu__movil[open]) .menu__enlaces { opacity: 0; }
+  }
 }

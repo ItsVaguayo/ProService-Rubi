@@ -3,6 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151515">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="../img/icono-apple.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Pro Service">
   <title>Informes · ProService</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -90,6 +95,19 @@
         <span class="nota">7 en depósito, 3 propios</span>
       </div>
     </section>
+
+    <!-- GRÁFICAS: los 12 meses que acaban en el elegido (GET /informes → evolucion). El mes elegido en
+         rojo, el resto en gris; cada columna con su tooltip y, debajo, «Ver los datos» con la tabla. -->
+    <div class="graficas">
+      <section class="caja grafica" aria-labelledby="grafica-vendidos">
+        <div class="caja__titulo"><h2 id="grafica-vendidos">Coches vendidos</h2><span class="nota">Últimos 12 meses</span></div>
+        <div class="grafica__caja" data-grafica="vendidos"></div>
+      </section>
+      <section class="caja grafica" aria-labelledby="grafica-resultado">
+        <div class="caja__titulo"><h2 id="grafica-resultado">Resultado del mes</h2><span class="nota">Margen neto − gastos de la tienda</span></div>
+        <div class="grafica__caja" data-grafica="resultado"></div>
+      </section>
+    </div>
 
     <div class="ficha">
       <div class="ficha__principal">

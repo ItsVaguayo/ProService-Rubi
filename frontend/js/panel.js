@@ -7,6 +7,8 @@
 
 const PAGINA = location.pathname.split('/').pop() || 'index.html';
 const params = new URLSearchParams(location.search);
+// El contenido de la maqueta no se enseña mientras llegan los datos (ver html.cargando en panel.css)
+if (PAGINA !== 'login.html') document.documentElement.classList.add('cargando');
 
 async function api(ruta, { method = 'GET', body } = {}) {
   const res = await fetch(`/api${ruta}`, {
@@ -30,6 +32,8 @@ async function api(ruta, { method = 'GET', body } = {}) {
   return datos;
 }
 
+// «1 día», «2 días»: el número con su palabra en singular o plural
+const cuenta = (n, uno, varios) => `${n} ${Number(n) === 1 ? uno : varios}`;
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const cifra = (n) => (n == null || n === '' ? '—' : Number(n).toLocaleString('es-ES', { maximumFractionDigits: 0, useGrouping: 'always' }));
 const euros = (cent) => (cent == null ? '—' : `${cifra(cent / 100)} €`);
@@ -67,7 +71,10 @@ const tituloCoche = (v) => [v.marca, v.modelo, v.version].filter(Boolean).join('
 const matricula = (m) => esc(String(m ?? '').replace(/^(\d{4})([A-Z]{3})$/, '$1 $2'));
 const urlCoche = (v) => `coche.html?id=${v.id}`;
 
-// Días con el mismo aviso que la maqueta: ámbar > 5, rojo > 14 (a la venta, > 60)
+// Días en stock (desde el alta): ámbar desde 60, rojo desde 90, como el stock por antigüedad de Informes
+const claseDiasStock = (dias) => (dias > 90 ? 'dias dias--peligro' : dias > 60 ? 'dias dias--aviso' : 'dias');
+
+// Días en el estado actual (columnas del tablero): ámbar > 5, rojo > 14 (a la venta, > 60)
 function claseDias(v, dias) {
   const aVenta = ['publicado', 'reservado'].includes(v.estado);
   if (dias > (aVenta ? 60 : 14)) return 'dias dias--peligro';
@@ -87,7 +94,16 @@ function fijarValor(form, nombre, valor) {
 }
 
 function mostrarErrores(caja, error, titulo) {
-  if (!caja) return alert(error.message);
+  if (!caja) {
+    // Sin caja donde ponerlo, una arriba del contenido: nunca alert(), que bloquea la página
+    caja = document.createElement('div');
+    caja.className = 'error error--lista';
+    caja.setAttribute('role', 'alert');
+    const main = $('main.contenido') || document.body;
+    const banda = main.querySelector(':scope > .cabecera--portada, :scope > .portada, :scope > .ficha-cabecera');
+    banda ? banda.after(caja) : main.prepend(caja);
+  }
+  error.lista ??= [error.message];
   caja.innerHTML = `<strong>${esc(titulo)}</strong><ul>${error.lista.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`;
   caja.hidden = false;
   caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -102,6 +118,77 @@ function avisoMaqueta() {
   // Debajo de la banda negra: encima, la banda (que sube con margen negativo) lo taparía
   const banda = main.querySelector(':scope > .cabecera--portada, :scope > .portada, :scope > .ficha-cabecera');
   banda ? banda.after(aviso) : main.prepend(aviso);
+}
+
+// Aviso breve abajo cuando algo se ha guardado: si no, la página solo cambia y no se sabe si fue bien.
+// Lo anuncian los lectores de pantalla (role="status") y se va solo. Un error nunca va aquí: va en su caja.
+function avisar(texto) {
+  let caja = $('.aviso-ok');
+  if (!caja) {
+    caja = document.createElement('div');
+    caja.className = 'aviso-ok';
+    caja.setAttribute('role', 'status');
+    document.body.append(caja);
+  }
+  caja.textContent = texto;
+  caja.classList.remove('aviso-ok--fuera');
+  caja.classList.add('aviso-ok--dentro');
+  clearTimeout(caja._fin);
+  caja._fin = setTimeout(() => caja.classList.replace('aviso-ok--dentro', 'aviso-ok--fuera'), 3000);
+}
+// Para lo que recarga o cambia de página: el aviso sale al llegar
+function avisarAlVolver(texto) {
+  try { sessionStorage.setItem('aviso-ok', texto); } catch { /* sin almacenamiento, sin aviso */ }
+}
+function avisoPendiente() {
+  let texto = null;
+  try { texto = sessionStorage.getItem('aviso-ok'); sessionStorage.removeItem('aviso-ok'); } catch { /* nada */ }
+  if (texto) avisar(texto);
+}
+
+// --- Movimiento ---------------------------------------------------------------------------------
+// Poco y con motivo (skill animate): solo transform y opacity, la curva de --ease-out (base.css) y,
+// con «reducir movimiento», un fundido sin desplazamiento ni escala.
+const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+const reducirMovimiento = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Una tarjeta que acaba de cambiar de columna se asienta en su sitio: si no, aparece de golpe
+function asentar(el) {
+  if (!el?.animate) return;
+  el.animate(reducirMovimiento() ? [{ opacity: 0.6 }, { opacity: 1 }] : [{ transform: 'scale(0.98)', opacity: 0.6 }, { transform: 'none', opacity: 1 }],
+    { duration: 180, easing: EASE_OUT });
+}
+// Una barra de progreso que ya tiene su ancho nuevo crece desde el de antes (sin animar el ancho:
+// arranca encogida a la proporción anterior y vuelve a su tamaño)
+function crecerBarra(barra, antes, ahora) {
+  if (!barra?.animate || !(ahora > 0) || antes == null || antes === ahora) return;
+  if (reducirMovimiento()) { barra.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: 150, easing: EASE_OUT }); return; }
+  barra.style.transformOrigin = 'left center';
+  barra.animate([{ transform: `scaleX(${antes / ahora})` }, { transform: 'scaleX(1)' }], { duration: 300, easing: EASE_OUT });
+}
+// Mantener pulsado para confirmar algo que no tiene vuelta. El relleno avanza mientras se aprieta
+// (lineal: es progreso) y vuelve rápido al soltar. Con teclado (Intro o espacio), dos pulsaciones.
+function mantenerPulsado(boton, alConfirmar, { ms = 1500, texto = 'Mantén pulsado' } = {}) {
+  const etiqueta = boton.textContent;
+  boton.classList.add('mantener');
+  boton.innerHTML = `<span class="mantener__texto">${esc(etiqueta)}</span><span class="mantener__relleno" aria-hidden="true">${esc(etiqueta)}</span>`;
+  boton.style.setProperty('--mantener-ms', `${ms}ms`);
+  boton.title = `${texto} para confirmar`;
+  let reloj = null;
+  const soltar = () => { clearTimeout(reloj); boton.classList.remove('mantener--pulsando'); };
+  boton.addEventListener('pointerdown', (ev) => {
+    if (ev.button !== 0 || boton.disabled) return;
+    boton.setPointerCapture?.(ev.pointerId);
+    boton.classList.add('mantener--pulsando');
+    reloj = setTimeout(() => { boton.classList.remove('mantener--pulsando'); alConfirmar(); }, ms);
+  });
+  for (const fin of ['pointerup', 'pointercancel', 'pointerleave']) boton.addEventListener(fin, soltar);
+  boton.addEventListener('contextmenu', (ev) => ev.preventDefault()); // en el móvil, sin el menú de mantener pulsado
+  // Teclado: click con detail 0. La primera pregunta, la segunda confirma.
+  boton.addEventListener('click', (ev) => {
+    if (ev.detail !== 0) return;
+    if (!boton.dataset.seguro) { boton.dataset.seguro = '1'; $('.mantener__texto', boton).textContent = '¿Seguro? Pulsa otra vez'; return; }
+    alConfirmar();
+  });
 }
 
 // --- Menú común --------------------------------------------------------------------------------
@@ -273,11 +360,14 @@ async function paginaTablero(usuario = usuarioTablero) {
   // Portada: total, publicados, sin publicar todavía (de «Pendiente de recoger» a «Pendiente de fotos»)
   // y con más de 60 días a la venta, que lleva el aviso solo si hay alguno.
   const ANTES_DE_PUBLICAR = ESTADOS.slice(0, ESTADOS.findIndex((e) => e.id === 'publicado')).map((e) => e.id);
+  // Los avisos son los de la página Avisos (GET /avisos): así el tablero y Avisos dicen lo mismo
+  const avisos = await api('/avisos').catch(() => null);
+  const enUbicacion = (a) => !ubicacion || !a.enlace.startsWith('coche.html') || enTablero.some((v) => a.enlace === urlCoche(v));
   const resumen = {
     total: enStock.length,
     publicados: enStock.filter((v) => v.estado === 'publicado').length,
     sinPublicar: enStock.filter((v) => ANTES_DE_PUBLICAR.includes(v.estado)).length,
-    parados: enStock.filter((v) => v.estado === 'publicado' && diasDesde(v.en_estado_desde) > 60).length,
+    parados: (avisos ?? []).filter((a) => a.tipo === 'coches_parados' && enUbicacion(a)).length,
   };
   const titular = $('.portada__titular .cifra');
   if (titular) titular.textContent = resumen.total;
@@ -299,32 +389,25 @@ async function paginaTablero(usuario = usuarioTablero) {
     paso.classList.toggle('estados__paso--vacio', n === 0);
   });
 
-  // Para hoy: lo que se puede deducir de los datos que ya hay
+  // Para hoy: los avisos (urgentes primero) y lo que solo sabe el tablero: entregar, fotos y taller
   const tareas = [];
+  const IR_AVISO = { tareas_vencidas: 'Ver', contactos_sin_atender: 'Llamar', coches_parados: 'Revisar precio', vendidos_publicados: 'Retirar', itv: 'Ver', cobros_vencidos: 'Cobrar' };
+  for (const a of (avisos ?? []).filter(enUbicacion)) tareas.push({ texto: a.texto, url: a.enlace, ir: IR_AVISO[a.tipo] ?? 'Ver', urgente: a.gravedad === 'alta' });
   const hoy = (texto, v, ir, urgente) => tareas.push({ texto, url: urlCoche(v), ir, urgente });
   for (const v of enTablero) {
     const dias = diasDesde(v.en_estado_desde);
     const coche = `${v.marca} ${v.modelo}`;
     if (v.estado === 'vendido') hoy(`El ${coche} está vendido y falta entregarlo`, v, 'Entregar', true);
-    if (v.estado === 'publicado' && dias > 60) hoy(`El ${coche} lleva ${dias} días a la venta`, v, 'Revisar precio', false);
     if (v.estado === 'en_taller' && dias > 14) hoy(`El ${coche} lleva ${dias} días en el taller`, v, 'Ver', false);
     if (v.estado === 'pendiente_fotos') hoy(`El ${coche} tiene ${v.n_fotos} de 15 fotos`, v, 'Subir fotos', false);
-    if (v.itv_caducidad && (new Date(v.itv_caducidad) - Date.now()) / 86400000 < 30) {
-      hoy(`La ITV del ${coche} caduca el ${fechaCorta(v.itv_caducidad)}`, v, 'Ver', true);
-    }
   }
-  // Contactos de la web sin atender: en rojo si alguno lleva más de un día esperando
-  const pendientes = await api('/contactos').catch(() => []);
-  if (pendientes.length) {
-    const viejos = pendientes.filter((c) => Date.now() - fechaSql(c.recibido_en) > 86400000).length;
-    tareas.push({
-      texto: viejos ? `Contactos de la web sin atender, ${viejos} desde hace más de un día` : 'Contactos de la web sin atender',
-      url: 'contactos.html', ir: 'Llamar', urgente: viejos > 0, n: pendientes.length,
-    });
-  }
-  $('.para-hoy ul').innerHTML = tareas.length
-    ? tareas.sort((a, b) => b.urgente - a.urgente).map((t) => `<li><a href="${t.url}"><span class="para-hoy__cifra${t.urgente ? ' para-hoy__cifra--hoy' : ''}">${t.n ?? 1}</span><span>${esc(t.texto)}</span><span class="para-hoy__ir">${esc(t.ir)}</span></a></li>`).join('')
-    : '<li><span class="nota">Nada urgente hoy.</span></li>';
+  // Como mucho ocho: el resto, en Avisos
+  const MAX_HOY = 8;
+  const ordenadas = tareas.sort((a, b) => b.urgente - a.urgente);
+  $('.para-hoy ul').innerHTML = (ordenadas.length
+    ? ordenadas.slice(0, MAX_HOY).map((t) => `<li><a href="${esc(t.url)}"><span class="para-hoy__cifra${t.urgente ? ' para-hoy__cifra--hoy' : ''}">${t.urgente ? '!' : '·'}</span><span>${esc(t.texto)}</span><span class="para-hoy__ir">${esc(t.ir)}</span></a></li>`).join('')
+    : `<li><span class="nota">${avisos == null ? 'No se han podido cargar los avisos.' : 'Nada urgente hoy.'}</span></li>`)
+    + (ordenadas.length > MAX_HOY ? `<li><a href="avisos.html"><span class="para-hoy__cifra">+${ordenadas.length - MAX_HOY}</span><span>Ver todos los avisos</span><span class="para-hoy__ir">Avisos</span></a></li>` : '');
 
   // Pestañas de ubicación
   const pestanas = document.querySelectorAll('.pestanas a');
@@ -569,8 +652,10 @@ function arrastrarEnTablero(todos) {
     }
     try {
       await api(`/vehiculos/${v.id}/estado`, { method: 'PATCH', body: { estado: destino } });
+      avisar(`${tituloCoche(v)}: ${estado(destino).nombre}`);
       cajaError.hidden = true;
       await paginaTablero();
+      asentar($(`.tablero .ficha-mini[data-id="${v.id}"]`));
     } catch (e) {
       mostrarErrores(cajaError, e, `El ${tituloCoche(v)} no puede pasar a «${nombre}» todavía:`);
     }
@@ -610,13 +695,13 @@ async function paginaListado(usuario) {
     return (x < y ? -1 : x > y ? 1 : 0) * orden.sentido;
   };
 
-  // Sin estado: los que están en stock. «todos»: también los entregados.
+  // Sin estado: los que están en stock (ni vendidos ni entregados, como la cabecera e Informes). «todos»: todos.
   const filtrar = () => {
     const q = valor('q').trim().toLowerCase().replace(/\s/g, '');
     const f = { estado: valor('estado'), propiedad: valor('propiedad'), ubicacion: valor('ubicacion') };
     return todos.filter((v) =>
       (!q || `${v.matricula}${v.marca}${v.modelo}${v.version ?? ''}${v.referencia ?? ''}`.toLowerCase().replace(/\s/g, '').includes(q)) &&
-      (f.estado === 'todos' || (f.estado ? v.estado === f.estado : v.estado !== 'entregado')) &&
+      (f.estado === 'todos' || (f.estado ? v.estado === f.estado : !['vendido', 'entregado'].includes(v.estado))) &&
       (!f.propiedad || v.propiedad === f.propiedad) && (!f.ubicacion || v.ubicacion === f.ubicacion));
   };
   const hayFiltros = () => ['q', 'estado', 'propiedad', 'ubicacion'].some((c) => valor(c));
@@ -626,7 +711,8 @@ async function paginaListado(usuario) {
     lista = filtrar().sort(ordenar);
     $('.tabla tbody').innerHTML = lista.map((v) => {
       const d = dias(v);
-      const meta = [v.anio, v.combustible && nombre(v.combustible).toLowerCase(), v.cambio && nombre(v.cambio).toLowerCase(), v.propiedad === 'deposito' ? 'depósito' : 'propio'];
+      const minus = (t) => (t === t.toUpperCase() ? t : t.toLowerCase()); // las siglas (GLP) se quedan como están
+      const meta = [v.anio, v.combustible && minus(nombre(v.combustible)), v.cambio && minus(nombre(v.cambio)), v.propiedad === 'deposito' ? 'depósito' : 'propio'];
       return `<tr class="fila-coche${v.estado === 'entregado' ? ' fila-coche--entregado' : ''}" data-url="${esc(urlCoche(v))}">
         <td class="c-foto"><img class="miniatura" src="${portada(v)}" alt="" loading="lazy"></td>
         <td class="c-coche"><a class="fila-coche__titulo" href="${esc(urlCoche(v))}">${esc(tituloCoche(v))}</a>
@@ -634,13 +720,15 @@ async function paginaListado(usuario) {
         <td class="c-estado">${etiquetaEstado(v.estado)}</td>
         <td class="c-km derecha cifra">${v.kilometros != null ? cifra(v.kilometros) : '—'}</td>
         <td class="c-precio derecha cifra">${euros(v.pvp_cent)}</td>
-        <td class="c-dias derecha cifra">${d == null ? '<span class="nota">—</span>' : `<span class="${claseDias(v, d)}">${d}</span>`}</td>
+        <td class="c-dias derecha cifra">${d == null ? '<span class="nota">—</span>' : `<span class="${claseDiasStock(d)}">${d}</span>`}</td>
         <td class="c-donde nota">${v.ubicacion ? esc(nombre(v.ubicacion)) : '—'}</td>
       </tr>`;
     }).join('');
     $('.tabla-caja').hidden = !lista.length;
     $('.vacio').hidden = !!lista.length;
-    $('.lista-pie__cuantos').textContent = `${lista.length} ${lista.length === 1 ? 'coche' : 'coches'}${hayFiltros() ? ` de ${todos.length}` : ''}`;
+    // «de N»: los que hay en stock (lo mismo que la cabecera), o todos si se miran también los vendidos y entregados
+    const base = ['todos', 'vendido', 'entregado'].includes(valor('estado')) ? todos.length : todos.filter((v) => !['vendido', 'entregado'].includes(v.estado)).length;
+    $('.lista-pie__cuantos').textContent = `${lista.length} ${lista.length === 1 ? 'coche' : 'coches'}${hayFiltros() ? ` de ${base}` : ' en stock'}`;
     $('[data-limpiar]').hidden = !hayFiltros();
     document.querySelectorAll('.ordenar').forEach((b) => {
       if (b.dataset.orden === orden.campo) b.setAttribute('aria-sort', orden.sentido > 0 ? 'ascending' : 'descending');
@@ -729,22 +817,27 @@ async function paginaFicha(usuario) {
   $('.ficha-cabecera__info > .nota').textContent = [v.anio, v.kilometros != null && `${cifra(v.kilometros)} km`, v.combustible && nombre(v.combustible),
     v.cambio && nombre(v.cambio), v.propiedad === 'deposito' ? 'En depósito' : 'Propio', v.ubicacion && nombre(v.ubicacion), `Ref. ${v.referencia}`].filter(Boolean).join(' · ');
   const lineaPrecio = document.querySelectorAll('.ficha-cabecera__linea')[1];
-  lineaPrecio.innerHTML = `<span class="ficha-cabecera__precio cifra">${euros(v.pvp_cent)}</span><span class="nota">${diasDesde(v.creado_en)} días en stock</span>`;
+  lineaPrecio.innerHTML = `<span class="ficha-cabecera__precio cifra">${euros(v.pvp_cent)}</span><span class="${claseDiasStock(diasDesde(v.creado_en))}">${cuenta(diasDesde(v.creado_en), 'día', 'días')} en stock</span>`;
 
   // Cambiar estado
   const formEstado = $('.cambiar-estado');
   const selEstado = formEstado.elements.estado;
-  selEstado.innerHTML = ESTADOS.filter((e) => e.id !== v.estado).map((e) => `<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
+  // Sin estado elegido de entrada: si no, «Cambiar» sin mirar devolvía el coche a «Pendiente de recoger»
+  selEstado.innerHTML = '<option value="" disabled selected>Elige el nuevo estado</option>'
+    + ESTADOS.filter((e) => e.id !== v.estado).map((e) => `<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
+  selEstado.required = true;
   formEstado.querySelector('a[href="coche-nuevo.html"]').href = `coche-nuevo.html?id=${id}`;
   const cajaError = $('.error--lista');
   formEstado.addEventListener('submit', async (ev) => {
     ev.preventDefault();
+    if (!selEstado.value) return selEstado.focus();
     if (selEstado.value === 'reservado') {
       $('#reserva').scrollIntoView({ behavior: 'smooth' });
       return mostrarErrores(cajaError, { lista: ['Para reservar, rellena el cliente y la señal en el bloque «Reserva».'] }, 'Falta la reserva:');
     }
     try {
       await api(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: selEstado.value } });
+      avisarAlVolver(`Ahora está en «${estado(selEstado.value).nombre}»`);
       location.reload();
     } catch (e) {
       mostrarErrores(cajaError, e, `No se puede pasar a «${estado(selEstado.value).nombre}» todavía:`);
@@ -769,7 +862,7 @@ async function paginaFicha(usuario) {
     fila('Puertas / plazas', v.puertas || v.plazas ? `${v.puertas ?? '—'} / ${v.plazas ?? '—'}` : null, true), fila('Color', nombre(v.color_exterior)),
     fila('Tapicería', nombre(v.tapiceria)), fila('Llantas', v.llantas), fila('ITV hasta', v.itv_caducidad && fechaCorta(v.itv_caducidad), true), fila('Última ITV', v.itv_ultima && fechaCorta(v.itv_ultima), true),
     fila('Uso anterior', v.uso_anterior && mayuscula(v.uso_anterior), true),
-    fila('Última revisión', v.ultima_revision && fechaCorta(v.ultima_revision), true), fila('Garantía', v.garantia_meses != null ? `${v.garantia_meses} meses` : null, true),
+    fila('Última revisión', v.ultima_revision && fechaCorta(v.ultima_revision), true), fila('Garantía', v.garantia_meses != null ? cuenta(v.garantia_meses, 'mes', 'meses') : null, true),
     fila('Llaves', v.num_llaves, true),
   ].join('');
 
@@ -845,7 +938,7 @@ function pintarReserva(v, reserva) {
         <div><dt>Cliente</dt><dd>${esc(reserva.cliente)}</dd></div>
         <div><dt>Señal</dt><dd class="cifra">${euros(reserva.senal_cent)}</dd></div>
         <div><dt>Reservado el</dt><dd class="cifra">${esc(fechaHora(reserva.fecha))}${reserva.usuario ? ` · ${esc(reserva.usuario)}` : ''}</dd></div>
-        <div><dt>Caduca</dt><dd class="cifra">${reserva.caduca_en ? `${esc(fechaSql(reserva.caduca_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))} <span class="dias ${quedan <= 2 ? 'dias--peligro' : 'dias--aviso'}">${quedan > 0 ? `quedan ${quedan} días` : 'caducada'}</span>` : '—'}</dd></div>
+        <div><dt>Caduca</dt><dd class="cifra">${reserva.caduca_en ? `${esc(fechaSql(reserva.caduca_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))} <span class="dias ${quedan <= 2 ? 'dias--peligro' : 'dias--aviso'}">${quedan > 0 ? `quedan ${cuenta(quedan, 'día', 'días')}` : 'caducada'}</span>` : '—'}</dd></div>
       </dl>
       <div class="pila">
         <button class="boton boton--oscuro" type="button" data-vender>Marcar como vendido</button>
@@ -854,14 +947,14 @@ function pintarReserva(v, reserva) {
         <p class="nota">Si se cancela, el coche vuelve a «Publicado».</p>
       </div>`;
     const vender = () =>
-      api(`/vehiculos/${v.id}/estado`, { method: 'PATCH', body: { estado: 'vendido' } }).then(() => location.reload(), (e) => mostrarErrores($('.error--lista'), e, 'No se puede vender:'));
+      api(`/vehiculos/${v.id}/estado`, { method: 'PATCH', body: { estado: 'vendido' } }).then(() => { avisarAlVolver('Vendido'); location.reload(); }, (e) => mostrarErrores($('.error--lista'), e, 'No se puede vender:'));
     $('[data-vender]', caja).addEventListener('click', vender);
     // Duda C6: al cancelar se apunta si se devuelve la señal. Se pregunta aquí, con botones que dicen
     // lo que hacen, para que «echarse atrás» no se confunda con «no se devuelve».
     const pila = $('.pila', caja);
     const botones = pila.innerHTML;
     const cancelar = (senal_devuelta) =>
-      api(`/vehiculos/${v.id}/reserva`, { method: 'DELETE', body: { senal_devuelta } }).then(() => location.reload(), (e) => mostrarErrores($('.error--lista'), e, 'No se pudo cancelar:'));
+      api(`/vehiculos/${v.id}/reserva`, { method: 'DELETE', body: { senal_devuelta } }).then(() => { avisarAlVolver('Reserva anulada'); location.reload(); }, (e) => mostrarErrores($('.error--lista'), e, 'No se pudo cancelar:'));
     const preguntar = () => {
       pila.innerHTML = `
         <p class="nota">¿Se le devuelve la señal de ${euros(reserva.senal_cent)} a ${esc(reserva.cliente)}? El coche vuelve a «Publicado».</p>
@@ -890,6 +983,7 @@ function pintarReserva(v, reserva) {
     const d = Object.fromEntries(new FormData(form));
     try {
       await api(`/vehiculos/${v.id}/reserva`, { method: 'POST', body: { cliente: d.cliente, senal_cent: Math.round(Number(d.senal_cent) * 100), dias: Number(d.dias || 7) } });
+      avisarAlVolver('Reservado. La señal queda apuntada');
       location.reload();
     } catch (e) {
       mostrarErrores($('.error--lista'), e, 'No se ha podido reservar:');
@@ -981,6 +1075,7 @@ async function paginaAlta(usuario) {
     try {
       const guardado = await api(id ? `/vehiculos/${id}` : '/vehiculos', { method: id ? 'PUT' : 'POST', body: datos });
       await api(`/vehiculos/${guardado.id}/extras`, { method: 'PUT', body: { extras: casillas.filter((c) => c.checked).map(textoCasilla) } });
+      avisarAlVolver('Coche guardado');
       location.href = urlCoche(guardado);
     } catch (e) {
       mostrarErrores(cajaError, e, 'No se ha podido guardar:');
@@ -1086,6 +1181,7 @@ async function paginaUsuarios(yo) {
     boton.disabled = true;
     try {
       await api(`/usuarios/${tarjeta.dataset.id}`, { method: 'PATCH', body: { activo: boton.dataset.activar === 'true' } });
+      avisar(boton.dataset.activar === 'true' ? 'Usuario activado' : 'Usuario desactivado');
       await cargar();
     } catch (e) {
       mostrarErrores(errorLista, e, 'No se ha podido cambiar:');
@@ -1119,6 +1215,7 @@ async function paginaUsuarios(yo) {
     const datos = Object.fromEntries(new FormData(formNuevo));
     try {
       await api('/usuarios', { method: 'POST', body: datos });
+      avisar('Usuario dado de alta');
       formNuevo.reset();
       // Que se vea el nuevo: vuelve a «Activos»
       filtro.elements.estado.value = 'activos';
@@ -1201,7 +1298,7 @@ async function paginaContactos() {
             <span class="estado tipo--${esc(c.tipo)}">${esc(TIPOS_CONTACTO[c.tipo] ?? c.tipo)}</span>
             <span class="${urgente ? 'dias dias--peligro' : 'nota'}" title="${esc(fechaHora(c.recibido_en))}">${esc(haceCuanto(recibido))}</span></p>
           <p class="contacto__mensaje${c.mensaje ? '' : ' contacto__mensaje--vacio'}">${esc(c.mensaje || 'Sin mensaje')}</p>
-          <p class="contacto__datos"><a href="tel:${esc(tel)}">${esc(c.telefono)}</a>${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}</p>
+          <p class="contacto__datos"><a href="tel:${esc(tel)}">${esc(telefonoBonito(c.telefono))}</a>${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}</p>
         </div>
         ${coche}
         <div class="contacto__acciones">${acciones}</div>
@@ -1226,6 +1323,7 @@ async function paginaContactos() {
     boton.disabled = true;
     try {
       await api(`/contactos/${boton.dataset.atendido}`, { method: 'PATCH', body: { atendido: boton.dataset.valor === 'true' } });
+      avisar(boton.dataset.valor === 'true' ? 'Contacto atendido' : 'Vuelve a pendiente');
       await Promise.all([pintar(), resumen(), actualizarContadorContactos()]);
     } catch (e) {
       boton.disabled = false;
@@ -1234,6 +1332,10 @@ async function paginaContactos() {
   });
   form.addEventListener('change', pintar);
   await Promise.all([pintar(), resumen()]);
+  if (destacado && !document.getElementById(`contacto-${destacado}`)) {
+    form.querySelector('input[name="estado"][value="todos"]').checked = true;
+    await pintar();
+  }
   if (destacado) document.getElementById(`contacto-${destacado}`)?.scrollIntoView({ block: 'center' });
 }
 
@@ -1241,11 +1343,14 @@ async function paginaContactos() {
 
 const ESTADOS_COMERCIALES = { nuevo: 'Nuevo', interesado: 'Interesado', me_lo_pienso: 'Me lo pienso', negociando: 'Negociando', ganado: 'Ganado', perdido: 'Perdido' };
 const TIPOS_ACTIVIDAD = { llamada: 'Llamada', visita: 'Visita', whatsapp: 'WhatsApp', email: 'Correo', prueba: 'Prueba', tarea: 'Tarea', nota: 'Nota' };
-const enlaceTel = (t) => `<a href="tel:${esc(String(t).replace(/[^\d+]/g, ''))}">${esc(t)}</a>`;
+// Un teléfono español de 9 cifras se enseña siempre igual: 937 778 899 (o 611 22 33 44 no; uno solo)
+const telefonoBonito = (t) => { const d = String(t).replace(/\D/g, ''); return /^[6789]\d{8}$/.test(d) ? d.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3') : String(t); };
+const enlaceTel = (t) => `<a href="tel:${esc(String(t).replace(/[^\d+]/g, ''))}">${esc(telefonoBonito(t))}</a>`;
 
 // Lista con buscador a la izquierda, ficha del cliente abierto a la derecha y, debajo, el formulario
 // que sirve para dar de alta y para editar. El cliente abierto va en la dirección (?id=).
-async function paginaClientes() {
+async function paginaClientes(usuario) {
+  const gerencia = usuario.rol === 'gerencia';
   const filtros = $('form.filtros');
   const lista = $('.terceros');
   const vacio = $('.ficha__principal .vacio');
@@ -1289,6 +1394,7 @@ async function paginaClientes() {
     lista.innerHTML = clientes.map(tarjeta).join('');
     lista.hidden = !clientes.length;
     vacio.hidden = !!clientes.length;
+    if (!clientes.length) ficha.hidden = true; // no dejar abierta una ficha que no está en el resultado
     const activosN = clientes.filter((c) => c.activo).length;
     const uno = clientes.length === 1;
     $('.lista-pie__cuantos').textContent = `${clientes.length} ${uno ? 'cliente' : 'clientes'}${activos === '0' ? '' : uno ? ' activo' : ' activos'}${q.trim() ? ' con esa búsqueda' : ''}`;
@@ -1306,12 +1412,17 @@ async function paginaClientes() {
       $('[data-cliente]', li)?.toggleAttribute('aria-current', suyo);
     });
     if (!sinHistorial) history.replaceState(null, '', `?id=${id}`);
-    const [c, actividades] = await Promise.all([api(`/clientes/${id}`), api(`/actividades?cliente=${id}`).catch(() => [])]);
+    // Si lo del CRM o las facturas fallan, la ficha sale igual y lo dice (null), en vez de «Nada apuntado»
+    const [c, actividades, facturas] = await Promise.all([
+      api(`/clientes/${id}`),
+      api(`/actividades?cliente=${id}`).catch(() => null),
+      gerencia ? api(`/facturas?cliente=${id}`).then((r) => r.facturas).catch(() => null) : Promise.resolve([]),
+    ]);
     if (abierto !== id) return; // se abrió otro mientras llegaba
-    pintarFicha(c, actividades);
+    pintarFicha(c, actividades, facturas);
   };
 
-  const pintarFicha = (c, actividades) => {
+  const pintarFicha = (c, actividades, facturas) => {
     const direccion = [c.direccion, [c.codigo_postal, c.poblacion].filter(Boolean).join(' ') + (c.provincia ? ` (${c.provincia})` : '')]
       .filter((t) => t && t.trim()).map(esc).join('<br>');
     const fila = (titulo, valor) => (valor ? `<div><dt>${titulo}</dt><dd>${valor}</dd></div>` : '');
@@ -1320,10 +1431,25 @@ async function paginaClientes() {
       : '<li class="nota">Todavía no nos ha comprado ninguno.</li>';
     // Lo último primero: lo hecho por cuándo se hizo; lo pendiente, por cuándo toca
     const cuando = (a) => a.hecha_en ? fechaSql(a.hecha_en) : a.programada_para ? new Date(a.programada_para.replace(' ', 'T')) : fechaSql(a.creado_en);
-    const ultimas = [...actividades].sort((a, b) => cuando(b) - cuando(a)).slice(0, 5);
-    const historial = ultimas.length
-      ? ultimas.map((a) => `<li><time>${esc(cuando(a).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))} · ${esc(TIPOS_ACTIVIDAD[a.tipo] ?? a.tipo)}${a.responsable_nombre ? ` · ${esc(a.responsable_nombre)}` : ''}${a.hecha_en ? '' : ' · <b>pendiente</b>'}</time>${esc(a.descripcion)}${a.resultado ? `<br><span class="nota">${esc(a.resultado)}</span>` : ''}</li>`).join('')
-      : '<li class="nota">Nada apuntado todavía.</li>';
+    // Arriba lo pendiente, todo y con «Hecho» (los avisos traen aquí); debajo, las cinco últimas hechas
+    const pendientes = (actividades ?? []).filter((a) => !a.hecha_en).sort((a, b) => cuando(a) - cuando(b));
+    const hechas = (actividades ?? []).filter((a) => a.hecha_en).sort((a, b) => cuando(b) - cuando(a)).slice(0, 5);
+    const ahora = new Date();
+    const itemActividad = (a) => {
+      const tarde = !a.hecha_en && cuando(a) < ahora;
+      return `<li${tarde ? ' class="historial--tarde"' : ''}><time>${esc(cuando(a).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))} · ${esc(TIPOS_ACTIVIDAD[a.tipo] ?? a.tipo)}${a.responsable_nombre ? ` · ${esc(a.responsable_nombre)}` : ''}${a.hecha_en ? '' : tarde ? ' · <b>con retraso</b>' : ' · <b>pendiente</b>'}</time>${esc(a.descripcion)}${a.resultado ? `<br><span class="nota">${esc(a.resultado)}</span>` : ''}${a.hecha_en ? '' : `<br><button class="boton boton--oscuro boton--pequeno historial__hecho" type="button" data-hecha="${a.id}">Hecho</button>`}</li>`;
+    };
+    const historial = actividades == null
+      ? '<li class="nota">No se ha podido cargar lo hablado. Recarga la página.</li>'
+      : pendientes.length || hechas.length ? [...pendientes, ...hechas].map(itemActividad).join('') : '<li class="nota">Nada apuntado todavía.</li>';
+    const ESTADO_COBRO = { borrador: 'Borrador', pendiente: 'Pendiente', parcial: 'Cobro parcial', cobrada: 'Cobrada', vencida: 'Vencida', anulada: 'Anulada', rectificativa: 'Rectificativa' };
+    const bloqueFacturas = !gerencia ? '' : `
+      <section class="caja">
+        <div class="caja__titulo"><h2>Facturas</h2><span class="nota cifra">${facturas?.length ?? ''}</span></div>
+        ${facturas == null ? '<p class="nota">No se han podido cargar.</p>' : facturas.length
+          ? `<ul class="canales">${facturas.map((f) => `<li><span class="coche-celda"><a href="factura.html?id=${f.id}">${esc(f.codigo ?? 'Borrador')}</a><span class="nota">${esc(fechaCorta(f.fecha))} · ${esc(ESTADO_COBRO[f.estado_cobro] ?? f.estado_cobro)}</span></span><span class="cifra">${euros2(f.total_cent)}</span></li>`).join('')}</ul>`
+          : '<p class="nota">Todavía ninguna.</p>'}
+      </section>`;
     ficha.innerHTML = `
       <section class="caja">
         <div class="ficha-tercero__cabeza">
@@ -1353,22 +1479,34 @@ async function paginaClientes() {
         <div class="caja__titulo"><h2>Coches que ha comprado</h2><span class="nota cifra">${c.coches.length}</span></div>
         <ul class="canales">${coches}</ul>
       </section>
-      <section class="caja">
-        <div class="caja__titulo"><h2>Facturas</h2></div>
-        <p class="nota">Saldrán aquí cuando esté la facturación.</p>
-      </section>
+      ${bloqueFacturas}
       <section class="caja">
         <div class="caja__titulo"><h2>Lo último que se habló</h2><a class="enlace-pequeno" href="crm.html">Ver en el CRM</a></div>
         <ol class="historial">${historial}</ol>
       </section>`;
     ficha.hidden = false;
     $('[data-editar]', ficha).addEventListener('click', () => editar(c));
+    // «Hecho» en lo pendiente, sin ir al CRM
+    $('.historial', ficha).addEventListener('click', async (ev) => {
+      const boton = ev.target.closest('[data-hecha]');
+      if (!boton) return;
+      boton.disabled = true;
+      try {
+        await api(`/actividades/${boton.dataset.hecha}/hecha`, { method: 'PATCH', body: {} });
+        avisar('Hecho');
+        await abrir(c.id, { sinHistorial: true });
+      } catch (e) {
+        boton.disabled = false;
+        mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido marcar como hecha:');
+      }
+    });
     // El estado comercial se cambia aquí también (en el móvil no se puede arrastrar en el CRM)
     $('[data-estado-comercial]', ficha).addEventListener('change', async (ev) => {
       const select = ev.target;
       select.disabled = true;
       try {
         await api(`/clientes/${c.id}`, { method: 'PUT', body: { estado_comercial: select.value } });
+        avisar(`Estado: ${ESTADOS_COMERCIALES[select.value]}`);
         await pintarLista();
         await abrir(c.id, { sinHistorial: true });
       } catch (e) {
@@ -1419,6 +1557,7 @@ async function paginaClientes() {
       const guardado = editando
         ? await api(`/clientes/${editando.id}`, { method: 'PUT', body: Object.fromEntries(Object.entries(datos).map(([k, v]) => [k, v === '' ? null : v])) })
         : await api('/clientes', { method: 'POST', body: datos });
+        avisar(editando ? 'Cambios guardados' : 'Cliente dado de alta');
       limpiar();
       abierto = guardado.id;
       await pintarLista();
@@ -1444,10 +1583,10 @@ async function paginaClientes() {
   filtros.addEventListener('input', (ev) => {
     if (ev.target.name !== 'q') return;
     clearTimeout(espera);
-    espera = setTimeout(pintarLista, 250);
+    espera = setTimeout(() => pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')), 250);
   });
-  filtros.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintarLista(); });
-  filtros.addEventListener('submit', (ev) => { ev.preventDefault(); pintarLista(); });
+  filtros.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')); });
+  filtros.addEventListener('submit', (ev) => { ev.preventDefault(); pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')); });
 
   ficha.hidden = true;
   await pintarLista();
@@ -1565,6 +1704,7 @@ async function paginaCrm(usuario) {
     try {
       if (boton.dataset.hecha) {
         await api(`/actividades/${boton.dataset.hecha}/hecha`, { method: 'PATCH', body: {} });
+        avisar('Hecho');
       } else {
         // Un día después del suyo y, como poco, mañana (la atrasada no se queda en el pasado). Misma hora.
         const a = await api(`/actividades/${boton.dataset.posponer}`);
@@ -1574,6 +1714,7 @@ async function paginaCrm(usuario) {
         const siguiente = diaLocal(new Date(an, mes - 1, di + 1));
         const dia = siguiente > manana ? siguiente : manana;
         await api(`/actividades/${a.id}`, { method: 'PUT', body: { programada_para: `${dia} ${a.programada_para.slice(11, 16)}` } });
+        avisar(`Pasada al ${new Date(`${dia}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' })}`);
       }
       cajaError.hidden = true;
       await Promise.all([pintarHoy(), pintarEmbudo()]);
@@ -1612,7 +1753,7 @@ async function paginaCrm(usuario) {
         ? `<span${atrasada ? ' class="ficha-mini__tarde"' : ''}>${esc(TIPOS_ACTIVIDAD[p.tipo] ?? p.tipo)}${cuandoToca ? ` ${esc(cuandoToca)}` : ''}</span>`
         : cerrado ? '<span></span>' : '<span class="ficha-mini__nada">Nada programado</span>';
       const dias = c.ultima_actividad ? diasDesde(c.ultima_actividad) : null;
-      const textoDias = dias == null ? 'Sin hablar' : dias === 0 ? 'Hablado hoy' : dias === 1 ? 'Hablado ayer' : `Hace ${dias} días`;
+      const textoDias = dias == null ? (diasDesde(c.creado_en) > 7 ? 'Sin hablar' : '') : dias === 0 ? 'Hablado hoy' : dias === 1 ? 'Hablado ayer' : `Hace ${dias} días`;
       const claseDias = dias == null ? '' : dias > 14 ? ' dias--peligro' : dias > 7 ? ' dias--aviso' : '';
       const nota = p?.descripcion ?? c.notas ?? (c.n_coches ? `${c.n_coches} ${c.n_coches === 1 ? 'coche comprado' : 'coches comprados'}` : '');
       return `<a class="ficha-mini${c.estado_comercial === 'perdido' ? ' ficha-mini--perdido' : ''}" href="clientes.html?id=${c.id}" draggable="true" data-id="${c.id}">
@@ -1632,7 +1773,7 @@ async function paginaCrm(usuario) {
     }).join('');
     const enMarcha = visibles.filter((c) => !['ganado', 'perdido'].includes(c.estado_comercial)).length;
     pintarCifras(visibles);
-    $('.tablero-cabecera__pista').textContent = `${enMarcha} ${enMarcha === 1 ? 'cliente' : 'clientes'} en marcha. Arrastra un cliente a otro tramo para cambiar su estado.`;
+    $('.tablero-cabecera__pista').textContent = `${enMarcha} ${enMarcha === 1 ? 'cliente' : 'clientes'} en marcha. ${matchMedia('(pointer: coarse)').matches ? 'Para cambiar el estado, toca el cliente y cámbialo en su ficha.' : 'Arrastra un cliente a otro tramo para cambiar su estado.'}`;
   };
 
   // Las cifras de la cabecera, con los mismos clientes que el embudo (ganados y perdidos: 30 días)
@@ -1708,8 +1849,11 @@ async function paginaCrm(usuario) {
     if (columna.dataset.estado === c.estado_comercial) return;
     try {
       await api(`/clientes/${c.id}`, { method: 'PUT', body: { estado_comercial: columna.dataset.estado } });
+      const movido = c.id;
+      avisar(`${c.nombre}: ${ESTADOS_COMERCIALES[columna.dataset.estado]}`);
       cajaError.hidden = true;
       await pintarEmbudo();
+      asentar($(`.ficha-mini[data-id="${movido}"]`));
     } catch (e) {
       mostrarErrores(cajaError, e, `No se ha podido mover a ${c.nombre}:`);
     }
@@ -1718,9 +1862,10 @@ async function paginaCrm(usuario) {
   // --- Apuntar actividad ---
   const boton = $('.cabecera__acciones a.boton');
   const seccion = document.createElement('section');
-  seccion.className = 'caja form-tercero form-actividad';
+  seccion.className = 'caja form-tercero form-actividad despliega';
   seccion.hidden = true;
-  const responsables = gerencia ? (await api('/usuarios').catch(() => [])).filter((u) => u.activo) : [];
+  // Si no llega la lista, al menos uno mismo: así se ve a quién se apunta, en vez de un desplegable vacío
+  const responsables = gerencia ? (await api('/usuarios').catch(() => [usuario])).filter((u) => u.activo !== 0) : [];
   const ahoraMas = new Date(Date.now() + 3600000);
   seccion.innerHTML = `
     <div class="caja__titulo"><h2>Apuntar actividad</h2><span class="nota"><em class="obligatorio">*</em> obligatorio</span></div>
@@ -1767,6 +1912,12 @@ async function paginaCrm(usuario) {
     seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
     (clienteId ? form.elements.descripcion : form.elements.tipo).focus();
   };
+  // Una nota no se programa: apunta algo que ya pasó (la API la guarda hecha). Con fecha, sería una tarea más.
+  const fechaPorDefecto = form.elements.programada_para.value;
+  form.elements.tipo.addEventListener('change', () => {
+    const nota = form.elements.tipo.value === 'nota';
+    form.elements.programada_para.value = nota ? '' : form.elements.programada_para.value || fechaPorDefecto;
+  });
   boton.addEventListener('click', (ev) => {
     ev.preventDefault();
     if (!seccion.hidden) return cerrar();
@@ -1787,6 +1938,7 @@ async function paginaCrm(usuario) {
     enviar.disabled = true;
     try {
       await api('/actividades', { method: 'POST', body: cuerpo });
+      avisar('Actividad apuntada');
       cerrar();
       await Promise.all([pintarHoy(), pintarEmbudo()]);
     } catch (e) {
@@ -1822,6 +1974,9 @@ function cabeceraDocumento(e) {
 const ESTADOS_COBRO = { borrador: 'Borrador', pendiente: 'Pendiente', parcial: 'Parcial', cobrada: 'Cobrada', vencida: 'Vencida', anulada: 'Anulada', rectificativa: 'Rectificativa' };
 const FORMAS_PAGO = { transferencia: 'Transferencia', contado: 'Contado', tarjeta: 'Tarjeta', a_la_vista: 'A la vista', pago_30: 'Pago a 30 días', pago_30_60: 'Pago a 30 y 60 días' };
 const FORMAS_COBRO = { ...FORMAS_PAGO, financiera: 'Financiera', senal: 'Señal de la reserva' };
+// Lo que se propone al apuntar un cobro: la forma de pago de la factura si dice cómo llega el dinero; si
+// solo es un plazo (pago a 30 días, a la vista), transferencia, que es como se suele cobrar ese plazo
+const formaCobro = (f) => (['contado', 'tarjeta', 'transferencia'].includes(f.forma_pago) ? f.forma_pago : 'transferencia');
 // Céntimos con dos decimales: en una factura no se redondea al euro
 const euros2 = (cent) => (cent == null ? '—' : `${(cent / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' })} €`);
 const aCent = (texto) => {
@@ -1852,7 +2007,7 @@ async function paginaFacturas() {
       ? `<span class="cobrado"><span>${euros(f.cobrado_cent)}</span><span class="cobrado__barra${parte === 100 ? ' cobrado__barra--entera' : ''}"><span style="width: ${parte}%"></span></span></span>`
       : '—';
     const vence = f.estado_cobro === 'vencida'
-      ? `<span class="dias dias--peligro factura__vence">${esc(mayuscula(haceCuanto(new Date(`${f.vencimiento}T23:59:59`))))}</span>`
+      ? `<span class="dias dias--peligro factura__vence">${esc(mayuscula(haceCuanto(new Date(`${f.vencimiento}T00:00:00`))))}</span>`
       : ['pendiente', 'parcial'].includes(f.estado_cobro) && f.vencimiento ? `<span class="nota factura__vence">Vence el ${esc(new Date(`${f.vencimiento}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</span>`
         : f.rectificada_por ? `<span class="nota factura__vence">Rectificada por la ${esc(f.rectificada_por)}</span>` : '';
     const ver = `<a class="boton boton--secundario boton--pequeno" href="factura.html?id=${f.id}">${f.estado === 'borrador' ? 'Revisar' : 'Ver'}</a>`;
@@ -1864,7 +2019,7 @@ async function paginaFacturas() {
     return `<tr class="${f.estado_cobro === 'vencida' ? 'fila-vencida' : ''}" data-id="${f.id}">
         <td class="t-titulo"><b class="cifra">${f.codigo ? esc(f.codigo) : '<span class="nota">Sin número</span>'}</b></td>
         <td class="cifra" data-rotulo="Fecha">${esc(new Date(`${f.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</td>
-        <td data-rotulo="Cliente"><a href="clientes.html?id=${f.cliente_id}">${esc(f.cliente_nombre)}</a></td>
+        <td data-rotulo="Cliente" class="celda-cliente"><a class="dos-lineas" href="clientes.html?id=${f.cliente_id}" title="${esc(f.cliente_nombre)}">${esc(f.cliente_nombre)}</a></td>
         <td data-rotulo="Coche">${coche}</td>
         <td class="derecha cifra" data-rotulo="Total">${euros(f.total_cent)}</td>
         <td class="derecha cifra" data-rotulo="Cobrado">${cobrado}</td>
@@ -1879,8 +2034,12 @@ async function paginaFacturas() {
     const esta = ++peticion;
     const { facturas: lista, resumen } = await api(`/facturas?${new URLSearchParams({ ...(q.trim() ? { q: q.trim() } : {}), ...(estado ? { estado } : {}) })}`);
     if (esta !== peticion) return;
+    // Lo cobrado de cada una antes de repintar: la barra de la que cambió (un cobro) crece desde ahí
+    const parteDe = (f) => (f.total_cent > 0 ? Math.min(100, Math.round((f.cobrado_cent / f.total_cent) * 100)) : 0);
+    const antes = new Map(facturas.map((f) => [f.id, parteDe(f)]));
     facturas = lista;
     tbody.innerHTML = lista.map(fila).join('');
+    for (const f of lista) crecerBarra(tbody.querySelector(`tr[data-id="${f.id}"] .cobrado__barra span`), antes.get(f.id), parteDe(f));
     $('.tabla-caja').hidden = !lista.length;
     vacio.hidden = !!lista.length;
     $('strong', vacio).textContent = estado === 'vencida' ? 'Ninguna factura vencida' : 'Ninguna factura con estos filtros';
@@ -1897,9 +2056,9 @@ async function paginaFacturas() {
     const f = facturas.find((x) => x.id === id);
     const tr = tbody.querySelector(`tr[data-id="${id}"]`);
     tr.insertAdjacentHTML('afterend', `<tr class="fila-cobro"><td colspan="8">
-        <form class="cobro-form">
+        <form class="cobro-form despliega">
           <label class="campo"><span class="campo__nombre">Importe</span><span class="con-unidad" data-unidad="€"><input name="importe" inputmode="decimal" value="${(f.saldo_cent / 100).toFixed(2).replace('.', ',')}" required></span></label>
-          <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === (f.forma_pago ?? 'transferencia') ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+          <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === formaCobro(f) ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
           <label class="campo"><span class="campo__nombre">Fecha</span><input type="date" name="fecha" value="${diaLocal()}" required></label>
           <div class="cobro-form__botones">
             <button class="boton boton--pequeno" type="submit">Apuntar ${euros2(f.saldo_cent)}</button>
@@ -1916,6 +2075,7 @@ async function paginaFacturas() {
     const guardar = async (cuerpo) => {
       try {
         await api(`/facturas/${id}/cobros`, { method: 'POST', body: cuerpo });
+        avisar('Cobro apuntado');
         cajaError.hidden = true;
         await pintar();
       } catch (e) {
@@ -1941,6 +2101,7 @@ async function paginaFacturas() {
       emitir.disabled = true;
       try {
         await api(`/facturas/${emitir.dataset.emitir}/emitir`, { method: 'POST' });
+        avisar('Factura emitida');
         cajaError.hidden = true;
         await pintar();
       } catch (e) {
@@ -1967,16 +2128,19 @@ async function prepararAltaFactura() {
   cabecera.insertAdjacentHTML('beforeend', '<p class="cabecera__acciones-factura"><a class="boton" href="#nueva-factura" data-nueva>Nueva factura</a></p>');
   const [coches, clientes, { facturas }] = await Promise.all([api('/vehiculos'), api('/clientes'), api('/facturas')]);
   const facturados = new Set(facturas.filter((f) => f.tipo === 'venta' && f.estado === 'emitida' && !f.anulada).map((f) => f.vehiculo_id));
-  const posibles = coches.filter((v) => ['publicado', 'reservado', 'vendido', 'entregado'].includes(v.estado) && !facturados.has(v.id));
+  // Un entregado de hace más de dos meses sin factura nuestra se facturó en su día fuera (Pymecar): no se ofrece
+  const posibles = coches.filter((v) => ['publicado', 'reservado', 'vendido', 'entregado'].includes(v.estado) && !facturados.has(v.id)
+    && (v.estado !== 'entregado' || diasDesde(v.en_estado_desde) <= 60));
   const seccion = document.createElement('section');
-  seccion.className = 'caja form-tercero';
+  seccion.className = 'caja form-tercero despliega';
   seccion.id = 'nueva-factura';
   seccion.hidden = true;
   seccion.innerHTML = `
     <div class="caja__titulo"><h2>Nueva factura</h2><span class="nota">Se guarda como borrador: se revisa y luego se emite</span></div>
     <form class="rejilla">
       <label class="campo campo--doble"><span class="campo__nombre">Coche <em>*</em></span>
-        <select name="vehiculo_id" required><option value="">Elige el coche</option>${posibles.map((v) => `<option value="${v.id}">${esc(tituloCoche(v))} · ${esc(v.matricula)} · ${esc(estado(v.estado).nombre)}</option>`).join('')}</select></label>
+        <select name="vehiculo_id" required><option value="">Elige el coche</option>${[['vendido', 'Vendidos, sin factura'], ['entregado', 'Entregados, sin factura'], ['reservado', 'Reservados'], ['publicado', 'Publicados']]
+          .map(([e, titulo]) => { const suyos = posibles.filter((v) => v.estado === e); return suyos.length ? `<optgroup label="${esc(titulo)}">${suyos.map((v) => `<option value="${v.id}">${esc(tituloCoche(v))} · ${matricula(v.matricula)}</option>`).join('')}</optgroup>` : ''; }).join('')}</select></label>
       <label class="campo campo--doble"><span class="campo__nombre">Cliente <em>*</em></span>
         <select name="cliente_id" required><option value="">Elige el cliente</option>${clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}${c.nif ? ` · ${esc(c.nif)}` : ' · sin DNI'}</option>`).join('')}</select>
         <span class="campo__ayuda">¿No está? Dalo de alta en <a href="clientes.html#nuevo">Clientes</a> con su DNI y dirección.</span></label>
@@ -1991,23 +2155,62 @@ async function prepararAltaFactura() {
       <label class="campo"><span class="campo__nombre">Meses</span><input type="number" name="garantia_meses" min="0" max="36" value="12"></label>
       <label class="campo"><span class="campo__nombre">Km a la entrega</span><input type="number" name="km_entrega" min="0"></label>
       <label class="campo campo--ancho"><span class="campo__nombre">Observaciones</span><textarea name="observaciones" maxlength="2000"></textarea></label>
+      <div class="factura-previa campo--ancho" aria-live="polite" hidden></div>
       <div class="form-tercero__pie campo--ancho">
         <button class="boton boton--secundario" type="button" data-cancelar>Cancelar</button>
         <button class="boton" type="submit">Guardar borrador</button>
       </div>
     </form>`;
-  $('.tabla-caja').before(seccion);
+  $('form.filtros').before(seccion);
   const form = $('form', seccion);
   const error = cajaErrorEn(form);
   error.classList.add('campo--ancho');
-  // Al elegir el coche: su PVP y sus km
+  // Lo que saldrá en la factura, en vivo y con la misma cuenta que el servidor (facturacion/importes.js):
+  // en REBU el cliente ve un solo total y el IVA del margen va al libro; en general, el 21 % va dentro.
+  const previa = $('.factura-previa', form);
+  const pintarPrevia = () => {
+    const v = posibles.find((x) => String(x.id) === form.elements.vehiculo_id.value);
+    if (!v) { previa.hidden = true; return; }
+    const precio = form.elements.precio.value.trim() ? aCent(form.elements.precio.value) : v.pvp_cent;
+    const suplidos = form.elements.suplidos.value.trim() ? aCent(form.elements.suplidos.value) : 0;
+    const deposito = v.propiedad === 'deposito';
+    const compra = deposito ? v.pago_propietario_cent : v.precio_compra_cent;
+    const regimen = form.elements.regimen.value || (deposito || v.regimen_iva !== 'deducible' ? 'REBU' : 'general');
+    const filas = [];
+    if (!(precio >= 0)) {
+      filas.push('<p class="nota">El precio va como 12.900,00.</p>');
+    } else if (regimen === 'REBU') {
+      const margen = Math.max(0, precio - (compra ?? 0));
+      const iva = Math.round((margen * 21) / 121);
+      filas.push(`<div><span>Total de la factura</span><b class="cifra">${euros2(precio + (suplidos || 0))}</b></div>`,
+        `<div><span>${deposito ? 'Pactado con el dueño' : 'Compra'}</span><span class="cifra">${compra == null ? '<span class="dias dias--aviso">Falta: sin ella no se emite</span>' : euros2(compra)}</span></div>`,
+        `<div><span>Margen · IVA del margen (al libro de REBU)</span><span class="cifra">${compra == null ? '—' : `${euros2(margen)} · ${euros2(iva)}`}</span></div>`);
+    } else {
+      const base = Math.round((precio * 100) / 121);
+      filas.push(`<div><span>Base imponible</span><span class="cifra">${euros2(base)}</span></div>`,
+        `<div><span>IVA 21 %</span><span class="cifra">${euros2(precio - base)}</span></div>`,
+        `<div><span>Total de la factura</span><b class="cifra">${euros2(precio + (suplidos || 0))}</b></div>`);
+    }
+    previa.innerHTML = `<p class="factura-previa__titulo">${regimen === 'REBU' ? 'Régimen especial de bienes usados (REBU)' : 'IVA general'} · PVP ${euros2(v.pvp_cent)}${suplidos ? ` · con ${euros2(suplidos)} de gestoría` : ''}</p>${filas.join('')}`;
+    previa.hidden = false;
+  };
+  // Al elegir el coche: su PVP, sus km y, si lo tiene, su comprador
   form.elements.vehiculo_id.addEventListener('change', () => {
     const v = posibles.find((x) => String(x.id) === form.elements.vehiculo_id.value);
     form.elements.precio.placeholder = v?.pvp_cent != null ? (v.pvp_cent / 100).toFixed(2).replace('.', ',') : '';
     if (v?.kilometros != null && !form.elements.km_entrega.value) form.elements.km_entrega.value = v.kilometros;
-    // Si ya tiene comprador (se apuntó al venderlo), se propone
     if (v?.comprador_id && !form.elements.cliente_id.value) form.elements.cliente_id.value = String(v.comprador_id);
+    pintarPrevia();
   });
+  for (const campo of ['precio', 'suplidos', 'regimen']) form.elements[campo].addEventListener('input', pintarPrevia);
+  // Pago aplazado: el vencimiento se propone solo (se puede cambiar)
+  const sumarDiasA = (dia, n) => diaLocal(new Date(new Date(`${dia}T12:00:00`).getTime() + n * 86400000));
+  const proponerVence = () => {
+    const dias = { pago_30: 30, pago_30_60: 60 }[form.elements.forma_pago.value];
+    if (dias && form.elements.fecha.value) form.elements.vencimiento.value = sumarDiasA(form.elements.fecha.value, dias);
+  };
+  form.elements.forma_pago.addEventListener('change', proponerVence);
+  form.elements.fecha.addEventListener('change', proponerVence);
   const abrir = (ev) => { ev?.preventDefault(); seccion.hidden = false; seccion.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   $('[data-nueva]').addEventListener('click', abrir);
   $('[data-cancelar]', form).addEventListener('click', () => { seccion.hidden = true; form.reset(); error.hidden = true; });
@@ -2033,6 +2236,7 @@ async function prepararAltaFactura() {
     }
     try {
       const f = await api('/facturas', { method: 'POST', body: cuerpo });
+      avisarAlVolver('Borrador guardado: revísalo y emítelo');
       location.href = `factura.html?id=${f.id}`; // a revisarla antes de emitir
     } catch (e) {
       mostrarErrores(error, e, 'No se ha podido guardar:');
@@ -2083,6 +2287,7 @@ async function prepararEmpresaYSeries() {
     for (const k of ['razon_social', 'nif']) if (d[k] === empresa[k]) delete d[k];
     try {
       Object.assign(empresa, await api('/facturas/empresa', { method: 'PUT', body: d }));
+      avisar('Datos de la empresa guardados');
       error.hidden = true;
       $('summary .estado', caja)?.remove();
       $('button[type="submit"]', formEmpresa).textContent = 'Guardado';
@@ -2095,6 +2300,7 @@ async function prepararEmpresaYSeries() {
     ev.preventDefault();
     try {
       const r = await api(`/facturas/series/V${anio}`, { method: 'PUT', body: { ultimo: Number(ev.target.elements.ultimo.value) } });
+      avisar(`La siguiente será la ${r.codigo_siguiente}`);
       ev.target.querySelector('.nota').innerHTML = `La siguiente factura será la <b>${esc(r.codigo_siguiente)}</b>.`;
     } catch (e) {
       mostrarErrores(error, e, 'No se ha podido guardar la numeración:');
@@ -2111,6 +2317,86 @@ async function paginaFactura() {
   const cajaError = $('.documento-error');
   if (!id) { hoja.innerHTML = '<p>Falta el número de la factura.</p>'; return; }
 
+  // Cobros, en pantalla: lo cobrado, lo que queda, cada cobro (se puede quitar) y apuntar otro
+  const panel = $('.factura-cobros');
+  const ESTADO_COBRO = { pendiente: ['Pendiente', 'pendiente'], parcial: ['Cobro parcial', 'parcial'], cobrada: ['Cobrada', 'cobrada'], vencida: ['Vencida', 'vencida'] };
+  const pintarCobros = (f) => {
+    if (f.estado === 'borrador') {
+      panel.hidden = false;
+      panel.innerHTML = `<p class="factura-cobros__aviso"><b>Borrador sin número.</b> Revísalo aquí abajo y pulsa «Emitir factura»: coge el siguiente número de la serie y ya no se puede cambiar.</p>`;
+      return;
+    }
+    if (f.tipo !== 'venta' || f.anulada) {
+      panel.hidden = false;
+      panel.innerHTML = `<p class="factura-cobros__aviso">${f.anulada ? `<b>Anulada</b> por la ${esc(f.rectificada_por ?? 'rectificativa')}: no se cobra.` : '<b>Rectificativa.</b> Anula la factura original por el total.'}</p>`;
+      return;
+    }
+    const [texto, clase] = ESTADO_COBRO[f.estado_cobro] ?? [f.estado_cobro, 'pendiente'];
+    const cobrado = f.total_cent - f.saldo_cent;
+    const parte = f.total_cent ? Math.min(100, Math.round((cobrado / f.total_cent) * 100)) : 0;
+    const parteAntes = panel.dataset.parte == null ? null : Number(panel.dataset.parte);
+    panel.dataset.parte = parte;
+    const hoy = new Date(`${diaLocal()}T00:00:00`);
+    const dias = f.vencimiento ? Math.round((new Date(`${f.vencimiento}T00:00:00`) - hoy) / 86400000) : null;
+    const vence = !f.saldo_cent || dias == null ? '' : dias < 0 ? `<span class="dias dias--peligro">Venció hace ${-dias} ${dias === -1 ? 'día' : 'días'}</span>`
+      : dias === 0 ? '<span class="dias dias--aviso">Vence hoy</span>' : `<span class="nota">Vence el ${esc(fechaLarga(f.vencimiento))}, dentro de ${dias} ${dias === 1 ? 'día' : 'días'}</span>`;
+    const filas = f.cobros.length
+      ? f.cobros.map((k) => `<li><span class="cifra">${esc(fechaCorta(k.fecha))}</span><span>${esc(FORMAS_COBRO[k.forma_pago] ?? k.forma_pago)}</span><b class="cifra">${euros2(k.importe_cent)}</b>
+          <button class="factura-cobros__quitar" type="button" data-quitar="${k.id}" title="Quitar este cobro" aria-label="Quitar el cobro de ${esc(euros2(k.importe_cent))}">Quitar</button>${k.nota ? `<span class="nota factura-cobros__nota">${esc(k.nota)}</span>` : ''}</li>`).join('')
+      : '<li class="nota">Todavía no se ha cobrado nada.</li>';
+    panel.hidden = false;
+    panel.innerHTML = `
+      <div class="factura-cobros__cabeza">
+        <span class="estado cobro--${clase}">${esc(texto)}</span>
+        <p><b class="cifra">${euros2(cobrado)}</b> cobrados de ${euros2(f.total_cent)}${f.saldo_cent ? ` · <b class="cifra">${euros2(f.saldo_cent)}</b> por cobrar` : ''}</p>
+        ${vence}
+      </div>
+      <div class="factura-cobros__barra" role="img" aria-label="Cobrado el ${parte} %"><span style="width:${parte}%"></span></div>
+      <ul class="factura-cobros__lista">${filas}</ul>
+      ${f.saldo_cent ? `<form class="cobro-form factura-cobros__form">
+        <label class="campo"><span class="campo__nombre">Importe</span><span class="con-unidad" data-unidad="€"><input name="importe" inputmode="decimal" value="${(f.saldo_cent / 100).toFixed(2).replace('.', ',')}" required></span></label>
+        <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === formaCobro(f) ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+        <label class="campo"><span class="campo__nombre">Fecha</span><input type="date" name="fecha" value="${diaLocal()}" required></label>
+        <div class="cobro-form__botones">
+          <button class="boton boton--pequeno" type="submit">Apuntar cobro</button>
+          <button class="boton boton--secundario boton--pequeno" type="button" data-senal>Aplicar la señal de la reserva</button>
+        </div>
+      </form>` : ''}`;
+    crecerBarra($('.factura-cobros__barra span', panel), parteAntes, parte);
+    const form = $('form', panel);
+    const guardar = async (cuerpo) => {
+      try {
+        await api(`/facturas/${id}/cobros`, { method: 'POST', body: cuerpo });
+        avisar('Cobro apuntado');
+        cajaError.hidden = true;
+        await pintar();
+      } catch (e) {
+        mostrarErrores(cajaError, e, 'No se ha podido apuntar el cobro:');
+      }
+    };
+    form?.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const importe = aCent(form.elements.importe.value);
+      if (!(importe > 0)) return mostrarErrores(cajaError, { lista: ['El importe tiene que ser un número mayor que 0, por ejemplo 1.500,00'] }, 'No se ha podido apuntar el cobro:');
+      guardar({ importe_cent: importe, forma_pago: form.elements.forma_pago.value, fecha: form.elements.fecha.value });
+    });
+    $('[data-senal]', panel)?.addEventListener('click', () => guardar({ senal: true }));
+    // Quitar un cobro mal apuntado: dos pulsaciones
+    panel.querySelectorAll('[data-quitar]').forEach((b) => b.addEventListener('click', async () => {
+      if (!b.dataset.seguro) { b.dataset.seguro = '1'; b.textContent = '¿Seguro?'; return; }
+      b.disabled = true;
+      try {
+        await api(`/facturas/${id}/cobros/${b.dataset.quitar}`, { method: 'DELETE' });
+        avisar('Cobro quitado');
+        cajaError.hidden = true;
+        await pintar();
+      } catch (e) {
+        b.disabled = false;
+        mostrarErrores(cajaError, e, 'No se ha podido quitar el cobro:');
+      }
+    }));
+  };
+
   const pintar = async () => {
     const f = await api(`/facturas/${id}`);
     const [empresa, cliente, coche] = f.estado === 'emitida'
@@ -2123,7 +2409,7 @@ async function paginaFactura() {
     const titulo = f.estado === 'borrador' ? 'Borrador de factura' : rectificativa ? 'Factura rectificativa' : 'Factura';
     const lineaCoche = coche
       ? `<b>${esc([coche.marca, coche.modelo, coche.version].filter(Boolean).join(' '))}</b>
-         <small>Matrícula ${esc(coche.matricula ?? '—')}${coche.bastidor ? ` · Bastidor ${esc(coche.bastidor)}` : ''}${coche.fecha_matriculacion ? ` · 1.ª matriculación ${esc(fechaCorta(coche.fecha_matriculacion))}` : ''}${(f.km_entrega ?? coche.kilometros) != null ? ` · ${cifra(f.km_entrega ?? coche.kilometros)} km` : ''}</small>`
+         <small>Matrícula ${coche.matricula ? matricula(coche.matricula) : '—'}${coche.bastidor ? ` · Bastidor ${esc(coche.bastidor)}` : ''}${coche.fecha_matriculacion ? ` · 1.ª matriculación ${esc(fechaCorta(coche.fecha_matriculacion))}` : ''}${(f.km_entrega ?? coche.kilometros) != null ? ` · ${cifra(f.km_entrega ?? coche.kilometros)} km` : ''}</small>`
       : 'Vehículo';
     const totales = rebu
       ? `<div class="total"><span>Total</span><span>${euros2(f.total_cent)}</span></div>`
@@ -2166,19 +2452,31 @@ async function paginaFactura() {
       ${garantia || f.observaciones ? `<section class="factura__bloque"><h2>Condiciones</h2>${garantia ? `<p>${esc(garantia)}</p>` : ''}${f.observaciones ? `<p>${esc(f.observaciones)}</p>` : ''}</section>` : ''}
       ${empresa.registro_mercantil ? `<footer class="factura__pie">${esc(empresa.registro_mercantil)}</footer>` : ''}`;
 
-    // La barra: imprimir siempre; emitir un borrador; rectificar una emitida sin rectificar
+    pintarCobros(f);
+
+    // La barra: emitir un borrador (lo principal entonces); en una emitida, imprimir es lo principal.
+    // Rectificar se usa poco y no tiene vuelta: va plegado, con su campo etiquetado y doble pulsación.
+    const rectificable = f.estado === 'emitida' && f.tipo === 'venta' && !f.anulada;
     barra.innerHTML = `${f.estado === 'borrador' ? '<button class="boton boton--pequeno" type="button" data-emitir>Emitir factura</button>' : ''}
-      ${f.estado === 'emitida' && f.tipo === 'venta' && !f.anulada ? '<input name="motivo" placeholder="Motivo para rectificarla" maxlength="500"><button class="boton boton--secundario boton--pequeno" type="button" data-rectificar>Rectificar</button>' : ''}
       ${f.rectificada_por ? `<span class="nota" style="color:#c5c9ce">Rectificada por la ${esc(f.rectificada_por)}</span>` : ''}
-      ${f.estado === 'emitida' && f.tipo === 'venta' && !f.anulada ? (contratos.length
+      ${rectificable ? (contratos.length
         ? `<a class="boton boton--secundario boton--pequeno" href="contrato.html?id=${contratos[0].id}">Contrato ${esc(contratos[0].codigo)}</a>`
-        : `<a class="boton boton--pequeno" href="contrato.html?nuevo=compraventa&factura=${id}">Contrato de compraventa</a>`) : ''}
-      <button class="boton boton--secundario boton--pequeno" type="button" data-imprimir>Imprimir o guardar en PDF</button>`;
+        : `<a class="boton boton--secundario boton--pequeno" href="contrato.html?nuevo=compraventa&factura=${id}">Contrato de compraventa</a>`) : ''}
+      <button class="boton${f.estado === 'borrador' ? ' boton--secundario' : ''} boton--pequeno" type="button" data-imprimir>Imprimir o guardar en PDF</button>
+      ${rectificable ? `<details class="factura__rectificar">
+        <summary>Rectificar…</summary>
+        <div class="factura__rectificar-caja">
+          <label class="campo"><span class="campo__nombre">Motivo de la rectificación</span><input name="motivo" maxlength="500" placeholder="Error en el precio, devolución del coche…"></label>
+          <button class="boton boton--secundario boton--pequeno" type="button" data-rectificar>Rectificar la factura</button>
+          <span class="nota">Mantén pulsado el botón: crea una rectificativa por el total y anula esta. No se puede deshacer.</span>
+        </div>
+      </details>` : ''}`;
     $('[data-imprimir]', barra).addEventListener('click', () => window.print());
     $('[data-emitir]', barra)?.addEventListener('click', async (ev) => {
       ev.target.disabled = true;
       try {
         await api(`/facturas/${id}/emitir`, { method: 'POST' });
+        avisar('Factura emitida');
         cajaError.hidden = true;
         await pintar();
       } catch (e) {
@@ -2186,12 +2484,15 @@ async function paginaFactura() {
         mostrarErrores(cajaError, e, 'No se ha podido emitir:');
       }
     });
-    $('[data-rectificar]', barra)?.addEventListener('click', async (ev) => {
+    const botonRectificar = $('[data-rectificar]', barra);
+    if (botonRectificar) mantenerPulsado(botonRectificar, async () => {
       const motivo = $('input[name="motivo"]', barra).value.trim();
       if (!motivo) return mostrarErrores(cajaError, { lista: ['Escribe el motivo de la rectificación.'] }, 'No se ha podido rectificar:');
+      const ev = { target: botonRectificar };
       ev.target.disabled = true;
       try {
         const r = await api(`/facturas/${id}/rectificar`, { method: 'POST', body: { motivo } });
+        avisarAlVolver('Rectificativa creada');
         location.href = `factura.html?id=${r.id}`;
       } catch (e) {
         ev.target.disabled = false;
@@ -2260,6 +2561,7 @@ async function paginaContrato(usuario) {
     boton.disabled = true;
     try {
       const c = await api('/contratos', { method: 'POST', body: cuerpo });
+      avisarAlVolver('Contrato generado');
       location.replace(`contrato.html?id=${c.id}`);
     } catch (e) {
       boton.disabled = false;
@@ -2390,6 +2692,102 @@ async function paginaLibros() {
   await pintar();
 }
 
+// --- Gráficas (SVG a mano, sin librerías) -----------------------------------------------------
+// Columnas de una sola serie con énfasis: el mes elegido en rojo, el resto en gris. Un solo eje, que
+// cruza el 0 si hay negativos. Tooltip al pasar el ratón o con el teclado (cada columna se enfoca) y,
+// debajo, la tabla con los mismos datos: el tooltip ayuda, pero nada depende de él.
+//   puntos: [{ etiqueta, corta, valor, detalle: [[rótulo, texto], …] }] · elegido: índice resaltado
+function graficaColumnas(caja, { puntos, elegido, formato, titulo }) {
+  const pintar = () => {
+    const ancho = Math.max(280, caja.clientWidth);
+    const alto = 210;
+    const m = { arriba: 22, abajo: 26, izq: 52, der: 8 };
+    const valores = puntos.map((p) => p.valor ?? 0);
+    let max = Math.max(0, ...valores);
+    let min = Math.min(0, ...valores);
+    if (max === min) max = 1;
+    // Marcas del eje redondas: 1, 2 o 5 por potencia de 10
+    const paso = (() => {
+      const bruto = (max - min) / 4;
+      const p10 = 10 ** Math.floor(Math.log10(bruto));
+      return [1, 2, 5, 10].map((f) => f * p10).find((x) => x >= bruto);
+    })();
+    max = Math.ceil(max / paso) * paso;
+    min = Math.floor(min / paso) * paso;
+    const y = (v) => m.arriba + (max - v) / (max - min) * (alto - m.arriba - m.abajo);
+    const banda = (ancho - m.izq - m.der) / puntos.length;
+    const grosor = Math.min(24, banda * 0.6);
+    const marcas = [];
+    for (let v = min; v <= max + paso / 2; v += paso) marcas.push(v);
+    const r = 4; // extremo redondeado del dato; cuadrado en la línea base
+    const columna = (x, v) => {
+      const y0 = y(0);
+      const y1 = y(v);
+      const h = Math.abs(y1 - y0);
+      if (h < 0.5) return '';
+      const rr = Math.min(r, h);
+      return v >= 0
+        ? `M${x},${y0}V${y1 + rr}Q${x},${y1} ${x + rr},${y1}H${x + grosor - rr}Q${x + grosor},${y1} ${x + grosor},${y1 + rr}V${y0}Z`
+        : `M${x},${y0}V${y1 - rr}Q${x},${y1} ${x + rr},${y1}H${x + grosor - rr}Q${x + grosor},${y1} ${x + grosor},${y1 - rr}V${y0}Z`;
+    };
+    const svg = `<svg class="grafica__svg" width="${ancho}" height="${alto}" role="group" aria-label="${esc(titulo)}">
+      ${marcas.map((v) => `<line class="grafica__rejilla${v === 0 ? ' grafica__rejilla--cero' : ''}" x1="${m.izq}" x2="${ancho - m.der}" y1="${y(v)}" y2="${y(v)}"/>
+        <text class="grafica__eje" x="${m.izq - 8}" y="${y(v) + 4}" text-anchor="end">${esc(formato(v, true))}</text>`).join('')}
+      ${puntos.map((p, i) => {
+        const x = m.izq + banda * i + (banda - grosor) / 2;
+        const v = p.valor ?? 0;
+        const etiqueta = `${p.etiqueta}: ${p.valor == null ? 'sin datos' : formato(p.valor)}`;
+        return `<g class="grafica__punto${i === elegido ? ' grafica__punto--elegido' : ''}" data-i="${i}" tabindex="0" role="img" aria-label="${esc(etiqueta)}">
+          <rect class="grafica__diana" x="${m.izq + banda * i}" y="${m.arriba}" width="${banda}" height="${alto - m.arriba - m.abajo}"/>
+          <path class="grafica__columna" d="${columna(x, v)}"/>
+          ${i === elegido && p.valor != null ? `<text class="grafica__valor" x="${x + grosor / 2}" y="${v >= 0 ? y(v) - 6 : y(v) + 14}" text-anchor="middle">${esc(formato(p.valor))}</text>` : ''}
+          ${banda >= 28 || i === elegido || (elegido - i) % 2 === 0 ? `<text class="grafica__mes${i === elegido ? ' grafica__mes--elegido' : ''}" x="${m.izq + banda * i + banda / 2}" y="${alto - 8}" text-anchor="middle">${esc(p.corta)}</text>` : ''}
+        </g>`;
+      }).join('')}
+    </svg>`;
+    caja.innerHTML = `<div class="grafica__lienzo">${svg}<div class="grafica__tip" hidden></div></div>
+      <details class="grafica__tabla"><summary>Ver los datos</summary>
+        <table class="tabla"><thead><tr><th>Mes</th>${puntos[0].detalle.map(([t]) => `<th class="derecha">${esc(t)}</th>`).join('')}</tr></thead>
+        <tbody>${puntos.map((p) => `<tr><td>${esc(p.etiqueta)}</td>${p.detalle.map(([, v]) => `<td class="derecha cifra">${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      </details>`;
+    const lienzo = $('.grafica__lienzo', caja);
+    const tip = $('.grafica__tip', caja);
+    const ensenar = (g) => {
+      const p = puntos[Number(g.dataset.i)];
+      tip.replaceChildren();
+      const cab = document.createElement('strong');
+      cab.textContent = p.etiqueta;
+      tip.append(cab);
+      for (const [rotulo, texto] of p.detalle) {
+        const fila = document.createElement('span');
+        const b = document.createElement('b');
+        b.textContent = texto;
+        fila.append(b, ` ${rotulo}`);
+        tip.append(fila);
+      }
+      tip.hidden = false;
+      const caj = g.querySelector('.grafica__diana').getBBox();
+      const izq = Math.min(Math.max(caj.x + caj.width / 2 - tip.offsetWidth / 2, 0), lienzo.clientWidth - tip.offsetWidth);
+      tip.style.left = `${izq}px`;
+      lienzo.querySelectorAll('.grafica__punto--activo').forEach((x) => x.classList.remove('grafica__punto--activo'));
+      g.classList.add('grafica__punto--activo');
+    };
+    const ocultar = () => { tip.hidden = true; lienzo.querySelectorAll('.grafica__punto--activo').forEach((x) => x.classList.remove('grafica__punto--activo')); };
+    lienzo.querySelectorAll('.grafica__punto').forEach((g) => {
+      g.addEventListener('pointerenter', () => ensenar(g));
+      g.addEventListener('focus', () => ensenar(g));
+      g.addEventListener('blur', ocultar);
+    });
+    lienzo.addEventListener('pointerleave', ocultar);
+  };
+  pintar();
+  // Al cambiar el ancho (girar el móvil, abrir el menú), se vuelve a dibujar a la medida
+  caja._observador?.disconnect();
+  let ultimo = caja.clientWidth;
+  caja._observador = new ResizeObserver(() => { if (Math.abs(caja.clientWidth - ultimo) > 8) { ultimo = caja.clientWidth; pintar(); } });
+  caja._observador.observe(caja);
+}
+
 // --- Informes (solo gerencia) -----------------------------------------------------------------
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -2425,6 +2823,30 @@ async function paginaInformes() {
         <span class="rotulo">${esc(rotulo)}</span><strong class="cifra">${esc(valor)}</strong><span class="nota">${esc(nota)}</span>
       </div>`).join('');
 
+    // Gráficas: los 12 meses que acaban en el elegido
+    const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const ev = datos.evolucion ?? [];
+    const corta = (mes) => MESES_CORTOS[Number(mes.slice(5, 7)) - 1];
+    const larga = (mes) => mayuscula(nombreMes(mes));
+    // Euros en el eje, en corto (12 mil €); en el resto, enteros
+    const eurosEje = (cent, eje) => (eje && Math.abs(cent) >= 100000 ? `${(cent / 100000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} mil €` : euros(cent));
+    if (ev.length) {
+      graficaColumnas($('[data-grafica="vendidos"]'), {
+        titulo: 'Coches vendidos por mes',
+        elegido: ev.length - 1,
+        formato: (v) => cifra(v),
+        puntos: ev.map((m) => ({ etiqueta: larga(m.mes), corta: corta(m.mes), valor: m.vendidos,
+          detalle: [['vendidos', cifra(m.vendidos)], ['facturado', euros(m.facturado_cent)]] })),
+      });
+      graficaColumnas($('[data-grafica="resultado"]'), {
+        titulo: 'Resultado del mes',
+        elegido: ev.length - 1,
+        formato: eurosEje,
+        puntos: ev.map((m) => ({ etiqueta: larga(m.mes), corta: corta(m.mes), valor: m.resultado_cent,
+          detalle: [['resultado', euros(m.resultado_cent)], ['margen neto', m.margen_cent == null ? '—' : euros(m.margen_cent)], ['gastos de la tienda', euros(m.gastos_estructura_cent)]] })),
+      });
+    }
+
     // Ventas del mes
     $('.ficha__principal .caja__titulo h2').textContent = `Ventas de ${nombreMes(datos.mes).split(' ')[0]}`;
     $('.ficha__principal tbody').innerHTML = ventas.length
@@ -2449,7 +2871,7 @@ async function paginaInformes() {
     // Los que más llevan
     $('.ficha__lateral .canales').innerHTML = stock.mas_antiguos.length
       ? stock.mas_antiguos.map((v) => `<li><a href="coche.html?id=${v.id}">${esc([v.marca, v.modelo, v.version].filter(Boolean).join(' '))}</a>
-          <span class="dias cifra${v.dias > 90 ? ' dias--peligro' : v.dias > 60 ? ' dias--aviso' : ''}">${v.dias} días</span></li>`).join('')
+          <span class="dias cifra${v.dias > 90 ? ' dias--peligro' : v.dias > 60 ? ' dias--aviso' : ''}">${cuenta(v.dias, 'día', 'días')}</span></li>`).join('')
       : '<li class="nota">No hay coches en stock.</li>';
   };
 
@@ -2489,7 +2911,13 @@ async function paginaGastos() {
   const meses = Array.from({ length: 12 }, (_, i) => diaLocal(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)).slice(0, 7));
   const selMes = cabecera.elements.mes;
   selMes.innerHTML = meses.map((m) => `<option value="${m}">${esc(mesTitulo(m))}</option>`).join('');
-  if (MES_RE.test(params.get('mes') ?? '')) selMes.value = params.get('mes');
+  // Un mes que no está en la lista (de la dirección o de un gasto antiguo) se añade antes de elegirlo
+  const elegirMes = (mes) => {
+    if (![...selMes.options].some((o) => o.value === mes)) selMes.add(new Option(mesTitulo(mes), mes));
+    selMes.value = mes;
+  };
+  if (MES_RE.test(params.get('mes') ?? '')) elegirMes(params.get('mes'));
+  const soloProveedor = params.get('proveedor'); // desde la ficha del proveedor
   const exportar = $('a.boton', cabecera);
   exportar.href = 'libros.html?libro=gastos';
   exportar.textContent = 'Libro para el gestor';
@@ -2515,7 +2943,13 @@ async function paginaGastos() {
     form.elements.tipo.value = 'general';
     form.elements.pagado.checked = false;
     form.elements.forma_pago.value = 'transferencia';
-    if (soloCoche) form.elements.vehiculo_id.value = soloCoche;
+    if (soloCoche) {
+      // Desde la ficha del coche: un gasto de ese coche (si no, se guardaba sin coche y no restaba del margen)
+      form.elements.concepto.value = 'vehiculos';
+      form.elements.tipo.value = 'vehiculo';
+      form.elements.vehiculo_id.value = soloCoche;
+    }
+    if (soloProveedor) form.elements.proveedor_id.value = soloProveedor;
     recalcular();
   };
 
@@ -2558,20 +2992,29 @@ async function paginaGastos() {
     for (const campo of ['descripcion', 'factura_proveedor']) if (e[campo].value.trim()) cuerpo[campo] = e[campo].value.trim();
     const tercero = e.quien.value === 'cliente' ? 'cliente_id' : 'proveedor_id';
     if (e[tercero].value) cuerpo[tercero] = Number(e[tercero].value);
-    if (['vehiculo', 'rebu'].includes(tipo) && e.vehiculo_id.value) cuerpo.vehiculo_id = Number(e.vehiculo_id.value);
+    if ((['vehiculo', 'rebu'].includes(tipo) || soloCoche) && e.vehiculo_id.value) cuerpo.vehiculo_id = Number(e.vehiculo_id.value);
     const boton = $('button[type="submit"]', form);
     boton.disabled = true;
+    let g;
     try {
-      const g = await api('/gastos', { method: 'POST', body: cuerpo });
-      if (e.pagado.checked) await api(`/gastos/${g.id}/pagado`, { method: 'PATCH', body: { pagado: true, forma_pago: cuerpo.forma_pago } });
-      errorForm.hidden = true;
-      valoresIniciales();
-      selMes.value = g.fecha.slice(0, 7);
+      g = await api('/gastos', { method: 'POST', body: cuerpo });
+      avisar(`Gasto apuntado con el nº ${g.numero}`);
+    } catch (err) {
+      boton.disabled = false;
+      return mostrarErrores(errorForm, err, 'No se ha podido apuntar:');
+    }
+    // Ya está en el libro (y no se borra): lo que falle a partir de aquí no puede decir «no se ha apuntado»
+    errorForm.hidden = true;
+    const pagar = e.pagado.checked;
+    valoresIniciales();
+    $('.caja__titulo .nota', seccion).textContent = `Apuntado con el nº ${g.numero}`;
+    try {
+      if (pagar) await api(`/gastos/${g.id}/pagado`, { method: 'PATCH', body: { pagado: true, forma_pago: cuerpo.forma_pago } });
+      elegirMes(g.fecha.slice(0, 7));
       await cargar();
       $(`tr[data-id="${g.id}"]`)?.classList.add('fila-nueva');
-      $('.caja__titulo .nota', seccion).textContent = `Apuntado con el nº ${g.numero}`;
     } catch (err) {
-      mostrarErrores(errorForm, err, 'No se ha podido apuntar:');
+      mostrarErrores(errorForm, err, `Apuntado con el nº ${g.numero}, pero ${pagar ? 'no se ha podido marcar pagado' : 'no se ha podido recargar la lista'}:`);
     } finally {
       boton.disabled = false;
     }
@@ -2581,16 +3024,22 @@ async function paginaGastos() {
   let delMes = [];
   const fila = (g) => {
     const quien = g.proveedor_nombre ?? g.cliente_nombre ?? g.usuario_nombre;
+    // Los costes de la ficha del coche se llamaban todos «Desde la ficha del coche»: se nombran por lo que son
+    const COSTE_FICHA = { transporte: 'Transporte', taller: 'Taller', preparacion: 'Preparación y limpieza', impuestos: 'Impuestos y trámites' };
+    const titulo = g.coste_ficha && (!g.descripcion || g.descripcion === 'Desde la ficha del coche')
+      ? COSTE_FICHA[g.coste_ficha] ?? CONCEPTOS_GASTO[g.concepto]
+      : g.descripcion || CONCEPTOS_GASTO[g.concepto];
     const sub = [quien, g.factura_proveedor ? `fra. ${g.factura_proveedor}` : ''].filter(Boolean).join(' · ');
     const coche = g.vehiculo_id ? `<span class="nota">${esc(`${g.vehiculo_marca} ${g.vehiculo_modelo}`)} · <span class="matricula">${matricula(g.vehiculo_matricula)}</span></span>` : '';
     const iva = g.tipo === 'rebu' ? '<span class="nota">REBU</span>' : g.iva_pct ? euros2(g.iva_cent) : '<span class="nota">Sin IVA</span>';
+    // Los dos son botones: se pulsan dos veces (la primera pregunta) y se puede deshacer
     const pago = g.pagado_en
-      ? `<span class="estado cobro--cobrada" title="Pagado el ${esc(fechaCorta(g.pagado_en))}">Pagado</span>`
-      : `<button class="estado cobro--vencida gasto-pagar" type="button" data-pagar="${g.id}" title="Marcar pagado hoy">Sin pagar</button>`;
+      ? `<button class="estado cobro--cobrada gasto-pago" type="button" data-pago="${g.id}" data-pagado="0" data-texto="¿Quitar el pago?" title="Pagado el ${esc(fechaCorta(g.pagado_en))}">Pagado</button>`
+      : `<button class="estado cobro--vencida gasto-pago" type="button" data-pago="${g.id}" data-pagado="1" data-texto="¿Pagado hoy?">Sin pagar</button>`;
     return `<tr data-id="${g.id}"${g.pagado_en ? '' : ' class="fila-pendiente"'}>
         <td class="cifra gasto-registro" data-rotulo="Nº de registro">${g.numero}</td>
         <td class="cifra" data-rotulo="Fecha">${esc(new Date(`${g.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</td>
-        <td class="t-titulo"><span class="coche-celda"><b>${esc(g.descripcion || CONCEPTOS_GASTO[g.concepto])}</b>${sub ? `<span class="nota">${esc(sub)}</span>` : ''}${coche}</span></td>
+        <td class="t-titulo"><span class="coche-celda"><b class="dos-lineas" title="${esc(titulo)}">${esc(titulo)}</b>${sub ? `<span class="nota dos-lineas" title="${esc(sub)}">${esc(sub)}</span>` : ''}${coche}</span></td>
         <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--${esc(g.tipo)}">${esc(TIPOS_GASTO[g.tipo])}</span><span class="gasto-concepto">${esc(CONCEPTOS_GASTO[g.concepto])}</span></span></td>
         <td class="derecha cifra" data-rotulo="Sin IVA">${euros2(g.base_cent)}</td>
         <td class="derecha cifra" data-rotulo="IVA${g.iva_pct ? ` ${g.iva_pct} %` : ''}">${iva}</td>
@@ -2617,7 +3066,8 @@ async function paginaGastos() {
     celdas[0].textContent = tipo || concepto || pago ? 'Total con este filtro' : `Total de ${mes}`;
     celdas[1].textContent = euros2(suma(lista, 'base_cent'));
     celdas[2].textContent = euros2(suma(lista, 'iva_cent'));
-    celdas[3].textContent = `−${euros2(suma(lista, 'irpf_cent'))}`;
+    const irpf = suma(lista, 'irpf_cent');
+    celdas[3].textContent = irpf ? `−${euros2(irpf)}` : '—';
     celdas[4].innerHTML = `<b>${euros2(suma(lista, 'total_cent'))}</b>`;
   };
 
@@ -2655,21 +3105,53 @@ async function paginaGastos() {
   filtros.addEventListener('change', pintarLista);
   selMes.addEventListener('change', () => {
     history.replaceState(null, '', `?${new URLSearchParams({ mes: selMes.value, ...(soloCoche ? { vehiculo: soloCoche } : {}) })}`);
-    cargar();
+    cargar().catch((err) => mostrarErrores(errorLista, err, 'No se ha podido cargar el mes:'));
   });
-  // «Sin pagar» se pulsa y queda pagado hoy, con la forma de pago que tuviera
+  // «Sin pagar» → pagado hoy; «Pagado» → otra vez sin pagar. La primera pulsación pregunta.
+  const errorLista = document.createElement('div');
+  errorLista.className = 'error error--lista';
+  errorLista.setAttribute('role', 'alert');
+  errorLista.hidden = true;
+  $('.tabla-caja').before(errorLista);
   cuerpo.addEventListener('click', async (ev) => {
-    const boton = ev.target.closest('[data-pagar]');
+    const boton = ev.target.closest('[data-pago]');
     if (!boton) return;
+    if (!boton.dataset.seguro) {
+      const antes = boton.textContent;
+      boton.dataset.seguro = '1';
+      boton.textContent = boton.dataset.texto;
+      boton.classList.add('gasto-pago--pregunta');
+      setTimeout(() => { if (boton.isConnected && !boton.disabled) { delete boton.dataset.seguro; boton.textContent = antes; boton.classList.remove('gasto-pago--pregunta'); } }, 4000);
+      return;
+    }
     boton.disabled = true;
     try {
-      await api(`/gastos/${boton.dataset.pagar}/pagado`, { method: 'PATCH', body: { pagado: true } });
+      await api(`/gastos/${boton.dataset.pago}/pagado`, { method: 'PATCH', body: { pagado: boton.dataset.pagado === '1' } });
+      avisar(boton.dataset.pagado === '1' ? 'Marcado como pagado' : 'Pago quitado');
+      errorLista.hidden = true;
       await cargar();
     } catch (err) {
       boton.disabled = false;
-      mostrarErrores(errorForm, err, 'No se ha podido marcar pagado:');
+      mostrarErrores(errorLista, err, 'No se ha podido cambiar el pago:');
     }
   });
+
+  // En el móvil el formulario va plegado: si no, para ver la lista hay que bajar el formulario entero
+  if (matchMedia('(max-width: 760px)').matches) {
+    const abrir = document.createElement('button');
+    abrir.type = 'button';
+    abrir.className = 'boton gasto-form__abrir';
+    abrir.textContent = 'Apuntar un gasto';
+    form.before(abrir);
+    seccion.classList.add('gasto-form--plegado');
+    abrir.addEventListener('click', () => {
+      const plegado = seccion.classList.toggle('gasto-form--plegado');
+      abrir.textContent = plegado ? 'Apuntar un gasto' : 'Cerrar';
+      abrir.classList.toggle('boton--secundario', !plegado);
+      if (!plegado) form.elements.base.focus();
+    });
+    if (soloCoche || soloProveedor) abrir.click(); // viene a apuntar uno: abierto
+  }
 
   valoresIniciales();
   await cargar();
@@ -2699,11 +3181,14 @@ async function paginaIncentivos(usuario) {
   const bloque = $('.version-incentivos');
   const selMes = $('.cabecera__acciones select[name="mes"]');
   const hoy = new Date();
-  const mesActual = diaLocal(hoy).slice(0, 7);
+  // El mes en curso con el reloj de la API (UTC, como las ventas): el día 1 de madrugada aún no se liquida
+  const mesActual = hoy.toISOString().slice(0, 7);
   const meses = Array.from({ length: 12 }, (_, i) => diaLocal(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)).slice(0, 7));
   selMes.innerHTML = meses.map((m) => `<option value="${m}">${esc(mayuscula(nombreMes(m)))}${m === mesActual ? ' (en curso)' : ''}</option>`).join('');
   // Gerencia abre el último mes cerrado (el que se liquida); el comercial, el que lleva
-  selMes.value = MES_RE.test(params.get('mes') ?? '') ? params.get('mes') : gerencia ? meses[1] : meses[0];
+  const delEnlace = MES_RE.test(params.get('mes') ?? '') ? params.get('mes') : null;
+  if (delEnlace && !meses.includes(delEnlace)) selMes.add(new Option(mayuscula(nombreMes(delEnlace)), delEnlace));
+  selMes.value = delEnlace ?? (gerencia ? meses[1] : meses[0]);
   const anterior = (mes) => { const [a, m] = mes.split('-').map(Number); return diaLocal(new Date(a, m - 2, 1)).slice(0, 7); };
   const nombres = gerencia ? new Map((await api('/incentivos/reglas')).map((u) => [u.usuario_id, u.nombre])) : new Map();
   const cajaError = document.createElement('div');
@@ -2745,7 +3230,7 @@ async function paginaIncentivos(usuario) {
           <p class="incentivo__dato"><span class="rotulo">Importe</span><b class="cifra">${eurosRedondos(c.total_cent)}</b></p>
           <div class="incentivo__accion">${accion}</div>
         </div>
-        <form class="incentivo__regla" hidden>
+        <form class="incentivo__regla despliega" hidden>
           <label class="campo"><span class="campo__nombre">Regla</span>
             <select name="tipo"><option value="porcentaje_margen">Porcentaje del margen</option><option value="fijo_por_coche">Fijo por coche</option></select></label>
           <label class="campo"><span class="campo__nombre">Valor</span>
@@ -2854,6 +3339,7 @@ async function paginaIncentivos(usuario) {
       boton.disabled = true;
       try {
         await api('/incentivos/liquidar', { method: 'POST', body: { mes: datos.mes, usuario_id: Number(boton.dataset.liquidar) } });
+        avisar('Incentivo liquidado y apuntado en gastos');
         cajaError.hidden = true;
         await cargar();
       } catch (e) {
@@ -2872,6 +3358,7 @@ async function paginaIncentivos(usuario) {
       if (valor == null) return mostrarErrores(cajaErrorEn(form), { lista: ['El valor va como 5 o 5,5 (porcentaje) o 150 (euros)'] }, 'No se ha podido guardar:');
       try {
         await api(`/incentivos/reglas/${id}`, { method: 'PUT', body: { tipo: form.elements.tipo.value, valor } });
+        avisar('Regla guardada');
         await cargar();
       } catch (e) {
         mostrarErrores(cajaErrorEn(form), e, 'No se ha podido guardar:');
@@ -2930,6 +3417,7 @@ async function paginaProveedores() {
     lista.innerHTML = proveedores.map(tarjeta).join('');
     lista.hidden = !proveedores.length;
     vacio.hidden = !!proveedores.length;
+    if (!proveedores.length) ficha.hidden = true;
     $('.lista-pie__cuantos').textContent = `${proveedores.length} ${proveedores.length === 1 ? 'proveedor' : 'proveedores'}${q.trim() || tipo || clase ? ' con este filtro' : ''}`;
     if (!q.trim() && !tipo && !clase) {
       const activos = todos.filter((p) => p.activo);
@@ -2983,7 +3471,7 @@ async function paginaProveedores() {
         <div class="ficha-tercero__acciones">
           ${p.telefono || p.movil ? `<a class="boton boton--secundario boton--pequeno" href="tel:${esc((p.movil || p.telefono).replace(/[^\d+]/g, ''))}">Llamar</a>` : ''}
           <button class="boton boton--secundario boton--pequeno" type="button" data-editar>Editar datos</button>
-          <a class="boton boton--secundario boton--pequeno" href="gastos.html">Apuntar un gasto</a>
+          <a class="boton boton--secundario boton--pequeno" href="gastos.html?proveedor=${p.id}">Apuntar un gasto</a>
           <button class="boton boton--secundario boton--pequeno" type="button" data-activo="${p.activo ? 0 : 1}">${p.activo ? 'Desactivar' : 'Volver a activar'}</button>
         </div>
       </section>
@@ -2998,6 +3486,7 @@ async function paginaProveedores() {
       ev.target.disabled = true;
       try {
         await api(`/proveedores/${p.id}`, { method: 'PUT', body: { activo: ev.target.dataset.activo === '1' } });
+        avisar(ev.target.dataset.activo === '1' ? 'Proveedor activado' : 'Proveedor desactivado');
         await pintarLista();
         await abrir(p.id, { sinHistorial: true });
       } catch (e) {
@@ -3040,6 +3529,7 @@ async function paginaProveedores() {
       const guardado = editando
         ? await api(`/proveedores/${editando.id}`, { method: 'PUT', body: Object.fromEntries(Object.entries(datos).map(([k, v]) => [k, v === '' && k !== 'clase' ? null : v])) })
         : await api('/proveedores', { method: 'POST', body: datos });
+        avisar(editando ? 'Cambios guardados' : 'Proveedor dado de alta');
       limpiar();
       abierto = guardado.id;
       await pintarLista();
@@ -3065,10 +3555,10 @@ async function paginaProveedores() {
   filtros.addEventListener('input', (ev) => {
     if (ev.target.name !== 'q') return;
     clearTimeout(espera);
-    espera = setTimeout(pintarLista, 250);
+    espera = setTimeout(() => pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')), 250);
   });
-  filtros.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintarLista(); });
-  filtros.addEventListener('submit', (ev) => { ev.preventDefault(); pintarLista(); });
+  filtros.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')); });
+  filtros.addEventListener('submit', (ev) => { ev.preventDefault(); pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')); });
 
   ficha.hidden = true;
   await pintarLista();
@@ -3211,6 +3701,7 @@ const PAGINAS = {
     // Con los datos reales ya puestos, se enseña el contenido por partes (ver «.listo» en panel.css)
     entrarPorPartes();
     document.documentElement.classList.add('listo');
+    avisoPendiente();
   }
 })();
 

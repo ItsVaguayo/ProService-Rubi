@@ -124,3 +124,17 @@ test('CSV para el gestor: Excel en español y sin fórmulas coladas', () =>
     assert.ok(fila.includes('"Clio; 5p"'), 'el «;» de un dato no parte la columna');
     assert.ok(fila.includes(';12900,00;9500,00;REBU;676,86;2723,14;12'), 'coste, régimen, IVA de la venta y margen neto, con coma decimal; los días al final');
   }));
+
+test('evolución: los 12 meses que acaban en el pedido, con las mismas cifras que el resumen', () =>
+  conServidor(async ({ db, pide }) => {
+    await cocheCon(db, pide, { alta: 40, vendido: 0 });
+    const mes = mesDe(0);
+    const { json } = await pide(`/informes?mes=${mes}`);
+    assert.equal(json.evolucion.length, 12);
+    assert.equal(json.evolucion.at(-1).mes, mes, 'el último es el pedido');
+    assert.ok(json.evolucion.every((m, i, l) => !i || l[i - 1].mes < m.mes), 'del más antiguo al más nuevo');
+    const ultimo = json.evolucion.at(-1);
+    assert.deepEqual([ultimo.vendidos, ultimo.margen_cent, ultimo.facturado_cent], [json.resumen.vendidos, json.resumen.margen_cent, json.resumen.facturado_cent]);
+    assert.equal(ultimo.resultado_cent, json.resumen.resultado_cent);
+    assert.equal(json.evolucion[0].vendidos, 0, 'un mes sin ventas sale a 0, no falta');
+  }));

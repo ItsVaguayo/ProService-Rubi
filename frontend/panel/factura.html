@@ -3,6 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151515">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="../img/icono-apple.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Pro Service">
   <title>Factura · ProService</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,6 +23,10 @@
     <span class="documento-barra__acciones"></span>
   </nav>
   <div class="error error--lista no-imprimir documento-error" role="alert" hidden></div>
+
+  <!-- COBROS, solo en pantalla (no se imprime): lo cobrado, lo que queda, cuándo vence, cada cobro y
+       el formulario para apuntar otro. Lo rellena panel.js (pintarCobros). -->
+  <aside class="factura-cobros no-imprimir" aria-label="Cobros de la factura" hidden></aside>
 
   <!-- LA FACTURA, en A4. La rellena panel.js (paginaFactura) con GET /api/facturas/:id. Una emitida sale con
        la copia de los datos que se guardó al emitir; un borrador, con los de ahora y la marca de borrador. -->

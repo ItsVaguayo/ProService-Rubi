@@ -9,6 +9,8 @@ import { CASILLAS_COSTE } from '../margen.js';
 import { hoyLocal } from '../../fechas.js';
 
 export const CAMPOS_COSTE = CASILLAS_COSTE.map((k) => `coste_${k}_cent`);
+// Lo que se ve en el libro de gastos: qué fue, no de dónde vino (todos se llamaban «Desde la ficha del coche»)
+export const NOMBRE_COSTE = { transporte: 'Transporte', taller: 'Taller', preparacion: 'Preparación y limpieza', impuestos: 'Impuestos y trámites' };
 
 // Saca los costes de `datos` (para que no vayan a la tabla vehiculos) y los devuelve aparte
 export function separarCostes(datos) {
@@ -34,7 +36,7 @@ export function guardarCostes(db, vehiculoId, costes, usuarioId) {
       apuntarGasto(db, {
         fecha: hoyLocal(), tipo: 'vehiculo', concepto: 'vehiculos', vehiculo_id: vehiculoId,
         base_cent: base, iva_pct: casilla === 'impuestos' ? 0 : 21, irpf_pct: 0, coste_ficha: casilla,
-        descripcion: 'Desde la ficha del coche',
+        descripcion: NOMBRE_COSTE[casilla] ?? 'Coste de la ficha del coche',
       }, usuarioId);
     }
   }

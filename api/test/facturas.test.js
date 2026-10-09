@@ -241,3 +241,14 @@ test('libros: trimestre y año, el libro de gastos y los totales', () =>
       assert.equal((await pide(`/facturas/libros/gastos?${malo}`)).status, 400, malo);
     }
   }));
+
+test('lista de facturas filtrada por cliente', () =>
+  conServidor(async ({ db, pide }) => {
+    const a = Number(db.prepare("INSERT INTO clientes (nombre) VALUES ('Uno')").run().lastInsertRowid);
+    const b = Number(db.prepare("INSERT INTO clientes (nombre) VALUES ('Otro')").run().lastInsertRowid);
+    const jaume = db.prepare("SELECT id FROM usuarios WHERE rol = 'gerencia'").get().id;
+    const ins = db.prepare("INSERT INTO facturas (estado, fecha, cliente_id, precio_cent, base_cent, iva_cent, total_cent, creado_por) VALUES ('borrador', '2026-01-01', ?, 100, 100, 0, 100, ?)");
+    ins.run(a, jaume); ins.run(a, jaume); ins.run(b, jaume);
+    assert.equal((await pide(`/facturas?cliente=${a}`)).json.facturas.length, 2);
+    assert.equal((await pide('/facturas?cliente=x')).status, 400);
+  }));

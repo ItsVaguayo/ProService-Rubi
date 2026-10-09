@@ -349,3 +349,15 @@ test('si una reserva caducada falla al liberarse, las demás se liberan igual', 
     assert.equal((await pide(`/vehiculos/${ids[0]}`)).json.estado, 'reservado', 'la que falla se queda como estaba (su transacción se deshace)');
     assert.equal((await pide(`/vehiculos/${ids[1]}`)).json.estado, 'publicado', 'la otra se libera');
   }));
+
+test('peor caso: textos del coche con tope y gastos de la ficha con su nombre', () =>
+  conServidor(async ({ db, pide }) => {
+    const larga = 'x'.repeat(121);
+    const r = await pide('/vehiculos', { method: 'POST', body: { ...coche, version: larga } });
+    assert.equal(r.status, 400);
+    assert.match(r.json.error, /version es demasiado largo \(máximo 120/);
+    const ok = await pide('/vehiculos', { method: 'POST', body: { ...coche, version: '300 d Larga Avantgarde 4MATIC 7G-Tronic Plus 239 CV Edition', coste_taller_cent: 30000, coste_transporte_cent: 20000 } });
+    assert.equal(ok.status, 201);
+    const nombres = db.prepare('SELECT descripcion FROM gastos WHERE vehiculo_id = ? ORDER BY coste_ficha').all(ok.json.id).map((g) => g.descripcion);
+    assert.deepEqual(nombres, ['Taller', 'Transporte']);
+  }));

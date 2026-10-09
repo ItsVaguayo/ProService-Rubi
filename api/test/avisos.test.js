@@ -41,7 +41,7 @@ test('sin sesión, 401', () =>
     assert.equal((await pide('/avisos', { como: null })).status, 401);
   }));
 
-test('tareas vencidas: sin hacer y con fecha pasada; el comercial solo ve las suyas', () =>
+test('actividades vencidas: sin hacer y con fecha pasada, de cualquier tipo salvo nota; el comercial solo ve las suyas', () =>
   conServidor(async ({ db, pide }) => {
     const jaume = idDe(db, 'jaume@ejemplo.com');
     const comercial = idDe(db, 'comercial@ejemplo.com');
@@ -52,18 +52,19 @@ test('tareas vencidas: sin hacer y con fecha pasada; el comercial solo ve las su
     ins.run('tarea', cliente, 'Pedir el permiso', '2026-01-04 10:00', null, jaume, jaume);
     ins.run('tarea', cliente, 'Ya hecha', '2026-01-03 10:00', '2026-01-03 11:00:00', comercial, jaume);
     ins.run('tarea', cliente, 'Futura', '2099-01-01 10:00', null, comercial, jaume);
-    ins.run('llamada', cliente, 'Una llamada, no una tarea', '2026-01-02 10:00', null, comercial, jaume);
+    ins.run('llamada', cliente, 'Devolverle la llamada', '2026-01-02 10:00', null, comercial, jaume);
+    ins.run('nota', cliente, 'Una nota no se «hace»', '2026-01-01 10:00', null, comercial, jaume);
 
     const gerencia = deTipo((await pide('/avisos')).json, 'tareas_vencidas');
-    assert.deepEqual(gerencia.map((a) => a.fecha), ['2026-01-04 10:00', '2026-01-05 10:00'], 'de la más vieja a la más nueva');
-    assert.deepEqual(gerencia[1], {
+    assert.deepEqual(gerencia.map((a) => a.fecha), ['2026-01-02 10:00', '2026-01-04 10:00', '2026-01-05 10:00'], 'de la más vieja a la más nueva');
+    assert.equal(gerencia[0].texto, 'Llamada vencida: Devolverle la llamada (Laura Gil) · Comercial', 'cada tipo con su nombre');
+    assert.deepEqual(gerencia[2], {
       tipo: 'tareas_vencidas', gravedad: 'alta', texto: 'Tarea vencida: Llamar por la financiación (Laura Gil) · Comercial',
       enlace: `clientes.html?id=${cliente}`, fecha: '2026-01-05 10:00',
     });
 
     const suyas = deTipo((await pide('/avisos', { como: 'comercial' })).json, 'tareas_vencidas');
-    assert.equal(suyas.length, 1);
-    assert.equal(suyas[0].texto, 'Tarea vencida: Llamar por la financiación (Laura Gil)');
+    assert.deepEqual(suyas.map((a) => a.texto), ['Llamada vencida: Devolverle la llamada (Laura Gil)', 'Tarea vencida: Llamar por la financiación (Laura Gil)']);
   }));
 
 test('tareas vencidas: de hoy, media; el enlace lleva al cliente, al contacto o al CRM', (t) => {

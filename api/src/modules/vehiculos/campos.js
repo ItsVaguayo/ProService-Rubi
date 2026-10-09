@@ -10,9 +10,9 @@ export const CAMPOS = {
   // 3.1 Identificación
   matricula: { tipo: 'texto', normalizar: 'codigo' },
   bastidor: { tipo: 'texto', normalizar: 'codigo' },
-  marca: { tipo: 'texto' },
-  modelo: { tipo: 'texto' },
-  version: { tipo: 'texto' },
+  marca: { tipo: 'texto', max: 40 },
+  modelo: { tipo: 'texto', max: 60 },
+  version: { tipo: 'texto', max: 120 }, // sin tope, una versión pegada de otro sitio rompía la ficha y la factura
   anio: { tipo: 'entero' },
   fecha_matriculacion: { tipo: 'fecha' },
   kilometros: { tipo: 'entero' },
@@ -128,6 +128,7 @@ export function limpiarDatos(cuerpo, { parcial = false, puedeDinero = false } = 
     switch (def.tipo) {
       case 'texto':
         if (typeof valor !== 'string') errores.push(`${campo} tiene que ser texto`);
+        else if (def.max && valor.trim().length > def.max) errores.push(`${campo} es demasiado largo (máximo ${def.max} caracteres)`);
         else datos[campo] = def.normalizar === 'codigo' ? normalizarCodigo(valor) : valor.trim();
         break;
       case 'entero':

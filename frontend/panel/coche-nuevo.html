@@ -3,6 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151515">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="../img/icono-apple.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Pro Service">
   <title>Alta de vehículo · ProService</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,15 +52,19 @@
 
   <main class="contenido">
 
-    <!-- PORTADA. La misma del tablero, en corto. -->
-    <header class="portada portada--corta">
-      <p class="portada__antetitulo">Stock</p>
-      <h1 class="portada__titular portada__titular--medio">Alta de vehículo</h1>
-      <p class="portada__texto">Con matrícula, marca y modelo ya se guarda y entra en «Pendiente de recoger». El resto lo completas antes de publicarlo. Las fotos se suben desde su ficha.</p>
-      <ul class="portada__leyenda">
-        <li><em>*</em> Obligatorio para guardar</li>
-        <li><i class="marca-publicar"></i> Hace falta para publicar</li>
-      </ul>
+    <!-- CABECERA en banda negra, como el resto de páginas: título a la izquierda, leyenda a la derecha -->
+    <header class="cabecera cabecera--portada">
+      <div>
+        <p class="portada__antetitulo">Stock</p>
+        <h1>Alta de vehículo</h1>
+        <p class="nota">Con matrícula, marca y modelo ya se guarda y entra en «Pendiente de recoger». El resto lo completas antes de publicarlo. Las fotos se suben desde su ficha.</p>
+      </div>
+      <div class="cabecera__acciones">
+        <ul class="portada__leyenda">
+          <li><em>*</em> Obligatorio para guardar</li>
+          <li><i class="marca-publicar"></i> Hace falta para publicar</li>
+        </ul>
+      </div>
     </header>
 
     <!-- IMPORTANTE: el "name" de cada campo es el nombre que espera la API
@@ -111,15 +120,15 @@
           </label>
           <label class="campo campo--publicar">
             <span class="campo__nombre">Marca <em>*</em></span>
-            <input name="marca" required list="marcas">
+            <input name="marca" required list="marcas" maxlength="40">
           </label>
           <label class="campo campo--publicar">
             <span class="campo__nombre">Modelo <em>*</em></span>
-            <input name="modelo" required>
+            <input name="modelo" required maxlength="60">
           </label>
           <label class="campo campo--publicar">
             <span class="campo__nombre">Versión o acabado</span>
-            <input name="version" placeholder="1.5 TSI Style">
+            <input name="version" placeholder="1.5 TSI Style" maxlength="120">
           </label>
           <label class="campo campo--publicar">
             <span class="campo__nombre">Año</span>
