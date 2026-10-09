@@ -48,7 +48,7 @@ export function encolarAvisosDelDia(db, cfg, { ahora = new Date(), calcular = ca
   const resto = avisos.filter((a) => a.gravedad !== 'alta');
   const cuerpo = [
     ...bloque('Urgente', urgentes),
-    ...bloque('Para esta semana', resto),
+    ...bloque('Pendiente', resto),
     enlace(cfg.panel, 'avisos.html') ?? 'Todos los avisos están en el panel.',
   ].join('\n');
   return encolar(db, {

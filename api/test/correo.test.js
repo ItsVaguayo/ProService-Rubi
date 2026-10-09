@@ -96,7 +96,7 @@ test('correo: el resumen de avisos sale una vez al día, a partir de la hora, y 
     assert.equal(c.asunto, 'Avisos del 09/10/2026: 1 urgente, 2 en total');
     assert.equal(c.cuerpo, [
       'Urgente (1)', '- Seat Ibiza 1234 BCD: la ITV caducó el 07/10/2026', '  https://stock.ejemplo.com/panel/coche.html?id=12', '',
-      'Para esta semana (1)', '- Peugeot 208 4321 JKL lleva 71 días publicado', '  https://stock.ejemplo.com/panel/coche.html?id=3', '',
+      'Pendiente (1)', '- Peugeot 208 4321 JKL lleva 71 días publicado', '  https://stock.ejemplo.com/panel/coche.html?id=3', '',
       'https://stock.ejemplo.com/panel/avisos.html',
     ].join('\n'));
   }));

@@ -1,7 +1,7 @@
 // Dueño: Victor. Avisos del panel (ampliación del 7-oct, bloque 9, T16). Solo lee: no tiene tablas.
 //   GET /api/avisos → los dos roles. Gerencia lo ve todo. El comercial, sus tareas y los avisos de coches y
 //                     contactos: nunca los cobros vencidos ni ningún importe (como en incentivos).
-// El correo diario sale de aquí (correo/diario.js). Las citas de mañana, cuando exista su tabla.
+// El correo diario sale de aquí (correo/mensajes.js). Las citas de mañana, cuando exista su tabla.
 import { Router } from 'express';
 import { ZONA, hoyLocal } from '../../fechas.js';
 import { estadoCobro } from '../facturacion/routes.js';
@@ -43,7 +43,7 @@ function instanteLocal(s) {
   return comoUtc - (enRubi - comoUtc);
 }
 
-// Prepara las consultas una vez y devuelve (usuario) => avisos. La usan la ruta y el correo diario (correo/diario.js).
+// Prepara las consultas una vez y devuelve (usuario) => avisos. La usan la ruta y el correo diario (correo/mensajes.js).
 export function calculadorDeAvisos(db) {
   const consultas = {
     // programada_para va en hora de Rubí; hecha_en vacía = pendiente
