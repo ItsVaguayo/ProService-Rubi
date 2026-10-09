@@ -2500,6 +2500,9 @@ a.contacto__coche:hover { background: var(--fondo); }
 .gasto-form__campos--tipo:not(:has(input[name="tipo"][value="vehiculo"]:checked, input[name="tipo"][value="rebu"]:checked)) .solo-coche { display: none; }
 .gasto-form__campos--tipo:not(:has(input[name="tipo"][value="irpf"]:checked)) .solo-irpf { display: none; }
 .solo-irpf .campo__nombre { color: var(--preparacion); }
+/* A quién: el desplegable de proveedores o el de clientes */
+.gasto-form__campos:has(input[name="quien"][value="cliente"]:checked) .gasto-form__proveedor,
+.gasto-form__campos:not(:has(input[name="quien"][value="cliente"]:checked)) .gasto-form__cliente { display: none; }
 
 /* Filtro por concepto, junto a los segmentos */
 .filtros--gastos .filtros-gastos__concepto { min-width: 0; }

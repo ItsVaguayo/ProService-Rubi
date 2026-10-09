@@ -5,7 +5,9 @@
        tipo      tareas_vencidas · contactos_sin_atender · coches_parados · vendidos_publicados · itv · cobros_vencidos
        gravedad  alta · media
        texto     corto, para la pantalla (se pinta tal cual)
-       enlace    la página del panel a la que lleva (factura.html?id=, coche.html?id=, contactos.html, crm.html)
+       enlace    la página del panel a la que lleva: factura.html?id=, coche.html?id=, contactos.html?id=
+                 (el contacto sin atender o la tarea de un contacto), clientes.html?id= (la tarea de un
+                 cliente) o crm.html (la tarea que no es de nadie)
        fecha     la que lo origina: «AAAA-MM-DD HH:MM:SS» en UTC, «AAAA-MM-DD HH:MM» en hora de Rubí
                  (tareas) o «AAAA-MM-DD» (ITV y vencimiento)
      Vienen ya ordenados: «alta» primero y, dentro de cada gravedad, del más antiguo al más nuevo.
@@ -73,7 +75,7 @@
         <p class="portada__mes-titulo">Pendiente</p>
         <dl class="portada__cifras">
           <div><dt>Urgentes<small>Cobros, contactos, ITV caducada</small></dt><dd class="cifra">5</dd></div>
-          <div><dt>Esta semana<small>Coches parados, ITV próxima</small></dt><dd class="cifra">3</dd></div>
+          <div><dt>Pendiente<small>Coches parados, ITV próxima</small></dt><dd class="cifra">3</dd></div>
         </dl>
       </div>
     </header>
@@ -83,7 +85,7 @@
       <fieldset class="segmentos" aria-label="Gravedad">
         <label><input type="radio" name="gravedad" value="" checked><span>Todos <span class="segmentos__n">8</span></span></label>
         <label><input type="radio" name="gravedad" value="alta"><span>Urgentes <span class="segmentos__n">5</span></span></label>
-        <label><input type="radio" name="gravedad" value="media"><span>Esta semana <span class="segmentos__n">3</span></span></label>
+        <label><input type="radio" name="gravedad" value="media"><span>Pendiente <span class="segmentos__n">3</span></span></label>
       </fieldset>
     </form>
 
@@ -129,13 +131,13 @@
             <p class="aviso__texto">Marta Ruiz escribió por la web (financiación) y sigue sin atender</p>
             <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--contacto"></i>Contacto sin atender</span><span>Escribió el <time datetime="2026-10-06 17:42:10">6 oct a las 19:42</time>, hace 38 horas</span></p>
           </div>
-          <a class="boton boton--secundario boton--pequeno aviso__accion" href="contactos.html">Ver contacto</a>
+          <a class="boton boton--secundario boton--pequeno aviso__accion" href="contactos.html?id=31">Ver contacto</a>
         </li>
       </ul>
     </section>
 
     <section class="avisos-grupo" aria-labelledby="avisos-media">
-      <h2 class="avisos-grupo__titulo" id="avisos-media">Esta semana <span class="avisos-grupo__n">3</span></h2>
+      <h2 class="avisos-grupo__titulo" id="avisos-media">Pendiente <span class="avisos-grupo__n">3</span></h2>
       <ul class="avisos">
         <li class="aviso aviso--media" data-tipo="coches_parados">
           <div>
@@ -149,7 +151,7 @@
             <p class="aviso__texto">Tarea vencida: Llamar por la financiación (Pau Serra) · Marc</p>
             <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--tarea"></i>Tarea</span><span>Hoy a las <time datetime="2026-10-08 09:30">9:30</time></span></p>
           </div>
-          <a class="boton boton--secundario boton--pequeno aviso__accion" href="crm.html">Ver en el CRM</a>
+          <a class="boton boton--secundario boton--pequeno aviso__accion" href="clientes.html?id=5">Ver cliente</a>
         </li>
         <li class="aviso aviso--media" data-tipo="itv">
           <div>
@@ -203,13 +205,13 @@
               <p class="aviso__texto">Marta Ruiz escribió por la web (financiación) y sigue sin atender</p>
               <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--contacto"></i>Contacto sin atender</span><span>Escribió el <time datetime="2026-10-06 17:42:10">6 oct a las 19:42</time>, hace 38 horas</span></p>
             </div>
-            <a class="boton boton--secundario boton--pequeno aviso__accion" href="contactos.html">Ver contacto</a>
+            <a class="boton boton--secundario boton--pequeno aviso__accion" href="contactos.html?id=31">Ver contacto</a>
           </li>
         </ul>
       </section>
 
       <section class="avisos-grupo" aria-labelledby="avisos-comercial-media">
-        <h2 class="avisos-grupo__titulo" id="avisos-comercial-media">Esta semana <span class="avisos-grupo__n">3</span></h2>
+        <h2 class="avisos-grupo__titulo" id="avisos-comercial-media">Pendiente <span class="avisos-grupo__n">3</span></h2>
         <ul class="avisos">
           <li class="aviso aviso--media" data-tipo="coches_parados">
             <div>
@@ -223,7 +225,7 @@
               <p class="aviso__texto">Tarea vencida: Llamar por la financiación (Pau Serra)</p>
               <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--tarea"></i>Tarea</span><span>Hoy a las <time datetime="2026-10-08 09:30">9:30</time></span></p>
             </div>
-            <a class="boton boton--secundario boton--pequeno aviso__accion" href="crm.html">Ver en el CRM</a>
+            <a class="boton boton--secundario boton--pequeno aviso__accion" href="clientes.html?id=5">Ver cliente</a>
           </li>
           <li class="aviso aviso--media" data-tipo="itv">
             <div>

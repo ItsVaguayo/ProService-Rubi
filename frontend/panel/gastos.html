@@ -114,7 +114,14 @@
          En el panel real es UN solo formulario. En la maqueta van dos seguidos para ver los dos casos:
          «Gasto general» y «Gasto con IRPF». Lo que depende del tipo se enseña con :has, sin JavaScript:
          - la retención solo sale con «Gasto con IRPF»;
-         - el coche solo sale con «Gasto vehículo» y «Factura con REBU». -->
+         - el coche solo sale con «Gasto vehículo» y «Factura con REBU»;
+         - con «A quién: Cliente» sale el desplegable de clientes en vez del de proveedores.
+         Al conectarlo (POST /api/gastos, ver docs/api.md), panel.js traduce así:
+         - base (euros, «120,00») → base_cent (céntimos). IVA, IRPF y total los calcula el servidor:
+           el importe retenido es solo para mirar y no lleva name.
+         - quien no se envía: solo decide si va proveedor_id o cliente_id.
+         - «Ya está pagado» no va en el alta: después, PATCH /api/gastos/:id/pagado
+           { pagado: true, forma_pago }. Con la casilla sin marcar, forma_pago va en el alta (cómo se pagará). -->
 
     <!-- Formulario 1 de 2: GASTO GENERAL -->
     <section class="caja gasto-form" aria-labelledby="gasto-titulo">
@@ -156,7 +163,7 @@
           <label><input type="radio" name="quien" value="proveedor" checked><span>Proveedor</span></label>
           <label><input type="radio" name="quien" value="cliente"><span>Cliente</span></label>
         </fieldset>
-        <label class="campo gasto-form__tercero">
+        <label class="campo gasto-form__tercero gasto-form__proveedor">
           <span class="campo__nombre">Proveedor <em>*</em></span>
           <select name="proveedor_id">
             <option value="">Elige el proveedor</option>
@@ -164,6 +171,15 @@
             <option>Coches.net</option>
             <option>Elèctrica del Vallès</option>
             <option>Tallers Can Fatjó</option>
+          </select>
+        </label>
+        <label class="campo gasto-form__tercero gasto-form__cliente">
+          <span class="campo__nombre">Cliente <em>*</em></span>
+          <select name="cliente_id">
+            <option value="">Elige el cliente</option>
+            <option>Laura Gil Ferrer</option>
+            <option>Pau Serra Vidal</option>
+            <option>Reformas Vallès SL</option>
           </select>
         </label>
         <label class="campo solo-coche">
@@ -190,6 +206,17 @@
             <option value="10">10 %</option>
             <option value="4">4 %</option>
             <option value="0">Sin IVA</option>
+          </select>
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Forma de pago</span>
+          <select name="forma_pago">
+            <option value="transferencia">Transferencia</option>
+            <option value="contado">Contado</option>
+            <option value="tarjeta" selected>Tarjeta</option>
+            <option value="a_la_vista">A la vista</option>
+            <option value="pago_30">Pago a 30 días</option>
+            <option value="pago_30_60">Pago a 30 y 60 días</option>
           </select>
         </label>
         <div class="gasto-form__pie">
@@ -240,13 +267,22 @@
           <label><input type="radio" name="quien" value="proveedor" checked><span>Proveedor</span></label>
           <label><input type="radio" name="quien" value="cliente"><span>Cliente</span></label>
         </fieldset>
-        <label class="campo gasto-form__tercero">
+        <label class="campo gasto-form__tercero gasto-form__proveedor">
           <span class="campo__nombre">Proveedor <em>*</em></span>
           <select name="proveedor_id">
             <option value="">Elige el proveedor</option>
             <option selected>Gestoria Arboç</option>
             <option>Finques Rubí SL</option>
             <option>Advocats Soler</option>
+          </select>
+        </label>
+        <label class="campo gasto-form__tercero gasto-form__cliente">
+          <span class="campo__nombre">Cliente <em>*</em></span>
+          <select name="cliente_id">
+            <option value="">Elige el cliente</option>
+            <option>Laura Gil Ferrer</option>
+            <option>Pau Serra Vidal</option>
+            <option>Reformas Vallès SL</option>
           </select>
         </label>
         <label class="campo solo-coche">
@@ -275,6 +311,17 @@
             <option value="0">Sin IVA</option>
           </select>
         </label>
+        <label class="campo">
+          <span class="campo__nombre">Forma de pago</span>
+          <select name="forma_pago">
+            <option value="transferencia" selected>Transferencia</option>
+            <option value="contado">Contado</option>
+            <option value="tarjeta">Tarjeta</option>
+            <option value="a_la_vista">A la vista</option>
+            <option value="pago_30">Pago a 30 días</option>
+            <option value="pago_30_60">Pago a 30 y 60 días</option>
+          </select>
+        </label>
         <!-- RETENCIÓN: solo con «Gasto con IRPF». Los % son los que tiene Pymecar. -->
         <label class="campo solo-irpf">
           <span class="campo__nombre">Retención IRPF</span>
@@ -286,7 +333,7 @@
         </label>
         <label class="campo solo-irpf">
           <span class="campo__nombre">Importe retenido</span>
-          <span class="con-unidad" data-unidad="€"><input name="irpf" inputmode="decimal" value="27,00" readonly></span>
+          <span class="con-unidad" data-unidad="€"><input inputmode="decimal" value="27,00" readonly aria-label="Importe retenido"></span>
         </label>
         <div class="gasto-form__pie">
           <label class="casilla"><input type="checkbox" name="pagado"> Ya está pagado</label>
