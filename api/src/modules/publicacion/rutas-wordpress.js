@@ -3,6 +3,8 @@ import { Router } from 'express';
 import { configDesdeEntorno, diagnosticar, sincronizar, vincular } from './wordpress.js';
 // Engancha la retirada al vender en alCambiarEstado. Va aquí porque app.js ya carga este módulo.
 import './retirada.js';
+import { traerFotosDeLaWeb, ErrorFotosWeb } from './fotos-web.js';
+import { ENTERO } from '../../fechas.js';
 
 export function rutasWordPress(db) {
   const r = Router();
@@ -40,6 +42,45 @@ export function rutasWordPress(db) {
       res.json({ ok: true });
     } catch (e) {
       res.status(400).json({ error: e.message });
+    }
+  });
+
+  // Fotos desde la ficha de la web, para los coches del stock que llegan de Pymecar sin fotos (fotos-web.js).
+  // Uno: POST /fotos/:vehiculoId. Todos los vinculados que aún no tienen ninguna: POST /fotos.
+  r.post('/fotos/:vehiculoId', async (req, res, next) => {
+    if (!ENTERO.test(req.params.vehiculoId)) return res.status(404).json({ error: 'No existe' });
+    const cfg = config(res);
+    if (!cfg) return;
+    try {
+      res.json(await traerFotosDeLaWeb(db, cfg, Number(req.params.vehiculoId), { usuarioId: req.usuario.id }));
+    } catch (e) {
+      if (e instanceof ErrorFotosWeb) return res.status(e.status).json({ error: e.message });
+      if (e.status !== undefined) return res.status(502).json({ error: `WordPress: ${e.message}` }); // ErrorWordPress
+      next(e);
+    }
+  });
+
+  r.post('/fotos', async (req, res, next) => {
+    const cfg = config(res);
+    if (!cfg) return;
+    const pendientes = db.prepare(`SELECT w.vehiculo_id, v.referencia FROM wp_posts w JOIN vehiculos v ON v.id = w.vehiculo_id
+                                    WHERE NOT EXISTS (SELECT 1 FROM fotos f WHERE f.vehiculo_id = w.vehiculo_id) ORDER BY w.vehiculo_id`).all();
+    const resultado = { coches: 0, fotos: 0, errores: [] };
+    try {
+      for (const p of pendientes) {
+        try {
+          const { traidas, saltadas } = await traerFotosDeLaWeb(db, cfg, p.vehiculo_id, { usuarioId: req.usuario.id });
+          resultado.coches++;
+          resultado.fotos += traidas;
+          if (saltadas.length) resultado.errores.push(`${p.referencia}: ${saltadas.length} sin bajar (${saltadas.join('; ')})`);
+        } catch (e) {
+          if (!(e instanceof ErrorFotosWeb) && e.status === undefined) throw e;
+          resultado.errores.push(`${p.referencia}: ${e.message}`);
+        }
+      }
+      res.json(resultado);
+    } catch (e) {
+      next(e);
     }
   });
 

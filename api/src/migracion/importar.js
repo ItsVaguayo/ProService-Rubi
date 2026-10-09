@@ -18,6 +18,7 @@ import { normalizarNif } from '../modules/terceros/fiscal.js';
 import { ESTADOS, ESTADOS_WEB } from '../modules/estados.js';
 import { diaValido } from '../fechas.js';
 import { registrar } from '../modules/auditoria.js';
+import { importarFacturas } from './facturas.js';
 
 const IDS_ESTADO = ESTADOS.map((e) => e.id);
 // En la plantilla el dinero va en euros, como en Excel: «pvp» y no «pvp_cent»
@@ -180,15 +181,17 @@ function importarCoches(db, filas, informe) {
 }
 
 /**
- * Carga lo que llega: { proveedores, clientes, vehiculos }, cada uno una lista de filas de leerCsv (o vacía).
+ * Carga lo que llega: { proveedores, clientes, vehiculos, facturas }, cada uno una lista de filas de leerCsv (o
+ * vacía). `usuarioId`: el de gerencia a cuyo nombre quedan las facturas (creado_por y emitida_por).
  * Devuelve el informe: cuántos entran, cuántos ya estaban, errores y avisos por fila, y si se guardó.
  */
-export function importar(db, { proveedores = [], clientes = [], vehiculos = [] }, { ensayo = true } = {}) {
+export function importar(db, { proveedores = [], clientes = [], vehiculos = [], facturas = [] }, { ensayo = true, usuarioId = null } = {}) {
   const informe = {
     ensayo, aplicado: false,
     proveedores: { leidos: proveedores.length, nuevos: 0, ya_estaban: 0 },
     clientes: { leidos: clientes.length, nuevos: 0, ya_estaban: 0 },
     vehiculos: { leidos: vehiculos.length, nuevos: 0, ya_estaban: 0, vendidos: 0 },
+    facturas: { leidos: facturas.length, nuevos: 0, ya_estaban: 0, cobros: 0 },
     errores: [], avisos: [],
   };
   try {
@@ -196,6 +199,7 @@ export function importar(db, { proveedores = [], clientes = [], vehiculos = [] }
       importarTerceros(db, proveedores, { tabla: 'proveedores', campos: CAMPOS_PROVEEDOR, informe });
       importarTerceros(db, clientes, { tabla: 'clientes', campos: CAMPOS_CLIENTE, informe });
       importarCoches(db, vehiculos, informe);
+      importarFacturas(db, facturas, { informe, usuarioId, eurosACent, dia });
       if (ensayo || informe.errores.length) throw new Ensayo(); // deshace todo
     })();
     informe.aplicado = true;

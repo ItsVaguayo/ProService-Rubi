@@ -318,7 +318,7 @@ Nadie se borra: se desactiva, y su nombre sigue en el historial. Nadie puede des
 
 ## Publicación en WordPress (solo gerencia)
 
-Necesita `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION`; sin ellas, 503. Detalles en `wordpress-pruebas/README.md`.
+Necesita `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION`; sin ellas, 503. Detalles en `wordpress-pruebas/README.md`. Cada foto traída de la web queda apuntada con su id de WordPress (`wp_medios`): al sincronizar no se vuelve a subir.
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
@@ -326,6 +326,8 @@ Necesita `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION`; sin ellas, 503. Detalle
 | `POST /wordpress/sincronizar` | gerencia | Publica, actualiza y retira. `{ forzar: true }` permite retirar aunque no quede ningún coche a la venta |
 | `GET /wordpress/estado` | gerencia | Cada coche con su post de WordPress y el último error |
 | `POST /wordpress/vincular` | gerencia | `{ vehiculo_id, wp_post_id }` une un coche con una ficha que ya existía en la web |
+| `POST /wordpress/fotos/:vehiculoId` | gerencia | Baja las fotos de la ficha de la web de un coche vinculado que **aún no tiene ninguna** (los del stock que llegan de Pymecar). Primero la destacada, después la galería de ACF si la web la expone y, si no, las adjuntas a la ficha por orden de subida, hasta 25. Las reduce como las del panel. Solo del dominio de la web. `{ traidas, saltadas }`. Sin vincular o con fotos ya: 409 |
+| `POST /wordpress/fotos` | gerencia | Lo mismo con todos los coches vinculados que no tienen fotos. `{ coches, fotos, errores }` |
 
 ## Portales (Coches.net, Milanuncios y Wallapop)
 

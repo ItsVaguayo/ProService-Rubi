@@ -16,7 +16,7 @@ export const FOTOS_MAXIMAS = 25; // 4.1: como mucho 25
 const ANCHO_MAXIMO = 1600; // px: de sobra para la web y los portales
 const CALIDAD_JPEG = 82;
 const MB = 1024 * 1024;
-const MB_POR_FOTO = 15;
+export const MB_POR_FOTO = 15;
 
 // El sharp que se instala con npm no abre HEIC, el formato de las fotos del iPhone
 const esHeic = (f) => /^image\/hei[cf]/.test(f.mimetype) || /\.hei[cf]$/i.test(f.originalname);
@@ -31,6 +31,14 @@ export const versionFoto = (f) => `${f.ruta_photocall || f.ruta_original}@${f.cr
 const conUrl = (f) => ({ ...f, url: `/api/fotos/${f.vehiculo_id}/${f.id}/archivo?v=${encodeURIComponent(versionFoto(f))}` });
 
 const esEntero = (v) => Number.isInteger(v) && v > 0;
+
+// Cualquier imagen → JPG de 1.600 px como mucho, enderezado. También la usan las fotos traídas de la web
+// (publicacion/fotos-web.js). Lanza un error si el fichero no es una imagen que se pueda abrir.
+export const reducirImagen = (buffer) => sharp(buffer)
+  .rotate() // endereza según el EXIF del móvil
+  .resize({ width: ANCHO_MAXIMO, height: ANCHO_MAXIMO, fit: 'inside', withoutEnlargement: true })
+  .jpeg({ quality: CALIDAD_JPEG, mozjpeg: true })
+  .toBuffer();
 
 // Una foto cuenta para la web si es pública y no es de daños.
 const cuentaParaLaWeb = (f) => f.publica === 1 && f.es_dano === 0;
@@ -105,13 +113,7 @@ export function rutasFotos(db) {
     const reducidas = [];
     try {
       for (const f of ficheros) {
-        reducidas.push(
-          await sharp(f.buffer)
-            .rotate() // endereza según el EXIF del móvil
-            .resize({ width: ANCHO_MAXIMO, height: ANCHO_MAXIMO, fit: 'inside', withoutEnlargement: true })
-            .jpeg({ quality: CALIDAD_JPEG, mozjpeg: true })
-            .toBuffer(),
-        );
+        reducidas.push(await reducirImagen(f.buffer));
         f.buffer = null;
       }
     } catch {
