@@ -21,12 +21,12 @@ Todo va bajo `/api`, en JSON. La sesión es una cookie (`ps_sesion`, httpOnly) q
 
 ## Coches
 
-Campos que se pueden escribir: los de `api/src/modules/vehiculos/campos.js` y ninguno más (un campo desconocido da 400). Los marcados `dinero: true` solo los escribe y los recibe gerencia: compra, costes, precio mínimo, régimen de IVA, datos del dueño en depósito y proveedor.
+Campos que se pueden escribir: los de `api/src/modules/vehiculos/campos.js` y ninguno más (un campo desconocido da 400). Los marcados `dinero: true` solo los escribe y los recibe gerencia: compra, costes, precio mínimo, régimen de IVA, datos del dueño en depósito y proveedor. `video_url` tiene que ser un enlace `http` o `https` (otro esquema, como `javascript:`, da 400).
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
 | `GET /vehiculos/estados` | con sesión | Los 10 estados en orden, con `web: true` en los que salen en la web |
-| `GET /vehiculos?estado=publicado` | con sesión | Lista, del más nuevo al más viejo. Cada coche lleva además `en_estado_desde`, `foto_portada_id` y `n_fotos` |
+| `GET /vehiculos?estado=publicado` | con sesión | Lista, del más nuevo al más viejo. Cada coche lleva además `en_estado_desde`, `foto_portada_id` y `n_fotos`. Un `estado` que no existe da 400 |
 | `GET /vehiculos/:id` | con sesión | La ficha. Gerencia recibe también `coste_otros_cent`, `coste_total_cent`, `iva_venta_cent`, `margen_bruto_cent` y `margen_cent` (el neto). Ver «Coste y margen» |
 | `POST /vehiculos` | con sesión | Alta. Basta con `matricula`, `marca` y `modelo`. Entra en «Pendiente de recoger». 201 con la ficha |
 | `PUT /vehiculos/:id` | con sesión | Cambia solo lo que llega. **Si el coche sale en la web** (publicado, reservado o vendido), la edición no puede vaciar ninguno de los datos de publicar que tenía: 409 con la lista. Si ya le faltaba alguno de antes, se le deja editar lo demás |
@@ -214,7 +214,7 @@ En `api/src/modules/facturacion`. Verifactu queda para octubre de 2028 (duda H1)
 | `GET /facturas/:id` | Una, con sus `cobros` |
 | `POST /facturas` | Borrador. Obligatorio `cliente_id`; normalmente `vehiculo_id`. Del coche salen, si no llegan, `precio_cent` (su PVP) y `regimen` (`REBU`, o `general` si el coche es `deducible`; el depósito, siempre REBU). Opcionales: `fecha` (hoy), `vencimiento`, `suplidos_cent`, `forma_pago`, `uso_destino`, `garantia_tipo` (`directa`, `comprada`, `sin`), `garantia_meses` (0-36), `km_entrega`, `observaciones`. 201 |
 | `PUT /facturas/:id` · `DELETE /facturas/:id` | Solo un borrador (emitida: 409). Los importes se recalculan |
-| `POST /facturas/:id/emitir` | Le da número (serie del año: `V26-00039`), congela una copia de la empresa, el cliente y el coche (`datos_*`) y pone al cliente como comprador del coche. 409 con `faltan` si falta la dirección fiscal de la empresa, el NIF o la dirección del cliente, el coche o su precio de compra (REBU). 409 si el coche ya está en otra factura sin rectificar o si la fecha es anterior a la última de la serie |
+| `POST /facturas/:id/emitir` | Le da número (serie del año: `V26-00039`), congela una copia de la empresa, el cliente y el coche (`datos_*`) y pone al cliente como comprador del coche. 409 con `faltan` si falta la dirección fiscal de la empresa, el NIF o la dirección del cliente, el coche o su precio de compra (REBU). 409 si el coche ya está en otra factura sin rectificar, si la fecha es anterior a la última de la serie o si es posterior a hoy |
 | `POST /facturas/:id/rectificar` | `{ motivo }`. Rectificativa por el total, en la serie `R26`, con fecha de hoy e importes en negativo. La original queda `anulada` |
 | `POST /facturas/:id/cobros` | `{ importe_cent, forma_pago, fecha?, nota? }` o `{ senal: true }`, que aplica la señal de la reserva del coche (una vez). Nunca más de lo que queda (409) |
 | `DELETE /facturas/:id/cobros/:cobro` | Quita un cobro mal apuntado |
