@@ -106,6 +106,17 @@ test('emitir: falta algo → 409 con la lista de lo que falta', () =>
     }
   }));
 
+test('emitir: con una fecha que aún no ha llegado, no (y la serie no se bloquea)', () =>
+  conServidor(async ({ pide }) => {
+    const { c, v } = await preparar(pide);
+    const manana = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
+    const f = (await borrador(pide, { cliente_id: c.id, vehiculo_id: v.id, fecha: manana })).json;
+    const r = await pide(`/facturas/${f.id}/emitir`, { method: 'POST' });
+    assert.equal(r.status, 409);
+    assert.match(r.json.error, /aún no ha llegado/);
+    assert.equal((await pide(`/facturas/${f.id}`)).json.estado, 'borrador');
+  }));
+
 test('un coche no se factura dos veces, salvo rectificando la primera', () =>
   conServidor(async ({ pide }) => {
     const { c, v } = await preparar(pide);
