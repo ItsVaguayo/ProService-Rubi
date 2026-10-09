@@ -292,7 +292,7 @@ p { margin: 0 0 var(--espacio-m); }
 .campo { display: flex; flex-direction: column; gap: 6px; }
 
 .campo__nombre { font-size: .8125rem; font-weight: 600; color: var(--tinta-2); }
-.campo__nombre em { color: var(--rojo); font-style: normal; }
+.campo__nombre em { color: var(--rojo-boton); font-style: normal; }
 
 .campo input,
 .campo select,
@@ -326,7 +326,7 @@ p { margin: 0 0 var(--espacio-m); }
 
 /* Casilla con su texto al lado */
 .casilla { display: flex; align-items: flex-start; gap: var(--espacio-s); cursor: pointer; font-size: .9375rem; }
-.casilla input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--rojo); }
+.casilla input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--rojo-boton); }
 
 
 /* --- Tablas ---
@@ -425,3 +425,14 @@ a[href^="mailto:"], .contacto__datos, .reserva-activa dd { overflow-wrap: anywhe
   clip-path: inset(0 100% 0 0); transition: clip-path 200ms var(--ease-out);
 }
 .mantener--pulsando .mantener__relleno { clip-path: inset(0 0 0 0); transition: clip-path var(--mantener-ms, 1.5s) linear; }
+
+/* «Saltar al contenido»: el primer Tab de cada página. Oculto hasta que llega el foco; así no hay que pasar
+   por los 15 enlaces del menú para llegar a la página. */
+.saltar {
+  position: fixed; top: 8px; left: 8px; z-index: 1000;
+  padding: 10px 16px; border-radius: var(--radio-boton);
+  background: var(--negro); color: var(--blanco); font-weight: 600; text-decoration: none;
+  transform: translateY(-150%);
+}
+.saltar:focus { transform: none; }
+main[tabindex="-1"]:focus { outline: none; }

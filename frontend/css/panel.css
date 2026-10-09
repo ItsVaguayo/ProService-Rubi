@@ -195,7 +195,7 @@ html.cargando:not(.listo) body::before {
   min-width: 22px;
   padding: 1px 7px;
   border-radius: var(--radio-boton);
-  background: var(--rojo);
+  background: var(--rojo-boton);
   color: var(--blanco);
   font-size: .75rem;
   font-weight: 700;
@@ -283,7 +283,7 @@ html.cargando:not(.listo) body::before {
 .portada__cifras .baja { color: #f08a8a; }
 
 .boton--claro { background: var(--blanco); border-color: var(--blanco); color: var(--tinta); }
-@media (hover: hover) and (pointer: fine) { .boton--claro:hover { background: var(--rojo); border-color: var(--rojo); color: var(--blanco); } }
+@media (hover: hover) and (pointer: fine) { .boton--claro:hover { background: var(--rojo-boton); border-color: var(--rojo-boton); color: var(--blanco); } }
 
 /* Cabecera de las demás páginas en la misma banda negra: título a la izquierda,
    botones a la derecha. Se usa con class="cabecera cabecera--portada". */
@@ -344,7 +344,7 @@ html.cargando:not(.listo) body::before {
 @media (hover: hover) and (pointer: fine) { .estados__paso:hover { background: var(--fondo); } }
 .estados__orden { color: var(--gris-marca); font-size: .6875rem; font-weight: 500; }
 .estados__n { font-size: 1.875rem; font-weight: 700; line-height: 1; }
-.estados__paso--vacio .estados__n { color: var(--linea-fuerte); }
+.estados__paso--vacio .estados__n { color: var(--tinta-3); }
 .estados__nombre { color: var(--tinta-3); font-size: .75rem; line-height: 1.25; }
 /* Raya de abajo: gris entera y, encima, la parte del stock que está en este estado */
 .estados__paso::before,
@@ -685,15 +685,15 @@ html.cargando:not(.listo) body::before {
 /* Debajo de los filtros: cuántos salen y quitar filtros */
 .lista-pie { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; color: var(--tinta-3); font-size: .8125rem; }
 .enlace { padding: 0; border: 0; background: none; color: var(--tinta-2); font: inherit; text-decoration: underline; cursor: pointer; }
-@media (hover: hover) and (pointer: fine) { .enlace:hover { color: var(--rojo); } }
+@media (hover: hover) and (pointer: fine) { .enlace:hover { color: var(--rojo-boton); } }
 
 /* Cabeceras que ordenan, con flecha en la que manda */
 .ordenar { padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
 @media (hover: hover) and (pointer: fine) { .ordenar:hover { color: var(--tinta); } }
 .ordenar::after { content: "↕"; margin-left: 4px; opacity: .35; }
-.ordenar[aria-sort="ascending"]::after { content: "↑"; opacity: 1; }
-.ordenar[aria-sort="descending"]::after { content: "↓"; opacity: 1; }
-.ordenar[aria-sort] { color: var(--tinta); }
+[aria-sort="ascending"] > .ordenar::after { content: "↑"; opacity: 1; }
+[aria-sort="descending"] > .ordenar::after { content: "↓"; opacity: 1; }
+[aria-sort] > .ordenar { color: var(--tinta); }
 
 /* Una fila por coche; toda la fila abre la ficha */
 .fila-coche { cursor: pointer; transition: background-color var(--hover); }
@@ -836,14 +836,14 @@ html.cargando:not(.listo) body::before {
 /* Usa las tarjetas de contactos (.contacto) sin la columna del coche. Color por rol:
    gerencia en negro, como el menú; comercial en azul. */
 .segmentos__n { margin-left: 6px; color: var(--tinta-3); font-size: .75rem; font-weight: 600; }
-.segmentos input:checked + span .segmentos__n { color: var(--rojo); }
+.segmentos input:checked + span .segmentos__n { color: var(--rojo-boton); }
 
 .usuario { grid-template-columns: 44px minmax(0, 1fr) auto; }
 .usuario__inicial--gerencia { background: var(--negro); color: var(--blanco); }
 .usuario__inicial--comercial { background: var(--reservado-fondo); color: var(--reservado); }
 .rol--gerencia { background: var(--fondo); color: var(--tinta); box-shadow: inset 0 0 0 1px var(--linea-fuerte); }
 .rol--comercial { background: var(--reservado-fondo); color: var(--reservado); }
-.usuario__tu { padding: 1px 8px; border-radius: var(--radio-boton); background: var(--rojo-suave); color: var(--rojo); font-size: .75rem; font-weight: 700; }
+.usuario__tu { padding: 1px 8px; border-radius: var(--radio-boton); background: var(--rojo-suave); color: var(--rojo-oscuro); font-size: .75rem; font-weight: 700; }
 .usuario .contacto__datos span { color: var(--tinta-3); }
 
 .usuario__acciones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
@@ -883,7 +883,7 @@ html.cargando:not(.listo) body::before {
 .rol-opcion + .rol-opcion { margin-top: 8px; }
 @media (hover: hover) and (pointer: fine) { .rol-opcion:hover { border-color: var(--linea-fuerte); } }
 .rol-opcion:has(input:checked) { border-color: var(--tinta); background: var(--fondo); }
-.rol-opcion input { flex: none; width: auto; margin: 3px 0 0; accent-color: var(--rojo); }
+.rol-opcion input { flex: none; width: auto; margin: 3px 0 0; accent-color: var(--rojo-boton); }
 .rol-opcion span { display: flex; flex-direction: column; gap: 2px; color: var(--tinta-2); font-size: .8125rem; line-height: 1.4; }
 .rol-opcion b { color: var(--tinta); font-size: .875rem; }
 
@@ -914,7 +914,7 @@ html.cargando:not(.listo) body::before {
 @media (hover: hover) and (pointer: fine) { .ficha-cabecera .enlace-pequeno:hover { color: var(--blanco); } }
 .ficha-cabecera .rotulo { color: #a7adb3; }
 .ficha-cabecera .boton--oscuro { background: var(--blanco); border-color: var(--blanco); color: var(--tinta); }
-@media (hover: hover) and (pointer: fine) { .ficha-cabecera .boton--oscuro:hover { background: var(--rojo); border-color: var(--rojo); color: var(--blanco); } }
+@media (hover: hover) and (pointer: fine) { .ficha-cabecera .boton--oscuro:hover { background: var(--rojo-boton); border-color: var(--rojo-boton); color: var(--blanco); } }
 
 .ficha-cabecera__foto { aspect-ratio: 4 / 3; width: 100%; object-fit: cover; border-radius: 8px; background: var(--fondo); }
 
@@ -959,7 +959,7 @@ html.cargando:not(.listo) body::before {
 }
 
 .recorrido .hecho { border-top-color: var(--tinta-2); color: var(--tinta-2); }
-.recorrido .actual { border-top-color: var(--rojo); color: var(--tinta); font-weight: 700; }
+.recorrido .actual { border-top-color: var(--rojo-boton); color: var(--tinta); font-weight: 700; }
 
 /* Dos columnas: datos a la izquierda, gestión a la derecha */
 .ficha {
@@ -1154,7 +1154,7 @@ html.cargando:not(.listo) body::before {
 @media (hover: hover) and (pointer: fine) { .subida:hover { border-color: var(--tinta); background: var(--fondo-hover); } }
 .subida__titulo { font-weight: 700; }
 /* Con fotos arrastradas encima */
-.subida--encima { border-color: var(--rojo); background: var(--rojo-suave); }
+.subida--encima { border-color: var(--rojo-boton); background: var(--rojo-suave); }
 /* Con 25 fotos ya no se enseña (el display: flex de arriba taparía el hidden) */
 .subida[hidden] { display: none; }
 /* Mientras se guarda un cambio de fotos, la lista no acepta más clics */
@@ -1298,7 +1298,7 @@ html.cargando:not(.listo) body::before {
 .portada__texto { max-width: 62ch; margin: 0; color: rgb(255 255 255 / .7); }
 .portada__leyenda { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: 0; padding: 0; list-style: none; color: rgb(255 255 255 / .6); font-size: .8125rem; }
 .portada__leyenda li { display: flex; align-items: center; gap: 8px; }
-.portada__leyenda em { color: var(--rojo); font-style: normal; font-weight: 700; }
+.portada__leyenda em { color: #f26b6b; font-style: normal; font-weight: 700; } /* sobre negro: el rojo de marca no llega a 4,5:1 */
 
 /* El punto que marca lo que hace falta para publicar */
 .marca-publicar,
@@ -1370,7 +1370,8 @@ html.cargando:not(.listo) body::before {
 
 /* Cabecera del bloque: número, título y una línea de ayuda */
 .bloque__cabeza { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding-bottom: 16px; border-bottom: 1px solid var(--linea); }
-.bloque__n { color: var(--rojo); font-size: .8125rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bloque__n { color: var(--rojo-boton); font-size: .8125rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bloque--dinero .bloque__n { color: #f26b6b; } /* el bloque de dinero va en negro */
 .bloque__cabeza h2 { margin: 0; font-size: 1.25rem; }
 .bloque__cabeza .nota { flex-basis: 100%; margin: 0; padding-left: 32px; }
 
@@ -1504,7 +1505,7 @@ html.cargando:not(.listo) body::before {
 .resumen-dinero__dato span { color: #a7adb3; font-size: .8125rem; }
 .resumen-dinero__dato output { font-size: 1.75rem; font-weight: 700; letter-spacing: -.02em; }
 .resumen-dinero__dato--margen output { color: #5fd08e; }
-.resumen-dinero__dato--negativo output { color: var(--rojo); }
+.resumen-dinero__dato--negativo output { color: var(--rojo-boton); }
 .resumen-dinero .nota { flex-basis: 100%; margin: 0; }
 
 /* Barra con el botón de guardar, siempre visible abajo */
@@ -1525,7 +1526,7 @@ html.cargando:not(.listo) body::before {
 }
 .barra-guardar__progreso { display: flex; flex-direction: column; gap: 4px; margin-right: auto; }
 .barra-guardar__linea { display: flex; align-items: center; gap: 10px; margin: 0; font-size: .875rem; }
-.barra-guardar__linea strong { color: var(--rojo); }
+.barra-guardar__linea strong { color: var(--rojo-boton); }
 .barra-guardar__linea--suave { color: var(--tinta-3); font-size: .8125rem; }
 /* La barrita: cuántos de los 24 datos para publicar están rellenos */
 .barra-guardar__barra { position: relative; width: 120px; height: 6px; border-radius: var(--radio-boton); background: var(--linea); overflow: hidden; }
@@ -1708,7 +1709,7 @@ html.cargando:not(.listo) body::before {
 }
 
 @media (max-width: 800px) {
-  .app { grid-template-columns: 1fr; }
+  .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } /* el menú, a su altura aunque la página sea corta */
 
   .menu {
     z-index: 10;
@@ -1840,7 +1841,7 @@ html.cargando:not(.listo) body::before {
 .cabecera--seguida { margin: 0 0 var(--espacio-l); padding: 32px; border-radius: var(--radio); }
 
 /* Un formulario en caja con su pie de botones (nuevo cliente, nuevo proveedor) */
-.obligatorio { color: var(--rojo); font-style: normal; }
+.obligatorio { color: var(--rojo-boton); font-style: normal; }
 
 /* Tabla que en el móvil pasa a tarjetas, como la de coches. Cada celda lleva su nombre en
    data-rotulo y sale como «nombre … valor»; la celda .t-titulo va arriba, sin nombre. */
@@ -2110,7 +2111,7 @@ html.cargando:not(.listo) body::before {
 /* Botón que aún no se puede usar (liquidar sin regla, confirmar una prueba ya confirmada) */
 .incentivo .boton:disabled,
 .prueba .boton:disabled { opacity: .45; cursor: not-allowed; }
-@media (hover: hover) and (pointer: fine) { .incentivo .boton:disabled:hover { background: var(--rojo); border-color: var(--rojo); } }
+@media (hover: hover) and (pointer: fine) { .incentivo .boton:disabled:hover { background: var(--rojo-boton); border-color: var(--rojo-boton); } }
 @media (hover: hover) and (pointer: fine) { .prueba .boton--oscuro:disabled:hover { background: var(--negro); border-color: var(--negro); } }
 
 /* Separador entre la versión de gerencia y la del comercial (solo en la maqueta) */
@@ -2184,7 +2185,7 @@ html.cargando:not(.listo) body::before {
 .hoy__pestanas { flex-wrap: nowrap; }
 .hoy__pestanas > label > span { white-space: nowrap; }
 .hoy__pestanas span span { display: inline; min-height: 0; padding: 0; border-radius: 0; background: none; box-shadow: none; color: inherit; font-size: inherit; }
-.hoy__pestanas .hoy__cuenta { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; background: var(--rojo); color: var(--blanco); font-size: .6875rem; font-weight: 700; line-height: 1; }
+.hoy__pestanas .hoy__cuenta { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; background: var(--rojo-boton); color: var(--blanco); font-size: .6875rem; font-weight: 700; line-height: 1; }
 .hoy__pestanas .hoy__cuenta:empty { display: none; }
 .hoy__pestanas input:not(:checked) + span .hoy__cuenta { background: var(--tinta-3); }
 @media (max-width: 760px) {
@@ -2344,8 +2345,8 @@ html.cargando:not(.listo) body::before {
 .dia { display: flex; flex-direction: column; gap: 8px; min-height: 220px; padding: 10px; border-top: 3px solid var(--linea-fuerte); border-radius: 4px 4px var(--radio) var(--radio); background: #ebedef; }
 .dia__titulo { display: flex; align-items: baseline; gap: 6px; padding: 2px 4px 4px; font-size: .8125rem; font-weight: 600; letter-spacing: 0; }
 .dia__titulo .cifra { color: var(--tinta-3); }
-.dia__hoy { margin-left: auto; padding: 0 8px; border-radius: var(--radio-boton); background: var(--rojo); color: var(--blanco); font-size: .6875rem; font-weight: 700; }
-.dia--hoy { border-top-color: var(--rojo); background: #e4e7ea; }
+.dia__hoy { margin-left: auto; padding: 0 8px; border-radius: var(--radio-boton); background: var(--rojo-boton); color: var(--blanco); font-size: .6875rem; font-weight: 700; }
+.dia--hoy { border-top-color: var(--rojo-boton); background: #e4e7ea; }
 .dia--pasado { opacity: .75; }
 
 /* Una prueba: hora y estado, coche, cliente y botones */
@@ -2777,3 +2778,27 @@ html.cargando:not(.listo) body::before {
   .ventana__form .rejilla { grid-template-columns: minmax(0, 1fr); }
   .ventana__acciones .boton { flex: 1; }
 }
+
+/* Pantallas táctiles: todo lo que se pulsa, 44 px como mínimo (Apple HIG; antes 32-40 px) */
+@media (pointer: coarse), (max-width: 760px) {
+  /* html :is(…) para ganar a las reglas de 40 px de .campo, .boton--pequeno y compañía */
+  html :is(.boton, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, summary,
+    .segmentos > label > span, .foto-fila__mover button, .foto-fila__quitar, .agenda-paso a, .columna__mas,
+    .gasto-pago, .saltar) { min-height: 44px; }
+  html summary { padding-block: 12px; } /* sigue siendo list-item: no pierde el triángulo */
+  html .menu__marca { display: flex; align-items: center; min-height: 44px; }
+  html .volver { --relleno-volver: 12px; }
+  .foto-fila__mover button, .agenda-paso__flecha { min-width: 44px; }
+}
+
+/* Enlaces de texto pequeños: zona de clic de 24 px como mínimo (WCAG 2.2) sin cambiar cómo se ven.
+   En línea, el relleno amplía la zona sin mover el texto de alrededor. */
+.menu__usuario a, .tercero__nombre, .fila-coche__titulo, .enlace-pequeno, .enlace, .grafica__tabla summary { padding-block: 4px; margin-block: -4px; } /* el margen negativo devuelve el sitio en los que no van en línea */
+.ordenar { padding-block: 2px; margin-block: -2px; }
+/* «Volver»: el mismo relleno, sin perder el espacio que deja debajo */
+.volver { --relleno-volver: 4px; padding-block: var(--relleno-volver); margin-top: calc(-1 * var(--relleno-volver)); margin-bottom: calc(var(--espacio-m) - var(--relleno-volver)); }
+.ficha-cabecera .volver { margin-block: calc(-1 * var(--relleno-volver)); }
+
+/* Si no llegan los datos, solo el error (y su «Volver a cargar»): el resto es la maqueta, con datos de mentira */
+html.sin-datos main.contenido > :not(.error--lista) { display: none; }
+html.sin-datos main.contenido > .error--lista { margin-top: var(--espacio-l); }

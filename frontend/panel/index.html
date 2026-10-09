@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="../css/panel.css">
 </head>
 <body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
 <div class="app">
 
   <!-- MENÚ LATERAL. Es igual en todas las páginas del panel: si lo cambias aquí,
@@ -52,7 +53,7 @@
     </div>
   </nav>
 
-  <main class="contenido">
+  <main class="contenido" id="contenido" tabindex="-1">
 
     <!-- PORTADA. Diseño traído del panel de Hafsa. Ocupa todo el ancho del contenido.
          «Sin publicar todavía» = coches de «Pendiente de recoger» a «Pendiente de fotos».
@@ -85,34 +86,34 @@
          Sin coches: clase estados__paso--vacio. -->
     <nav class="estados" aria-label="Coches por estado">
       <a class="estados__paso estados__paso--llegada" href="coches.html?estado=pendiente_recoger" style="--p: .1">
-        <span class="estados__orden">01</span><span class="estados__n cifra">1</span><span class="estados__nombre">Pendiente de recoger</span>
+        <span class="estados__orden" aria-hidden="true">01</span><span class="estados__n cifra">1</span><span class="estados__nombre">Pendiente de recoger</span>
       </a>
       <a class="estados__paso estados__paso--llegada estados__paso--vacio" href="coches.html?estado=en_transporte" style="--p: 0">
-        <span class="estados__orden">02</span><span class="estados__n cifra">0</span><span class="estados__nombre">En transporte</span>
+        <span class="estados__orden" aria-hidden="true">02</span><span class="estados__n cifra">0</span><span class="estados__nombre">En transporte</span>
       </a>
       <a class="estados__paso estados__paso--llegada" href="coches.html?estado=recibido" style="--p: .1">
-        <span class="estados__orden">03</span><span class="estados__n cifra">1</span><span class="estados__nombre">Recibido, sin revisar</span>
+        <span class="estados__orden" aria-hidden="true">03</span><span class="estados__n cifra">1</span><span class="estados__nombre">Recibido, sin revisar</span>
       </a>
       <a class="estados__paso estados__paso--preparacion" href="coches.html?estado=en_taller" style="--p: .1">
-        <span class="estados__orden">04</span><span class="estados__n cifra">1</span><span class="estados__nombre">En taller o mecánica</span>
+        <span class="estados__orden" aria-hidden="true">04</span><span class="estados__n cifra">1</span><span class="estados__nombre">En taller o mecánica</span>
       </a>
       <a class="estados__paso estados__paso--preparacion" href="coches.html?estado=en_preparacion" style="--p: .1">
-        <span class="estados__orden">05</span><span class="estados__n cifra">1</span><span class="estados__nombre">En preparación y limpieza</span>
+        <span class="estados__orden" aria-hidden="true">05</span><span class="estados__n cifra">1</span><span class="estados__nombre">En preparación y limpieza</span>
       </a>
       <a class="estados__paso estados__paso--preparacion" href="coches.html?estado=pendiente_fotos" style="--p: .1">
-        <span class="estados__orden">06</span><span class="estados__n cifra">1</span><span class="estados__nombre">Pendiente de fotos</span>
+        <span class="estados__orden" aria-hidden="true">06</span><span class="estados__n cifra">1</span><span class="estados__nombre">Pendiente de fotos</span>
       </a>
       <a class="estados__paso estados__paso--venta" href="coches.html?estado=publicado" style="--p: .3">
-        <span class="estados__orden">07</span><span class="estados__n cifra">3</span><span class="estados__nombre">Publicado</span>
+        <span class="estados__orden" aria-hidden="true">07</span><span class="estados__n cifra">3</span><span class="estados__nombre">Publicado</span>
       </a>
       <a class="estados__paso estados__paso--reservado" href="coches.html?estado=reservado" style="--p: .1">
-        <span class="estados__orden">08</span><span class="estados__n cifra">1</span><span class="estados__nombre">Reservado con señal</span>
+        <span class="estados__orden" aria-hidden="true">08</span><span class="estados__n cifra">1</span><span class="estados__nombre">Reservado con señal</span>
       </a>
       <a class="estados__paso estados__paso--vendido" href="coches.html?estado=vendido" style="--p: .1">
-        <span class="estados__orden">09</span><span class="estados__n cifra">1</span><span class="estados__nombre">Vendido, pendiente de entrega</span>
+        <span class="estados__orden" aria-hidden="true">09</span><span class="estados__n cifra">1</span><span class="estados__nombre">Vendido, pendiente de entrega</span>
       </a>
       <a class="estados__paso estados__paso--vendido estados__paso--vacio" href="coches.html?estado=entregado" style="--p: 0">
-        <span class="estados__orden">10</span><span class="estados__n cifra">0</span><span class="estados__nombre">Entregado</span>
+        <span class="estados__orden" aria-hidden="true">10</span><span class="estados__n cifra">0</span><span class="estados__nombre">Entregado</span>
       </a>
     </nav>
 

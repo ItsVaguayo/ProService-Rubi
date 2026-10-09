@@ -10,13 +10,28 @@ const params = new URLSearchParams(location.search);
 // El contenido de la maqueta no se enseña mientras llegan los datos (ver html.cargando en panel.css)
 if (PAGINA !== 'login.html') document.documentElement.classList.add('cargando');
 
+// Sin red o con el servidor colgado, fetch falla en inglés («Failed to fetch») o no acaba nunca: el botón se
+// quedaba bloqueado. Se corta a los 20 s y se dice qué pasa y qué hacer.
+const ESPERA_API_MS = 20000;
 async function api(ruta, { method = 'GET', body } = {}) {
-  const res = await fetch(`/api${ruta}`, {
-    method,
-    credentials: 'same-origin',
-    headers: body === undefined ? {} : { 'content-type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  let res;
+  try {
+    res = await fetch(`/api${ruta}`, {
+      method,
+      credentials: 'same-origin',
+      headers: body === undefined ? {} : { 'content-type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(ESPERA_API_MS),
+    });
+  } catch (e) {
+    const tarda = e.name === 'TimeoutError';
+    const error = new Error(tarda
+      ? 'El servidor tarda demasiado en contestar. Espera un momento y vuelve a probar.'
+      : navigator.onLine === false ? 'No hay conexión a internet. Revisa el wifi y vuelve a probar.' : 'No se ha podido hablar con el servidor. Revisa la conexión y vuelve a probar.');
+    error.status = 0;
+    error.sinRed = true;
+    throw error;
+  }
   if (res.status === 401 && PAGINA !== 'login.html') {
     // Al entrar se vuelve a esta misma página (ver destinoTrasEntrar)
     location.href = `login.html?volver=${encodeURIComponent(PAGINA + location.search)}`;
@@ -731,8 +746,10 @@ async function paginaListado(usuario) {
     $('.lista-pie__cuantos').textContent = `${lista.length} ${lista.length === 1 ? 'coche' : 'coches'}${hayFiltros() ? ` de ${base}` : ' en stock'}`;
     $('[data-limpiar]').hidden = !hayFiltros();
     document.querySelectorAll('.ordenar').forEach((b) => {
-      if (b.dataset.orden === orden.campo) b.setAttribute('aria-sort', orden.sentido > 0 ? 'ascending' : 'descending');
-      else b.removeAttribute('aria-sort');
+      // aria-sort va en la cabecera de la columna: en el botón el lector de pantalla no lo anuncia
+      const th = b.closest('th');
+      if (b.dataset.orden === orden.campo) th.setAttribute('aria-sort', orden.sentido > 0 ? 'ascending' : 'descending');
+      else th.removeAttribute('aria-sort');
     });
   };
 
@@ -4001,7 +4018,15 @@ const PAGINAS = {
   } catch (e) {
     if (e.message !== 'Sin sesión') {
       console.error(e);
+      // Lo que hay en la página es la maqueta, con datos inventados: no se enseña como si fuera real
+      document.documentElement.classList.add('sin-datos');
       mostrarErrores($('.error--lista'), e, 'No se han podido cargar los datos:');
+      // Sin red: un botón para volver a intentarlo, en vez de dejar la página a medias
+      if (e.sinRed) {
+        const caja = $('.error--lista');
+        caja?.insertAdjacentHTML('beforeend', '<p><button class="boton boton--secundario boton--pequeno" type="button">Volver a cargar</button></p>');
+        caja?.querySelector('button').addEventListener('click', () => location.reload());
+      }
     }
   } finally {
     // Con los datos reales ya puestos, se enseña el contenido por partes (ver «.listo» en panel.css)

@@ -161,3 +161,6 @@
 .factura__rectificar-caja .mantener { width: 100%; }
 @media (max-width: 760px) { .factura__rectificar-caja { transform-origin: top left; } }
 .factura__rectificar summary, .factura-cobros__quitar { transition: color var(--hover), background-color var(--hover); }
+
+@media (pointer: coarse), (max-width: 760px) { .factura-cobros__quitar { min-height: 44px; padding-inline: 14px; } }
+@media (pointer: coarse), (max-width: 760px) { html .boton { min-height: 44px; } }
