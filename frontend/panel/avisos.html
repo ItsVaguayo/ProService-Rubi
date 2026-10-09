@@ -1,0 +1,257 @@
+<!doctype html>
+<!-- AVISOS · maqueta (T07b). Lo que hay que atender hoy, para gerencia y para el comercial.
+     Datos de GET /api/avisos (T16 de Victor, rama feat/avisos; ver «Avisos del panel» en docs/api.md).
+     Devuelve una lista; cada aviso lleva:
+       tipo      tareas_vencidas · contactos_sin_atender · coches_parados · vendidos_publicados · itv · cobros_vencidos
+       gravedad  alta · media
+       texto     corto, para la pantalla (se pinta tal cual)
+       enlace    la página del panel a la que lleva (factura.html?id=, coche.html?id=, contactos.html, crm.html)
+       fecha     la que lo origina: «AAAA-MM-DD HH:MM:SS» en UTC, «AAAA-MM-DD HH:MM» en hora de Rubí
+                 (tareas) o «AAAA-MM-DD» (ITV y vencimiento)
+     Vienen ya ordenados: «alta» primero y, dentro de cada gravedad, del más antiguo al más nuevo.
+     Sin avisos, []: se enseña el bloque .vacio. El comercial nunca recibe cobros_vencidos ni importes. -->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Avisos · ProService</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/panel.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="menu" aria-label="Menú principal">
+    <a class="menu__marca" href="index.html"><img class="logo" src="../img/logo-proservice.webp" alt="Pro Service Rubí · Stock"></a>
+    <details class="menu__movil"><summary>Menú</summary></details>
+    <form class="menu__buscar" role="search" action="coches.html">
+      <input type="search" name="q" placeholder="Buscar matrícula o modelo" aria-label="Buscar coche">
+    </form>
+    <div class="menu__enlaces">
+      <a href="index.html"><span class="menu__icono" aria-hidden="true"></span>Tablero</a>
+      <a href="avisos.html" aria-current="page"><span class="menu__icono" aria-hidden="true"></span>Avisos</a>
+      <a href="coches.html"><span class="menu__icono" aria-hidden="true"></span>Coches</a>
+      <a href="coche-nuevo.html"><span class="menu__icono" aria-hidden="true"></span>Alta de vehículo</a>
+      <a href="contactos.html"><span class="menu__icono" aria-hidden="true"></span>Contactos <span class="contador">3</span></a>
+      <a href="clientes.html"><span class="menu__icono" aria-hidden="true"></span>Clientes</a>
+      <a href="crm.html"><span class="menu__icono" aria-hidden="true"></span>CRM</a>
+      <a href="agenda.html"><span class="menu__icono" aria-hidden="true"></span>Agenda</a>
+      <!-- Proveedores: solo gerencia, como el precio de compra. -->
+      <a href="proveedores.html"><span class="menu__icono" aria-hidden="true"></span>Proveedores</a>
+      <!-- Dinero y administración. Incentivos lo ven los dos roles (el comercial, solo lo suyo); el resto,
+           solo gerencia. panel.js de momento solo le quita al comercial Informes y Usuarios. -->
+      <a class="menu__separado" href="gastos.html"><span class="menu__icono" aria-hidden="true"></span>Gastos</a>
+      <a href="facturas.html"><span class="menu__icono" aria-hidden="true"></span>Facturas</a>
+      <a href="libros.html"><span class="menu__icono" aria-hidden="true"></span>Libros</a>
+      <a href="incentivos.html"><span class="menu__icono" aria-hidden="true"></span>Incentivos</a>
+      <a href="informes.html"><span class="menu__icono" aria-hidden="true"></span>Informes</a>
+      <a href="usuarios.html"><span class="menu__icono" aria-hidden="true"></span>Usuarios</a>
+    </div>
+    <div class="menu__usuario">
+      <strong>Jaume</strong>
+      Gerencia · <a href="login.html">Salir</a>
+    </div>
+  </nav>
+
+  <main class="contenido">
+
+    <!-- ======================================================================================
+         VERSIÓN DE GERENCIA
+         Todo lo de hoy, de todos: las tareas de cada comercial (con su nombre al final) y los
+         cobros vencidos. Primero «alta» y, dentro de cada gravedad, del más antiguo al más nuevo.
+         ====================================================================================== -->
+    <header class="cabecera cabecera--portada cabecera--cifras">
+      <div>
+        <p class="portada__antetitulo">Jueves, 8 de octubre</p>
+        <h1>Avisos</h1>
+        <p class="nota">Lo que hay que atender hoy. Se calcula al abrir la página: cuando lo resuelves en su ficha, deja de salir aquí.</p>
+      </div>
+      <div class="portada__mes">
+        <p class="portada__mes-titulo">Pendiente</p>
+        <dl class="portada__cifras">
+          <div><dt>Urgentes<small>Cobros, contactos, ITV caducada</small></dt><dd class="cifra">5</dd></div>
+          <div><dt>Esta semana<small>Coches parados, ITV próxima</small></dt><dd class="cifra">3</dd></div>
+        </dl>
+      </div>
+    </header>
+
+    <!-- FILTRO por gravedad. En el panel real filtra sin recargar. -->
+    <form class="filtros filtros--avisos">
+      <fieldset class="segmentos" aria-label="Gravedad">
+        <label><input type="radio" name="gravedad" value="" checked><span>Todos <span class="segmentos__n">8</span></span></label>
+        <label><input type="radio" name="gravedad" value="alta"><span>Urgentes <span class="segmentos__n">5</span></span></label>
+        <label><input type="radio" name="gravedad" value="media"><span>Esta semana <span class="segmentos__n">3</span></span></label>
+      </fieldset>
+    </form>
+
+    <!-- UN AVISO = un <li class="aviso aviso--{gravedad}" data-tipo="{tipo}">:
+         - texto: el «texto» de la API, tal cual;
+         - abajo, el tipo y la fecha (la «fecha» de la API, en corto y con cuánto hace);
+         - a la derecha, el botón al «enlace».
+         Gravedad: alta, raya roja a la izquierda; media, raya ámbar. El resto en negro y gris:
+         el rojo solo marca, no pinta la fila entera. -->
+    <section class="avisos-grupo" aria-labelledby="avisos-alta">
+      <h2 class="avisos-grupo__titulo" id="avisos-alta">Urgente <span class="avisos-grupo__n">5</span></h2>
+      <ul class="avisos">
+        <li class="aviso aviso--alta" data-tipo="cobros_vencidos">
+          <div>
+            <p class="aviso__texto">V26-00033 de Transports Ribas: 10.900,00 € sin cobrar</p>
+            <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--cobro"></i>Cobro vencido</span><span>Venció el <time datetime="2026-09-11">11 sep</time>, hace 27 días</span></p>
+          </div>
+          <a class="boton boton--secundario boton--pequeno aviso__accion" href="factura.html?id=33">Ver factura</a>
+        </li>
+        <li class="aviso aviso--alta" data-tipo="itv">
+          <div>
+            <p class="aviso__texto">Citroën Berlingo 5520 KPL: la ITV caducó el 02/10/2026</p>
+            <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--itv"></i>ITV</span><span>Caducó el <time datetime="2026-10-02">2 oct</time>, hace 6 días</span></p>
+          </div>
+          <a class="boton boton--secundario boton--pequeno aviso__accion" href="coche.html?id=14">Ver coche</a>
+        </li>
+        <li class="aviso aviso--alta" data-tipo="cobros_vencidos">
+          <div>
+            <p class="aviso__texto">V26-00035 de Carme Vila: 3.800,00 € sin cobrar</p>
+            <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--cobro"></i>Cobro vencido</span><span>Venció el <time datetime="2026-10-03">3 oct</time>, hace 5 días</span></p>
+          </div>
+          <a class="boton boton--secundario boton--pequeno aviso__accion" href="factura.html?id=35">Ver factura</a>
+        </li>
+        <li class="aviso aviso--alta" data-tipo="vendidos_publicados">
+          <div>
+            <p class="aviso__texto">Mercedes-Benz Vito 6604 KCS está vendido y sigue por retirar en Milanuncios</p>
+            <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--vendido"></i>Vendido y publicado</span><span>Desde el <time datetime="2026-10-06 09:15:00">6 oct</time>, hace 2 días</span></p>
+          </div>
+          <a class="boton boton--secundario boton--pequeno aviso__accion" href="coche.html?id=9">Ver coche</a>
+        </li>
+        <li class="aviso aviso--alta" data-tipo="contactos_sin_atender">
+          <div>
+            <p class="aviso__texto">Marta Ruiz escribió por la web (financiación) y sigue sin atender</p>
+            <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--contacto"></i>Contacto sin atender</span><span>Escribió el <time datetime="2026-10-06 17:42:10">6 oct a las 19:42</time>, hace 38 horas</span></p>
+          </div>
+          <a class="boton boton--secundario boton--pequeno aviso__accion" href="contactos.html">Ver contacto</a>
+        </li>
+      </ul>
+    </section>
+
+    <section class="avisos-grupo" aria-labelledby="avisos-media">
+      <h2 class="avisos-grupo__titulo" id="avisos-media">Esta semana <span class="avisos-grupo__n">3</span></h2>
+      <ul class="avisos">
+        <li class="aviso aviso--media" data-tipo="coches_parados">
+          <div>
+            <p class="aviso__texto">Volkswagen Golf 7781 KYD lleva 64 días publicado</p>
+            <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--parado"></i>Coche parado</span><span>Publicado el <time datetime="2026-08-05 10:02:33">5 ago</time></span></p>
+          </div>
+          <a class="boton boton--secundario boton--pequeno aviso__accion" href="coche.html?id=3">Ver coche</a>
+        </li>
+        <li class="aviso aviso--media" data-tipo="tareas_vencidas">
+          <div>
+            <p class="aviso__texto">Tarea vencida: Llamar por la financiación (Pau Serra) · Marc</p>
+            <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--tarea"></i>Tarea</span><span>Hoy a las <time datetime="2026-10-08 09:30">9:30</time></span></p>
+          </div>
+          <a class="boton boton--secundario boton--pequeno aviso__accion" href="crm.html">Ver en el CRM</a>
+        </li>
+        <li class="aviso aviso--media" data-tipo="itv">
+          <div>
+            <p class="aviso__texto">Seat Ibiza 1147 KYM: la ITV caduca el 29/10/2026</p>
+            <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--itv"></i>ITV</span><span>Caduca el <time datetime="2026-10-29">29 oct</time>, dentro de 21 días</span></p>
+          </div>
+          <a class="boton boton--secundario boton--pequeno aviso__accion" href="coche.html?id=21">Ver coche</a>
+        </li>
+      </ul>
+    </section>
+
+
+    <!-- ======================================================================================
+         VERSIÓN DEL COMERCIAL
+         Solo sus tareas (sin su nombre al final: son suyas) y los avisos de coches y contactos.
+         NUNCA «cobros_vencidos» ni ningún importe: la API no se los manda. En la maqueta van las
+         versiones seguidas; panel.js enseñará solo la que toque según el rol.
+         ====================================================================================== -->
+    <p class="version-separador" aria-hidden="true"><span>Así lo ve el comercial</span></p>
+
+    <div class="version-avisos" data-version="comercial">
+
+      <header class="cabecera cabecera--portada cabecera--seguida">
+        <div>
+          <p class="portada__antetitulo">Jueves, 8 de octubre</p>
+          <h1>Tus avisos</h1>
+          <p class="contactos-resumen"><strong class="cifra">6</strong> para hoy <span>· 3 urgentes</span></p>
+          <p class="nota">Tus tareas y lo que piden los coches y los contactos de la web.</p>
+        </div>
+      </header>
+
+      <section class="avisos-grupo" aria-labelledby="avisos-comercial-alta">
+        <h2 class="avisos-grupo__titulo" id="avisos-comercial-alta">Urgente <span class="avisos-grupo__n">3</span></h2>
+        <ul class="avisos">
+          <li class="aviso aviso--alta" data-tipo="itv">
+            <div>
+              <p class="aviso__texto">Citroën Berlingo 5520 KPL: la ITV caducó el 02/10/2026</p>
+              <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--itv"></i>ITV</span><span>Caducó el <time datetime="2026-10-02">2 oct</time>, hace 6 días</span></p>
+            </div>
+            <a class="boton boton--secundario boton--pequeno aviso__accion" href="coche.html?id=14">Ver coche</a>
+          </li>
+          <li class="aviso aviso--alta" data-tipo="vendidos_publicados">
+            <div>
+              <p class="aviso__texto">Mercedes-Benz Vito 6604 KCS está vendido y sigue por retirar en Milanuncios</p>
+              <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--vendido"></i>Vendido y publicado</span><span>Desde el <time datetime="2026-10-06 09:15:00">6 oct</time>, hace 2 días</span></p>
+            </div>
+            <a class="boton boton--secundario boton--pequeno aviso__accion" href="coche.html?id=9">Ver coche</a>
+          </li>
+          <li class="aviso aviso--alta" data-tipo="contactos_sin_atender">
+            <div>
+              <p class="aviso__texto">Marta Ruiz escribió por la web (financiación) y sigue sin atender</p>
+              <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--contacto"></i>Contacto sin atender</span><span>Escribió el <time datetime="2026-10-06 17:42:10">6 oct a las 19:42</time>, hace 38 horas</span></p>
+            </div>
+            <a class="boton boton--secundario boton--pequeno aviso__accion" href="contactos.html">Ver contacto</a>
+          </li>
+        </ul>
+      </section>
+
+      <section class="avisos-grupo" aria-labelledby="avisos-comercial-media">
+        <h2 class="avisos-grupo__titulo" id="avisos-comercial-media">Esta semana <span class="avisos-grupo__n">3</span></h2>
+        <ul class="avisos">
+          <li class="aviso aviso--media" data-tipo="coches_parados">
+            <div>
+              <p class="aviso__texto">Volkswagen Golf 7781 KYD lleva 64 días publicado</p>
+              <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--parado"></i>Coche parado</span><span>Publicado el <time datetime="2026-08-05 10:02:33">5 ago</time></span></p>
+            </div>
+            <a class="boton boton--secundario boton--pequeno aviso__accion" href="coche.html?id=3">Ver coche</a>
+          </li>
+          <li class="aviso aviso--media" data-tipo="tareas_vencidas">
+            <div>
+              <p class="aviso__texto">Tarea vencida: Llamar por la financiación (Pau Serra)</p>
+              <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--tarea"></i>Tarea</span><span>Hoy a las <time datetime="2026-10-08 09:30">9:30</time></span></p>
+            </div>
+            <a class="boton boton--secundario boton--pequeno aviso__accion" href="crm.html">Ver en el CRM</a>
+          </li>
+          <li class="aviso aviso--media" data-tipo="itv">
+            <div>
+              <p class="aviso__texto">Seat Ibiza 1147 KYM: la ITV caduca el 29/10/2026</p>
+              <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--itv"></i>ITV</span><span>Caduca el <time datetime="2026-10-29">29 oct</time>, dentro de 21 días</span></p>
+            </div>
+            <a class="boton boton--secundario boton--pequeno aviso__accion" href="coche.html?id=21">Ver coche</a>
+          </li>
+        </ul>
+      </section>
+
+    </div>
+
+
+    <!-- ======================================================================================
+         SIN AVISOS: GET /avisos devuelve []. En el panel real va con hidden y sale solo entonces,
+         en lugar de los dos grupos. Aquí se ve abierto para revisarlo.
+         ====================================================================================== -->
+    <p class="version-separador" aria-hidden="true"><span>Sin nada pendiente</span></p>
+
+    <div class="vacio avisos-vacio">
+      <strong>Nada que atender hoy</strong>
+      <p class="nota">Saldrá aquí un coche con más de 60 días publicado, una ITV que caduque en 30 días, un vendido que siga en algún portal, un contacto con más de 24 horas sin respuesta o una tarea que se pase de hora.</p>
+      <a class="boton boton--secundario boton--pequeno" href="index.html">Ir al tablero</a>
+    </div>
+
+  </main>
+</div>
+<script type="module" src="../js/panel.js"></script>
+</body>
+</html>
