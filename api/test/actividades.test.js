@@ -146,3 +146,14 @@ test('sin sesión: 401', () =>
     assert.equal((await pide('/actividades', { como: null })).status, 401);
     assert.equal((await pide('/actividades', { method: 'POST', como: null, body: { tipo: 'nota', cliente_id: 1, descripcion: 'x' } })).status, 401);
   }));
+
+test('una nota sin fecha nace hecha; con fecha, pendiente como las demás', () =>
+  conServidor(async ({ db, pide }) => {
+    const c = Number(db.prepare("INSERT INTO clientes (nombre) VALUES ('Nota')").run().lastInsertRowid);
+    const sin = (await pide('/actividades', { method: 'POST', body: { tipo: 'nota', cliente_id: c, descripcion: 'Se quedó otro coche' } })).json;
+    assert.ok(sin.hecha_en, 'hecha al crearla');
+    const con = (await pide('/actividades', { method: 'POST', body: { tipo: 'nota', cliente_id: c, descripcion: 'Repasar', programada_para: '2099-01-01 10:00' } })).json;
+    assert.equal(con.hecha_en, null);
+    const pendientes = (await pide(`/actividades?cliente=${c}&pendientes=1`)).json;
+    assert.deepEqual(pendientes.map((a) => a.id), [con.id]);
+  }));

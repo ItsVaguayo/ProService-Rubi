@@ -98,6 +98,7 @@ test('el comercial solo ve lo suyo, sin el margen de ningún coche', () =>
     assert.ok(c.coches.every((x) => !('margen_cent' in x)), 'sin margen');
     assert.equal(c.coches[0].incentivo_cent, incentivoDeCoche({ tipo: 'porcentaje_margen', valor: 500 }, netoDe(234567)), 'el incentivo sí');
     assert.ok(!JSON.stringify(r.json).includes(String(netoDe(234567))), 'el margen no aparece por ningún sitio');
+    assert.deepEqual(c.regla, { tipo: 'porcentaje_margen' }, 'ni el porcentaje: con él y el incentivo se despeja el margen');
   }));
 
 test('el comercial no puede ver ni cambiar reglas ni liquidar: 403', () =>

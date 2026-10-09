@@ -20,7 +20,14 @@ const diasDesde = (s, ahora = new Date()) => Math.floor((ahora - fechaSql(s)) / 
 const sumarDias = (dia, n) => new Date(Date.parse(`${dia}T00:00:00Z`) + n * DIA_MS).toISOString().slice(0, 10);
 const diaEsp = (dia) => dia.slice(0, 10).split('-').reverse().join('/');
 const euros = (cent) => `${(cent / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' })} €`;
-const coche = (v) => `${v.marca} ${v.modelo} ${v.matricula}`;
+// La matrícula con su espacio (1234 BCD), como en el resto del panel
+const matricula = (m) => String(m ?? '').replace(/^(\d{4})([A-Z]{3})$/, '$1 $2');
+const coche = (v) => `${v.marca} ${v.modelo} ${matricula(v.matricula)}`;
+const CANALES = { web: 'la web', coches_net: 'Coches.net', milanuncios: 'Milanuncios', wallapop: 'Wallapop' };
+// Lo que se dice de cada actividad sin hacer y ya pasada de hora (las notas no cuentan: no se «hacen»)
+const VENCIDA = { tarea: 'Tarea vencida', llamada: 'Llamada vencida', visita: 'Visita vencida', prueba: 'Prueba vencida', whatsapp: 'WhatsApp sin mandar', email: 'Correo sin mandar' };
+const TIPO_CONTACTO = { informacion: 'información', prueba: 'prueba', financiacion: 'financiación', tasacion: 'tasación' };
+const sinPunto = (t) => t.trim().replace(/[.\s]+$/, ''); // «Llamar.» (Laura) → «Llamar (Laura)»
 // Antes de recogerlos no son nuestros: su ITV todavía no nos toca
 const SIN_ITV = ['pendiente_recoger', 'en_transporte', 'vendido', 'entregado'];
 
@@ -42,14 +49,14 @@ export function rutasAvisos(db) {
   const consultas = {
     // programada_para va en hora de Rubí; hecha_en vacía = pendiente
     tareas: db.prepare(`
-      SELECT a.id, a.descripcion, a.programada_para, a.responsable_id, a.cliente_id, a.contacto_id,
+      SELECT a.id, a.tipo, a.descripcion, a.programada_para, a.responsable_id, a.cliente_id, a.contacto_id,
              u.nombre AS responsable_nombre,
              COALESCE(c.nombre, k.nombre) AS quien
         FROM actividades a
         JOIN usuarios u ON u.id = a.responsable_id
         LEFT JOIN clientes c ON c.id = a.cliente_id
         LEFT JOIN contactos k ON k.id = a.contacto_id
-       WHERE a.tipo = 'tarea' AND a.hecha_en IS NULL AND a.programada_para < ?
+       WHERE a.tipo <> 'nota' AND a.hecha_en IS NULL AND a.programada_para < ?
          AND (? IS NULL OR a.responsable_id = ?)`),
     // recibido_en, en UTC como la base
     contactos: db.prepare(`
@@ -96,7 +103,7 @@ export function rutasAvisos(db) {
       const de = gerencia ? ` · ${t.responsable_nombre}` : '';
       avisos.push({
         tipo: 'tareas_vencidas', gravedad: t.programada_para.slice(0, 10) < hoy ? 'alta' : 'media',
-        texto: `Tarea vencida: ${t.descripcion}${para}${de}`, fecha: t.programada_para, orden: instanteLocal(t.programada_para),
+        texto: `${VENCIDA[t.tipo] ?? 'Vencida'}: ${sinPunto(t.descripcion)}${para}${de}`, fecha: t.programada_para, orden: instanteLocal(t.programada_para),
         enlace: t.cliente_id ? `clientes.html?id=${t.cliente_id}` : t.contacto_id ? `contactos.html?id=${t.contacto_id}` : 'crm.html',
       });
     }
@@ -105,7 +112,7 @@ export function rutasAvisos(db) {
     for (const c of consultas.contactos.all(`-${HORAS_SIN_ATENDER} hours`)) {
       avisos.push({
         tipo: 'contactos_sin_atender', gravedad: 'alta',
-        texto: `${c.nombre} escribió por la web (${c.tipo}) y sigue sin atender`, enlace: `contactos.html?id=${c.id}`,
+        texto: `${c.nombre} escribió por la web (${TIPO_CONTACTO[c.tipo] ?? c.tipo}) y sigue sin atender`, enlace: `contactos.html?id=${c.id}`,
         fecha: c.recibido_en, orden: enUtc(c.recibido_en),
       });
     }
@@ -123,7 +130,7 @@ export function rutasAvisos(db) {
     for (const v of consultas.vendidosPublicados.all()) {
       avisos.push({
         tipo: 'vendidos_publicados', gravedad: 'alta',
-        texto: `${coche(v)} está ${v.estado} y sigue por retirar en ${v.canales}`, enlace: `coche.html?id=${v.id}`,
+        texto: `${coche(v)} está ${v.estado} y sigue por retirar en ${v.canales.split(', ').map((c) => CANALES[c] ?? c).join(', ')}`, enlace: `coche.html?id=${v.id}`,
         fecha: v.desde, orden: enUtc(v.desde),
       });
     }

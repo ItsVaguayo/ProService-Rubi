@@ -38,6 +38,7 @@ export function rutasVehiculos(db) {
 
   r.get('/', (req, res) => {
     const { estado } = req.query;
+    if (estado !== undefined && !esEstadoValido(estado)) return res.status(400).json({ error: 'Estado no válido' });
     const filas = estado
       ? db.prepare(`${SELECT} WHERE v.estado = ? ORDER BY v.id DESC`).all(estado)
       : db.prepare(`${SELECT} ORDER BY v.id DESC`).all();

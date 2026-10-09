@@ -41,29 +41,30 @@ test('sin sesión, 401', () =>
     assert.equal((await pide('/avisos', { como: null })).status, 401);
   }));
 
-test('tareas vencidas: sin hacer y con fecha pasada; el comercial solo ve las suyas', () =>
+test('actividades vencidas: sin hacer y con fecha pasada, de cualquier tipo salvo nota; el comercial solo ve las suyas', () =>
   conServidor(async ({ db, pide }) => {
     const jaume = idDe(db, 'jaume@ejemplo.com');
     const comercial = idDe(db, 'comercial@ejemplo.com');
     const cliente = Number(db.prepare("INSERT INTO clientes (nombre) VALUES ('Laura Gil')").run().lastInsertRowid);
     const ins = db.prepare(`INSERT INTO actividades (tipo, cliente_id, descripcion, programada_para, hecha_en, responsable_id, creado_por)
                             VALUES (?, ?, ?, ?, ?, ?, ?)`);
-    ins.run('tarea', cliente, 'Llamar por la financiación', '2026-01-05 10:00', null, comercial, jaume);
+    ins.run('tarea', cliente, 'Llamar por la financiación.', '2026-01-05 10:00', null, comercial, jaume); // el punto final no se repite
     ins.run('tarea', cliente, 'Pedir el permiso', '2026-01-04 10:00', null, jaume, jaume);
     ins.run('tarea', cliente, 'Ya hecha', '2026-01-03 10:00', '2026-01-03 11:00:00', comercial, jaume);
     ins.run('tarea', cliente, 'Futura', '2099-01-01 10:00', null, comercial, jaume);
-    ins.run('llamada', cliente, 'Una llamada, no una tarea', '2026-01-02 10:00', null, comercial, jaume);
+    ins.run('llamada', cliente, 'Devolverle la llamada', '2026-01-02 10:00', null, comercial, jaume);
+    ins.run('nota', cliente, 'Una nota no se «hace»', '2026-01-01 10:00', null, comercial, jaume);
 
     const gerencia = deTipo((await pide('/avisos')).json, 'tareas_vencidas');
-    assert.deepEqual(gerencia.map((a) => a.fecha), ['2026-01-04 10:00', '2026-01-05 10:00'], 'de la más vieja a la más nueva');
-    assert.deepEqual(gerencia[1], {
+    assert.deepEqual(gerencia.map((a) => a.fecha), ['2026-01-02 10:00', '2026-01-04 10:00', '2026-01-05 10:00'], 'de la más vieja a la más nueva');
+    assert.equal(gerencia[0].texto, 'Llamada vencida: Devolverle la llamada (Laura Gil) · Comercial', 'cada tipo con su nombre');
+    assert.deepEqual(gerencia[2], {
       tipo: 'tareas_vencidas', gravedad: 'alta', texto: 'Tarea vencida: Llamar por la financiación (Laura Gil) · Comercial',
       enlace: `clientes.html?id=${cliente}`, fecha: '2026-01-05 10:00',
     });
 
     const suyas = deTipo((await pide('/avisos', { como: 'comercial' })).json, 'tareas_vencidas');
-    assert.equal(suyas.length, 1);
-    assert.equal(suyas[0].texto, 'Tarea vencida: Llamar por la financiación (Laura Gil)');
+    assert.deepEqual(suyas.map((a) => a.texto), ['Llamada vencida: Devolverle la llamada (Laura Gil)', 'Tarea vencida: Llamar por la financiación (Laura Gil)']);
   }));
 
 test('tareas vencidas: de hoy, media; el enlace lleva al cliente, al contacto o al CRM', (t) => {
@@ -89,15 +90,17 @@ test('contactos de la web sin atender con más de 24 horas', () =>
   conServidor(async ({ db, pide }) => {
     const ins = db.prepare("INSERT INTO contactos (nombre, telefono, tipo, recibido_en, atendido_en) VALUES (?, '600000000', 'prueba', datetime('now', ?), ?)");
     const viejo = Number(ins.run('Viejo', '-30 hours', null).lastInsertRowid);
+    db.prepare("INSERT INTO contactos (nombre, telefono, tipo, recibido_en) VALUES ('Iván', '600000000', 'financiacion', datetime('now', '-40 hours'))").run();
     ins.run('Reciente', '-2 hours', null);
     ins.run('Atendido', '-30 hours', '2026-01-01 10:00:00');
 
     for (const como of ['gerencia', 'comercial']) {
       const avisos = deTipo((await pide('/avisos', { como })).json, 'contactos_sin_atender');
-      assert.equal(avisos.length, 1, como);
-      assert.equal(avisos[0].gravedad, 'alta');
-      assert.equal(avisos[0].enlace, `contactos.html?id=${viejo}`);
-      assert.match(avisos[0].texto, /^Viejo escribió por la web \(prueba\)/);
+      assert.equal(avisos.length, 2, como);
+      assert.equal(avisos[0].texto, 'Iván escribió por la web (financiación) y sigue sin atender', 'el tipo, en palabras');
+      assert.equal(avisos[1].gravedad, 'alta');
+      assert.equal(avisos[1].enlace, `contactos.html?id=${viejo}`);
+      assert.match(avisos[1].texto, /^Viejo escribió por la web \(prueba\)/);
     }
   }));
 
@@ -114,7 +117,7 @@ test('coches parados: publicados hace más de 60 días, alta desde 90', () =>
     const avisos = deTipo((await pide('/avisos', { como: 'comercial' })).json, 'coches_parados');
     assert.deepEqual(avisos.map((a) => [a.enlace, a.gravedad]),
       [[`coche.html?id=${cien}`, 'alta'], [`coche.html?id=${volvio}`, 'media'], [`coche.html?id=${setenta}`, 'media']]);
-    assert.match(avisos[0].texto, /^Seat Ibiza \d{4}BCD lleva 100 días publicado$/);
+    assert.match(avisos[0].texto, /^Seat Ibiza \d{4} BCD lleva 100 días publicado$/);
   }));
 
 test('vendidos o entregados con publicaciones en «retirar»', () =>
@@ -133,7 +136,7 @@ test('vendidos o entregados con publicaciones en «retirar»', () =>
     assert.equal(avisos.length, 1);
     assert.equal(avisos[0].enlace, `coche.html?id=${vendido}`);
     assert.equal(avisos[0].gravedad, 'alta');
-    assert.match(avisos[0].texto, /está vendido y sigue por retirar en (coches_net, wallapop|wallapop, coches_net)$/);
+    assert.match(avisos[0].texto, /está vendido y sigue por retirar en (Coches.net, Wallapop|Wallapop, Coches.net)$/);
   }));
 
 test('ITV de los coches en stock: caducada (alta) o en los próximos 30 días (media)', () =>

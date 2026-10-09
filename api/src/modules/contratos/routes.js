@@ -132,6 +132,9 @@ export function rutasContratos(db) {
     if (b.hora != null && (typeof b.hora !== 'string' || !HORA.test(b.hora))) errores.push('hora tiene que ser HH:MM');
     if (b.clausulas_adicionales != null && (typeof b.clausulas_adicionales !== 'string' || b.clausulas_adicionales.length > 4000)) errores.push('clausulas_adicionales tiene que ser texto');
     if (b.probado != null && typeof b.probado !== 'boolean') errores.push('probado tiene que ser true o false');
+    for (const campo of ['factura_id', 'cliente_id', 'proveedor_id']) {
+      if (b[campo] != null && (!Number.isInteger(b[campo]) || b[campo] < 1)) errores.push(`${campo} tiene que ser un número`);
+    }
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
 
     try {

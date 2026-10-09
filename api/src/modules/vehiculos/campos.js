@@ -1,7 +1,7 @@
 // Lista blanca de campos de la ficha. Solo lo que está aquí puede escribirse desde la API:
 // los nombres de columna nunca salen del cuerpo de la petición.
 //
-// tipo: texto | entero | cent (céntimos, entero ≥ 0) | fecha (AAAA-MM-DD)
+// tipo: texto | entero | cent (céntimos, entero ≥ 0) | fecha (AAAA-MM-DD) | url (http o https)
 // dinero: true → solo lo ve y lo escribe gerencia (11.2)
 
 export const CAMPOS = {
@@ -69,7 +69,7 @@ export const CAMPOS = {
   precio_minimo_cent: { tipo: 'cent', dinero: true },
   regimen_iva: { tipo: 'texto', dinero: true },
 
-  video_url: { tipo: 'texto' },
+  video_url: { tipo: 'url' }, // sale en la web: nada de javascript: ni otros esquemas
 };
 
 export const CAMPOS_DINERO = Object.keys(CAMPOS).filter((c) => CAMPOS[c].dinero);
@@ -87,6 +87,15 @@ export const OBLIGATORIOS_PUBLICAR = [
 ];
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
+
+function esUrlWeb(texto) {
+  if (texto.length > 500) return false;
+  try {
+    return ['http:', 'https:'].includes(new URL(texto).protocol);
+  } catch {
+    return false;
+  }
+}
 
 function normalizarCodigo(texto) {
   return texto.toUpperCase().replace(/[\s.-]/g, '');
@@ -132,6 +141,10 @@ export function limpiarDatos(cuerpo, { parcial = false, puedeDinero = false } = 
       case 'fecha':
         if (typeof valor !== 'string' || !FECHA.test(valor)) errores.push(`${campo} tiene que ser una fecha AAAA-MM-DD`);
         else datos[campo] = valor;
+        break;
+      case 'url':
+        if (typeof valor !== 'string' || !esUrlWeb(valor.trim())) errores.push(`${campo} tiene que ser un enlace que empiece por https://`);
+        else datos[campo] = valor.trim();
         break;
     }
   }

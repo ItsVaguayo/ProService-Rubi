@@ -33,6 +33,8 @@ export function cambiarContrasena(db, usuarioId, contrasena) {
 
 export function abrirSesion(db, usuarioId) {
   const token = randomBytes(32).toString('base64url');
+  // Las caducadas ya no sirven para entrar: se limpian aquí para que la tabla no crezca sin fin
+  db.prepare("DELETE FROM sesiones WHERE caduca_en <= datetime('now')").run();
   db.prepare(`INSERT INTO sesiones (token_hash, usuario_id, caduca_en) VALUES (?, ?, datetime('now', ?))`).run(
     sha256(token),
     usuarioId,
@@ -68,7 +70,10 @@ export function leerCookie(req, nombre) {
   if (!cabecera) return null;
   for (const trozo of cabecera.split(';')) {
     const i = trozo.indexOf('=');
-    if (i > 0 && trozo.slice(0, i).trim() === nombre) return decodeURIComponent(trozo.slice(i + 1).trim());
+    if (i > 0 && trozo.slice(0, i).trim() === nombre) {
+      // Una cookie mal codificada (%E0 suelto) es una cookie que no vale: sin sesión, no un 500
+      try { return decodeURIComponent(trozo.slice(i + 1).trim()); } catch { return null; }
+    }
   }
   return null;
 }

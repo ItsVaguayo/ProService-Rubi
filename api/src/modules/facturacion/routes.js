@@ -124,15 +124,19 @@ export function rutasFacturas(db) {
 
   // --- Facturas ---
   // ?estado=borrador|pendiente|parcial|cobrada|vencida|anulada|rectificativa · ?q= (número, cliente o matrícula)
-  // · ?desde= ?hasta= (AAAA-MM-DD). El resumen es de todo, se filtre lo que se filtre.
+  // · ?desde= ?hasta= (AAAA-MM-DD) · ?cliente=id. El resumen es de todo, se filtre lo que se filtre.
   r.get('/', (req, res) => {
-    const { estado, q, desde, hasta } = req.query;
+    const { estado, q, desde, hasta, cliente } = req.query;
     const filtros = [];
     const valores = [];
     if (typeof q === 'string' && q.trim()) {
       const t = `%${q.trim()}%`;
       filtros.push("(f.codigo LIKE ? OR c.nombre LIKE ? OR v.matricula LIKE ?)");
       valores.push(t, t, `%${q.trim().toUpperCase().replace(/[\s-]/g, '')}%`);
+    }
+    if (cliente !== undefined) {
+      if (typeof cliente !== 'string' || !ENTERO.test(cliente)) return res.status(400).json({ error: 'cliente tiene que ser un número' });
+      filtros.push('f.cliente_id = ?'); valores.push(Number(cliente));
     }
     if (typeof desde === 'string' && desde) { filtros.push('f.fecha >= ?'); valores.push(desde); }
     if (typeof hasta === 'string' && hasta) { filtros.push('f.fecha <= ?'); valores.push(hasta); }
@@ -274,6 +278,9 @@ export function rutasFacturas(db) {
     if (!v) faltan.push('el coche');
     if (f.regimen === 'REBU' && v && compraDe(v) == null) faltan.push(v.propiedad === 'deposito' ? 'lo pactado con el dueño del coche' : 'el precio de compra del coche');
     if (f.precio_cent <= 0) faltan.push('el precio');
+    // La fecha de una factura es la del día en que se expide. Una futura, además, bloquearía la serie:
+    // las siguientes no pueden llevar una fecha anterior (numerar).
+    if (f.fecha > hoyLocal()) return res.status(409).json({ error: `La factura tiene fecha del ${f.fecha}: no se emite con una fecha que aún no ha llegado` });
     if (faltan.length) return res.status(409).json({ error: `Para emitir falta: ${faltan.join(', ')}`, faltan });
     const otra = db.prepare(`SELECT codigo FROM facturas WHERE vehiculo_id = ? AND tipo = 'venta' AND estado = 'emitida'
                                AND id NOT IN (SELECT rectifica_id FROM facturas WHERE rectifica_id IS NOT NULL)`).get(v.id);

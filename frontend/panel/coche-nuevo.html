@@ -47,15 +47,19 @@
 
   <main class="contenido">
 
-    <!-- PORTADA. La misma del tablero, en corto. -->
-    <header class="portada portada--corta">
-      <p class="portada__antetitulo">Stock</p>
-      <h1 class="portada__titular portada__titular--medio">Alta de vehículo</h1>
-      <p class="portada__texto">Con matrícula, marca y modelo ya se guarda y entra en «Pendiente de recoger». El resto lo completas antes de publicarlo. Las fotos se suben desde su ficha.</p>
-      <ul class="portada__leyenda">
-        <li><em>*</em> Obligatorio para guardar</li>
-        <li><i class="marca-publicar"></i> Hace falta para publicar</li>
-      </ul>
+    <!-- CABECERA en banda negra, como el resto de páginas: título a la izquierda, leyenda a la derecha -->
+    <header class="cabecera cabecera--portada">
+      <div>
+        <p class="portada__antetitulo">Stock</p>
+        <h1>Alta de vehículo</h1>
+        <p class="nota">Con matrícula, marca y modelo ya se guarda y entra en «Pendiente de recoger». El resto lo completas antes de publicarlo. Las fotos se suben desde su ficha.</p>
+      </div>
+      <div class="cabecera__acciones">
+        <ul class="portada__leyenda">
+          <li><em>*</em> Obligatorio para guardar</li>
+          <li><i class="marca-publicar"></i> Hace falta para publicar</li>
+        </ul>
+      </div>
     </header>
 
     <!-- IMPORTANTE: el "name" de cada campo es el nombre que espera la API

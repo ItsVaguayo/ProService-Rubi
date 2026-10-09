@@ -20,7 +20,7 @@ export function incentivoDeCoche(regla, margenCent) {
 }
 
 /**
- * Por comercial: { usuario_id, nombre, rol, regla, coches: [{ id, referencia, marca, modelo, fecha_venta,
+ * Por comercial: { usuario_id, nombre, rol, regla, coches: [{ id, referencia, marca, modelo, matricula, pvp_cent, fecha_venta,
  * margen_cent, incentivo_cent }], total_cent, liquidado }. Salen los que vendieron algo ese mes y los
  * comerciales activos aunque no vendieran nada. `sin_vendedor`: ventas sin usuario (no deberían existir).
  */
@@ -52,7 +52,8 @@ export function calcularIncentivos(db, mes) {
     const f = fila(v.vendio_id);
     const margen = margenDe(v);
     const incentivo = incentivoDeCoche(f.regla, margen);
-    f.coches.push({ id: v.id, referencia: v.referencia, marca: v.marca, modelo: v.modelo, fecha_venta: v.fecha_venta,
+    f.coches.push({ id: v.id, referencia: v.referencia, marca: v.marca, modelo: v.modelo, matricula: v.matricula, pvp_cent: v.pvp_cent,
+      fecha_venta: v.fecha_venta,
       margen_cent: margen, incentivo_cent: incentivo });
     f.total_cent += incentivo;
   }
