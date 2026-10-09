@@ -67,7 +67,10 @@ const tituloCoche = (v) => [v.marca, v.modelo, v.version].filter(Boolean).join('
 const matricula = (m) => esc(String(m ?? '').replace(/^(\d{4})([A-Z]{3})$/, '$1 $2'));
 const urlCoche = (v) => `coche.html?id=${v.id}`;
 
-// Días con el mismo aviso que la maqueta: ámbar > 5, rojo > 14 (a la venta, > 60)
+// Días en stock (desde el alta): ámbar desde 60, rojo desde 90, como el stock por antigüedad de Informes
+const claseDiasStock = (dias) => (dias > 90 ? 'dias dias--peligro' : dias > 60 ? 'dias dias--aviso' : 'dias');
+
+// Días en el estado actual (columnas del tablero): ámbar > 5, rojo > 14 (a la venta, > 60)
 function claseDias(v, dias) {
   const aVenta = ['publicado', 'reservado'].includes(v.estado);
   if (dias > (aVenta ? 60 : 14)) return 'dias dias--peligro';
@@ -282,11 +285,14 @@ async function paginaTablero(usuario = usuarioTablero) {
   // Portada: total, publicados, sin publicar todavía (de «Pendiente de recoger» a «Pendiente de fotos»)
   // y con más de 60 días a la venta, que lleva el aviso solo si hay alguno.
   const ANTES_DE_PUBLICAR = ESTADOS.slice(0, ESTADOS.findIndex((e) => e.id === 'publicado')).map((e) => e.id);
+  // Los avisos son los de la página Avisos (GET /avisos): así el tablero y Avisos dicen lo mismo
+  const avisos = await api('/avisos').catch(() => null);
+  const enUbicacion = (a) => !ubicacion || !a.enlace.startsWith('coche.html') || enTablero.some((v) => a.enlace === urlCoche(v));
   const resumen = {
     total: enStock.length,
     publicados: enStock.filter((v) => v.estado === 'publicado').length,
     sinPublicar: enStock.filter((v) => ANTES_DE_PUBLICAR.includes(v.estado)).length,
-    parados: enStock.filter((v) => v.estado === 'publicado' && diasDesde(v.en_estado_desde) > 60).length,
+    parados: (avisos ?? []).filter((a) => a.tipo === 'coches_parados' && enUbicacion(a)).length,
   };
   const titular = $('.portada__titular .cifra');
   if (titular) titular.textContent = resumen.total;
@@ -308,32 +314,25 @@ async function paginaTablero(usuario = usuarioTablero) {
     paso.classList.toggle('estados__paso--vacio', n === 0);
   });
 
-  // Para hoy: lo que se puede deducir de los datos que ya hay
+  // Para hoy: los avisos (urgentes primero) y lo que solo sabe el tablero: entregar, fotos y taller
   const tareas = [];
+  const IR_AVISO = { tareas_vencidas: 'Ver', contactos_sin_atender: 'Llamar', coches_parados: 'Revisar precio', vendidos_publicados: 'Retirar', itv: 'Ver', cobros_vencidos: 'Cobrar' };
+  for (const a of (avisos ?? []).filter(enUbicacion)) tareas.push({ texto: a.texto, url: a.enlace, ir: IR_AVISO[a.tipo] ?? 'Ver', urgente: a.gravedad === 'alta' });
   const hoy = (texto, v, ir, urgente) => tareas.push({ texto, url: urlCoche(v), ir, urgente });
   for (const v of enTablero) {
     const dias = diasDesde(v.en_estado_desde);
     const coche = `${v.marca} ${v.modelo}`;
     if (v.estado === 'vendido') hoy(`El ${coche} está vendido y falta entregarlo`, v, 'Entregar', true);
-    if (v.estado === 'publicado' && dias > 60) hoy(`El ${coche} lleva ${dias} días a la venta`, v, 'Revisar precio', false);
     if (v.estado === 'en_taller' && dias > 14) hoy(`El ${coche} lleva ${dias} días en el taller`, v, 'Ver', false);
     if (v.estado === 'pendiente_fotos') hoy(`El ${coche} tiene ${v.n_fotos} de 15 fotos`, v, 'Subir fotos', false);
-    if (v.itv_caducidad && (new Date(v.itv_caducidad) - Date.now()) / 86400000 < 30) {
-      hoy(`La ITV del ${coche} caduca el ${fechaCorta(v.itv_caducidad)}`, v, 'Ver', true);
-    }
   }
-  // Contactos de la web sin atender: en rojo si alguno lleva más de un día esperando
-  const pendientes = await api('/contactos').catch(() => []);
-  if (pendientes.length) {
-    const viejos = pendientes.filter((c) => Date.now() - fechaSql(c.recibido_en) > 86400000).length;
-    tareas.push({
-      texto: viejos ? `Contactos de la web sin atender, ${viejos} desde hace más de un día` : 'Contactos de la web sin atender',
-      url: 'contactos.html', ir: 'Llamar', urgente: viejos > 0, n: pendientes.length,
-    });
-  }
-  $('.para-hoy ul').innerHTML = tareas.length
-    ? tareas.sort((a, b) => b.urgente - a.urgente).map((t) => `<li><a href="${t.url}"><span class="para-hoy__cifra${t.urgente ? ' para-hoy__cifra--hoy' : ''}">${t.n ?? 1}</span><span>${esc(t.texto)}</span><span class="para-hoy__ir">${esc(t.ir)}</span></a></li>`).join('')
-    : '<li><span class="nota">Nada urgente hoy.</span></li>';
+  // Como mucho ocho: el resto, en Avisos
+  const MAX_HOY = 8;
+  const ordenadas = tareas.sort((a, b) => b.urgente - a.urgente);
+  $('.para-hoy ul').innerHTML = (ordenadas.length
+    ? ordenadas.slice(0, MAX_HOY).map((t) => `<li><a href="${esc(t.url)}"><span class="para-hoy__cifra${t.urgente ? ' para-hoy__cifra--hoy' : ''}">${t.urgente ? '!' : '·'}</span><span>${esc(t.texto)}</span><span class="para-hoy__ir">${esc(t.ir)}</span></a></li>`).join('')
+    : `<li><span class="nota">${avisos == null ? 'No se han podido cargar los avisos.' : 'Nada urgente hoy.'}</span></li>`)
+    + (ordenadas.length > MAX_HOY ? `<li><a href="avisos.html"><span class="para-hoy__cifra">+${ordenadas.length - MAX_HOY}</span><span>Ver todos los avisos</span><span class="para-hoy__ir">Avisos</span></a></li>` : '');
 
   // Pestañas de ubicación
   const pestanas = document.querySelectorAll('.pestanas a');
@@ -619,13 +618,13 @@ async function paginaListado(usuario) {
     return (x < y ? -1 : x > y ? 1 : 0) * orden.sentido;
   };
 
-  // Sin estado: los que están en stock. «todos»: también los entregados.
+  // Sin estado: los que están en stock (ni vendidos ni entregados, como la cabecera e Informes). «todos»: todos.
   const filtrar = () => {
     const q = valor('q').trim().toLowerCase().replace(/\s/g, '');
     const f = { estado: valor('estado'), propiedad: valor('propiedad'), ubicacion: valor('ubicacion') };
     return todos.filter((v) =>
       (!q || `${v.matricula}${v.marca}${v.modelo}${v.version ?? ''}${v.referencia ?? ''}`.toLowerCase().replace(/\s/g, '').includes(q)) &&
-      (f.estado === 'todos' || (f.estado ? v.estado === f.estado : v.estado !== 'entregado')) &&
+      (f.estado === 'todos' || (f.estado ? v.estado === f.estado : !['vendido', 'entregado'].includes(v.estado))) &&
       (!f.propiedad || v.propiedad === f.propiedad) && (!f.ubicacion || v.ubicacion === f.ubicacion));
   };
   const hayFiltros = () => ['q', 'estado', 'propiedad', 'ubicacion'].some((c) => valor(c));
@@ -643,13 +642,15 @@ async function paginaListado(usuario) {
         <td class="c-estado">${etiquetaEstado(v.estado)}</td>
         <td class="c-km derecha cifra">${v.kilometros != null ? cifra(v.kilometros) : '—'}</td>
         <td class="c-precio derecha cifra">${euros(v.pvp_cent)}</td>
-        <td class="c-dias derecha cifra">${d == null ? '<span class="nota">—</span>' : `<span class="${claseDias(v, d)}">${d}</span>`}</td>
+        <td class="c-dias derecha cifra">${d == null ? '<span class="nota">—</span>' : `<span class="${claseDiasStock(d)}">${d}</span>`}</td>
         <td class="c-donde nota">${v.ubicacion ? esc(nombre(v.ubicacion)) : '—'}</td>
       </tr>`;
     }).join('');
     $('.tabla-caja').hidden = !lista.length;
     $('.vacio').hidden = !!lista.length;
-    $('.lista-pie__cuantos').textContent = `${lista.length} ${lista.length === 1 ? 'coche' : 'coches'}${hayFiltros() ? ` de ${todos.length}` : ''}`;
+    // «de N»: los que hay en stock (lo mismo que la cabecera), o todos si se miran también los vendidos y entregados
+    const base = ['todos', 'vendido', 'entregado'].includes(valor('estado')) ? todos.length : todos.filter((v) => !['vendido', 'entregado'].includes(v.estado)).length;
+    $('.lista-pie__cuantos').textContent = `${lista.length} ${lista.length === 1 ? 'coche' : 'coches'}${hayFiltros() ? ` de ${base}` : ' en stock'}`;
     $('[data-limpiar]').hidden = !hayFiltros();
     document.querySelectorAll('.ordenar').forEach((b) => {
       if (b.dataset.orden === orden.campo) b.setAttribute('aria-sort', orden.sentido > 0 ? 'ascending' : 'descending');
@@ -738,7 +739,7 @@ async function paginaFicha(usuario) {
   $('.ficha-cabecera__info > .nota').textContent = [v.anio, v.kilometros != null && `${cifra(v.kilometros)} km`, v.combustible && nombre(v.combustible),
     v.cambio && nombre(v.cambio), v.propiedad === 'deposito' ? 'En depósito' : 'Propio', v.ubicacion && nombre(v.ubicacion), `Ref. ${v.referencia}`].filter(Boolean).join(' · ');
   const lineaPrecio = document.querySelectorAll('.ficha-cabecera__linea')[1];
-  lineaPrecio.innerHTML = `<span class="ficha-cabecera__precio cifra">${euros(v.pvp_cent)}</span><span class="nota">${diasDesde(v.creado_en)} días en stock</span>`;
+  lineaPrecio.innerHTML = `<span class="ficha-cabecera__precio cifra">${euros(v.pvp_cent)}</span><span class="${claseDiasStock(diasDesde(v.creado_en))}">${diasDesde(v.creado_en)} días en stock</span>`;
 
   // Cambiar estado
   const formEstado = $('.cambiar-estado');
@@ -1908,7 +1909,7 @@ async function paginaFacturas() {
       ? `<span class="cobrado"><span>${euros(f.cobrado_cent)}</span><span class="cobrado__barra${parte === 100 ? ' cobrado__barra--entera' : ''}"><span style="width: ${parte}%"></span></span></span>`
       : '—';
     const vence = f.estado_cobro === 'vencida'
-      ? `<span class="dias dias--peligro factura__vence">${esc(mayuscula(haceCuanto(new Date(`${f.vencimiento}T23:59:59`))))}</span>`
+      ? `<span class="dias dias--peligro factura__vence">${esc(mayuscula(haceCuanto(new Date(`${f.vencimiento}T00:00:00`))))}</span>`
       : ['pendiente', 'parcial'].includes(f.estado_cobro) && f.vencimiento ? `<span class="nota factura__vence">Vence el ${esc(new Date(`${f.vencimiento}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</span>`
         : f.rectificada_por ? `<span class="nota factura__vence">Rectificada por la ${esc(f.rectificada_por)}</span>` : '';
     const ver = `<a class="boton boton--secundario boton--pequeno" href="factura.html?id=${f.id}">${f.estado === 'borrador' ? 'Revisar' : 'Ver'}</a>`;
