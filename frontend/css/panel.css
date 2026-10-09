@@ -2583,3 +2583,36 @@ a.contacto__coche:hover { background: var(--fondo); }
   .gasto-form--plegado > form,
   .gasto-form--plegado > .caja__titulo { display: none; }
 }
+
+/* Informes · gráficas de columnas (graficaColumnas en panel.js). Énfasis: el mes elegido en rojo de marca,
+   el resto en gris (#878f98, 3:1 sobre blanco). Texto siempre en tinta, nunca del color de la columna. */
+.graficas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-bottom: var(--espacio-l); }
+@media (max-width: 1000px) { .graficas { grid-template-columns: minmax(0, 1fr); } }
+.grafica .caja__titulo h2 { font-size: 1rem; }
+.grafica__lienzo { position: relative; }
+.grafica__svg { display: block; overflow: visible; }
+.grafica__rejilla { stroke: var(--linea); stroke-width: 1; }
+.grafica__rejilla--cero { stroke: var(--linea-fuerte); }
+.grafica__eje, .grafica__mes { fill: var(--tinta-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+.grafica__mes--elegido { fill: var(--tinta); font-weight: 700; }
+.grafica__valor { fill: var(--tinta); font-size: 12px; font-weight: 700; }
+.grafica__columna { fill: #878f98; transition: opacity .15s; }
+.grafica__punto--elegido .grafica__columna { fill: var(--rojo-boton); }
+.grafica__diana { fill: transparent; }
+.grafica__punto { cursor: default; outline: none; }
+.grafica__punto--activo .grafica__diana { fill: rgb(23 25 28 / .04); }
+.grafica__punto:focus-visible .grafica__diana { stroke: var(--azul-matricula); stroke-width: 2; }
+.grafica__tip { position: absolute; top: 0; z-index: 3; display: grid; gap: 2px; min-width: 150px; padding: 8px 10px; border: 1px solid var(--linea); border-radius: 6px; background: var(--blanco); box-shadow: 0 6px 18px rgb(23 25 28 / .12); font-size: .75rem; color: var(--tinta-2); pointer-events: none; }
+.grafica__tip strong { color: var(--tinta-3); font-weight: 600; }
+.grafica__tip b { color: var(--tinta); font-variant-numeric: tabular-nums; }
+.grafica__tabla { margin-top: 8px; font-size: .8125rem; }
+.grafica__tabla summary { cursor: pointer; color: var(--tinta-3); }
+.grafica__tabla .tabla { margin-top: 8px; }
+
+/* Nueva factura: lo que saldrá en ella, en vivo */
+.factura-previa { display: grid; gap: 6px; padding: 14px 16px; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--fondo); font-size: .875rem; }
+.factura-previa__titulo { margin: 0 0 2px; color: var(--tinta-2); font-weight: 600; }
+.factura-previa div { display: flex; justify-content: space-between; gap: 12px; }
+.factura-previa div span:first-child { color: var(--tinta-2); }
+
+#nueva-factura { margin-bottom: var(--espacio-l); }

@@ -123,3 +123,31 @@
 .factura__rectificar-caja .boton--secundario { color: var(--tinta); border-color: var(--linea-fuerte); background: var(--blanco); }
 .factura__rectificar-caja .nota { color: var(--tinta-3); font-size: .75rem; }
 @media print { .factura__rectificar { display: none; } }
+
+/* Cobros de la factura, solo en pantalla: una tarjeta del ancho de la hoja, encima */
+.factura-cobros { width: min(210mm, 100% - 32px); margin: 20px auto 0; padding: 16px 20px; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--blanco); font-size: .875rem; }
+.factura-cobros__aviso { margin: 0; color: var(--tinta-2); }
+.factura-cobros__cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.factura-cobros__cabeza p { margin: 0; color: var(--tinta-2); }
+.factura-cobros__cabeza b { color: var(--tinta); }
+.factura-cobros__barra { height: 6px; margin: 12px 0; border-radius: 3px; background: var(--linea); overflow: hidden; }
+.factura-cobros__barra span { display: block; height: 100%; border-radius: 3px; background: var(--ok); }
+.factura-cobros__lista { margin: 0; padding: 0; list-style: none; }
+.factura-cobros__lista li { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--linea); }
+.factura-cobros__quitar { padding: 4px 8px; border: 0; border-radius: 4px; background: none; color: var(--tinta-3); font-size: .75rem; cursor: pointer; }
+.factura-cobros__quitar:hover, .factura-cobros__quitar[data-seguro] { background: var(--peligro-fondo); color: var(--peligro); }
+.factura-cobros__form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; margin-top: 12px; padding-top: 14px; border-top: 1px solid var(--linea); }
+.factura-cobros__form .campo { display: grid; gap: 4px; margin: 0; min-width: 140px; }
+.factura-cobros__form .campo__nombre { font-size: .8125rem; font-weight: 600; }
+.factura-cobros__form input, .factura-cobros__form select { padding: 8px 10px; border: 1px solid var(--linea-fuerte); border-radius: 6px; font: inherit; background: var(--blanco); }
+.factura-cobros__form .cobro-form__botones { display: flex; flex-wrap: wrap; gap: 8px; }
+.factura-cobros .estado { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+.factura-cobros .cobro--cobrada { background: var(--ok-fondo); color: var(--ok); }
+.factura-cobros .cobro--vencida { background: var(--peligro-fondo); color: var(--peligro); }
+.factura-cobros .cobro--pendiente { background: var(--aviso-fondo); color: var(--aviso); }
+.factura-cobros .cobro--parcial { background: var(--reservado-fondo); color: var(--reservado); }
+.factura-cobros .dias { padding: 2px 8px; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+.factura-cobros .dias--peligro { background: var(--peligro-fondo); color: var(--peligro); }
+.factura-cobros .dias--aviso { background: var(--aviso-fondo); color: var(--aviso); }
+.factura-cobros .nota { color: var(--tinta-3); }
+@media (max-width: 600px) { .factura-cobros__lista li { grid-template-columns: 80px minmax(0, 1fr) auto; } .factura-cobros__quitar { grid-column: 2 / -1; justify-self: end; } }

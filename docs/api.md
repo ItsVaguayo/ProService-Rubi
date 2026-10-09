@@ -320,6 +320,7 @@ Necesita `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION`; sin ellas, 503. Detalle
 - `mes` y `meses` (los que tienen ventas, más el actual, para el selector).
 - `resumen`: `vendidos`, `vendidos_mes_anterior`, `facturado_cent`, `margen_cent` (neto), `margen_medio_cent`, `ventas_sin_margen` (les falta el coste o el precio, y no se inventa), `gastos_estructura_cent` (gastos del libro de ese mes que no son de ningún coche, sin IVA), `resultado_cent` (margen neto − gastos de estructura) y `dias_medios_venta`.
 - `ventas`: cada coche vendido con `fecha_venta`, `vendio`, `precio_venta_cent` (su PVP), `coste_total_cent`, `regimen` (`REBU` o `deducible`), `iva_venta_cent`, `margen_cent` (neto) y `dias_en_stock`. El CSV lleva las mismas columnas.
+- `evolucion`: los 12 meses que acaban en el pedido, del más antiguo al más nuevo, para las gráficas. Cada uno con `mes`, `vendidos`, `facturado_cent`, `margen_cent` (neto, `null` sin ventas con margen), `gastos_estructura_cent` y `resultado_cent` (margen − gastos; sin ventas, los gastos en negativo). El último coincide con `resumen`.
 - `stock`: `total`, `propios`, `deposito`, `tramos` (menos de 30, 30-60, 60-90 y más de 90 días) y `mas_antiguos` (los 5 que más llevan).
 
 Una venta es el último paso a «Vendido» (o a «Entregado», si se saltó ese paso) de un coche que sigue vendido o entregado: si se deshace la venta, deja de contar. Los meses van en UTC, como las fechas de la base.

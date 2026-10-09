@@ -10,6 +10,7 @@ import { abrirDb } from '../src/db.js';
 import { crearUsuario } from '../src/modules/auth/sesiones.js';
 import { separarCostes, guardarCostes } from '../src/modules/vehiculos/costes.js';
 import { importesFactura } from '../src/modules/facturacion/importes.js';
+import { apuntarGasto } from '../src/modules/gastos/apuntar.js';
 import { CONTRASENA_PRUEBAS, USUARIOS_PRUEBAS } from './usuarios-pruebas.js';
 
 const { values } = parseArgs({ options: { reset: { type: 'boolean', default: false } } });
@@ -254,6 +255,61 @@ db.transaction(() => {
   actContacto.run('tarea', 'Marta Soler', 'Buscarle un Ateca con menos de 60.000 km.', `${dia(1)} 17:30`, jaume, jaume);
 })();
 
+// Hasta aquí, los coches de la ficha. Los de la historia de abajo se vendieron antes del arranque y se
+// facturaron en Pymecar: no llevan factura nuestra.
+const ultimoCocheActual = db.prepare('SELECT MAX(id) AS n FROM vehiculos').get().n;
+
+// Historia para los informes: once meses de ventas pasadas (entre 2 y 5 coches entregados al mes, con su
+// compra, su PVP, quién vendió y su comprador, así salen también sus facturas) y los gastos fijos de la
+// tienda de cada mes. Determinista: cada siembra da lo mismo, para poder comparar capturas.
+db.transaction(() => {
+  const jaume = db.prepare("SELECT id FROM usuarios WHERE rol = 'gerencia' ORDER BY id LIMIT 1").get().id;
+  const comercial = db.prepare("SELECT id FROM usuarios WHERE rol = 'comercial' ORDER BY id LIMIT 1").get().id;
+  const clientes = db.prepare('SELECT id FROM clientes ORDER BY id').all().map((c) => c.id);
+  const MODELOS = [['Seat', 'León', '1.5 TSI FR', 'gasolina'], ['Volkswagen', 'Polo', '1.0 TSI', 'gasolina'], ['Toyota', 'Corolla', '125H Active', 'hibrido'],
+    ['Renault', 'Mégane', '1.5 dCi', 'diesel'], ['Peugeot', '208', '1.2 PureTech', 'gasolina'], ['Kia', 'Sportage', '1.6 CRDi', 'diesel'],
+    ['Opel', 'Corsa', '1.2', 'gasolina'], ['Hyundai', 'Tucson', '1.6 TGDI', 'gasolina'], ['Dacia', 'Sandero', '1.0 TCe', 'glp']];
+  const POR_MES = [3, 2, 4, 3, 5, 2, 3, 4, 3, 2, 4]; // de hace 11 meses a hace 1
+  let n = 0;
+  const hist = db.prepare('INSERT INTO historial_estados (vehiculo_id, de, a, usuario_id, fecha) VALUES (?, ?, ?, ?, ?)');
+  POR_MES.forEach((cuantos, k) => {
+    const mesesAtras = 11 - k;
+    for (let j = 0; j < cuantos; j++, n++) {
+      const [marca, modelo, version, combustible] = MODELOS[n % MODELOS.length];
+      const pvp = (9000 + ((n * 2371) % 17000)) * 100;
+      const compra = Math.round(pvp * (0.78 + (n % 5) * 0.02) / 1000) * 1000;
+      // El día de la venta: dentro de ese mes (UTC), repartido
+      const ahora = new Date();
+      const venta = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth() - mesesAtras, 3 + ((j * 7 + n) % 24), 11));
+      const sql = (d) => d.toISOString().slice(0, 19).replace('T', ' ');
+      const alta = new Date(venta.getTime() - (25 + (n % 50)) * 86400000);
+      const matricula = `${String(1000 + n * 37).slice(-4)}${'BCDFGHJKLMNPRSTVWXYZ'[n % 20]}${'KLM'[n % 3]}${'BCD'[n % 3]}`;
+      const id = Number(db.prepare(`INSERT INTO vehiculos (matricula, marca, modelo, version, combustible, anio, kilometros, propiedad, estado,
+                                      pvp_cent, precio_compra_cent, regimen_iva, comprador_id, creado_en, actualizado_en)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, 'propio', 'entregado', ?, ?, 'REBU', ?, ?, ?)`)
+        .run(matricula, marca, modelo, version, combustible, 2016 + (n % 7), 40000 + ((n * 9173) % 120000), pvp, compra,
+          clientes[n % clientes.length], sql(alta), sql(venta)).lastInsertRowid);
+      db.prepare("UPDATE vehiculos SET referencia = printf('PS-%05d', id) WHERE id = ?").run(id);
+      hist.run(id, null, 'pendiente_recoger', jaume, sql(alta));
+      hist.run(id, 'pendiente_recoger', 'publicado', jaume, sql(new Date(alta.getTime() + 10 * 86400000)));
+      hist.run(id, 'publicado', 'vendido', n % 3 === 0 ? jaume : comercial, sql(venta));
+      hist.run(id, 'vendido', 'entregado', jaume, sql(new Date(venta.getTime() + 3 * 86400000)));
+    }
+  });
+  // Gastos fijos de la tienda, cada mes de los últimos doce (los de un coche ya los pone cada ficha)
+  const FIJOS = [['alquileres', 'Alquiler de la nave', 120000, 'irpf', 19], ['electricidad', 'Luz', 21000, 'general', 0],
+    ['gestorias', 'Contabilidad', 18000, 'irpf', 15], ['publicidad', 'Coches.net, cuota', 28900, 'general', 0]];
+  const ahora = new Date();
+  for (let mesesAtras = 11; mesesAtras >= 1; mesesAtras--) {
+    const dia = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth() - mesesAtras, 2)).toISOString().slice(0, 10);
+    FIJOS.forEach(([concepto, descripcion, base, tipo, irpf], i) => {
+      const g = apuntarGasto(db, { fecha: dia, concepto, descripcion: `${descripcion}, ${dia.slice(0, 7)}`, base_cent: base + (mesesAtras * 137 * (i + 1)) % 2000,
+        tipo, irpf_pct: irpf, forma_pago: 'transferencia' }, jaume);
+      db.prepare('UPDATE gastos SET pagado_en = ? WHERE id = ?').run(dia, g);
+    });
+  }
+})();
+
 // Facturación (0013): el domicilio fiscal ya lo pone la migración 0015 (el de sus contratos de Pymecar),
 // la serie V26 siguiendo a Pymecar (iba por la 38) y una factura por cada coche vendido con comprador:
 // las entregadas, cobradas; la vendida más reciente, con la señal y el resto pendiente; una vencida a medias.
@@ -264,7 +320,7 @@ db.transaction(() => {
   const jaume = db.prepare("SELECT id FROM usuarios WHERE rol = 'gerencia' ORDER BY id LIMIT 1").get().id;
   const empresa = JSON.stringify(db.prepare('SELECT * FROM empresa').get());
   const vendidos = db.prepare(`SELECT v.*, (SELECT MAX(h.fecha) FROM historial_estados h WHERE h.vehiculo_id = v.id AND h.a = 'vendido') AS vendido_en
-                                 FROM vehiculos v WHERE v.comprador_id IS NOT NULL ORDER BY vendido_en, v.id`).all();
+                                 FROM vehiculos v WHERE v.comprador_id IS NOT NULL AND v.id <= ? ORDER BY vendido_en, v.id`).all(ultimoCocheActual);
   const sumarDias = (dia, n) => new Date(new Date(`${dia}T12:00:00Z`).getTime() + n * 86400000).toISOString().slice(0, 10);
   vendidos.forEach((v, i) => {
     const fecha = (v.vendido_en ?? v.creado_en).slice(0, 10);

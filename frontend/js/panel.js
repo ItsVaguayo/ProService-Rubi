@@ -2027,7 +2027,9 @@ async function prepararAltaFactura() {
   cabecera.insertAdjacentHTML('beforeend', '<p class="cabecera__acciones-factura"><a class="boton" href="#nueva-factura" data-nueva>Nueva factura</a></p>');
   const [coches, clientes, { facturas }] = await Promise.all([api('/vehiculos'), api('/clientes'), api('/facturas')]);
   const facturados = new Set(facturas.filter((f) => f.tipo === 'venta' && f.estado === 'emitida' && !f.anulada).map((f) => f.vehiculo_id));
-  const posibles = coches.filter((v) => ['publicado', 'reservado', 'vendido', 'entregado'].includes(v.estado) && !facturados.has(v.id));
+  // Un entregado de hace más de dos meses sin factura nuestra se facturó en su día fuera (Pymecar): no se ofrece
+  const posibles = coches.filter((v) => ['publicado', 'reservado', 'vendido', 'entregado'].includes(v.estado) && !facturados.has(v.id)
+    && (v.estado !== 'entregado' || diasDesde(v.en_estado_desde) <= 60));
   const seccion = document.createElement('section');
   seccion.className = 'caja form-tercero';
   seccion.id = 'nueva-factura';
@@ -2036,7 +2038,8 @@ async function prepararAltaFactura() {
     <div class="caja__titulo"><h2>Nueva factura</h2><span class="nota">Se guarda como borrador: se revisa y luego se emite</span></div>
     <form class="rejilla">
       <label class="campo campo--doble"><span class="campo__nombre">Coche <em>*</em></span>
-        <select name="vehiculo_id" required><option value="">Elige el coche</option>${posibles.map((v) => `<option value="${v.id}">${esc(tituloCoche(v))} · ${esc(v.matricula)} · ${esc(estado(v.estado).nombre)}</option>`).join('')}</select></label>
+        <select name="vehiculo_id" required><option value="">Elige el coche</option>${[['vendido', 'Vendidos, sin factura'], ['entregado', 'Entregados, sin factura'], ['reservado', 'Reservados'], ['publicado', 'Publicados']]
+          .map(([e, titulo]) => { const suyos = posibles.filter((v) => v.estado === e); return suyos.length ? `<optgroup label="${esc(titulo)}">${suyos.map((v) => `<option value="${v.id}">${esc(tituloCoche(v))} · ${matricula(v.matricula)}</option>`).join('')}</optgroup>` : ''; }).join('')}</select></label>
       <label class="campo campo--doble"><span class="campo__nombre">Cliente <em>*</em></span>
         <select name="cliente_id" required><option value="">Elige el cliente</option>${clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}${c.nif ? ` · ${esc(c.nif)}` : ' · sin DNI'}</option>`).join('')}</select>
         <span class="campo__ayuda">¿No está? Dalo de alta en <a href="clientes.html#nuevo">Clientes</a> con su DNI y dirección.</span></label>
@@ -2051,23 +2054,62 @@ async function prepararAltaFactura() {
       <label class="campo"><span class="campo__nombre">Meses</span><input type="number" name="garantia_meses" min="0" max="36" value="12"></label>
       <label class="campo"><span class="campo__nombre">Km a la entrega</span><input type="number" name="km_entrega" min="0"></label>
       <label class="campo campo--ancho"><span class="campo__nombre">Observaciones</span><textarea name="observaciones" maxlength="2000"></textarea></label>
+      <div class="factura-previa campo--ancho" aria-live="polite" hidden></div>
       <div class="form-tercero__pie campo--ancho">
         <button class="boton boton--secundario" type="button" data-cancelar>Cancelar</button>
         <button class="boton" type="submit">Guardar borrador</button>
       </div>
     </form>`;
-  $('.tabla-caja').before(seccion);
+  $('form.filtros').before(seccion);
   const form = $('form', seccion);
   const error = cajaErrorEn(form);
   error.classList.add('campo--ancho');
-  // Al elegir el coche: su PVP y sus km
+  // Lo que saldrá en la factura, en vivo y con la misma cuenta que el servidor (facturacion/importes.js):
+  // en REBU el cliente ve un solo total y el IVA del margen va al libro; en general, el 21 % va dentro.
+  const previa = $('.factura-previa', form);
+  const pintarPrevia = () => {
+    const v = posibles.find((x) => String(x.id) === form.elements.vehiculo_id.value);
+    if (!v) { previa.hidden = true; return; }
+    const precio = form.elements.precio.value.trim() ? aCent(form.elements.precio.value) : v.pvp_cent;
+    const suplidos = form.elements.suplidos.value.trim() ? aCent(form.elements.suplidos.value) : 0;
+    const deposito = v.propiedad === 'deposito';
+    const compra = deposito ? v.pago_propietario_cent : v.precio_compra_cent;
+    const regimen = form.elements.regimen.value || (deposito || v.regimen_iva !== 'deducible' ? 'REBU' : 'general');
+    const filas = [];
+    if (!(precio >= 0)) {
+      filas.push('<p class="nota">El precio va como 12.900,00.</p>');
+    } else if (regimen === 'REBU') {
+      const margen = Math.max(0, precio - (compra ?? 0));
+      const iva = Math.round((margen * 21) / 121);
+      filas.push(`<div><span>Total de la factura</span><b class="cifra">${euros2(precio + (suplidos || 0))}</b></div>`,
+        `<div><span>${deposito ? 'Pactado con el dueño' : 'Compra'}</span><span class="cifra">${compra == null ? '<span class="dias dias--aviso">Falta: sin ella no se emite</span>' : euros2(compra)}</span></div>`,
+        `<div><span>Margen · IVA del margen (al libro de REBU)</span><span class="cifra">${compra == null ? '—' : `${euros2(margen)} · ${euros2(iva)}`}</span></div>`);
+    } else {
+      const base = Math.round((precio * 100) / 121);
+      filas.push(`<div><span>Base imponible</span><span class="cifra">${euros2(base)}</span></div>`,
+        `<div><span>IVA 21 %</span><span class="cifra">${euros2(precio - base)}</span></div>`,
+        `<div><span>Total de la factura</span><b class="cifra">${euros2(precio + (suplidos || 0))}</b></div>`);
+    }
+    previa.innerHTML = `<p class="factura-previa__titulo">${regimen === 'REBU' ? 'Régimen especial de bienes usados (REBU)' : 'IVA general'} · PVP ${euros2(v.pvp_cent)}${suplidos ? ` · con ${euros2(suplidos)} de gestoría` : ''}</p>${filas.join('')}`;
+    previa.hidden = false;
+  };
+  // Al elegir el coche: su PVP, sus km y, si lo tiene, su comprador
   form.elements.vehiculo_id.addEventListener('change', () => {
     const v = posibles.find((x) => String(x.id) === form.elements.vehiculo_id.value);
     form.elements.precio.placeholder = v?.pvp_cent != null ? (v.pvp_cent / 100).toFixed(2).replace('.', ',') : '';
     if (v?.kilometros != null && !form.elements.km_entrega.value) form.elements.km_entrega.value = v.kilometros;
-    // Si ya tiene comprador (se apuntó al venderlo), se propone
     if (v?.comprador_id && !form.elements.cliente_id.value) form.elements.cliente_id.value = String(v.comprador_id);
+    pintarPrevia();
   });
+  for (const campo of ['precio', 'suplidos', 'regimen']) form.elements[campo].addEventListener('input', pintarPrevia);
+  // Pago aplazado: el vencimiento se propone solo (se puede cambiar)
+  const sumarDiasA = (dia, n) => diaLocal(new Date(new Date(`${dia}T12:00:00`).getTime() + n * 86400000));
+  const proponerVence = () => {
+    const dias = { pago_30: 30, pago_30_60: 60 }[form.elements.forma_pago.value];
+    if (dias && form.elements.fecha.value) form.elements.vencimiento.value = sumarDiasA(form.elements.fecha.value, dias);
+  };
+  form.elements.forma_pago.addEventListener('change', proponerVence);
+  form.elements.fecha.addEventListener('change', proponerVence);
   const abrir = (ev) => { ev?.preventDefault(); seccion.hidden = false; seccion.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   $('[data-nueva]').addEventListener('click', abrir);
   $('[data-cancelar]', form).addEventListener('click', () => { seccion.hidden = true; form.reset(); error.hidden = true; });
@@ -2171,6 +2213,81 @@ async function paginaFactura() {
   const cajaError = $('.documento-error');
   if (!id) { hoja.innerHTML = '<p>Falta el número de la factura.</p>'; return; }
 
+  // Cobros, en pantalla: lo cobrado, lo que queda, cada cobro (se puede quitar) y apuntar otro
+  const panel = $('.factura-cobros');
+  const ESTADO_COBRO = { pendiente: ['Pendiente', 'pendiente'], parcial: ['Cobro parcial', 'parcial'], cobrada: ['Cobrada', 'cobrada'], vencida: ['Vencida', 'vencida'] };
+  const pintarCobros = (f) => {
+    if (f.estado === 'borrador') {
+      panel.hidden = false;
+      panel.innerHTML = `<p class="factura-cobros__aviso"><b>Borrador sin número.</b> Revísalo aquí abajo y pulsa «Emitir factura»: coge el siguiente número de la serie y ya no se puede cambiar.</p>`;
+      return;
+    }
+    if (f.tipo !== 'venta' || f.anulada) {
+      panel.hidden = false;
+      panel.innerHTML = `<p class="factura-cobros__aviso">${f.anulada ? `<b>Anulada</b> por la ${esc(f.rectificada_por ?? 'rectificativa')}: no se cobra.` : '<b>Rectificativa.</b> Anula la factura original por el total.'}</p>`;
+      return;
+    }
+    const [texto, clase] = ESTADO_COBRO[f.estado_cobro] ?? [f.estado_cobro, 'pendiente'];
+    const cobrado = f.total_cent - f.saldo_cent;
+    const parte = f.total_cent ? Math.min(100, Math.round((cobrado / f.total_cent) * 100)) : 0;
+    const hoy = new Date(`${diaLocal()}T00:00:00`);
+    const dias = f.vencimiento ? Math.round((new Date(`${f.vencimiento}T00:00:00`) - hoy) / 86400000) : null;
+    const vence = !f.saldo_cent || dias == null ? '' : dias < 0 ? `<span class="dias dias--peligro">Venció hace ${-dias} ${dias === -1 ? 'día' : 'días'}</span>`
+      : dias === 0 ? '<span class="dias dias--aviso">Vence hoy</span>' : `<span class="nota">Vence el ${esc(fechaLarga(f.vencimiento))}, dentro de ${dias} ${dias === 1 ? 'día' : 'días'}</span>`;
+    const filas = f.cobros.length
+      ? f.cobros.map((k) => `<li><span class="cifra">${esc(fechaCorta(k.fecha))}</span><span>${esc(FORMAS_COBRO[k.forma_pago] ?? k.forma_pago)}${k.nota ? ` <span class="nota">· ${esc(k.nota)}</span>` : ''}</span><b class="cifra">${euros2(k.importe_cent)}</b>
+          <button class="factura-cobros__quitar" type="button" data-quitar="${k.id}" title="Quitar este cobro" aria-label="Quitar el cobro de ${esc(euros2(k.importe_cent))}">Quitar</button></li>`).join('')
+      : '<li class="nota">Todavía no se ha cobrado nada.</li>';
+    panel.hidden = false;
+    panel.innerHTML = `
+      <div class="factura-cobros__cabeza">
+        <span class="estado cobro--${clase}">${esc(texto)}</span>
+        <p><b class="cifra">${euros2(cobrado)}</b> cobrados de ${euros2(f.total_cent)}${f.saldo_cent ? ` · <b class="cifra">${euros2(f.saldo_cent)}</b> por cobrar` : ''}</p>
+        ${vence}
+      </div>
+      <div class="factura-cobros__barra" role="img" aria-label="Cobrado el ${parte} %"><span style="width:${parte}%"></span></div>
+      <ul class="factura-cobros__lista">${filas}</ul>
+      ${f.saldo_cent ? `<form class="cobro-form factura-cobros__form">
+        <label class="campo"><span class="campo__nombre">Importe</span><span class="con-unidad" data-unidad="€"><input name="importe" inputmode="decimal" value="${(f.saldo_cent / 100).toFixed(2).replace('.', ',')}" required></span></label>
+        <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === (f.forma_pago ?? 'transferencia') ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+        <label class="campo"><span class="campo__nombre">Fecha</span><input type="date" name="fecha" value="${diaLocal()}" required></label>
+        <div class="cobro-form__botones">
+          <button class="boton boton--pequeno" type="submit">Apuntar cobro</button>
+          <button class="boton boton--secundario boton--pequeno" type="button" data-senal>Aplicar la señal de la reserva</button>
+        </div>
+      </form>` : ''}`;
+    const form = $('form', panel);
+    const guardar = async (cuerpo) => {
+      try {
+        await api(`/facturas/${id}/cobros`, { method: 'POST', body: cuerpo });
+        cajaError.hidden = true;
+        await pintar();
+      } catch (e) {
+        mostrarErrores(cajaError, e, 'No se ha podido apuntar el cobro:');
+      }
+    };
+    form?.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const importe = aCent(form.elements.importe.value);
+      if (!(importe > 0)) return mostrarErrores(cajaError, { lista: ['El importe tiene que ser un número mayor que 0, por ejemplo 1.500,00'] }, 'No se ha podido apuntar el cobro:');
+      guardar({ importe_cent: importe, forma_pago: form.elements.forma_pago.value, fecha: form.elements.fecha.value });
+    });
+    $('[data-senal]', panel)?.addEventListener('click', () => guardar({ senal: true }));
+    // Quitar un cobro mal apuntado: dos pulsaciones
+    panel.querySelectorAll('[data-quitar]').forEach((b) => b.addEventListener('click', async () => {
+      if (!b.dataset.seguro) { b.dataset.seguro = '1'; b.textContent = '¿Seguro?'; return; }
+      b.disabled = true;
+      try {
+        await api(`/facturas/${id}/cobros/${b.dataset.quitar}`, { method: 'DELETE' });
+        cajaError.hidden = true;
+        await pintar();
+      } catch (e) {
+        b.disabled = false;
+        mostrarErrores(cajaError, e, 'No se ha podido quitar el cobro:');
+      }
+    }));
+  };
+
   const pintar = async () => {
     const f = await api(`/facturas/${id}`);
     const [empresa, cliente, coche] = f.estado === 'emitida'
@@ -2183,7 +2300,7 @@ async function paginaFactura() {
     const titulo = f.estado === 'borrador' ? 'Borrador de factura' : rectificativa ? 'Factura rectificativa' : 'Factura';
     const lineaCoche = coche
       ? `<b>${esc([coche.marca, coche.modelo, coche.version].filter(Boolean).join(' '))}</b>
-         <small>Matrícula ${esc(coche.matricula ?? '—')}${coche.bastidor ? ` · Bastidor ${esc(coche.bastidor)}` : ''}${coche.fecha_matriculacion ? ` · 1.ª matriculación ${esc(fechaCorta(coche.fecha_matriculacion))}` : ''}${(f.km_entrega ?? coche.kilometros) != null ? ` · ${cifra(f.km_entrega ?? coche.kilometros)} km` : ''}</small>`
+         <small>Matrícula ${coche.matricula ? matricula(coche.matricula) : '—'}${coche.bastidor ? ` · Bastidor ${esc(coche.bastidor)}` : ''}${coche.fecha_matriculacion ? ` · 1.ª matriculación ${esc(fechaCorta(coche.fecha_matriculacion))}` : ''}${(f.km_entrega ?? coche.kilometros) != null ? ` · ${cifra(f.km_entrega ?? coche.kilometros)} km` : ''}</small>`
       : 'Vehículo';
     const totales = rebu
       ? `<div class="total"><span>Total</span><span>${euros2(f.total_cent)}</span></div>`
@@ -2225,6 +2342,8 @@ async function paginaFactura() {
       ${rebu ? '<p class="factura__mencion">Régimen especial de los bienes usados</p>' : ''}
       ${garantia || f.observaciones ? `<section class="factura__bloque"><h2>Condiciones</h2>${garantia ? `<p>${esc(garantia)}</p>` : ''}${f.observaciones ? `<p>${esc(f.observaciones)}</p>` : ''}</section>` : ''}
       ${empresa.registro_mercantil ? `<footer class="factura__pie">${esc(empresa.registro_mercantil)}</footer>` : ''}`;
+
+    pintarCobros(f);
 
     // La barra: emitir un borrador (lo principal entonces); en una emitida, imprimir es lo principal.
     // Rectificar se usa poco y no tiene vuelta: va plegado, con su campo etiquetado y doble pulsación.
@@ -2464,6 +2583,102 @@ async function paginaLibros() {
   await pintar();
 }
 
+// --- Gráficas (SVG a mano, sin librerías) -----------------------------------------------------
+// Columnas de una sola serie con énfasis: el mes elegido en rojo, el resto en gris. Un solo eje, que
+// cruza el 0 si hay negativos. Tooltip al pasar el ratón o con el teclado (cada columna se enfoca) y,
+// debajo, la tabla con los mismos datos: el tooltip ayuda, pero nada depende de él.
+//   puntos: [{ etiqueta, corta, valor, detalle: [[rótulo, texto], …] }] · elegido: índice resaltado
+function graficaColumnas(caja, { puntos, elegido, formato, titulo }) {
+  const pintar = () => {
+    const ancho = Math.max(280, caja.clientWidth);
+    const alto = 210;
+    const m = { arriba: 22, abajo: 26, izq: 52, der: 8 };
+    const valores = puntos.map((p) => p.valor ?? 0);
+    let max = Math.max(0, ...valores);
+    let min = Math.min(0, ...valores);
+    if (max === min) max = 1;
+    // Marcas del eje redondas: 1, 2 o 5 por potencia de 10
+    const paso = (() => {
+      const bruto = (max - min) / 4;
+      const p10 = 10 ** Math.floor(Math.log10(bruto));
+      return [1, 2, 5, 10].map((f) => f * p10).find((x) => x >= bruto);
+    })();
+    max = Math.ceil(max / paso) * paso;
+    min = Math.floor(min / paso) * paso;
+    const y = (v) => m.arriba + (max - v) / (max - min) * (alto - m.arriba - m.abajo);
+    const banda = (ancho - m.izq - m.der) / puntos.length;
+    const grosor = Math.min(24, banda * 0.6);
+    const marcas = [];
+    for (let v = min; v <= max + paso / 2; v += paso) marcas.push(v);
+    const r = 4; // extremo redondeado del dato; cuadrado en la línea base
+    const columna = (x, v) => {
+      const y0 = y(0);
+      const y1 = y(v);
+      const h = Math.abs(y1 - y0);
+      if (h < 0.5) return '';
+      const rr = Math.min(r, h);
+      return v >= 0
+        ? `M${x},${y0}V${y1 + rr}Q${x},${y1} ${x + rr},${y1}H${x + grosor - rr}Q${x + grosor},${y1} ${x + grosor},${y1 + rr}V${y0}Z`
+        : `M${x},${y0}V${y1 - rr}Q${x},${y1} ${x + rr},${y1}H${x + grosor - rr}Q${x + grosor},${y1} ${x + grosor},${y1 - rr}V${y0}Z`;
+    };
+    const svg = `<svg class="grafica__svg" width="${ancho}" height="${alto}" role="group" aria-label="${esc(titulo)}">
+      ${marcas.map((v) => `<line class="grafica__rejilla${v === 0 ? ' grafica__rejilla--cero' : ''}" x1="${m.izq}" x2="${ancho - m.der}" y1="${y(v)}" y2="${y(v)}"/>
+        <text class="grafica__eje" x="${m.izq - 8}" y="${y(v) + 4}" text-anchor="end">${esc(formato(v, true))}</text>`).join('')}
+      ${puntos.map((p, i) => {
+        const x = m.izq + banda * i + (banda - grosor) / 2;
+        const v = p.valor ?? 0;
+        const etiqueta = `${p.etiqueta}: ${p.valor == null ? 'sin datos' : formato(p.valor)}`;
+        return `<g class="grafica__punto${i === elegido ? ' grafica__punto--elegido' : ''}" data-i="${i}" tabindex="0" role="img" aria-label="${esc(etiqueta)}">
+          <rect class="grafica__diana" x="${m.izq + banda * i}" y="${m.arriba}" width="${banda}" height="${alto - m.arriba - m.abajo}"/>
+          <path class="grafica__columna" d="${columna(x, v)}"/>
+          ${i === elegido && p.valor != null ? `<text class="grafica__valor" x="${x + grosor / 2}" y="${v >= 0 ? y(v) - 6 : y(v) + 14}" text-anchor="middle">${esc(formato(p.valor))}</text>` : ''}
+          ${banda >= 28 || i === elegido || (elegido - i) % 2 === 0 ? `<text class="grafica__mes${i === elegido ? ' grafica__mes--elegido' : ''}" x="${m.izq + banda * i + banda / 2}" y="${alto - 8}" text-anchor="middle">${esc(p.corta)}</text>` : ''}
+        </g>`;
+      }).join('')}
+    </svg>`;
+    caja.innerHTML = `<div class="grafica__lienzo">${svg}<div class="grafica__tip" hidden></div></div>
+      <details class="grafica__tabla"><summary>Ver los datos</summary>
+        <table class="tabla"><thead><tr><th>Mes</th>${puntos[0].detalle.map(([t]) => `<th class="derecha">${esc(t)}</th>`).join('')}</tr></thead>
+        <tbody>${puntos.map((p) => `<tr><td>${esc(p.etiqueta)}</td>${p.detalle.map(([, v]) => `<td class="derecha cifra">${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      </details>`;
+    const lienzo = $('.grafica__lienzo', caja);
+    const tip = $('.grafica__tip', caja);
+    const ensenar = (g) => {
+      const p = puntos[Number(g.dataset.i)];
+      tip.replaceChildren();
+      const cab = document.createElement('strong');
+      cab.textContent = p.etiqueta;
+      tip.append(cab);
+      for (const [rotulo, texto] of p.detalle) {
+        const fila = document.createElement('span');
+        const b = document.createElement('b');
+        b.textContent = texto;
+        fila.append(b, ` ${rotulo}`);
+        tip.append(fila);
+      }
+      tip.hidden = false;
+      const caj = g.querySelector('.grafica__diana').getBBox();
+      const izq = Math.min(Math.max(caj.x + caj.width / 2 - tip.offsetWidth / 2, 0), lienzo.clientWidth - tip.offsetWidth);
+      tip.style.left = `${izq}px`;
+      lienzo.querySelectorAll('.grafica__punto--activo').forEach((x) => x.classList.remove('grafica__punto--activo'));
+      g.classList.add('grafica__punto--activo');
+    };
+    const ocultar = () => { tip.hidden = true; lienzo.querySelectorAll('.grafica__punto--activo').forEach((x) => x.classList.remove('grafica__punto--activo')); };
+    lienzo.querySelectorAll('.grafica__punto').forEach((g) => {
+      g.addEventListener('pointerenter', () => ensenar(g));
+      g.addEventListener('focus', () => ensenar(g));
+      g.addEventListener('blur', ocultar);
+    });
+    lienzo.addEventListener('pointerleave', ocultar);
+  };
+  pintar();
+  // Al cambiar el ancho (girar el móvil, abrir el menú), se vuelve a dibujar a la medida
+  caja._observador?.disconnect();
+  let ultimo = caja.clientWidth;
+  caja._observador = new ResizeObserver(() => { if (Math.abs(caja.clientWidth - ultimo) > 8) { ultimo = caja.clientWidth; pintar(); } });
+  caja._observador.observe(caja);
+}
+
 // --- Informes (solo gerencia) -----------------------------------------------------------------
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -2498,6 +2713,30 @@ async function paginaInformes() {
     $('.cifras').innerHTML = cifras.map(([rotulo, valor, nota]) => `<div class="cifras__dato">
         <span class="rotulo">${esc(rotulo)}</span><strong class="cifra">${esc(valor)}</strong><span class="nota">${esc(nota)}</span>
       </div>`).join('');
+
+    // Gráficas: los 12 meses que acaban en el elegido
+    const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const ev = datos.evolucion ?? [];
+    const corta = (mes) => MESES_CORTOS[Number(mes.slice(5, 7)) - 1];
+    const larga = (mes) => mayuscula(nombreMes(mes));
+    // Euros en el eje, en corto (12 mil €); en el resto, enteros
+    const eurosEje = (cent, eje) => (eje && Math.abs(cent) >= 100000 ? `${(cent / 100000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} mil €` : euros(cent));
+    if (ev.length) {
+      graficaColumnas($('[data-grafica="vendidos"]'), {
+        titulo: 'Coches vendidos por mes',
+        elegido: ev.length - 1,
+        formato: (v) => cifra(v),
+        puntos: ev.map((m) => ({ etiqueta: larga(m.mes), corta: corta(m.mes), valor: m.vendidos,
+          detalle: [['vendidos', cifra(m.vendidos)], ['facturado', euros(m.facturado_cent)]] })),
+      });
+      graficaColumnas($('[data-grafica="resultado"]'), {
+        titulo: 'Resultado del mes',
+        elegido: ev.length - 1,
+        formato: eurosEje,
+        puntos: ev.map((m) => ({ etiqueta: larga(m.mes), corta: corta(m.mes), valor: m.resultado_cent,
+          detalle: [['resultado', euros(m.resultado_cent)], ['margen neto', m.margen_cent == null ? '—' : euros(m.margen_cent)], ['gastos de la tienda', euros(m.gastos_estructura_cent)]] })),
+      });
+    }
 
     // Ventas del mes
     $('.ficha__principal .caja__titulo h2').textContent = `Ventas de ${nombreMes(datos.mes).split(' ')[0]}`;

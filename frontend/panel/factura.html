@@ -19,6 +19,10 @@
   </nav>
   <div class="error error--lista no-imprimir documento-error" role="alert" hidden></div>
 
+  <!-- COBROS, solo en pantalla (no se imprime): lo cobrado, lo que queda, cuándo vence, cada cobro y
+       el formulario para apuntar otro. Lo rellena panel.js (pintarCobros). -->
+  <aside class="factura-cobros no-imprimir" aria-label="Cobros de la factura" hidden></aside>
+
   <!-- LA FACTURA, en A4. La rellena panel.js (paginaFactura) con GET /api/facturas/:id. Una emitida sale con
        la copia de los datos que se guardó al emitir; un borrador, con los de ahora y la marca de borrador. -->
   <article class="documento factura" aria-live="polite">

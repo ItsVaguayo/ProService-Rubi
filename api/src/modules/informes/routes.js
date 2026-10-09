@@ -50,6 +50,22 @@ export function rutasInformes(db) {
     dias_en_stock: dias(v.fecha_alta, fechaSql(v.fecha_venta)),
   }));
 
+  // Lo de un mes en cifras: lo usan el resumen y la evolución de las gráficas, así siempre cuadran
+  const cifrasDe = (mes, lista = ventas(mes)) => {
+    const conMargen = lista.filter((v) => v.margen_cent != null);
+    const margen = conMargen.reduce((s, v) => s + v.margen_cent, 0);
+    const gastos = gastosEstructura.get(mes).n;
+    return {
+      mes,
+      vendidos: lista.length,
+      facturado_cent: lista.reduce((s, v) => s + (v.precio_venta_cent ?? 0), 0),
+      margen_cent: conMargen.length ? margen : null,
+      gastos_estructura_cent: gastos,
+      // Sin ventas con margen, el resultado son solo los gastos (en negativo): el mes también cuesta
+      resultado_cent: (conMargen.length ? margen : 0) - gastos,
+    };
+  };
+
   const mesPedido = (req, res) => {
     const mes = req.query.mes ?? mesActual();
     if (!MES.test(mes)) {
@@ -68,6 +84,9 @@ export function rutasInformes(db) {
     const suma = (campo) => lista.reduce((s, v) => s + (v[campo] ?? 0), 0);
 
     const stock = enStock.all().map((v) => ({ ...v, dias: dias(v.fecha_alta) })).sort((a, b) => b.dias - a.dias);
+    // Los 12 meses que acaban en el pedido, del más antiguo al más nuevo (para las gráficas)
+    const evolucion = [];
+    for (let m = mes, i = 0; i < 12; i++, m = mesAnterior(m)) evolucion.unshift(m === mes ? cifrasDe(m, lista) : cifrasDe(m));
     const meses = new Set([mesActual(), mes, ...mesesConVentas.all().map((f) => f.mes)]);
 
     res.json({
@@ -86,6 +105,7 @@ export function rutasInformes(db) {
         dias_medios_venta: lista.length ? Math.round(suma('dias_en_stock') / lista.length) : null,
       },
       ventas: lista,
+      evolucion,
       stock: {
         total: stock.length,
         propios: stock.filter((v) => v.propiedad !== 'deposito').length,
