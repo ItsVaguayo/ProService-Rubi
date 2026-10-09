@@ -1,0 +1,2 @@
+codigo;fecha;vencimiento;cliente_nif;matricula;regimen;precio;compra;base;iva_pct;iva;suplidos;total;forma_pago;uso_destino;garantia_tipo;garantia_meses;km_entrega;observaciones;rectifica;motivo;cobrado;fecha_cobro;forma_cobro
+V26-00005;20/02/2026;;12345678Z;0000BBB;REBU;9.900,00;7.000,00;2.396,69;21;503,31;;9.900,00;transferencia;particular;directa;12;80000;Fila de ejemplo: borrarla;;;;;

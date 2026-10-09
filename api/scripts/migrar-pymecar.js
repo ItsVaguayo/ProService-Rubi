@@ -1,4 +1,4 @@
-// Carga lo de Pymecar desde las plantillas CSV de docs/migracion/ (proveedores.csv, clientes.csv, vehiculos.csv). Ver docs/migracion.md.
+// Carga lo de Pymecar desde las plantillas CSV de docs/migracion/ (proveedores, clientes, vehiculos y facturas). Ver docs/migracion.md.
 //   node scripts/migrar-pymecar.js --dir ./data/pymecar             → ensayo: lo comprueba todo y no guarda nada
 //   node scripts/migrar-pymecar.js --dir ./data/pymecar --aplicar   → guarda, después de copiar la base
 // La base es DB_PATH (o ./data/proservice.db). Falta un fichero: se carga lo demás.
@@ -17,7 +17,7 @@ if (!values.dir) {
 }
 const dir = resolve(values.dir);
 const leer = (nombre) => (existsSync(join(dir, nombre)) ? leerCsv(readFileSync(join(dir, nombre), 'utf8')) : []);
-const datos = { proveedores: leer('proveedores.csv'), clientes: leer('clientes.csv'), vehiculos: leer('vehiculos.csv') };
+const datos = { proveedores: leer('proveedores.csv'), clientes: leer('clientes.csv'), vehiculos: leer('vehiculos.csv'), facturas: leer('facturas.csv') };
 
 const rutaDb = resolve(process.env.DB_PATH || './data/proservice.db');
 const db = abrirDb(rutaDb);
@@ -28,13 +28,16 @@ if (values.aplicar) {
   console.log(`Copia de la base antes de migrar: ${copia}`);
 }
 
-const informe = importar(db, datos, { ensayo: !values.aplicar });
+// Las facturas quedan a nombre de la primera persona de gerencia activa (creado_por y emitida_por)
+const usuarioId = db.prepare("SELECT id FROM usuarios WHERE rol = 'gerencia' AND activo = 1 ORDER BY id LIMIT 1").get()?.id ?? null;
+const informe = importar(db, datos, { ensayo: !values.aplicar, usuarioId });
 db.close();
 
 console.log(`\n${informe.ensayo ? 'ENSAYO (no se ha guardado nada)' : informe.aplicado ? 'GUARDADO' : 'NO SE HA GUARDADO NADA: hay errores'} · ${rutaDb}\n`);
-for (const tabla of ['proveedores', 'clientes', 'vehiculos']) {
+for (const tabla of ['proveedores', 'clientes', 'vehiculos', 'facturas']) {
   const t = informe[tabla];
-  console.log(`${tabla.padEnd(12)} leídos ${t.leidos} · nuevos ${t.nuevos} · ya estaban ${t.ya_estaban}${tabla === 'vehiculos' ? ` · vendidos (histórico) ${t.vendidos}` : ''}`);
+  const extra = tabla === 'vehiculos' ? ` · vendidos (histórico) ${t.vendidos}` : tabla === 'facturas' ? ` · con cobro ${t.cobros}` : '';
+  console.log(`${tabla.padEnd(12)} leídos ${t.leidos} · nuevos ${t.nuevos} · ya estaban ${t.ya_estaban}${extra}`);
 }
 for (const e of informe.errores) console.log(`ERROR ${e.fichero}, fila ${e.fila}: ${e.errores.join('. ')}`);
 for (const a of informe.avisos) console.log(`aviso ${a.fichero}, fila ${a.fila}: ${a.aviso}`);

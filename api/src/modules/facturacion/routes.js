@@ -17,7 +17,7 @@ import { importesFactura } from './importes.js';
 import { rutasLibros } from './libros.js';
 
 const LETRA_SERIE = { venta: 'V', rectificativa: 'R' };
-const FORMAS_COBRO = [...FORMAS_PAGO, 'senal', 'financiera'];
+export const FORMAS_COBRO = [...FORMAS_PAGO, 'senal', 'financiera'];
 
 /** 'V26-00039' */
 export const codigoDe = (serie, numero) => `${serie}-${String(numero).padStart(5, '0')}`;
@@ -49,6 +49,22 @@ function serializar(f) {
   salida.estado_cobro = estadoCobro(salida);
   for (const campo of ['datos_empresa', 'datos_cliente', 'datos_vehiculo']) salida[campo] = f[campo] ? JSON.parse(f[campo]) : null;
   return salida;
+}
+
+// Lo que se congela al emitir: si luego cambia la ficha del cliente o del coche, la factura no cambia.
+// También la usa la migración (migracion/facturas.js) con las facturas que vienen de Pymecar.
+export function copiaDelCoche(db, v) {
+  if (!v) return null;
+  const proveedor = v.proveedor_id ? db.prepare('SELECT nombre, nif FROM proveedores WHERE id = ?').get(v.proveedor_id) : null;
+  const alta = db.prepare('SELECT MIN(fecha) AS f FROM historial_estados WHERE vehiculo_id = ?').get(v.id).f ?? v.creado_en;
+  return {
+    referencia: v.referencia, marca: v.marca, modelo: v.modelo, version: v.version, matricula: v.matricula, bastidor: v.bastidor,
+    kilometros: v.kilometros, fecha_matriculacion: v.fecha_matriculacion, combustible: v.combustible, propiedad: v.propiedad,
+    // Para el libro REBU: de quién se compró y cuándo entró
+    fecha_compra: alta.slice(0, 10),
+    proveedor_nombre: v.propiedad === 'deposito' ? v.propietario_nombre : proveedor?.nombre ?? v.proveedor_nombre,
+    proveedor_nif: v.propiedad === 'deposito' ? null : proveedor?.nif ?? null,
+  };
 }
 
 export function rutasFacturas(db) {
@@ -250,21 +266,6 @@ export function rutasFacturas(db) {
     return { serie, numero, codigo: codigoDe(serie, numero) };
   };
 
-  // Lo que se congela al emitir: si luego cambia la ficha del cliente o del coche, la factura no cambia
-  const copiaCoche = (v) => {
-    if (!v) return null;
-    const proveedor = v.proveedor_id ? db.prepare('SELECT nombre, nif FROM proveedores WHERE id = ?').get(v.proveedor_id) : null;
-    const alta = db.prepare('SELECT MIN(fecha) AS f FROM historial_estados WHERE vehiculo_id = ?').get(v.id).f ?? v.creado_en;
-    return {
-      referencia: v.referencia, marca: v.marca, modelo: v.modelo, version: v.version, matricula: v.matricula, bastidor: v.bastidor,
-      kilometros: v.kilometros, fecha_matriculacion: v.fecha_matriculacion, combustible: v.combustible, propiedad: v.propiedad,
-      // Para el libro REBU: de quién se compró y cuándo entró
-      fecha_compra: alta.slice(0, 10),
-      proveedor_nombre: v.propiedad === 'deposito' ? v.propietario_nombre : proveedor?.nombre ?? v.proveedor_nombre,
-      proveedor_nif: v.propiedad === 'deposito' ? null : proveedor?.nif ?? null,
-    };
-  };
-
   r.post('/:id/emitir', (req, res) => {
     const f = borrador(req, res);
     if (!f) return;
@@ -294,7 +295,7 @@ export function rutasFacturas(db) {
                       total_cent = ?, datos_empresa = ?, datos_cliente = ?, datos_vehiculo = ?, emitida_por = ?, emitida_en = datetime('now')
                     WHERE id = ?`)
           .run(serie, numero, codigo, fila.compra_cent, fila.base_cent, fila.iva_cent, fila.total_cent,
-            JSON.stringify(e), JSON.stringify(c), JSON.stringify(copiaCoche(v)), req.usuario.id, f.id);
+            JSON.stringify(e), JSON.stringify(c), JSON.stringify(copiaDelCoche(db, v)), req.usuario.id, f.id);
         db.prepare('UPDATE vehiculos SET comprador_id = ? WHERE id = ?').run(f.cliente_id, v.id);
         registrar(db, { usuarioId: req.usuario.id, entidad: 'factura', entidadId: f.id, accion: 'emision', despues: { codigo, total_cent: fila.total_cent } });
       })();
