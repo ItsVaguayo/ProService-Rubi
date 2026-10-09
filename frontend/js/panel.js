@@ -634,7 +634,8 @@ async function paginaListado(usuario) {
     lista = filtrar().sort(ordenar);
     $('.tabla tbody').innerHTML = lista.map((v) => {
       const d = dias(v);
-      const meta = [v.anio, v.combustible && nombre(v.combustible).toLowerCase(), v.cambio && nombre(v.cambio).toLowerCase(), v.propiedad === 'deposito' ? 'depósito' : 'propio'];
+      const minus = (t) => (t === t.toUpperCase() ? t : t.toLowerCase()); // las siglas (GLP) se quedan como están
+      const meta = [v.anio, v.combustible && minus(nombre(v.combustible)), v.cambio && minus(nombre(v.cambio)), v.propiedad === 'deposito' ? 'depósito' : 'propio'];
       return `<tr class="fila-coche${v.estado === 'entregado' ? ' fila-coche--entregado' : ''}" data-url="${esc(urlCoche(v))}">
         <td class="c-foto"><img class="miniatura" src="${portada(v)}" alt="" loading="lazy"></td>
         <td class="c-coche"><a class="fila-coche__titulo" href="${esc(urlCoche(v))}">${esc(tituloCoche(v))}</a>
@@ -1215,7 +1216,7 @@ async function paginaContactos() {
             <span class="estado tipo--${esc(c.tipo)}">${esc(TIPOS_CONTACTO[c.tipo] ?? c.tipo)}</span>
             <span class="${urgente ? 'dias dias--peligro' : 'nota'}" title="${esc(fechaHora(c.recibido_en))}">${esc(haceCuanto(recibido))}</span></p>
           <p class="contacto__mensaje${c.mensaje ? '' : ' contacto__mensaje--vacio'}">${esc(c.mensaje || 'Sin mensaje')}</p>
-          <p class="contacto__datos"><a href="tel:${esc(tel)}">${esc(c.telefono)}</a>${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}</p>
+          <p class="contacto__datos"><a href="tel:${esc(tel)}">${esc(telefonoBonito(c.telefono))}</a>${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}</p>
         </div>
         ${coche}
         <div class="contacto__acciones">${acciones}</div>
@@ -1259,7 +1260,9 @@ async function paginaContactos() {
 
 const ESTADOS_COMERCIALES = { nuevo: 'Nuevo', interesado: 'Interesado', me_lo_pienso: 'Me lo pienso', negociando: 'Negociando', ganado: 'Ganado', perdido: 'Perdido' };
 const TIPOS_ACTIVIDAD = { llamada: 'Llamada', visita: 'Visita', whatsapp: 'WhatsApp', email: 'Correo', prueba: 'Prueba', tarea: 'Tarea', nota: 'Nota' };
-const enlaceTel = (t) => `<a href="tel:${esc(String(t).replace(/[^\d+]/g, ''))}">${esc(t)}</a>`;
+// Un teléfono español de 9 cifras se enseña siempre igual: 937 778 899 (o 611 22 33 44 no; uno solo)
+const telefonoBonito = (t) => { const d = String(t).replace(/\D/g, ''); return /^[6789]\d{8}$/.test(d) ? d.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3') : String(t); };
+const enlaceTel = (t) => `<a href="tel:${esc(String(t).replace(/[^\d+]/g, ''))}">${esc(telefonoBonito(t))}</a>`;
 
 // Lista con buscador a la izquierda, ficha del cliente abierto a la derecha y, debajo, el formulario
 // que sirve para dar de alta y para editar. El cliente abierto va en la dirección (?id=).
@@ -1662,7 +1665,7 @@ async function paginaCrm(usuario) {
         ? `<span${atrasada ? ' class="ficha-mini__tarde"' : ''}>${esc(TIPOS_ACTIVIDAD[p.tipo] ?? p.tipo)}${cuandoToca ? ` ${esc(cuandoToca)}` : ''}</span>`
         : cerrado ? '<span></span>' : '<span class="ficha-mini__nada">Nada programado</span>';
       const dias = c.ultima_actividad ? diasDesde(c.ultima_actividad) : null;
-      const textoDias = dias == null ? 'Sin hablar' : dias === 0 ? 'Hablado hoy' : dias === 1 ? 'Hablado ayer' : `Hace ${dias} días`;
+      const textoDias = dias == null ? (diasDesde(c.creado_en) > 7 ? 'Sin hablar' : '') : dias === 0 ? 'Hablado hoy' : dias === 1 ? 'Hablado ayer' : `Hace ${dias} días`;
       const claseDias = dias == null ? '' : dias > 14 ? ' dias--peligro' : dias > 7 ? ' dias--aviso' : '';
       const nota = p?.descripcion ?? c.notas ?? (c.n_coches ? `${c.n_coches} ${c.n_coches === 1 ? 'coche comprado' : 'coches comprados'}` : '');
       return `<a class="ficha-mini${c.estado_comercial === 'perdido' ? ' ficha-mini--perdido' : ''}" href="clientes.html?id=${c.id}" draggable="true" data-id="${c.id}">
