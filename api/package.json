@@ -10,7 +10,8 @@
     "wordpress": "node --env-file-if-exists=../.env scripts/wordpress.js",
     "seed": "node scripts/sembrar-pruebas.js --reset",
     "dev:pruebas": "node --watch scripts/arrancar-pruebas.js",
-    "copia": "node --env-file-if-exists=../.env scripts/copia-seguridad.js"
+    "copia": "node --env-file-if-exists=../.env scripts/copia-seguridad.js",
+    "migrar": "node --env-file-if-exists=../.env scripts/migrar-pymecar.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
