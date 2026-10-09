@@ -308,6 +308,20 @@ Necesita `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION`; sin ellas, 503. Detalle
 | `GET /wordpress/estado` | gerencia | Cada coche con su post de WordPress y el último error |
 | `POST /wordpress/vincular` | gerencia | `{ vehiculo_id, wp_post_id }` une un coche con una ficha que ya existía en la web |
 
+## Portales (Coches.net, Milanuncios y Wallapop)
+
+Ningún portal deja cargar los coches sin un intermediario (`docs/portales.md`). Mientras tanto, el panel deja el anuncio listo para copiar, quien lo sube lo marca como publicado y, cuando el coche se vende, confirma la baja en cada portal. Al pasar a «Vendido» o «Entregado», lo publicado queda en `retirar` (`publicacion/retirada.js`) y sale en los avisos hasta que se confirma la baja. La web no va aquí: la lleva el conector de WordPress.
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `GET /portales?estado=retirar` | con sesión | Los anuncios de los portales en ese estado (`pendiente`, `publicado`, `retirar`, `retirado` o `error`; sin `estado`, todos), del más antiguo al más nuevo, con `nombre` del portal y `referencia`, `matricula`, `marca`, `modelo` y `vehiculo_estado` del coche |
+| `GET /portales/:vehiculoId` | con sesión | `{ vehiculo, a_la_venta, portales, anuncio }`. `portales`: los tres, con `canal`, `nombre`, `estado` (`sin_publicar` si nunca se marcó), `enlace`, `publicado_en`, `retirado_en` y `actualizado_en`. `anuncio`: `titulo`, `precio_euros` (el PVP), `descripcion`, `video_url` y `fotos` (las públicas que no son de daños, en orden, con su `url` del panel) |
+| `PUT /portales/:vehiculoId/:canal` | con sesión | `{ estado: "publicado", enlace? }` lo marca subido (solo con el coche publicado o reservado; si no, 409). `{ estado: "retirado" }` confirma la baja (409 si en ese portal no constaba publicado). `enlace`: la dirección del anuncio, `http` o `https`. `canal`: `coches_net`, `milanuncios` o `wallapop` (otro, 404) |
+
+- El anuncio solo usa datos de la ficha: no lleva frases que la ficha no respalde (revisado en taller, financiación…). Es el mismo para los tres portales. Sin precio de compra, proveedor ni margen: lo usan los dos roles.
+- Cada cambio queda en `auditoria` (entidad `publicacion`), con el estado y el enlace de antes. El enlace se conserva al retirar.
+- Volver a marcar publicado uno que ya lo estaba solo cambia el enlace: `publicado_en` no se mueve.
+
 ## Informes (solo gerencia)
 
 | Método y ruta | Quién | Qué hace |
