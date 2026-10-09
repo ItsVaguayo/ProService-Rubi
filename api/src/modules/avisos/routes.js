@@ -1,7 +1,7 @@
 // Dueño: Victor. Avisos del panel (ampliación del 7-oct, bloque 9, T16). Solo lee: no tiene tablas.
 //   GET /api/avisos → los dos roles. Gerencia lo ve todo. El comercial, sus tareas y los avisos de coches y
 //                     contactos: nunca los cobros vencidos ni ningún importe (como en incentivos).
-// El correo diario (duda H13) y las citas de mañana van aparte, cuando existan.
+// El correo diario sale de aquí (correo/diario.js). Las citas de mañana, cuando exista su tabla.
 import { Router } from 'express';
 import { ZONA, hoyLocal } from '../../fechas.js';
 import { estadoCobro } from '../facturacion/routes.js';
@@ -41,9 +41,8 @@ function instanteLocal(s) {
   return comoUtc - (enRubi - comoUtc);
 }
 
-export function rutasAvisos(db) {
-  const r = Router();
-
+// Prepara las consultas una vez y devuelve (usuario) => avisos. La usan la ruta y el correo diario (correo/diario.js).
+export function calculadorDeAvisos(db) {
   const consultas = {
     // programada_para va en hora de Rubí; hecha_en vacía = pendiente
     tareas: db.prepare(`
@@ -87,15 +86,15 @@ export function rutasAvisos(db) {
        WHERE f.estado = 'emitida' AND f.tipo = 'venta' AND f.vencimiento IS NOT NULL AND f.vencimiento < ?`),
   };
 
-  r.get('/', (req, res) => {
-    const gerencia = esGerencia(req.usuario);
+  return (usuario) => {
+    const gerencia = esGerencia(usuario);
     const hoy = hoyLocal();
     const avisos = [];
     // fecha va tal cual sale de la base; orden, en ms UTC, porque hay horas de Rubí y horas UTC mezcladas
     const enUtc = (s) => fechaSql(s).getTime();
 
     // 1. Tareas vencidas: de un día anterior, alta; de hoy, media
-    const soloDe = gerencia ? null : req.usuario.id;
+    const soloDe = gerencia ? null : usuario.id;
     for (const t of consultas.tareas.all(ahoraLocal(), soloDe, soloDe)) {
       const para = t.quien ? ` (${t.quien})` : '';
       const de = gerencia ? ` · ${t.responsable_nombre}` : '';
@@ -157,8 +156,13 @@ export function rutasAvisos(db) {
 
     // Lo grave primero y, dentro, lo más antiguo
     avisos.sort((a, b) => GRAVEDAD[a.gravedad] - GRAVEDAD[b.gravedad] || a.orden - b.orden);
-    res.json(avisos.map(({ orden, ...aviso }) => aviso));
-  });
+    return avisos.map(({ orden, ...aviso }) => aviso);
+  };
+}
 
+export function rutasAvisos(db) {
+  const r = Router();
+  const calcular = calculadorDeAvisos(db);
+  r.get('/', (req, res) => res.json(calcular(req.usuario)));
   return r;
 }
