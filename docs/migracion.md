@@ -57,6 +57,19 @@ CSV como lo guarda Excel en español: `;` entre columnas (también vale `,`), UT
 - Rectificativas: `rectifica` (el código de la que anula, que tiene que venir también) y `motivo`.
 - Cobro: `cobrado` (por defecto, el total), `fecha_cobro` (por defecto, la de la factura) y `forma_cobro` (por defecto, la `forma_pago`).
 
+## Lo primero que mirar en Pymecar
+
+Para la próxima vez que alguien entre (con Jaume o con su usuario), antes de pedir el export final. Solo mirar: no se guarda, borra ni exporta nada sin que Jaume lo sepa.
+
+1. **Qué deja exportar y en qué formato**: facturas, clientes, compras y libro de gastos, con sus columnas. Es lo que decide cómo se pasan a nuestras plantillas (duda B7).
+2. **La numeración de cada serie**: el último número de `V26` y `R26`, y si hay huecos en los cinco años. Si el export sale incompleto, mejor saberlo antes del corte que el 28 (el importador avisa de los huecos, pero solo de lo que le llega). La H8 ya pide el número del día del arranque.
+3. **Los cobros de cada factura**: si alguna está a medio cobrar o sin cobrar. El importador da las facturas por cobradas enteras salvo que la columna `cobrado` diga otra cosa.
+4. **Cuántos clientes tienen NIF y dirección**: sin el NIF, su factura no se puede cargar.
+5. **El stock real**: Pymecar enseñaba unos 8 coches y el briefing habla de 50 (ya apuntado en [pymecar.md](pymecar.md), «Nuevas, para Jaume»). Hay que saber cuál es el bueno antes de cargar.
+6. **Si los gastos están unidos a cada coche**: si cada gasto de vehículo lleva la matrícula, los costes y el margen de cada coche entran solos con el libro de gastos.
+7. **Las fotos de cada ficha**: la ficha de Pymecar tiene fotos ordenables. Si se pueden sacar en orden, quizá sean mejores que las de la web (ahora se bajan de la web: `POST /api/wordpress/fotos`).
+8. **Qué pasa con los datos al dar de baja la cuenta**: si se puede seguir entrando en modo lectura después del 31-oct o si hay que sacarlo todo antes. Lo mira Jaume en su contrato.
+
 ## Lo que falta, y de qué depende
 
 | Qué | Depende de |
