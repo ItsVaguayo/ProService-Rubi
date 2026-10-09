@@ -12,7 +12,7 @@
 //   · Un coche con fecha de venta es una venta del histórico: entra «Entregado», con su historial fechado, para
 //     que cuente en los informes del mes en que se vendió y no salga en la web.
 import { CAMPOS, limpiarDatos } from '../modules/vehiculos/campos.js';
-import { faltanParaPublicar } from '../modules/vehiculos/reglas.js';
+import { faltanParaPublicar, errorDePrecios } from '../modules/vehiculos/reglas.js';
 import { CAMPOS_CLIENTE, CAMPOS_PROVEEDOR, limpiarTercero } from '../modules/terceros/campos.js';
 import { normalizarNif } from '../modules/terceros/fiscal.js';
 import { ESTADOS, ESTADOS_WEB } from '../modules/estados.js';
@@ -22,7 +22,7 @@ import { importarFacturas } from './facturas.js';
 
 const IDS_ESTADO = ESTADOS.map((e) => e.id);
 // En la plantilla el dinero va en euros, como en Excel: «pvp» y no «pvp_cent»
-export const EUROS = ['precio_compra', 'pvp', 'precio_financiado', 'precio_minimo', 'pago_propietario'];
+export const EUROS = ['precio_compra', 'pvp', 'precio_sin_oferta', 'precio_financiado', 'precio_minimo', 'pago_propietario'];
 const COSTES = ['coste_transporte', 'coste_taller', 'coste_preparacion', 'coste_impuestos'];
 const EXTRA_COCHE = ['estado', 'proveedor_nif', 'comprador_nif', 'fecha_alta', 'fecha_venta', 'ref_pymecar'];
 
@@ -117,6 +117,8 @@ function importarCoches(db, filas, informe) {
     }
     const { datos, errores: deCampos } = limpiarDatos(cuerpo, { puedeDinero: true });
     errores.push(...deCampos);
+    const precios = errorDePrecios(datos);
+    if (precios) errores.push(precios);
 
     // Fechas y estado
     const alta = fila.fecha_alta ? dia(fila.fecha_alta) : null;
