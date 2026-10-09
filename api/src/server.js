@@ -2,6 +2,8 @@ import { abrirDb } from './db.js';
 import { crearApp } from './app.js';
 import { configDesdeEntorno, sincronizar } from './modules/publicacion/wordpress.js';
 import { caducarReservas } from './modules/vehiculos/reservas.js';
+import { configCorreo, crearTransporte, enviarPendientes } from './modules/correo/envio.js';
+import { encolarAvisosDelDia } from './modules/correo/mensajes.js';
 
 const port = process.env.PORT || 3001;
 const db = abrirDb();
@@ -31,3 +33,20 @@ if (wp && minutos > 0) {
   setInterval(pasada, minutos * 60 * 1000).unref();
   console.log(`Publicación en ${wp.url} cada ${minutos} min`);
 }
+
+// Correos: cada minuto se apunta el resumen de avisos del día (si toca) y se manda lo pendiente.
+// Sin SMTP_URL, modo simulado: quedan apuntados en GET /api/correos pero no salen. Un fallo no tumba la API.
+const correo = configCorreo();
+const transporte = crearTransporte(correo);
+const pasadaCorreo = async () => {
+  try {
+    encolarAvisosDelDia(db, correo);
+    const r = await enviarPendientes(db, { transporte, de: correo.de });
+    if (r.enviados || r.fallidos) console.log(`[correo] enviados ${r.enviados} · fallidos ${r.fallidos}`);
+  } catch (e) {
+    console.error(`[correo] ${e.message}`);
+  }
+};
+setTimeout(pasadaCorreo, 3000);
+setInterval(pasadaCorreo, 60 * 1000).unref();
+console.log(transporte ? `Correo por ${new URL(correo.smtp).hostname}` : 'Correo en modo simulado (sin SMTP_URL)');

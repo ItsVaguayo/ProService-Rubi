@@ -64,7 +64,7 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
-| `POST /contactos` | **sin sesión** | Lo manda el formulario de la web. Ver abajo |
+| `POST /contactos` | **sin sesión** | Lo manda el formulario de la web. Ver abajo. Cada contacto apunta su correo para `CORREO_CONTACTOS` (ver «Correos») |
 | `GET /contactos?estado=sin_atender&tipo=prueba` | con sesión | `estado`: `sin_atender` (por defecto, el que más espera primero), `atendidos` o `todos`. `tipo`: `informacion`, `prueba`, `financiacion` o `tasacion`. Cada contacto lleva la matrícula, marca y modelo del coche y quién lo atendió |
 | `GET /contactos/sin-atender` | con sesión | `{ total }`, para el contador del menú |
 | `PATCH /contactos/:id` | con sesión | `{ atendido: true }` lo marca con fecha y usuario; `false` lo devuelve a pendiente |
@@ -322,6 +322,20 @@ Ningún portal deja cargar los coches sin un intermediario (`docs/portales.md`).
 - Cada cambio queda en `auditoria` (entidad `publicacion`), con el estado y el enlace de antes. El enlace se conserva al retirar.
 - Volver a marcar publicado uno que ya lo estaba solo cambia el enlace: `publicado_en` no se mueve.
 
+## Correos (solo gerencia)
+
+La plataforma manda dos correos: el aviso de cada contacto que llega por la web (a `CORREO_CONTACTOS`, en el momento) y el resumen diario de avisos (a `CORREO_AVISOS`, a partir de las `AVISOS_HORA` de Rubí, por defecto las 8, y solo si hay avisos). Se apuntan en la tabla `correos` y `server.js` los manda cada minuto: un SMTP caído no tumba el formulario y lo que falla se reintenta cada vez más espaciado (unas 9 horas en total) antes de quedar en `error`.
+
+**Sin `SMTP_URL`, modo simulado** (duda H13): los correos quedan como `simulado`, con el motivo en `ultimo_error`, y no salen. Lo mismo si falta el destinatario. Variables en `.env.example`.
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `GET /correos?estado=` | gerencia | Los 200 últimos, del más nuevo al más viejo: `tipo` (`contacto` o `avisos_diario`), `para`, `asunto`, `cuerpo`, `estado` (`pendiente`, `enviado`, `simulado` o `error`), `intentos`, `ultimo_error`, `creado_en`, `enviado_en` |
+
+- El resumen diario usa los avisos de gerencia, **con los cobros vencidos y sus importes**: `CORREO_AVISOS` tiene que ser de gerencia.
+- Texto plano. Con `PANEL_URL`, cada aviso y cada contacto llevan el enlace a su página del panel.
+- El asunto se queda en una línea: un nombre con saltos de línea en el formulario no puede colar cabeceras.
+
 ## Informes (solo gerencia)
 
 | Método y ruta | Quién | Qué hace |
@@ -340,4 +354,5 @@ Una venta es el último paso a «Vendido» (o a «Entregado», si se saltó ese 
 
 ## Pendiente
 
-- Correo diario de avisos (duda H13) y citas de mañana en los avisos: cuando exista la tabla de citas.
+- Citas de mañana en los avisos: cuando exista la tabla de citas.
+- El correo sale de verdad cuando haya SMTP (duda H13) y destinatarios (E1). Hasta entonces, simulado.
