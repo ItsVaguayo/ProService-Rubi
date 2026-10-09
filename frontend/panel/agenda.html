@@ -52,140 +52,46 @@
 
   <main class="contenido">
 
-    <!-- CABECERA en banda negra, con el paso de semana a la derecha -->
+    <!-- CABECERA: la semana y cuántas pruebas tiene. A la derecha, el paso de semana (‹ Hoy ›) y «Nueva prueba». -->
     <header class="cabecera cabecera--portada">
       <div>
         <p class="portada__antetitulo">Pruebas de conducción</p>
-        <h1>Semana del 5 al 10 de octubre</h1>
-        <p class="contactos-resumen"><strong class="cifra">10</strong> pruebas <span class="portada__alerta">· 3 sin confirmar</span></p>
-        <p class="nota">Las que se piden desde la web llegan como «Pedida»: llama al cliente y confírmala. Cada prueba dura 30 minutos.</p>
+        <h1>Esta semana</h1>
+        <p class="contactos-resumen"><strong class="cifra">0</strong> pruebas</p>
+        <p class="nota">Pincha en un hueco libre para apuntar una prueba a esa hora, o en una prueba para confirmarla, moverla o cerrarla. Cada prueba dura 30 minutos.</p>
       </div>
       <div class="cabecera__acciones">
-        <a class="boton boton--secundario" href="#" aria-label="Semana anterior">← Anterior</a>
-        <a class="boton boton--secundario" href="#">Hoy</a>
-        <a class="boton boton--secundario" href="#" aria-label="Semana siguiente">Siguiente →</a>
-        <a class="boton" href="#nueva-prueba" data-nueva-prueba>Nueva prueba</a>
+        <nav class="agenda-paso" aria-label="Cambiar de semana">
+          <a class="agenda-paso__flecha" href="#" data-semana="anterior" aria-label="Semana anterior">‹</a>
+          <a class="agenda-paso__hoy" href="agenda.html">Hoy</a>
+          <a class="agenda-paso__flecha" href="#" data-semana="siguiente" aria-label="Semana siguiente">›</a>
+        </nav>
+        <button class="boton" type="button" data-nueva-prueba>Nueva prueba</button>
       </div>
     </header>
 
-    <!-- LEYENDA de los cuatro estados, con el mismo color que el borde de cada prueba -->
+    <!-- LEYENDA: el color de cada estado, el mismo que la raya de cada prueba -->
     <ul class="leyenda-pruebas">
-      <li><i class="punto estado-prueba--pedida"></i>Pedida</li>
+      <li><i class="punto estado-prueba--pedida"></i>Pedida, sin confirmar</li>
       <li><i class="punto estado-prueba--confirmada"></i>Confirmada</li>
       <li><i class="punto estado-prueba--hecha"></i>Hecha</li>
       <li><i class="punto estado-prueba--no-vino"></i>No vino</li>
-      <li class="nota">Horario: de lunes a viernes, de 10:00 a 13:30 y de 16:30 a 19:30; sábado, de 10:00 a 13:30.</li>
+      <li class="nota">De lunes a viernes, de 10:00 a 13:30 y de 16:30 a 19:30; sábado, de 10:00 a 13:30.</li>
     </ul>
 
-    <!-- LA SEMANA, de lunes a sábado. Cada prueba: hora, coche, cliente y estado.
-         «Confirmar» y «Cambiar hora» en las que aún no han pasado (en la confirmada, «Confirmar»
-         sale desactivado). Los días pasados se ven más apagados; hoy lleva la raya roja.
-         En el móvil, los días van uno debajo de otro. -->
-    <div class="semana">
-
-      <section class="dia dia--pasado" aria-labelledby="dia-5">
-        <h2 class="dia__titulo" id="dia-5">Lunes <span class="cifra">5</span></h2>
-        <article class="prueba prueba--hecha">
-          <p class="prueba__linea"><time class="prueba__hora cifra">10:30</time><span class="estado estado-prueba--hecha">Hecha</span></p>
-          <p class="prueba__coche"><b>Toyota C-HR</b><span class="matricula">7390 KXB</span></p>
-          <p class="prueba__cliente">Marta López Garcia</p>
-        </article>
-        <article class="prueba prueba--hecha">
-          <p class="prueba__linea"><time class="prueba__hora cifra">17:00</time><span class="estado estado-prueba--hecha">Hecha</span></p>
-          <p class="prueba__coche"><b>Peugeot 3008</b><span class="matricula">5562 LCN</span></p>
-          <p class="prueba__cliente">Oriol Batlle</p>
-        </article>
-      </section>
-
-      <section class="dia dia--pasado" aria-labelledby="dia-6">
-        <h2 class="dia__titulo" id="dia-6">Martes <span class="cifra">6</span></h2>
-        <article class="prueba prueba--no-vino">
-          <p class="prueba__linea"><time class="prueba__hora cifra">11:00</time><span class="estado estado-prueba--no-vino">No vino</span></p>
-          <p class="prueba__coche"><b>Renault Clio</b><span class="matricula">9018 LDF</span></p>
-          <p class="prueba__cliente">Laia Font · <a href="tel:+34688402277">688 402 277</a></p>
-        </article>
-      </section>
-
-      <section class="dia dia--hoy" aria-labelledby="dia-7">
-        <h2 class="dia__titulo" id="dia-7">Miércoles <span class="cifra">7</span> <span class="dia__hoy">Hoy</span></h2>
-        <article class="prueba prueba--confirmada">
-          <p class="prueba__linea"><time class="prueba__hora cifra">12:00</time><span class="estado estado-prueba--confirmada">Confirmada</span></p>
-          <p class="prueba__coche"><b>Kia Niro</b><span class="matricula">3380 LGH</span></p>
-          <p class="prueba__cliente">Sílvia Moreno · <a href="tel:+34651230984">651 230 984</a></p>
-          <div class="prueba__acciones">
-            <button class="boton boton--oscuro boton--pequeno" type="button" disabled>Confirmar</button>
-            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
-          </div>
-        </article>
-        <article class="prueba prueba--pedida">
-          <p class="prueba__linea"><time class="prueba__hora cifra">18:00</time><span class="estado estado-prueba--pedida">Pedida</span></p>
-          <p class="prueba__coche"><b>Volkswagen Golf</b><span class="matricula">2215 LBC</span></p>
-          <p class="prueba__cliente">Jordi Camps · <a href="tel:+34617554102">617 554 102</a></p>
-          <div class="prueba__acciones">
-            <button class="boton boton--oscuro boton--pequeno" type="button">Confirmar</button>
-            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
-          </div>
-        </article>
-      </section>
-
-      <section class="dia" aria-labelledby="dia-8">
-        <h2 class="dia__titulo" id="dia-8">Jueves <span class="cifra">8</span></h2>
-        <article class="prueba prueba--pedida">
-          <p class="prueba__linea"><time class="prueba__hora cifra">17:30</time><span class="estado estado-prueba--pedida">Pedida</span></p>
-          <p class="prueba__coche"><b>Seat Ibiza</b><span class="matricula">1147 KYM</span></p>
-          <p class="prueba__cliente">Àngel Serrano · <a href="tel:+34630778015">630 778 015</a></p>
-          <div class="prueba__acciones">
-            <button class="boton boton--oscuro boton--pequeno" type="button">Confirmar</button>
-            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
-          </div>
-        </article>
-      </section>
-
-      <section class="dia" aria-labelledby="dia-9">
-        <h2 class="dia__titulo" id="dia-9">Viernes <span class="cifra">9</span></h2>
-        <article class="prueba prueba--confirmada">
-          <p class="prueba__linea"><time class="prueba__hora cifra">10:00</time><span class="estado estado-prueba--confirmada">Confirmada</span></p>
-          <p class="prueba__coche"><b>Peugeot 3008</b><span class="matricula">5562 LCN</span></p>
-          <p class="prueba__cliente">Oriol Batlle · segunda prueba</p>
-          <div class="prueba__acciones">
-            <button class="boton boton--oscuro boton--pequeno" type="button" disabled>Confirmar</button>
-            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
-          </div>
-        </article>
-        <article class="prueba prueba--confirmada">
-          <p class="prueba__linea"><time class="prueba__hora cifra">18:30</time><span class="estado estado-prueba--confirmada">Confirmada</span></p>
-          <p class="prueba__coche"><b>Kia Niro</b><span class="matricula">3380 LGH</span></p>
-          <p class="prueba__cliente">Pere Vidal · <a href="tel:+34664019283">664 019 283</a></p>
-          <div class="prueba__acciones">
-            <button class="boton boton--oscuro boton--pequeno" type="button" disabled>Confirmar</button>
-            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
-          </div>
-        </article>
-      </section>
-
-      <section class="dia" aria-labelledby="dia-10">
-        <h2 class="dia__titulo" id="dia-10">Sábado <span class="cifra">10</span></h2>
-        <article class="prueba prueba--pedida">
-          <p class="prueba__linea"><time class="prueba__hora cifra">10:30</time><span class="estado estado-prueba--pedida">Pedida</span></p>
-          <p class="prueba__coche"><b>Seat Ateca</b><span class="matricula">4821 LKM</span></p>
-          <p class="prueba__cliente">Marta Soler Bosch · <a href="tel:+34600111222">600 111 222</a></p>
-          <div class="prueba__acciones">
-            <button class="boton boton--oscuro boton--pequeno" type="button">Confirmar</button>
-            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
-          </div>
-        </article>
-        <article class="prueba prueba--confirmada">
-          <p class="prueba__linea"><time class="prueba__hora cifra">12:00</time><span class="estado estado-prueba--confirmada">Confirmada</span></p>
-          <p class="prueba__coche"><b>Renault Clio</b><span class="matricula">9018 LDF</span></p>
-          <p class="prueba__cliente">Laia Font · la del martes, otra vez</p>
-          <div class="prueba__acciones">
-            <button class="boton boton--oscuro boton--pequeno" type="button" disabled>Confirmar</button>
-            <button class="boton boton--secundario boton--pequeno" type="button">Cambiar hora</button>
-          </div>
-        </article>
-      </section>
-
+    <!-- MOVER: al pulsar «Cambiar hora», la agenda pasa a elegir el hueco nuevo. Se puede cambiar de semana. -->
+    <div class="agenda-mover" role="status" hidden>
+      <p><b>Elige la nueva hora</b> <span data-mover-texto></span></p>
+      <button class="boton boton--secundario boton--pequeno" type="button" data-mover-cancelar>No cambiar</button>
     </div>
+
+    <!-- LA SEMANA: filas = horas del horario (mañana y tarde), columnas = de lunes a sábado. La pinta panel.js
+         (paginaAgenda) con GET /api/citas, /citas/horario y /citas/libres. En el móvil, una lista por día. -->
+    <div class="agenda" aria-live="polite"></div>
+
+    <!-- FICHA DE UNA PRUEBA y NUEVA PRUEBA: ventanas nativas (<dialog>), que se cierran con Esc -->
+    <dialog class="ventana" id="ficha-prueba" aria-labelledby="ficha-prueba-titulo"></dialog>
+    <dialog class="ventana" id="nueva-prueba" aria-labelledby="nueva-prueba-titulo"></dialog>
 
   </main>
 </div>

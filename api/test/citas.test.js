@@ -28,6 +28,9 @@ test('huecos: el horario de H12, en punto y y media, y sin domingo', () =>
     assert.deepEqual(dias[sumar(lunes, 5)], ['10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00'], 'sábado, solo por la mañana');
     assert.equal(dias[sumar(lunes, 6)], undefined, 'el domingo no hay pruebas');
     assert.equal((await pide('/citas/huecos?desde=mañana', { como: null })).status, 400);
+    const horario = (await pide('/citas/horario', { como: 'comercial' })).json;
+    assert.equal(horario.franjas.length, 11, 'cinco días con mañana y tarde, y el sábado por la mañana');
+    assert.deepEqual(horario.franjas[0], { dia_semana: 1, desde: '10:00', hasta: '13:30' });
   }));
 
 test('la web pide una prueba: entra pedida, con su contacto, y la hora deja de estar libre', () =>

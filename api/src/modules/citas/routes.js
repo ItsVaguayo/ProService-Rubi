@@ -143,6 +143,11 @@ export function rutasCitas(db) {
                     LEFT JOIN usuarios u ON u.id = c.creado_por`;
   const leer = db.prepare(`${SELECT} WHERE c.id = ?`);
 
+  // El horario de pruebas, para dibujar la agenda: [{ dia_semana (1 = lunes), desde, hasta }]
+  r.get('/horario', (_req, res) => {
+    res.json({ duracion_min: DURACION_MIN, franjas: db.prepare('SELECT dia_semana, desde, hasta FROM horario_pruebas ORDER BY dia_semana, desde').all() });
+  });
+
   // Huecos para el panel: los de hoy desde ya mismo (la web los da con dos horas de margen). ?desde= ?dias=
   r.get('/libres', (req, res) => {
     const desde = req.query.desde ?? hoyLocal();

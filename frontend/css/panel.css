@@ -2669,3 +2669,108 @@ html.cargando:not(.listo) body::before {
 .prueba__mover .campo { margin: 0; }
 .prueba__coche a { color: inherit; text-decoration: none; }
 @media (hover: hover) and (pointer: fine) { .prueba__coche a:hover b { text-decoration: underline; } }
+
+/* ===== Agenda de pruebas como agenda de verdad (bloque 10) =====================================
+   Rejilla: filas = horas del horario, columnas = de lunes a sábado. Un hueco libre se pincha para apuntar;
+   una prueba, para abrir su ficha (ventana). En el móvil, una lista por día. */
+
+/* Paso de semana compacto sobre la banda negra: ‹ Hoy › */
+.agenda-paso { display: inline-flex; align-items: center; border: 1px solid #4a4f55; border-radius: var(--radio-boton); overflow: hidden; }
+.agenda-paso a { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 14px; color: var(--blanco); text-decoration: none; font-weight: 600; transition: background-color var(--hover); }
+.agenda-paso__flecha { font-size: 1.25rem; line-height: 1; padding: 0 12px; }
+.agenda-paso__hoy { border-inline: 1px solid #4a4f55; }
+.agenda-paso__hoy[aria-current] { background: rgb(255 255 255 / .1); }
+@media (hover: hover) and (pointer: fine) { .agenda-paso a:hover { background: rgb(255 255 255 / .12); } }
+
+.leyenda-pruebas .nota { margin-left: auto; }
+
+/* La rejilla */
+.agenda--rejilla { display: grid; grid-template-columns: 52px repeat(6, minmax(0, 1fr)); border: 1px solid var(--linea); border-radius: var(--radio); background: var(--blanco); overflow: hidden; }
+.agenda__fila { display: contents; }
+.agenda__fila > * { border-top: 1px solid var(--linea); border-left: 1px solid var(--linea); }
+.agenda__fila > :first-child { border-left: 0; }
+.agenda__fila--cabeza > * { border-top: 0; }
+/* Entre la mañana y la tarde, un respiro: la comida */
+.agenda__fila--tarde > * { border-top: 6px solid var(--fondo); }
+.agenda__dia { display: flex; align-items: center; gap: 8px; padding: 12px 10px; font-size: .8125rem; font-weight: 700; color: var(--tinta-2); background: var(--fondo); }
+.agenda__dia--hoy { color: var(--tinta); box-shadow: inset 0 -2px 0 var(--rojo-boton); }
+.agenda__dia--pasado { color: var(--tinta-3); font-weight: 600; }
+.agenda__hora { display: flex; align-items: flex-start; justify-content: flex-end; padding: 8px 8px 0 0; font-size: .75rem; color: var(--tinta-3); background: var(--fondo); }
+.agenda__celda { position: relative; min-height: 52px; }
+.agenda__celda--cerrada { background: repeating-linear-gradient(135deg, transparent 0 6px, rgb(23 25 28 / .035) 6px 7px); }
+.agenda__celda--pasada { background: #f8f9fa; }
+
+/* Hueco libre: toda la celda es el botón; el texto («Apuntar 10:30») sale al pasar el ratón o al tabular */
+.agenda__hueco { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; width: 100%; padding: 0; border: 0; background: none; color: var(--tinta-3); font: inherit; font-size: .75rem; font-weight: 600; cursor: pointer; transition: background-color var(--hover), color var(--hover); }
+.agenda__hueco span { opacity: 0; transition: opacity var(--hover); }
+.agenda__hueco:focus-visible { outline-offset: -3px; }
+.agenda__hueco:focus-visible span { opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .agenda__hueco:hover { background: var(--fondo-hover); color: var(--tinta); }
+  .agenda__hueco:hover span { opacity: 1; }
+}
+
+/* Una prueba: la raya y el fondo dicen su estado; coche y persona, y «Sin confirmar» si toca llamar */
+.cita { --c: var(--reservado); --f: var(--reservado-fondo);
+  position: absolute; inset: 3px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px;
+  min-width: 0; padding: 4px 8px 4px 10px; border: 0; border-left: 3px solid var(--c); border-radius: 5px; background: var(--f);
+  color: var(--tinta); font: inherit; text-align: left; cursor: pointer; transition: filter var(--hover), transform 100ms var(--ease-out); }
+.cita--pedida { --c: #e0a23a; --f: var(--aviso-fondo); }
+.cita--hecha { --c: var(--ok); --f: var(--ok-fondo); }
+.cita--no-vino { --c: var(--peligro); --f: var(--peligro-fondo); }
+.cita--no-vino .cita__coche, .cita--hecha .cita__coche { color: var(--tinta-2); }
+.cita__coche, .cita__quien { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cita__coche { font-size: .8125rem; font-weight: 700; }
+.cita__quien { font-size: .75rem; color: var(--tinta-2); }
+.cita__marca { margin-top: 1px; font-size: .6875rem; font-weight: 700; color: var(--aviso); }
+/* En la rejilla no cabe una tercera línea: el ámbar (y la leyenda) ya dicen «sin confirmar» */
+.agenda--rejilla .cita__marca { display: none; }
+.cita:active { transform: scale(.98); }
+@media (hover: hover) and (pointer: fine) { .cita:hover { filter: brightness(.97); } }
+
+/* Modo mover: los huecos libres se ven todos, con su «Llevar aquí»; las pruebas se apagan */
+.agenda-mover { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 0 0 12px; padding: 10px 14px; border-radius: var(--radio); background: var(--negro); color: var(--blanco); font-size: .875rem; }
+.agenda-mover p { margin: 0; }
+.agenda-mover .boton--secundario { background: transparent; color: var(--blanco); border-color: #4a4f55; }
+.agenda--moviendo .agenda__hueco { color: var(--reservado); }
+.agenda--moviendo .agenda__hueco::before { content: ''; position: absolute; inset: 5px; border: 1px dashed rgb(29 86 184 / .35); border-radius: 5px; }
+@media (hover: hover) and (pointer: fine) { .agenda--moviendo .agenda__hueco:hover { background: var(--reservado-fondo); } }
+.agenda--moviendo .cita { opacity: .45; }
+
+/* Móvil: un día debajo de otro */
+.agenda--lista { display: grid; gap: 12px; }
+.agenda-dia { padding: 12px 14px; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--blanco); }
+.agenda-dia--hoy { border-color: var(--rojo-boton); }
+.agenda-dia--pasado { opacity: .8; }
+.agenda-dia__titulo { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: .9375rem; }
+.agenda-dia__fila { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: stretch; gap: 10px; margin-bottom: 6px; }
+.agenda-dia__fila time { padding-top: 10px; font-size: .8125rem; font-weight: 700; }
+.agenda-dia__fila .cita { position: static; min-height: 52px; }
+.agenda-dia__anadir { width: 100%; margin-top: 4px; }
+
+/* Ventanas (<dialog>): ficha de una prueba y nueva prueba. Centradas (como un modal), entran desde
+   scale(.97) con fundido; el fondo se oscurece. Se cierran con Esc, la × o pinchando fuera. */
+.ventana { width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 22px 24px; border: 0; border-radius: 12px; background: var(--blanco); color: var(--tinta); box-shadow: 0 24px 60px rgb(0 0 0 / .25);
+  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
+.ventana::backdrop { background: rgb(21 21 21 / .45); }
+@starting-style { .ventana[open] { opacity: 0; transform: scale(.97); } }
+.ventana__cabeza { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 14px; }
+.ventana__cabeza h2 { margin: 2px 0 0; font-size: 1.125rem; }
+.ventana__ante { margin: 0; color: var(--tinta-3); font-size: .8125rem; }
+.ventana__cerrar { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--fondo); color: var(--tinta-2); font-size: 1.25rem; line-height: 1; cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .ventana__cerrar:hover { background: var(--linea); color: var(--tinta); } }
+.ventana__datos { display: grid; gap: 10px; margin: 0 0 18px; }
+.ventana__datos div { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 12px; }
+.ventana__datos dt { color: var(--tinta-3); font-size: .8125rem; }
+.ventana__datos dd { margin: 0; overflow-wrap: anywhere; }
+.ventana__datos a { color: inherit; }
+.ventana__acciones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding-top: 14px; border-top: 1px solid var(--linea); }
+.ventana__peligro { color: var(--peligro); }
+.ventana__form .rejilla { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 8px; }
+.ventana__form .campo--ancho { grid-column: 1 / -1; }
+.ventana__pista { margin: 0 0 14px; font-size: .8125rem; }
+@media (max-width: 560px) {
+  .ventana { padding: 18px; }
+  .ventana__form .rejilla { grid-template-columns: minmax(0, 1fr); }
+  .ventana__acciones .boton { flex: 1; }
+}
