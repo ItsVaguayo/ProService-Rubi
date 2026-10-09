@@ -59,7 +59,9 @@ export function rutasIncentivos(db) {
       ?? { usuario_id: req.usuario.id, nombre: req.usuario.nombre, rol: req.usuario.rol, regla: null, coches: [], total_cent: 0, liquidado: null };
     const coches = suyo.coches.map(({ margen_cent, ...c }) => c);
     const liquidado = suyo.liquidado && { coches: suyo.liquidado.coches, importe_cent: suyo.liquidado.importe_cent, liquidado_en: suyo.liquidado.liquidado_en };
-    res.json({ mes, comerciales: [{ ...suyo, coches, liquidado }] });
+    // Ni el porcentaje: con él y su incentivo se despeja el margen de cada coche. El fijo por coche sí lo ve.
+    const regla = suyo.regla && (suyo.regla.tipo === 'fijo_por_coche' ? suyo.regla : { tipo: suyo.regla.tipo });
+    res.json({ mes, comerciales: [{ ...suyo, regla, coches, liquidado }] });
   });
 
   // { mes, usuario_id }: guarda lo calculado. Un mes solo se liquida cuando ha terminado, y una sola vez.

@@ -142,7 +142,7 @@ Cuánto se le paga a cada comercial por lo vendido en un mes. La regla del clien
 |---|---|---|
 | `GET /incentivos/reglas` | gerencia | Todos los usuarios con su regla (`tipo` y `valor` a `null` si no tienen) |
 | `PUT /incentivos/reglas/:usuarioId` | gerencia | `{ tipo, valor }`. `porcentaje_margen`: centésimas sobre el margen de cada coche, de 0 a 10.000. `fijo_por_coche`: céntimos por coche vendido. `valor` entero: con decimales, 400 |
-| `GET /incentivos?mes=AAAA-MM` | con sesión | Sin `mes`, el actual. Gerencia: `{ mes, comerciales, sin_vendedor }`. El comercial: solo él, y sus coches **sin `margen_cent`** |
+| `GET /incentivos?mes=AAAA-MM` | con sesión | Sin `mes`, el actual. Gerencia: `{ mes, comerciales, sin_vendedor }`. El comercial: solo él, sus coches **sin `margen_cent`** y, si su regla es un porcentaje, sin el `valor` (con él y el incentivo se despeja el margen) |
 | `POST /incentivos/liquidar` | gerencia | `{ mes, usuario_id }`. Guarda lo calculado en ese momento. Un mes que no ha terminado, o ya liquidado para ese usuario: 409. 201 |
 
 Cada comercial lleva `usuario_id`, `nombre`, `rol`, `regla`, `coches` (`id`, `referencia`, `marca`, `modelo`, `matricula`, `pvp_cent` (el precio público: lo ve también el comercial), `fecha_venta`, `margen_cent`, `incentivo_cent`), `total_cent` y `liquidado` (`coches`, `importe_cent`, `liquidado_en` y, para gerencia, `liquidado_por`; o `null`).
@@ -210,7 +210,7 @@ En `api/src/modules/facturacion`. Verifactu queda para octubre de 2028 (duda H1)
 
 | Método y ruta | Qué hace |
 |---|---|
-| `GET /facturas?estado=&q=&desde=&hasta=` | Lista (borradores primero, luego por fecha). `estado`: `borrador`, `pendiente`, `parcial`, `cobrada`, `vencida`, `anulada` o `rectificativa`. `q` busca en número, cliente y matrícula. Devuelve `{ facturas, resumen }`; el resumen es de todas: `pendiente_cent`, `pendientes`, `vencido_cent`, `vencidas`, `vencida_mas_antigua`, `borradores` |
+| `GET /facturas?estado=&q=&desde=&hasta=&cliente=` | Lista (borradores primero, luego por fecha). `cliente` (id) deja solo las de ese cliente. `estado`: `borrador`, `pendiente`, `parcial`, `cobrada`, `vencida`, `anulada` o `rectificativa`. `q` busca en número, cliente y matrícula. Devuelve `{ facturas, resumen }`; el resumen es de todas: `pendiente_cent`, `pendientes`, `vencido_cent`, `vencidas`, `vencida_mas_antigua`, `borradores` |
 | `GET /facturas/:id` | Una, con sus `cobros` |
 | `POST /facturas` | Borrador. Obligatorio `cliente_id`; normalmente `vehiculo_id`. Del coche salen, si no llegan, `precio_cent` (su PVP) y `regimen` (`REBU`, o `general` si el coche es `deducible`; el depósito, siempre REBU). Opcionales: `fecha` (hoy), `vencimiento`, `suplidos_cent`, `forma_pago`, `uso_destino`, `garantia_tipo` (`directa`, `comprada`, `sin`), `garantia_meses` (0-36), `km_entrega`, `observaciones`. 201 |
 | `PUT /facturas/:id` · `DELETE /facturas/:id` | Solo un borrador (emitida: 409). Los importes se recalculan |
@@ -256,7 +256,7 @@ Cada aviso lleva `tipo`, `gravedad` (`alta` o `media`), `texto` (corto, para la 
 
 | `tipo` | Cuándo sale | `gravedad` | `enlace` | `fecha` |
 |---|---|---|---|---|
-| `tareas_vencidas` | Actividad de tipo `tarea` sin hacer (`hecha_en` vacía) con `programada_para` antes de ahora | `alta` si es de un día anterior; `media` si es de hoy | `clientes.html?id=` si es de un cliente, `contactos.html?id=` si es de un contacto y `crm.html` si no es de nadie | `programada_para` (hora de Rubí) |
+| `tareas_vencidas` | Actividad del CRM sin hacer (`hecha_en` vacía) con `programada_para` antes de ahora, de cualquier tipo salvo `nota`. El texto empieza por lo que es: «Llamada vencida», «Tarea vencida», «Correo sin mandar»… | `alta` si es de un día anterior; `media` si es de hoy | `clientes.html?id=` si es de un cliente, `contactos.html?id=` si es de un contacto y `crm.html` si no es de nadie | `programada_para` (hora de Rubí) |
 | `contactos_sin_atender` | Contacto de la web sin `atendido_en` y recibido hace más de 24 h | `alta` | `contactos.html?id=` (la página baja hasta ese contacto y lo marca) | `recibido_en` (UTC) |
 | `coches_parados` | Coche en «Publicado» desde hace más de 60 días, contados desde la **primera** vez que pasó a «Publicado» en el historial (una reserva cancelada no pone el contador a cero); sin historial, desde el alta | `alta` desde 90 días; `media` de 60 a 90 | `coche.html?id=` | esa fecha (UTC) |
 | `vendidos_publicados` | Coche vendido o entregado con alguna publicación en `retirar`. Un aviso por coche, con los canales en el texto | `alta` | `coche.html?id=` | la `actualizado_en` más antigua de esas publicaciones (UTC) |

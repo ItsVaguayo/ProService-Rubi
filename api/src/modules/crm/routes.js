@@ -63,6 +63,8 @@ export function rutasActividades(db) {
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
     datos.responsable_id ??= req.usuario.id;
     datos.creado_por = req.usuario.id; // siempre de la sesión, nunca del cuerpo
+    // Una nota sin fecha apunta algo que ya pasó: nace hecha, para no quedarse «pendiente» para siempre
+    if (datos.tipo === 'nota' && !datos.programada_para) datos.hecha_en = new Date().toISOString().slice(0, 19).replace('T', ' ');
     const columnas = Object.keys(datos);
     const id = db.transaction(() => {
       const nueva = Number(db.prepare(`INSERT INTO actividades (${columnas.join(',')}) VALUES (${columnas.map(() => '?').join(',')})`)

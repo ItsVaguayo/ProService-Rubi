@@ -125,7 +125,8 @@ export function rutasGastos(db) {
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
 
     db.transaction(() => {
-      if (pagado) db.prepare('UPDATE gastos SET pagado_en = ?, forma_pago = COALESCE(?, forma_pago) WHERE id = ?').run(hoyLocal(), forma_pago ?? null, antes.id);
+      // Si ya estaba pagado, se queda el día en que se pagó: volver a marcarlo no lo mueve a hoy
+      if (pagado) db.prepare('UPDATE gastos SET pagado_en = COALESCE(pagado_en, ?), forma_pago = COALESCE(?, forma_pago) WHERE id = ?').run(hoyLocal(), forma_pago ?? null, antes.id);
       else db.prepare('UPDATE gastos SET pagado_en = NULL WHERE id = ?').run(antes.id);
       registrar(db, { usuarioId: req.usuario.id, entidad: 'gasto', entidadId: antes.id, accion: pagado ? 'pagado' : 'sin_pagar',
         antes: { pagado_en: antes.pagado_en, forma_pago: antes.forma_pago }, despues: { pagado, forma_pago: forma_pago ?? antes.forma_pago } });

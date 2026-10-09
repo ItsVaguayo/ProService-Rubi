@@ -24,6 +24,8 @@ const euros = (cent) => `${(cent / 100).toLocaleString('es-ES', { minimumFractio
 const matricula = (m) => String(m ?? '').replace(/^(\d{4})([A-Z]{3})$/, '$1 $2');
 const coche = (v) => `${v.marca} ${v.modelo} ${matricula(v.matricula)}`;
 const CANALES = { web: 'la web', coches_net: 'Coches.net', milanuncios: 'Milanuncios', wallapop: 'Wallapop' };
+// Lo que se dice de cada actividad sin hacer y ya pasada de hora (las notas no cuentan: no se «hacen»)
+const VENCIDA = { tarea: 'Tarea vencida', llamada: 'Llamada vencida', visita: 'Visita vencida', prueba: 'Prueba vencida', whatsapp: 'WhatsApp sin mandar', email: 'Correo sin mandar' };
 const TIPO_CONTACTO = { informacion: 'información', prueba: 'prueba', financiacion: 'financiación', tasacion: 'tasación' };
 const sinPunto = (t) => t.trim().replace(/[.\s]+$/, ''); // «Llamar.» (Laura) → «Llamar (Laura)»
 // Antes de recogerlos no son nuestros: su ITV todavía no nos toca
@@ -47,14 +49,14 @@ export function rutasAvisos(db) {
   const consultas = {
     // programada_para va en hora de Rubí; hecha_en vacía = pendiente
     tareas: db.prepare(`
-      SELECT a.id, a.descripcion, a.programada_para, a.responsable_id, a.cliente_id, a.contacto_id,
+      SELECT a.id, a.tipo, a.descripcion, a.programada_para, a.responsable_id, a.cliente_id, a.contacto_id,
              u.nombre AS responsable_nombre,
              COALESCE(c.nombre, k.nombre) AS quien
         FROM actividades a
         JOIN usuarios u ON u.id = a.responsable_id
         LEFT JOIN clientes c ON c.id = a.cliente_id
         LEFT JOIN contactos k ON k.id = a.contacto_id
-       WHERE a.tipo = 'tarea' AND a.hecha_en IS NULL AND a.programada_para < ?
+       WHERE a.tipo <> 'nota' AND a.hecha_en IS NULL AND a.programada_para < ?
          AND (? IS NULL OR a.responsable_id = ?)`),
     // recibido_en, en UTC como la base
     contactos: db.prepare(`
@@ -101,7 +103,7 @@ export function rutasAvisos(db) {
       const de = gerencia ? ` · ${t.responsable_nombre}` : '';
       avisos.push({
         tipo: 'tareas_vencidas', gravedad: t.programada_para.slice(0, 10) < hoy ? 'alta' : 'media',
-        texto: `Tarea vencida: ${sinPunto(t.descripcion)}${para}${de}`, fecha: t.programada_para, orden: instanteLocal(t.programada_para),
+        texto: `${VENCIDA[t.tipo] ?? 'Vencida'}: ${sinPunto(t.descripcion)}${para}${de}`, fecha: t.programada_para, orden: instanteLocal(t.programada_para),
         enlace: t.cliente_id ? `clientes.html?id=${t.cliente_id}` : t.contacto_id ? `contactos.html?id=${t.contacto_id}` : 'crm.html',
       });
     }

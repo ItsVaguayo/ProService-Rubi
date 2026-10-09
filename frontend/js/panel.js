@@ -87,7 +87,16 @@ function fijarValor(form, nombre, valor) {
 }
 
 function mostrarErrores(caja, error, titulo) {
-  if (!caja) return alert(error.message);
+  if (!caja) {
+    // Sin caja donde ponerlo, una arriba del contenido: nunca alert(), que bloquea la página
+    caja = document.createElement('div');
+    caja.className = 'error error--lista';
+    caja.setAttribute('role', 'alert');
+    const main = $('main.contenido') || document.body;
+    const banda = main.querySelector(':scope > .cabecera--portada, :scope > .portada, :scope > .ficha-cabecera');
+    banda ? banda.after(caja) : main.prepend(caja);
+  }
+  error.lista ??= [error.message];
   caja.innerHTML = `<strong>${esc(titulo)}</strong><ul>${error.lista.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`;
   caja.hidden = false;
   caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -734,11 +743,15 @@ async function paginaFicha(usuario) {
   // Cambiar estado
   const formEstado = $('.cambiar-estado');
   const selEstado = formEstado.elements.estado;
-  selEstado.innerHTML = ESTADOS.filter((e) => e.id !== v.estado).map((e) => `<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
+  // Sin estado elegido de entrada: si no, «Cambiar» sin mirar devolvía el coche a «Pendiente de recoger»
+  selEstado.innerHTML = '<option value="" disabled selected>Elige el nuevo estado</option>'
+    + ESTADOS.filter((e) => e.id !== v.estado).map((e) => `<option value="${e.id}">${esc(e.nombre)}</option>`).join('');
+  selEstado.required = true;
   formEstado.querySelector('a[href="coche-nuevo.html"]').href = `coche-nuevo.html?id=${id}`;
   const cajaError = $('.error--lista');
   formEstado.addEventListener('submit', async (ev) => {
     ev.preventDefault();
+    if (!selEstado.value) return selEstado.focus();
     if (selEstado.value === 'reservado') {
       $('#reserva').scrollIntoView({ behavior: 'smooth' });
       return mostrarErrores(cajaError, { lista: ['Para reservar, rellena el cliente y la señal en el bloque «Reserva».'] }, 'Falta la reserva:');
@@ -1234,6 +1247,10 @@ async function paginaContactos() {
   });
   form.addEventListener('change', pintar);
   await Promise.all([pintar(), resumen()]);
+  if (destacado && !document.getElementById(`contacto-${destacado}`)) {
+    form.querySelector('input[name="estado"][value="todos"]').checked = true;
+    await pintar();
+  }
   if (destacado) document.getElementById(`contacto-${destacado}`)?.scrollIntoView({ block: 'center' });
 }
 
@@ -1245,7 +1262,8 @@ const enlaceTel = (t) => `<a href="tel:${esc(String(t).replace(/[^\d+]/g, ''))}"
 
 // Lista con buscador a la izquierda, ficha del cliente abierto a la derecha y, debajo, el formulario
 // que sirve para dar de alta y para editar. El cliente abierto va en la dirección (?id=).
-async function paginaClientes() {
+async function paginaClientes(usuario) {
+  const gerencia = usuario.rol === 'gerencia';
   const filtros = $('form.filtros');
   const lista = $('.terceros');
   const vacio = $('.ficha__principal .vacio');
@@ -1289,6 +1307,7 @@ async function paginaClientes() {
     lista.innerHTML = clientes.map(tarjeta).join('');
     lista.hidden = !clientes.length;
     vacio.hidden = !!clientes.length;
+    if (!clientes.length) ficha.hidden = true; // no dejar abierta una ficha que no está en el resultado
     const activosN = clientes.filter((c) => c.activo).length;
     const uno = clientes.length === 1;
     $('.lista-pie__cuantos').textContent = `${clientes.length} ${uno ? 'cliente' : 'clientes'}${activos === '0' ? '' : uno ? ' activo' : ' activos'}${q.trim() ? ' con esa búsqueda' : ''}`;
@@ -1306,12 +1325,17 @@ async function paginaClientes() {
       $('[data-cliente]', li)?.toggleAttribute('aria-current', suyo);
     });
     if (!sinHistorial) history.replaceState(null, '', `?id=${id}`);
-    const [c, actividades] = await Promise.all([api(`/clientes/${id}`), api(`/actividades?cliente=${id}`).catch(() => [])]);
+    // Si lo del CRM o las facturas fallan, la ficha sale igual y lo dice (null), en vez de «Nada apuntado»
+    const [c, actividades, facturas] = await Promise.all([
+      api(`/clientes/${id}`),
+      api(`/actividades?cliente=${id}`).catch(() => null),
+      gerencia ? api(`/facturas?cliente=${id}`).then((r) => r.facturas).catch(() => null) : Promise.resolve([]),
+    ]);
     if (abierto !== id) return; // se abrió otro mientras llegaba
-    pintarFicha(c, actividades);
+    pintarFicha(c, actividades, facturas);
   };
 
-  const pintarFicha = (c, actividades) => {
+  const pintarFicha = (c, actividades, facturas) => {
     const direccion = [c.direccion, [c.codigo_postal, c.poblacion].filter(Boolean).join(' ') + (c.provincia ? ` (${c.provincia})` : '')]
       .filter((t) => t && t.trim()).map(esc).join('<br>');
     const fila = (titulo, valor) => (valor ? `<div><dt>${titulo}</dt><dd>${valor}</dd></div>` : '');
@@ -1320,10 +1344,25 @@ async function paginaClientes() {
       : '<li class="nota">Todavía no nos ha comprado ninguno.</li>';
     // Lo último primero: lo hecho por cuándo se hizo; lo pendiente, por cuándo toca
     const cuando = (a) => a.hecha_en ? fechaSql(a.hecha_en) : a.programada_para ? new Date(a.programada_para.replace(' ', 'T')) : fechaSql(a.creado_en);
-    const ultimas = [...actividades].sort((a, b) => cuando(b) - cuando(a)).slice(0, 5);
-    const historial = ultimas.length
-      ? ultimas.map((a) => `<li><time>${esc(cuando(a).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))} · ${esc(TIPOS_ACTIVIDAD[a.tipo] ?? a.tipo)}${a.responsable_nombre ? ` · ${esc(a.responsable_nombre)}` : ''}${a.hecha_en ? '' : ' · <b>pendiente</b>'}</time>${esc(a.descripcion)}${a.resultado ? `<br><span class="nota">${esc(a.resultado)}</span>` : ''}</li>`).join('')
-      : '<li class="nota">Nada apuntado todavía.</li>';
+    // Arriba lo pendiente, todo y con «Hecho» (los avisos traen aquí); debajo, las cinco últimas hechas
+    const pendientes = (actividades ?? []).filter((a) => !a.hecha_en).sort((a, b) => cuando(a) - cuando(b));
+    const hechas = (actividades ?? []).filter((a) => a.hecha_en).sort((a, b) => cuando(b) - cuando(a)).slice(0, 5);
+    const ahora = new Date();
+    const itemActividad = (a) => {
+      const tarde = !a.hecha_en && cuando(a) < ahora;
+      return `<li${tarde ? ' class="historial--tarde"' : ''}><time>${esc(cuando(a).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))} · ${esc(TIPOS_ACTIVIDAD[a.tipo] ?? a.tipo)}${a.responsable_nombre ? ` · ${esc(a.responsable_nombre)}` : ''}${a.hecha_en ? '' : tarde ? ' · <b>con retraso</b>' : ' · <b>pendiente</b>'}</time>${esc(a.descripcion)}${a.resultado ? `<br><span class="nota">${esc(a.resultado)}</span>` : ''}${a.hecha_en ? '' : `<br><button class="boton boton--oscuro boton--pequeno historial__hecho" type="button" data-hecha="${a.id}">Hecho</button>`}</li>`;
+    };
+    const historial = actividades == null
+      ? '<li class="nota">No se ha podido cargar lo hablado. Recarga la página.</li>'
+      : pendientes.length || hechas.length ? [...pendientes, ...hechas].map(itemActividad).join('') : '<li class="nota">Nada apuntado todavía.</li>';
+    const ESTADO_COBRO = { borrador: 'Borrador', pendiente: 'Pendiente', parcial: 'Cobro parcial', cobrada: 'Cobrada', vencida: 'Vencida', anulada: 'Anulada', rectificativa: 'Rectificativa' };
+    const bloqueFacturas = !gerencia ? '' : `
+      <section class="caja">
+        <div class="caja__titulo"><h2>Facturas</h2><span class="nota cifra">${facturas?.length ?? ''}</span></div>
+        ${facturas == null ? '<p class="nota">No se han podido cargar.</p>' : facturas.length
+          ? `<ul class="canales">${facturas.map((f) => `<li><span class="coche-celda"><a href="factura.html?id=${f.id}">${esc(f.codigo ?? 'Borrador')}</a><span class="nota">${esc(fechaCorta(f.fecha))} · ${esc(ESTADO_COBRO[f.estado_cobro] ?? f.estado_cobro)}</span></span><span class="cifra">${euros2(f.total_cent)}</span></li>`).join('')}</ul>`
+          : '<p class="nota">Todavía ninguna.</p>'}
+      </section>`;
     ficha.innerHTML = `
       <section class="caja">
         <div class="ficha-tercero__cabeza">
@@ -1353,16 +1392,26 @@ async function paginaClientes() {
         <div class="caja__titulo"><h2>Coches que ha comprado</h2><span class="nota cifra">${c.coches.length}</span></div>
         <ul class="canales">${coches}</ul>
       </section>
-      <section class="caja">
-        <div class="caja__titulo"><h2>Facturas</h2></div>
-        <p class="nota">Saldrán aquí cuando esté la facturación.</p>
-      </section>
+      ${bloqueFacturas}
       <section class="caja">
         <div class="caja__titulo"><h2>Lo último que se habló</h2><a class="enlace-pequeno" href="crm.html">Ver en el CRM</a></div>
         <ol class="historial">${historial}</ol>
       </section>`;
     ficha.hidden = false;
     $('[data-editar]', ficha).addEventListener('click', () => editar(c));
+    // «Hecho» en lo pendiente, sin ir al CRM
+    $('.historial', ficha).addEventListener('click', async (ev) => {
+      const boton = ev.target.closest('[data-hecha]');
+      if (!boton) return;
+      boton.disabled = true;
+      try {
+        await api(`/actividades/${boton.dataset.hecha}/hecha`, { method: 'PATCH', body: {} });
+        await abrir(c.id, { sinHistorial: true });
+      } catch (e) {
+        boton.disabled = false;
+        mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido marcar como hecha:');
+      }
+    });
     // El estado comercial se cambia aquí también (en el móvil no se puede arrastrar en el CRM)
     $('[data-estado-comercial]', ficha).addEventListener('change', async (ev) => {
       const select = ev.target;
@@ -1444,10 +1493,10 @@ async function paginaClientes() {
   filtros.addEventListener('input', (ev) => {
     if (ev.target.name !== 'q') return;
     clearTimeout(espera);
-    espera = setTimeout(pintarLista, 250);
+    espera = setTimeout(() => pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')), 250);
   });
-  filtros.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintarLista(); });
-  filtros.addEventListener('submit', (ev) => { ev.preventDefault(); pintarLista(); });
+  filtros.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')); });
+  filtros.addEventListener('submit', (ev) => { ev.preventDefault(); pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')); });
 
   ficha.hidden = true;
   await pintarLista();
@@ -1720,7 +1769,8 @@ async function paginaCrm(usuario) {
   const seccion = document.createElement('section');
   seccion.className = 'caja form-tercero form-actividad';
   seccion.hidden = true;
-  const responsables = gerencia ? (await api('/usuarios').catch(() => [])).filter((u) => u.activo) : [];
+  // Si no llega la lista, al menos uno mismo: así se ve a quién se apunta, en vez de un desplegable vacío
+  const responsables = gerencia ? (await api('/usuarios').catch(() => [usuario])).filter((u) => u.activo !== 0) : [];
   const ahoraMas = new Date(Date.now() + 3600000);
   seccion.innerHTML = `
     <div class="caja__titulo"><h2>Apuntar actividad</h2><span class="nota"><em class="obligatorio">*</em> obligatorio</span></div>
@@ -1767,6 +1817,12 @@ async function paginaCrm(usuario) {
     seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
     (clienteId ? form.elements.descripcion : form.elements.tipo).focus();
   };
+  // Una nota no se programa: apunta algo que ya pasó (la API la guarda hecha). Con fecha, sería una tarea más.
+  const fechaPorDefecto = form.elements.programada_para.value;
+  form.elements.tipo.addEventListener('change', () => {
+    const nota = form.elements.tipo.value === 'nota';
+    form.elements.programada_para.value = nota ? '' : form.elements.programada_para.value || fechaPorDefecto;
+  });
   boton.addEventListener('click', (ev) => {
     ev.preventDefault();
     if (!seccion.hidden) return cerrar();
@@ -2489,7 +2545,13 @@ async function paginaGastos() {
   const meses = Array.from({ length: 12 }, (_, i) => diaLocal(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)).slice(0, 7));
   const selMes = cabecera.elements.mes;
   selMes.innerHTML = meses.map((m) => `<option value="${m}">${esc(mesTitulo(m))}</option>`).join('');
-  if (MES_RE.test(params.get('mes') ?? '')) selMes.value = params.get('mes');
+  // Un mes que no está en la lista (de la dirección o de un gasto antiguo) se añade antes de elegirlo
+  const elegirMes = (mes) => {
+    if (![...selMes.options].some((o) => o.value === mes)) selMes.add(new Option(mesTitulo(mes), mes));
+    selMes.value = mes;
+  };
+  if (MES_RE.test(params.get('mes') ?? '')) elegirMes(params.get('mes'));
+  const soloProveedor = params.get('proveedor'); // desde la ficha del proveedor
   const exportar = $('a.boton', cabecera);
   exportar.href = 'libros.html?libro=gastos';
   exportar.textContent = 'Libro para el gestor';
@@ -2515,7 +2577,13 @@ async function paginaGastos() {
     form.elements.tipo.value = 'general';
     form.elements.pagado.checked = false;
     form.elements.forma_pago.value = 'transferencia';
-    if (soloCoche) form.elements.vehiculo_id.value = soloCoche;
+    if (soloCoche) {
+      // Desde la ficha del coche: un gasto de ese coche (si no, se guardaba sin coche y no restaba del margen)
+      form.elements.concepto.value = 'vehiculos';
+      form.elements.tipo.value = 'vehiculo';
+      form.elements.vehiculo_id.value = soloCoche;
+    }
+    if (soloProveedor) form.elements.proveedor_id.value = soloProveedor;
     recalcular();
   };
 
@@ -2558,20 +2626,28 @@ async function paginaGastos() {
     for (const campo of ['descripcion', 'factura_proveedor']) if (e[campo].value.trim()) cuerpo[campo] = e[campo].value.trim();
     const tercero = e.quien.value === 'cliente' ? 'cliente_id' : 'proveedor_id';
     if (e[tercero].value) cuerpo[tercero] = Number(e[tercero].value);
-    if (['vehiculo', 'rebu'].includes(tipo) && e.vehiculo_id.value) cuerpo.vehiculo_id = Number(e.vehiculo_id.value);
+    if ((['vehiculo', 'rebu'].includes(tipo) || soloCoche) && e.vehiculo_id.value) cuerpo.vehiculo_id = Number(e.vehiculo_id.value);
     const boton = $('button[type="submit"]', form);
     boton.disabled = true;
+    let g;
     try {
-      const g = await api('/gastos', { method: 'POST', body: cuerpo });
-      if (e.pagado.checked) await api(`/gastos/${g.id}/pagado`, { method: 'PATCH', body: { pagado: true, forma_pago: cuerpo.forma_pago } });
-      errorForm.hidden = true;
-      valoresIniciales();
-      selMes.value = g.fecha.slice(0, 7);
+      g = await api('/gastos', { method: 'POST', body: cuerpo });
+    } catch (err) {
+      boton.disabled = false;
+      return mostrarErrores(errorForm, err, 'No se ha podido apuntar:');
+    }
+    // Ya está en el libro (y no se borra): lo que falle a partir de aquí no puede decir «no se ha apuntado»
+    errorForm.hidden = true;
+    const pagar = e.pagado.checked;
+    valoresIniciales();
+    $('.caja__titulo .nota', seccion).textContent = `Apuntado con el nº ${g.numero}`;
+    try {
+      if (pagar) await api(`/gastos/${g.id}/pagado`, { method: 'PATCH', body: { pagado: true, forma_pago: cuerpo.forma_pago } });
+      elegirMes(g.fecha.slice(0, 7));
       await cargar();
       $(`tr[data-id="${g.id}"]`)?.classList.add('fila-nueva');
-      $('.caja__titulo .nota', seccion).textContent = `Apuntado con el nº ${g.numero}`;
     } catch (err) {
-      mostrarErrores(errorForm, err, 'No se ha podido apuntar:');
+      mostrarErrores(errorForm, err, `Apuntado con el nº ${g.numero}, pero ${pagar ? 'no se ha podido marcar pagado' : 'no se ha podido recargar la lista'}:`);
     } finally {
       boton.disabled = false;
     }
@@ -2584,9 +2660,10 @@ async function paginaGastos() {
     const sub = [quien, g.factura_proveedor ? `fra. ${g.factura_proveedor}` : ''].filter(Boolean).join(' · ');
     const coche = g.vehiculo_id ? `<span class="nota">${esc(`${g.vehiculo_marca} ${g.vehiculo_modelo}`)} · <span class="matricula">${matricula(g.vehiculo_matricula)}</span></span>` : '';
     const iva = g.tipo === 'rebu' ? '<span class="nota">REBU</span>' : g.iva_pct ? euros2(g.iva_cent) : '<span class="nota">Sin IVA</span>';
+    // Los dos son botones: se pulsan dos veces (la primera pregunta) y se puede deshacer
     const pago = g.pagado_en
-      ? `<span class="estado cobro--cobrada" title="Pagado el ${esc(fechaCorta(g.pagado_en))}">Pagado</span>`
-      : `<button class="estado cobro--vencida gasto-pagar" type="button" data-pagar="${g.id}" title="Marcar pagado hoy">Sin pagar</button>`;
+      ? `<button class="estado cobro--cobrada gasto-pago" type="button" data-pago="${g.id}" data-pagado="0" data-texto="¿Quitar el pago?" title="Pagado el ${esc(fechaCorta(g.pagado_en))}">Pagado</button>`
+      : `<button class="estado cobro--vencida gasto-pago" type="button" data-pago="${g.id}" data-pagado="1" data-texto="¿Pagado hoy?">Sin pagar</button>`;
     return `<tr data-id="${g.id}"${g.pagado_en ? '' : ' class="fila-pendiente"'}>
         <td class="cifra gasto-registro" data-rotulo="Nº de registro">${g.numero}</td>
         <td class="cifra" data-rotulo="Fecha">${esc(new Date(`${g.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</td>
@@ -2617,7 +2694,8 @@ async function paginaGastos() {
     celdas[0].textContent = tipo || concepto || pago ? 'Total con este filtro' : `Total de ${mes}`;
     celdas[1].textContent = euros2(suma(lista, 'base_cent'));
     celdas[2].textContent = euros2(suma(lista, 'iva_cent'));
-    celdas[3].textContent = `−${euros2(suma(lista, 'irpf_cent'))}`;
+    const irpf = suma(lista, 'irpf_cent');
+    celdas[3].textContent = irpf ? `−${euros2(irpf)}` : '—';
     celdas[4].innerHTML = `<b>${euros2(suma(lista, 'total_cent'))}</b>`;
   };
 
@@ -2655,19 +2733,33 @@ async function paginaGastos() {
   filtros.addEventListener('change', pintarLista);
   selMes.addEventListener('change', () => {
     history.replaceState(null, '', `?${new URLSearchParams({ mes: selMes.value, ...(soloCoche ? { vehiculo: soloCoche } : {}) })}`);
-    cargar();
+    cargar().catch((err) => mostrarErrores(errorLista, err, 'No se ha podido cargar el mes:'));
   });
-  // «Sin pagar» se pulsa y queda pagado hoy, con la forma de pago que tuviera
+  // «Sin pagar» → pagado hoy; «Pagado» → otra vez sin pagar. La primera pulsación pregunta.
+  const errorLista = document.createElement('div');
+  errorLista.className = 'error error--lista';
+  errorLista.setAttribute('role', 'alert');
+  errorLista.hidden = true;
+  $('.tabla-caja').before(errorLista);
   cuerpo.addEventListener('click', async (ev) => {
-    const boton = ev.target.closest('[data-pagar]');
+    const boton = ev.target.closest('[data-pago]');
     if (!boton) return;
+    if (!boton.dataset.seguro) {
+      const antes = boton.textContent;
+      boton.dataset.seguro = '1';
+      boton.textContent = boton.dataset.texto;
+      boton.classList.add('gasto-pago--pregunta');
+      setTimeout(() => { if (boton.isConnected && !boton.disabled) { delete boton.dataset.seguro; boton.textContent = antes; boton.classList.remove('gasto-pago--pregunta'); } }, 4000);
+      return;
+    }
     boton.disabled = true;
     try {
-      await api(`/gastos/${boton.dataset.pagar}/pagado`, { method: 'PATCH', body: { pagado: true } });
+      await api(`/gastos/${boton.dataset.pago}/pagado`, { method: 'PATCH', body: { pagado: boton.dataset.pagado === '1' } });
+      errorLista.hidden = true;
       await cargar();
     } catch (err) {
       boton.disabled = false;
-      mostrarErrores(errorForm, err, 'No se ha podido marcar pagado:');
+      mostrarErrores(errorLista, err, 'No se ha podido cambiar el pago:');
     }
   });
 
@@ -2699,11 +2791,14 @@ async function paginaIncentivos(usuario) {
   const bloque = $('.version-incentivos');
   const selMes = $('.cabecera__acciones select[name="mes"]');
   const hoy = new Date();
-  const mesActual = diaLocal(hoy).slice(0, 7);
+  // El mes en curso con el reloj de la API (UTC, como las ventas): el día 1 de madrugada aún no se liquida
+  const mesActual = hoy.toISOString().slice(0, 7);
   const meses = Array.from({ length: 12 }, (_, i) => diaLocal(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)).slice(0, 7));
   selMes.innerHTML = meses.map((m) => `<option value="${m}">${esc(mayuscula(nombreMes(m)))}${m === mesActual ? ' (en curso)' : ''}</option>`).join('');
   // Gerencia abre el último mes cerrado (el que se liquida); el comercial, el que lleva
-  selMes.value = MES_RE.test(params.get('mes') ?? '') ? params.get('mes') : gerencia ? meses[1] : meses[0];
+  const delEnlace = MES_RE.test(params.get('mes') ?? '') ? params.get('mes') : null;
+  if (delEnlace && !meses.includes(delEnlace)) selMes.add(new Option(mayuscula(nombreMes(delEnlace)), delEnlace));
+  selMes.value = delEnlace ?? (gerencia ? meses[1] : meses[0]);
   const anterior = (mes) => { const [a, m] = mes.split('-').map(Number); return diaLocal(new Date(a, m - 2, 1)).slice(0, 7); };
   const nombres = gerencia ? new Map((await api('/incentivos/reglas')).map((u) => [u.usuario_id, u.nombre])) : new Map();
   const cajaError = document.createElement('div');
@@ -2930,6 +3025,7 @@ async function paginaProveedores() {
     lista.innerHTML = proveedores.map(tarjeta).join('');
     lista.hidden = !proveedores.length;
     vacio.hidden = !!proveedores.length;
+    if (!proveedores.length) ficha.hidden = true;
     $('.lista-pie__cuantos').textContent = `${proveedores.length} ${proveedores.length === 1 ? 'proveedor' : 'proveedores'}${q.trim() || tipo || clase ? ' con este filtro' : ''}`;
     if (!q.trim() && !tipo && !clase) {
       const activos = todos.filter((p) => p.activo);
@@ -2983,7 +3079,7 @@ async function paginaProveedores() {
         <div class="ficha-tercero__acciones">
           ${p.telefono || p.movil ? `<a class="boton boton--secundario boton--pequeno" href="tel:${esc((p.movil || p.telefono).replace(/[^\d+]/g, ''))}">Llamar</a>` : ''}
           <button class="boton boton--secundario boton--pequeno" type="button" data-editar>Editar datos</button>
-          <a class="boton boton--secundario boton--pequeno" href="gastos.html">Apuntar un gasto</a>
+          <a class="boton boton--secundario boton--pequeno" href="gastos.html?proveedor=${p.id}">Apuntar un gasto</a>
           <button class="boton boton--secundario boton--pequeno" type="button" data-activo="${p.activo ? 0 : 1}">${p.activo ? 'Desactivar' : 'Volver a activar'}</button>
         </div>
       </section>
@@ -3065,10 +3161,10 @@ async function paginaProveedores() {
   filtros.addEventListener('input', (ev) => {
     if (ev.target.name !== 'q') return;
     clearTimeout(espera);
-    espera = setTimeout(pintarLista, 250);
+    espera = setTimeout(() => pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')), 250);
   });
-  filtros.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintarLista(); });
-  filtros.addEventListener('submit', (ev) => { ev.preventDefault(); pintarLista(); });
+  filtros.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')); });
+  filtros.addEventListener('submit', (ev) => { ev.preventDefault(); pintarLista().catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cargar la lista:')); });
 
   ficha.hidden = true;
   await pintarLista();

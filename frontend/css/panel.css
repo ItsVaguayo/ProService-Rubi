@@ -1084,6 +1084,8 @@ a.contacto__coche:hover { background: var(--fondo); }
 
 /* Historial de cambios de estado */
 .historial { margin: 0; padding: 0; list-style: none; font-size: .875rem; }
+.historial__hecho { margin-top: 6px; }
+.historial--tarde time { color: var(--peligro); }
 .historial li { position: relative; padding: 0 0 14px 18px; }
 .historial li::before {
   content: "";
@@ -2504,10 +2506,11 @@ a.contacto__coche:hover { background: var(--fondo); }
 .gasto-form__campos--tipo:not(:has(input[name="tipo"][value="vehiculo"]:checked, input[name="tipo"][value="rebu"]:checked)) .solo-coche { display: none; }
 .gasto-form__campos--tipo:not(:has(input[name="tipo"][value="irpf"]:checked)) .solo-irpf { display: none; }
 .solo-irpf .campo__nombre { color: var(--preparacion); }
-/* «Sin pagar» es un botón: se pulsa y queda pagado hoy */
-.gasto-pagar { border: 0; font: inherit; cursor: pointer; }
-.gasto-pagar:hover { filter: brightness(.95); }
-.gasto-pagar:hover::after { content: ' · pagar'; }
+/* «Sin pagar» y «Pagado» son botones: la primera pulsación pregunta, la segunda cambia el pago */
+.gasto-pago { border: 0; font: inherit; cursor: pointer; }
+.gasto-pago:hover { filter: brightness(.95); }
+.gasto-pago--pregunta { background: var(--negro); color: var(--blanco); }
+@media (max-width: 760px) { .gasto-pago { min-height: 40px; padding-inline: 14px; } }
 /* El recién apuntado, marcado un momento */
 .fila-nueva td { animation: fila-nueva 2.4s ease-out; }
 @keyframes fila-nueva { from { background: var(--aviso-fondo); } }

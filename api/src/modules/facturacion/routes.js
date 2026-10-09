@@ -124,15 +124,19 @@ export function rutasFacturas(db) {
 
   // --- Facturas ---
   // ?estado=borrador|pendiente|parcial|cobrada|vencida|anulada|rectificativa · ?q= (número, cliente o matrícula)
-  // · ?desde= ?hasta= (AAAA-MM-DD). El resumen es de todo, se filtre lo que se filtre.
+  // · ?desde= ?hasta= (AAAA-MM-DD) · ?cliente=id. El resumen es de todo, se filtre lo que se filtre.
   r.get('/', (req, res) => {
-    const { estado, q, desde, hasta } = req.query;
+    const { estado, q, desde, hasta, cliente } = req.query;
     const filtros = [];
     const valores = [];
     if (typeof q === 'string' && q.trim()) {
       const t = `%${q.trim()}%`;
       filtros.push("(f.codigo LIKE ? OR c.nombre LIKE ? OR v.matricula LIKE ?)");
       valores.push(t, t, `%${q.trim().toUpperCase().replace(/[\s-]/g, '')}%`);
+    }
+    if (cliente !== undefined) {
+      if (typeof cliente !== 'string' || !ENTERO.test(cliente)) return res.status(400).json({ error: 'cliente tiene que ser un número' });
+      filtros.push('f.cliente_id = ?'); valores.push(Number(cliente));
     }
     if (typeof desde === 'string' && desde) { filtros.push('f.fecha >= ?'); valores.push(desde); }
     if (typeof hasta === 'string' && hasta) { filtros.push('f.fecha <= ?'); valores.push(hasta); }
