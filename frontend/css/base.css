@@ -436,3 +436,26 @@ a[href^="mailto:"], .contacto__datos, .reserva-activa dd { overflow-wrap: anywhe
 }
 .saltar:focus { transform: none; }
 main[tabindex="-1"]:focus { outline: none; }
+
+/* Elegir entre cientos (buscable() en panel.js): un cuadro de búsqueda con la lista debajo.
+   Sin animación al abrir: se usa decenas de veces al día y tiene que estar ya. */
+.buscable { position: relative; }
+.buscable input[type="search"] { width: 100%; }
+.buscable__lista {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 30;
+  max-height: min(320px, 50vh); margin: 0; padding: 4px; overflow-y: auto; overscroll-behavior: contain;
+  list-style: none; background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio);
+  box-shadow: 0 10px 28px rgb(23 25 28 / .14);
+}
+.buscable__opcion {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; min-height: 40px; padding: 9px 12px;
+  border-radius: 6px; color: var(--tinta); font-size: .9375rem; cursor: pointer;
+}
+.buscable__opcion .nota { font-size: .8125rem; }
+.buscable__opcion--activa { background: var(--fondo); }
+.buscable__opcion[aria-selected="true"] { font-weight: 600; }
+.buscable__opcion[aria-selected="true"]::after { content: "✓"; margin-left: auto; color: var(--tinta-3); }
+.buscable__opcion--vacia { color: var(--tinta-2); font-style: italic; }
+.buscable__grupo { padding: 10px 12px 4px; color: var(--tinta-3); font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.buscable__mas { padding: 10px 12px; color: var(--tinta-3); font-size: .8125rem; }
+@media (pointer: coarse), (max-width: 760px) { .buscable__opcion { min-height: 44px; } }

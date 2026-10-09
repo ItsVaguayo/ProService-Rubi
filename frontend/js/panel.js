@@ -1115,6 +1115,144 @@ function cajaErrorEn(form) {
   return caja;
 }
 
+// --- Elegir un cliente, un proveedor o un coche entre cientos ---------------------------------------
+// Un <select> con 600 clientes no se puede usar. buscable() pone encima un cuadro donde se escribe parte del
+// nombre, el DNI, el teléfono o la matrícula, y salen los que coinciden. El <select> se queda debajo, oculto,
+// y sigue siendo el que guarda el valor: el resto del código lo lee y lo cambia como siempre (value, change).
+// Patrón combobox de WAI-ARIA: flechas para moverse, Intro para elegir, Escape para cerrar.
+
+/** Para buscar sin tildes ni mayúsculas, y la matrícula con o sin espacio */
+const paraBuscar = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+/** Lo que también encuentra una opción además de su texto (data-busca) */
+const datosCliente = (c) => [c.nif, c.telefono, c.telefono?.replace(/\s/g, ''), c.email].filter(Boolean).join(' ');
+const datosCoche = (v) => [v.matricula, v.referencia, v.bastidor].filter(Boolean).join(' ');
+const MAXIMO_RESULTADOS = 50;
+let buscables = 0;
+
+function buscable(select, { placeholder = 'Escribe para buscar' } = {}) {
+  if (select.dataset.buscable) return;
+  select.dataset.buscable = '1';
+  const id = `buscable-${++buscables}`;
+  const caja = document.createElement('div');
+  caja.className = 'buscable';
+  caja.innerHTML = `<input type="search" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="${id}" placeholder="${esc(placeholder)}">
+    <ul class="buscable__lista" id="${id}" role="listbox" hidden></ul>`;
+  // Delante del select: dentro de su <label>, el primer control es el que recibe el clic y el nombre
+  select.before(caja);
+  caja.append(select);
+  select.classList.add('oculto');
+  select.tabIndex = -1;
+  select.setAttribute('aria-hidden', 'true');
+  const input = $('input', caja);
+  const lista = $('ul', caja);
+  // Obligatorio: lo comprueba el cuadro, que es el que se ve
+  input.required = select.required;
+  select.required = false;
+  select.focus = (opciones) => input.focus(opciones);
+
+  const vacia = () => [...select.options].find((o) => o.value === '');
+  // Sin valor obligatorio, la opción vacía («No es cliente todavía») también se puede elegir
+  const vaciaElegible = () => !input.required && vacia() && !/^elige/i.test(vacia().text);
+  const opciones = () => [...select.options].filter((o) => o.value !== '' && !o.disabled);
+  const textoDe = (o) => o?.value ? o.text : '';
+
+  const mostrarElegido = () => {
+    const o = select.selectedOptions[0];
+    input.value = textoDe(o);
+    input.placeholder = o?.value === '' && vaciaElegible() ? vacia().text : placeholder;
+    input.setCustomValidity('');
+  };
+  // El código de la página cambia el valor con select.value = x (sin evento): se refleja en el cuadro
+  const valor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+  Object.defineProperty(select, 'value', {
+    get() { return valor.get.call(this); },
+    set(v) { valor.set.call(this, v); mostrarElegido(); },
+  });
+  new MutationObserver(mostrarElegido).observe(select, { childList: true, subtree: true });
+  select.form?.addEventListener('reset', () => setTimeout(mostrarElegido));
+  select.addEventListener('change', mostrarElegido);
+
+  let activa = -1;
+  let visibles = [];
+  const pintar = () => {
+    const palabras = paraBuscar(input.value).split(/\s+/).filter(Boolean);
+    // Si lo escrito es lo elegido, se enseñan todas (al volver a abrir no se filtra por el nombre ya puesto)
+    const filtrar = palabras.length && input.value !== textoDe(select.selectedOptions[0]);
+    const todas = opciones().filter((o) => !filtrar || palabras.every((w) => paraBuscar(`${o.text} ${o.dataset.busca ?? ''} ${o.parentElement.label ?? ''}`).includes(w)));
+    visibles = (vaciaElegible() && !filtrar ? [vacia()] : []).concat(todas.slice(0, MAXIMO_RESULTADOS));
+    let grupo = null;
+    lista.innerHTML = visibles.map((o, i) => {
+      const g = o.parentElement.tagName === 'OPTGROUP' && o.parentElement.label !== grupo ? (grupo = o.parentElement.label) : null;
+      const [principal, ...resto] = o.text.split(' · ');
+      return `${g ? `<li class="buscable__grupo" role="presentation">${esc(g)}</li>` : ''}<li class="buscable__opcion${o.value === '' ? ' buscable__opcion--vacia' : ''}" role="option" id="${id}-${i}" data-i="${i}" aria-selected="${o.selected && o.value !== '' ? 'true' : 'false'}"><span>${esc(principal)}</span>${resto.length ? `<span class="nota">${esc(resto.join(' · '))}</span>` : ''}</li>`;
+    }).join('') + (todas.length > MAXIMO_RESULTADOS ? `<li class="buscable__mas" role="presentation">Y ${todas.length - MAXIMO_RESULTADOS} más: escribe algo más para afinar</li>` : '')
+      + (!visibles.length ? `<li class="buscable__mas" role="presentation">${opciones().length ? 'Ninguno coincide' : 'No hay ninguno todavía'}</li>` : '');
+    marcar(filtrar && visibles.length ? visibles.findIndex((o) => o.value !== '') : visibles.findIndex((o) => o.selected));
+  };
+  const marcar = (i) => {
+    activa = i;
+    lista.querySelectorAll('[role="option"]').forEach((li) => li.classList.toggle('buscable__opcion--activa', Number(li.dataset.i) === i));
+    const li = lista.querySelector(`[data-i="${i}"]`);
+    if (li) { input.setAttribute('aria-activedescendant', li.id); li.scrollIntoView({ block: 'nearest' }); } else input.removeAttribute('aria-activedescendant');
+  };
+  const abrir = () => { pintar(); lista.hidden = false; input.setAttribute('aria-expanded', 'true'); };
+  const cerrar = () => { lista.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); };
+  const elegir = (o) => {
+    valor.set.call(select, o.value);
+    select.dispatchEvent(new Event('input', { bubbles: true }));
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    mostrarElegido();
+    cerrar();
+  };
+
+  // Al recibir el foco no se abre (al abrir una ventana taparía los campos de debajo): se abre al pinchar,
+  // al escribir o con la flecha abajo
+  input.addEventListener('focus', () => input.select());
+  input.addEventListener('click', () => { if (lista.hidden) abrir(); });
+  input.addEventListener('input', (ev) => {
+    ev.stopPropagation(); // lo que se teclea no es un cambio del formulario: el cambio llega al elegir
+    input.setCustomValidity('');
+    // Si se borra todo lo escrito, se quita lo elegido
+    if (!input.value && select.value) { valor.set.call(select, ''); select.dispatchEvent(new Event('change', { bubbles: true })); }
+    abrir();
+  });
+  input.addEventListener('keydown', (ev) => {
+    const n = visibles.length;
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      if (lista.hidden) return abrir();
+      if (n) marcar((activa + (ev.key === 'ArrowDown' ? 1 : -1) + n) % n);
+    } else if (ev.key === 'Enter' && !lista.hidden) {
+      ev.preventDefault(); // no envía el formulario: Intro aquí es elegir
+      if (visibles[activa]) elegir(visibles[activa]);
+    } else if (ev.key === 'Escape' && !lista.hidden) {
+      ev.preventDefault();
+      ev.stopPropagation(); // dentro de una ventana, Escape cierra la lista y no la ventana
+      mostrarElegido();
+      cerrar();
+    }
+  });
+  // pointerdown y no click: el clic llega después del blur, que ya habría cerrado la lista
+  lista.addEventListener('pointerdown', (ev) => {
+    const li = ev.target.closest('[role="option"]');
+    ev.preventDefault();
+    if (li) elegir(visibles[Number(li.dataset.i)]);
+  });
+  lista.addEventListener('pointermove', (ev) => {
+    const li = ev.target.closest('[role="option"]');
+    if (li && Number(li.dataset.i) !== activa) marcar(Number(li.dataset.i));
+  });
+  input.addEventListener('blur', () => {
+    cerrar();
+    // Escribir un nombre a medias no elige nada: o se vuelve a lo que había, o avisa al enviar
+    if (input.value && input.value !== textoDe(select.selectedOptions[0])) {
+      if (select.value) mostrarElegido();
+      else input.setCustomValidity('Elige uno de la lista');
+    }
+  });
+  mostrarElegido();
+}
+
 async function paginaUsuarios(yo) {
   const lista = $('.usuarios');
   const vacio = $('.vacio');
@@ -1919,6 +2057,7 @@ async function paginaCrm(usuario) {
     </form>`;
   hoyCaja.before(seccion);
   const form = $('form', seccion);
+  buscable(form.elements.cliente_id, { placeholder: 'Nombre, DNI o teléfono' });
   const errorForm = cajaErrorEn(form);
   errorForm.classList.add('campo--ancho');
   const cerrar = () => { seccion.hidden = true; form.reset(); errorForm.hidden = true; };
@@ -1926,7 +2065,11 @@ async function paginaCrm(usuario) {
   const abrirForm = (clienteId) => {
     const select = form.elements.cliente_id;
     select.length = 1;
-    for (const c of [...clientes.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))) select.add(new Option(c.nombre, c.id));
+    for (const c of [...clientes.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))) {
+      const o = new Option(c.nif ? `${c.nombre} · ${c.nif}` : c.nombre, c.id);
+      o.dataset.busca = datosCliente(c);
+      select.add(o);
+    }
     if (clienteId) select.value = String(clienteId);
     seccion.hidden = false;
     seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2160,9 +2303,9 @@ async function prepararAltaFactura() {
     <form class="rejilla">
       <label class="campo campo--doble"><span class="campo__nombre">Coche <em>*</em></span>
         <select name="vehiculo_id" required><option value="">Elige el coche</option>${[['vendido', 'Vendidos, sin factura'], ['entregado', 'Entregados, sin factura'], ['reservado', 'Reservados'], ['publicado', 'Publicados']]
-          .map(([e, titulo]) => { const suyos = posibles.filter((v) => v.estado === e); return suyos.length ? `<optgroup label="${esc(titulo)}">${suyos.map((v) => `<option value="${v.id}">${esc(tituloCoche(v))} · ${matricula(v.matricula)}</option>`).join('')}</optgroup>` : ''; }).join('')}</select></label>
+          .map(([e, titulo]) => { const suyos = posibles.filter((v) => v.estado === e); return suyos.length ? `<optgroup label="${esc(titulo)}">${suyos.map((v) => `<option value="${v.id}" data-busca="${esc(datosCoche(v))}">${esc(tituloCoche(v))} · ${matricula(v.matricula)}</option>`).join('')}</optgroup>` : ''; }).join('')}</select></label>
       <label class="campo campo--doble"><span class="campo__nombre">Cliente <em>*</em></span>
-        <select name="cliente_id" required><option value="">Elige el cliente</option>${clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}${c.nif ? ` · ${esc(c.nif)}` : ' · sin DNI'}</option>`).join('')}</select>
+        <select name="cliente_id" required><option value="">Elige el cliente</option>${clientes.map((c) => `<option value="${c.id}" data-busca="${esc(datosCliente(c))}">${esc(c.nombre)}${c.nif ? ` · ${esc(c.nif)}` : ' · sin DNI'}</option>`).join('')}</select>
         <span class="campo__ayuda">¿No está? Dalo de alta en <a href="clientes.html#nuevo">Clientes</a> con su DNI y dirección.</span></label>
       <label class="campo"><span class="campo__nombre">Precio de venta</span><span class="con-unidad" data-unidad="€"><input name="precio" inputmode="decimal"></span>
         <span class="campo__ayuda">Con impuestos. Vacío: el PVP del coche.</span></label>
@@ -2183,6 +2326,8 @@ async function prepararAltaFactura() {
     </form>`;
   $('form.filtros').before(seccion);
   const form = $('form', seccion);
+  buscable(form.elements.vehiculo_id, { placeholder: 'Modelo o matrícula' });
+  buscable(form.elements.cliente_id, { placeholder: 'Nombre, DNI o teléfono' });
   const error = cajaErrorEn(form);
   error.classList.add('campo--ancho');
   // Lo que saldrá en la factura, en vivo y con la misma cuenta que el servidor (facturacion/importes.js):
@@ -2553,11 +2698,11 @@ async function paginaContrato(usuario) {
     <h1>${esc(TIPOS_CONTRATO[tipo])}</h1>
     <p class="nota">Se escribe con los datos de ahora y se queda así. Lo que falte (por ejemplo, un DNI) sale como una raya para rellenar a mano.</p>
     ${tipo === 'reserva' ? `<label class="campo"><span class="campo__nombre">Cliente que reserva</span>
-      <select name="cliente_id" required><option value="">Elige el cliente</option>${clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}${c.nif ? ` · ${esc(c.nif)}` : ''}</option>`).join('')}</select>
+      <select name="cliente_id" required><option value="">Elige el cliente</option>${clientes.map((c) => `<option value="${c.id}" data-busca="${esc(datosCliente(c))}">${esc(c.nombre)}${c.nif ? ` · ${esc(c.nif)}` : ''}</option>`).join('')}</select>
       <span class="nota">¿No está? Dalo de alta en <a href="clientes.html#nuevo">Clientes</a>.</span></label>
       <label class="campo"><span class="campo__nombre">Cómo paga la señal</span><select name="forma_pago">${Object.entries(FORMAS_PAGO).map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join('')}</select></label>` : ''}
     ${['compra', 'cesion'].includes(tipo) ? `<label class="campo"><span class="campo__nombre">${tipo === 'compra' ? 'Vendedor' : 'Dueño del coche'}</span>
-      <select name="proveedor_id"><option value="">El que tiene la ficha del coche</option>${proveedores.map((p) => `<option value="${p.id}">${esc(p.nombre)}${p.nif ? ` · ${esc(p.nif)}` : ''}</option>`).join('')}</select>
+      <select name="proveedor_id"><option value="">El que tiene la ficha del coche</option>${proveedores.map((p) => `<option value="${p.id}" data-busca="${esc(datosCliente(p))}">${esc(p.nombre)}${p.nif ? ` · ${esc(p.nif)}` : ''}</option>`).join('')}</select>
       <span class="nota">Con su ficha de proveedor salen su DNI y su dirección.</span></label>` : ''}
     ${tipo === 'compra' ? `<label class="campo"><span class="campo__nombre">Cómo se le paga</span><select name="forma_pago">${Object.entries(FORMAS_PAGO).map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join('')}</select></label>` : ''}
     ${tipo === 'cesion' ? '<label class="campo"><span class="campo__nombre">Duración (meses)</span><input type="number" name="duracion_meses" min="1" max="24" value="3"></label>' : ''}
@@ -2566,6 +2711,8 @@ async function paginaContrato(usuario) {
       <span class="nota">Desde esa hora, multas y responsabilidades son del que se queda el coche.</span></label>` : ''}
     <label class="campo"><span class="campo__nombre">Cláusulas adicionales</span><textarea name="clausulas_adicionales" maxlength="4000" placeholder="Opcional. Por ejemplo: se entrega con la segunda llave y el libro de mantenimiento."></textarea></label>
     <button class="boton" type="submit">Generar el contrato</button>`;
+  if (form.elements.cliente_id) buscable(form.elements.cliente_id, { placeholder: 'Nombre, DNI o teléfono' });
+  if (form.elements.proveedor_id) buscable(form.elements.proveedor_id, { placeholder: 'Nombre, DNI o teléfono' });
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const d = Object.fromEntries(new FormData(form));
@@ -2938,13 +3085,16 @@ async function paginaGastos() {
 
   // Desplegables del formulario
   const [proveedores, clientes, coches] = await Promise.all([api('/proveedores'), api('/clientes'), api('/vehiculos')]);
-  const opciones = (sel, lista, texto, vacia) => {
-    sel.innerHTML = `<option value="">${esc(vacia)}</option>` + lista.map((x) => `<option value="${x.id}">${esc(texto(x))}</option>`).join('');
+  const opciones = (sel, lista, texto, vacia, busca) => {
+    sel.innerHTML = `<option value="">${esc(vacia)}</option>` + lista.map((x) => `<option value="${x.id}" data-busca="${esc(busca(x))}">${esc(texto(x))}</option>`).join('');
   };
-  opciones(form.elements.proveedor_id, proveedores.filter((x) => x.activo !== 0), (x) => x.nombre, 'Elige el proveedor');
-  opciones(form.elements.cliente_id, clientes, (x) => x.nombre, 'Elige el cliente');
+  opciones(form.elements.proveedor_id, proveedores.filter((x) => x.activo !== 0), (x) => x.nif ? `${x.nombre} · ${x.nif}` : x.nombre, 'Elige el proveedor', datosCliente);
+  opciones(form.elements.cliente_id, clientes, (x) => x.nif ? `${x.nombre} · ${x.nif}` : x.nombre, 'Elige el cliente', datosCliente);
   opciones(form.elements.vehiculo_id, [...coches].sort((a, b) => a.matricula.localeCompare(b.matricula)),
-    (v) => `${v.matricula.replace(/^(\d{4})([A-Z]{3})$/, '$1 $2')} · ${v.marca} ${v.modelo}`, 'Elige el coche');
+    (v) => `${v.matricula.replace(/^(\d{4})([A-Z]{3})$/, '$1 $2')} · ${v.marca} ${v.modelo}`, 'Elige el coche', datosCoche);
+  buscable(form.elements.proveedor_id, { placeholder: 'Nombre, NIF o teléfono' });
+  buscable(form.elements.cliente_id, { placeholder: 'Nombre, DNI o teléfono' });
+  buscable(form.elements.vehiculo_id, { placeholder: 'Matrícula o modelo' });
   $('.caja__titulo .nota', seccion).textContent = 'El nº de registro lo pone el programa';
 
   const valoresIniciales = () => {
@@ -3814,9 +3964,9 @@ async function paginaAgenda() {
           ${inicio ? `<input type="hidden" name="inicio" value="${inicio}">` : `<label class="campo campo--ancho"><span class="campo__nombre">Día y hora <em>*</em></span>
             <select name="inicio" required><option value="">Cargando…</option></select></label>`}
           <label class="campo campo--ancho"><span class="campo__nombre">Coche <em>*</em></span>
-            <select name="vehiculo_id" required><option value="">Elige el coche</option>${enStock.map((v) => `<option value="${v.id}">${esc(tituloCoche(v))} · ${matricula(v.matricula)}${v.estado !== 'publicado' ? ` · ${esc(estado(v.estado).nombre)}` : ''}</option>`).join('')}</select></label>
+            <select name="vehiculo_id" required><option value="">Elige el coche</option>${enStock.map((v) => `<option value="${v.id}" data-busca="${esc(datosCoche(v))}">${esc(tituloCoche(v))} · ${matricula(v.matricula)}${v.estado !== 'publicado' ? ` · ${esc(estado(v.estado).nombre)}` : ''}</option>`).join('')}</select></label>
           <label class="campo campo--ancho"><span class="campo__nombre">Cliente</span>
-            <select name="cliente_id"><option value="">No es cliente todavía</option>${clientes.map((c) => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('')}</select></label>
+            <select name="cliente_id"><option value="">No es cliente todavía</option>${clientes.map((c) => `<option value="${c.id}" data-busca="${esc(datosCliente(c))}">${esc(c.nombre)}${c.nif ? ` · ${esc(c.nif)}` : ''}</option>`).join('')}</select></label>
           <label class="campo"><span class="campo__nombre">Nombre</span><input name="nombre" maxlength="100" autocomplete="off"></label>
           <label class="campo"><span class="campo__nombre">Teléfono</span><input type="tel" name="telefono" autocomplete="off"></label>
           <label class="campo campo--ancho"><span class="campo__nombre">Notas</span><textarea name="notas" maxlength="2000" rows="2" placeholder="Viene con su pareja; tener el coche lavado y en la puerta"></textarea></label>
@@ -3828,6 +3978,8 @@ async function paginaAgenda() {
         </div>
       </form>`;
     const form = $('form', nuevaV);
+    buscable(form.elements.vehiculo_id, { placeholder: 'Modelo o matrícula' });
+    buscable(form.elements.cliente_id, { placeholder: 'Nombre, DNI o teléfono' });
     const errorForm = cajaErrorEn(form);
     contactoId = contacto?.id ?? null;
     if (coche) form.elements.vehiculo_id.value = String(coche);
