@@ -90,6 +90,7 @@ export function rutasProveedores(db) {
   return rutasTercero(db, {
     tabla: 'proveedores', entidad: 'proveedor', campos: CAMPOS_PROVEEDOR,
     extra: (p) => ({ coches: coches.all(p.id) }),
-    resumen: ', (SELECT COUNT(*) FROM vehiculos v WHERE v.proveedor_id = proveedores.id) AS n_coches',
+    resumen: `, (SELECT COUNT(*) FROM vehiculos v WHERE v.proveedor_id = proveedores.id) AS n_coches,
+               (SELECT COALESCE(SUM(v.precio_compra_cent), 0) FROM vehiculos v WHERE v.proveedor_id = proveedores.id) AS comprado_cent`,
   });
 }

@@ -70,12 +70,17 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 - [ ] Conectar `agenda.html` de Hafsa.
 
 ## 11. Bloque 9 · Avisos
-- [ ] `modules/avisos` encima de la tabla de David: tareas vencidas, contactos sin atender, coches parados, ITV, vendidos aún publicados, cobros vencidos y citas de mañana.
-- [ ] Endpoint para el panel y correo diario (duda H13).
+- ✅ `modules/avisos` y `GET /api/avisos` (PR #15, 8-oct): tareas vencidas, contactos sin atender, coches parados, ITV, vendidos aún publicados y cobros vencidos.
+- [ ] Citas de mañana: cuando exista la tabla `citas` (bloque 10).
+- [ ] Correo diario (duda H13: falta el SMTP).
 
 ## 12. Conectar las maquetas de Hafsa
 - ✅ `clientes.html` (7-oct): lista con buscador y filtros, ficha con sus coches y lo último del CRM, alta y edición. La lista de la API trae `n_coches` y `ultima_actividad`. Las facturas del cliente salen cuando esté el bloque 3.
 - ✅ `crm.html` (7-oct): «Hoy» con lo atrasado, «Lo mío» o «De todos», marcar hecha, apuntar actividad y el embudo: cada estado es un tramo que se estrecha, con sus clientes dentro, y se mueven arrastrando. «Hablado» cuenta solo lo hecho. En el móvil no se puede arrastrar: el estado se cambia con el selector de la ficha del cliente.
-- [ ] El resto, conforme sale su bloque. Siguiente con API ya hecha: `incentivos.html` (T12), `proveedores.html` (T15) y `gastos.html` (T14, después de la T07b de Hafsa).
+- ✅ `avisos.html` (9-oct): urgentes y pendientes con filtro, la versión del comercial sin cobros y el vacío.
+- ✅ `gastos.html` (9-oct): el mes con sus cifras por tipo (pulsar una filtra), alta con el tipo propuesto por el concepto, total en vivo, «Ya está pagado» y «Sin pagar» que se pulsa para pagarlo. Desde la ficha del coche, `gastos.html?vehiculo=`.
+- ✅ `incentivos.html` (9-oct): gerencia ve a cada comercial con su regla (se cambia ahí), sus coches con margen y «Liquidar» con doble pulsación. El comercial ve lo suyo, sin margen ni porcentaje. La API añade `matricula` y `pvp_cent` a cada coche.
+- ✅ `proveedores.html` (9-oct): lista con lo comprado a cada uno (la API añade `comprado_cent`), ficha con sus coches, alta y edición con los campos de la T15 (clase, móvil, IBAN, forma de pago, persona de contacto), desactivar y volver a activar.
+- [ ] El resto, conforme sale su bloque: `agenda.html` (bloque 10) y `anuncio.html`.
 
 Cada bloque es: migración, módulo, tests, `docs/api.md`, página del panel y datos de prueba. Marca con ✅ lo que acabes.

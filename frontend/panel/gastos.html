@@ -219,6 +219,19 @@
             <option value="pago_30_60">Pago a 30 y 60 días</option>
           </select>
         </label>
+        <!-- RETENCIÓN: solo con «Gasto con IRPF». Los % son los que tiene Pymecar. -->
+        <label class="campo solo-irpf">
+          <span class="campo__nombre">Retención IRPF</span>
+          <select name="irpf_pct">
+            <option value="15" selected>15 %</option>
+            <option value="19">19 % (alquiler)</option>
+            <option value="7">7 %</option>
+          </select>
+        </label>
+        <label class="campo solo-irpf">
+          <span class="campo__nombre">Importe retenido</span>
+          <span class="con-unidad" data-unidad="€"><input inputmode="decimal" value="" readonly aria-label="Importe retenido"></span>
+        </label>
         <div class="gasto-form__pie">
           <label class="casilla"><input type="checkbox" name="pagado" checked> Ya está pagado</label>
           <p class="nota gasto-form__total">120,00 + 25,20 de IVA = <b class="cifra">145,20 €</b></p>

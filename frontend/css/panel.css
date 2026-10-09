@@ -2073,6 +2073,10 @@ a.contacto__coche:hover { background: var(--fondo); }
 .incentivo .tabla-caja { border: 0; border-top: 1px solid var(--linea); border-radius: 0; }
 .incentivo--liquidado .incentivo__cabeza { background: #fafbfb; }
 .incentivo--sin-regla { border-color: #e0a23a; }
+.incentivo__regla { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; padding: 14px 20px; border-top: 1px solid var(--linea); background: #fafbfb; }
+.incentivo__regla .campo { margin: 0; min-width: 160px; }
+.incentivo__regla .error--lista { flex-basis: 100%; }
+.incentivo__nada { margin: 0; padding: 12px 20px 16px; border-top: 1px solid var(--linea); }
 /* Botón que aún no se puede usar (liquidar sin regla, confirmar una prueba ya confirmada) */
 .incentivo .boton:disabled,
 .prueba .boton:disabled { opacity: .45; cursor: not-allowed; }
@@ -2500,6 +2504,13 @@ a.contacto__coche:hover { background: var(--fondo); }
 .gasto-form__campos--tipo:not(:has(input[name="tipo"][value="vehiculo"]:checked, input[name="tipo"][value="rebu"]:checked)) .solo-coche { display: none; }
 .gasto-form__campos--tipo:not(:has(input[name="tipo"][value="irpf"]:checked)) .solo-irpf { display: none; }
 .solo-irpf .campo__nombre { color: var(--preparacion); }
+/* «Sin pagar» es un botón: se pulsa y queda pagado hoy */
+.gasto-pagar { border: 0; font: inherit; cursor: pointer; }
+.gasto-pagar:hover { filter: brightness(.95); }
+.gasto-pagar:hover::after { content: ' · pagar'; }
+/* El recién apuntado, marcado un momento */
+.fila-nueva td { animation: fila-nueva 2.4s ease-out; }
+@keyframes fila-nueva { from { background: var(--aviso-fondo); } }
 /* A quién: el desplegable de proveedores o el de clientes */
 .gasto-form__campos:has(input[name="quien"][value="cliente"]:checked) .gasto-form__proveedor,
 .gasto-form__campos:not(:has(input[name="quien"][value="cliente"]:checked)) .gasto-form__cliente { display: none; }

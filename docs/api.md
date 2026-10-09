@@ -102,7 +102,7 @@ Clientes: los dos roles (el comercial los usa en el CRM). Proveedores: solo gere
 | `GET /clientes/:id` | con sesión | La ficha, con `coches` (los que ha comprado: `vehiculos.comprador_id`) y `contactos` (los de la web unidos a él) |
 | `POST /clientes` | con sesión | Alta. Solo `nombre` es obligatorio. 201 |
 | `PUT /clientes/:id` | con sesión | Cambia los campos que lleguen. `{ activo: false }` lo desactiva: no se borra nunca |
-| `GET /proveedores?q=` · `GET /proveedores/:id` · `POST /proveedores` · `PUT /proveedores/:id` | gerencia | Igual que clientes. La ficha trae `coches` con su `precio_compra_cent` |
+| `GET /proveedores?q=` · `GET /proveedores/:id` · `POST /proveedores` · `PUT /proveedores/:id` | gerencia | Igual que clientes. Cada fila de la lista trae `n_coches` (los que nos ha vendido) y `comprado_cent` (la suma de su `precio_compra_cent`). La ficha trae `coches` con su `precio_compra_cent` |
 
 Campos de los dos: `nombre` (o razón social), `nif`, `direccion`, `codigo_postal`, `poblacion`, `provincia`, `pais` (`ES` por defecto), `telefono`, `email`, `notas`, `activo`.
 
@@ -145,7 +145,7 @@ Cuánto se le paga a cada comercial por lo vendido en un mes. La regla del clien
 | `GET /incentivos?mes=AAAA-MM` | con sesión | Sin `mes`, el actual. Gerencia: `{ mes, comerciales, sin_vendedor }`. El comercial: solo él, y sus coches **sin `margen_cent`** |
 | `POST /incentivos/liquidar` | gerencia | `{ mes, usuario_id }`. Guarda lo calculado en ese momento. Un mes que no ha terminado, o ya liquidado para ese usuario: 409. 201 |
 
-Cada comercial lleva `usuario_id`, `nombre`, `rol`, `regla`, `coches` (`id`, `referencia`, `marca`, `modelo`, `fecha_venta`, `margen_cent`, `incentivo_cent`), `total_cent` y `liquidado` (`coches`, `importe_cent`, `liquidado_en` y, para gerencia, `liquidado_por`; o `null`).
+Cada comercial lleva `usuario_id`, `nombre`, `rol`, `regla`, `coches` (`id`, `referencia`, `marca`, `modelo`, `matricula`, `pvp_cent` (el precio público: lo ve también el comercial), `fecha_venta`, `margen_cent`, `incentivo_cent`), `total_cent` y `liquidado` (`coches`, `importe_cent`, `liquidado_en` y, para gerencia, `liquidado_por`; o `null`).
 
 - Una venta cuenta para quien pasó el coche a «Vendido» (`ventasDelMes` de `informes/ventas.js`), también si es de gerencia. Salen los que vendieron algo y los comerciales activos aunque no vendieran nada.
 - `porcentaje_margen`: con pérdida o sin margen (falta la compra o el PVP), 0. El margen es el neto de `margen.js`.
@@ -276,11 +276,11 @@ Ejemplo (gerencia):
     "enlace": "factura.html?id=7", "fecha": "2026-10-05" },
   { "tipo": "contactos_sin_atender", "gravedad": "alta", "texto": "Marta Ruiz escribió por la web (prueba) y sigue sin atender",
     "enlace": "contactos.html?id=31", "fecha": "2026-10-06 17:42:10" },
-  { "tipo": "itv", "gravedad": "alta", "texto": "Seat Ibiza 1234BCD: la ITV caducó el 07/10/2026",
+  { "tipo": "itv", "gravedad": "alta", "texto": "Seat Ibiza 1234 BCD: la ITV caducó el 07/10/2026",
     "enlace": "coche.html?id=12", "fecha": "2026-10-07" },
-  { "tipo": "vendidos_publicados", "gravedad": "alta", "texto": "Renault Clio 5678FGH está vendido y sigue por retirar en coches_net, wallapop",
+  { "tipo": "vendidos_publicados", "gravedad": "alta", "texto": "Renault Clio 5678 FGH está vendido y sigue por retirar en Coches.net, Wallapop",
     "enlace": "coche.html?id=9", "fecha": "2026-10-07 09:15:00" },
-  { "tipo": "coches_parados", "gravedad": "media", "texto": "Peugeot 208 4321JKL lleva 71 días publicado",
+  { "tipo": "coches_parados", "gravedad": "media", "texto": "Peugeot 208 4321 JKL lleva 71 días publicado",
     "enlace": "coche.html?id=3", "fecha": "2026-07-29 10:02:33" },
   { "tipo": "tareas_vencidas", "gravedad": "media", "texto": "Tarea vencida: Llamar por la financiación (Laura Gil) · Comercial",
     "enlace": "clientes.html?id=5", "fecha": "2026-10-08 09:30" }

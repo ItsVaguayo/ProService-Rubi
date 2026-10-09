@@ -73,6 +73,11 @@
         <label><input type="radio" name="tipo" value="subasta"><span>Subastas</span></label>
         <label><input type="radio" name="tipo" value="comisionista"><span>Comisionistas</span></label>
       </fieldset>
+      <fieldset class="segmentos" aria-label="Clase">
+        <label><input type="radio" name="clase" value="" checked><span>Todos</span></label>
+        <label><input type="radio" name="clase" value="proveedor"><span>De coches</span></label>
+        <label><input type="radio" name="clase" value="acreedor"><span>Acreedores</span></label>
+      </fieldset>
     </form>
 
     <p class="lista-pie"><span class="lista-pie__cuantos">8 proveedores</span></p>
@@ -212,6 +217,13 @@
           <label><input type="radio" name="tipo" value="subasta"><span>Subasta</span></label>
           <label><input type="radio" name="tipo" value="comisionista"><span>Comisionista</span></label>
         </fieldset>
+        <!-- CLASE (T15, como en Pymecar): proveedor, se le compran coches; acreedor, da un servicio
+             (gestoría, luz, publicidad) y sale en los gastos. -->
+        <fieldset class="opciones opciones--pequenas campo--ancho">
+          <legend class="campo__nombre">Clase</legend>
+          <label><input type="radio" name="clase" value="proveedor" checked><span>Proveedor de coches</span></label>
+          <label><input type="radio" name="clase" value="acreedor"><span>Acreedor (da un servicio)</span></label>
+        </fieldset>
         <label class="campo campo--doble">
           <span class="campo__nombre">Nombre o razón social <em>*</em></span>
           <input name="nombre" maxlength="150" autocomplete="off" required>
@@ -226,8 +238,16 @@
           <input type="tel" name="telefono" autocomplete="off">
         </label>
         <label class="campo">
+          <span class="campo__nombre">Móvil</span>
+          <input type="tel" name="movil" autocomplete="off">
+        </label>
+        <label class="campo">
           <span class="campo__nombre">Correo</span>
           <input type="email" name="email" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Persona de contacto</span>
+          <input name="persona_contacto" maxlength="100" autocomplete="off">
         </label>
         <label class="campo campo--doble">
           <span class="campo__nombre">Dirección</span>
@@ -253,6 +273,23 @@
             <option value="DE">Alemania</option>
             <option value="FR">Francia</option>
             <option value="PT">Portugal</option>
+          </select>
+        </label>
+        <label class="campo campo--doble">
+          <span class="campo__nombre">IBAN</span>
+          <input name="iban" autocomplete="off" placeholder="ES91 2100 0418 4502 0005 1332">
+          <span class="campo__ayuda">Se comprueba el dígito de control.</span>
+        </label>
+        <label class="campo">
+          <span class="campo__nombre">Forma de pago</span>
+          <select name="forma_pago">
+            <option value="">Sin indicar</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="contado">Contado</option>
+            <option value="tarjeta">Tarjeta</option>
+            <option value="a_la_vista">A la vista</option>
+            <option value="pago_30">Pago a 30 días</option>
+            <option value="pago_30_60">Pago a 30 y 60 días</option>
           </select>
         </label>
         <label class="campo campo--ancho">

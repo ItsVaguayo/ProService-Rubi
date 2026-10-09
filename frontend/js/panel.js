@@ -1157,7 +1157,8 @@ function haceCuanto(fecha) {
   return `hace ${d} ${d === 1 ? 'día' : 'días'}`;
 }
 
-const iniciales = (nombre) => nombre.trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+// Solo letras: «Particular (Sabadell)» → PS, no «P(»
+const iniciales = (nombre) => (nombre.match(/\p{L}+/gu) ?? []).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
 
 async function paginaContactos() {
   const form = $('form.filtros');
@@ -2456,6 +2457,712 @@ async function paginaInformes() {
   await pintar(params.get('mes'));
 }
 
+// --- Gastos (solo gerencia) -------------------------------------------------------------------
+
+const MES_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+const TIPOS_GASTO = { general: 'General', irpf: 'Con IRPF', comision: 'Comisión', rebu: 'REBU', vehiculo: 'Vehículo' };
+// El tipo que propone cada concepto: el mismo que pone la API si no llega (gastos/calculo.js)
+const TIPO_POR_CONCEPTO = { alquileres: 'irpf', gestorias: 'irpf', comisiones: 'comision', vehiculos: 'vehiculo', compras: 'rebu' };
+/** «1.200,50» → 120050 céntimos; null si no es un importe */
+function aCentimos(texto) {
+  const t = String(texto ?? '').trim().replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
+  return Math.round(Number(t) * 100);
+}
+const mesTitulo = (mes) => mayuscula(nombreMes(mes)); // «Octubre 2026»
+
+async function paginaGastos() {
+  // El segundo formulario de la maqueta solo enseñaba el caso con IRPF: aquí es uno solo
+  $('#gasto-irpf-titulo')?.closest('section').remove();
+  const seccion = $('#gasto-titulo').closest('section');
+  const form = $('form', seccion);
+  const errorForm = cajaErrorEn(form);
+  const cabecera = $('.cabecera__acciones');
+  const filtros = $('.filtros--gastos');
+  const cuerpo = $('.tabla--gastos tbody');
+  const pie = $('.tabla--gastos tfoot tr');
+  const vacio = $('main > .vacio');
+  const soloCoche = params.get('vehiculo'); // gastos.html?vehiculo=id, desde la ficha del coche
+
+  // Meses: los últimos 12
+  const hoy = new Date();
+  const meses = Array.from({ length: 12 }, (_, i) => diaLocal(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)).slice(0, 7));
+  const selMes = cabecera.elements.mes;
+  selMes.innerHTML = meses.map((m) => `<option value="${m}">${esc(mesTitulo(m))}</option>`).join('');
+  if (MES_RE.test(params.get('mes') ?? '')) selMes.value = params.get('mes');
+  const exportar = $('a.boton', cabecera);
+  exportar.href = 'libros.html?libro=gastos';
+  exportar.textContent = 'Libro para el gestor';
+
+  // Desplegables del formulario
+  const [proveedores, clientes, coches] = await Promise.all([api('/proveedores'), api('/clientes'), api('/vehiculos')]);
+  const opciones = (sel, lista, texto, vacia) => {
+    sel.innerHTML = `<option value="">${esc(vacia)}</option>` + lista.map((x) => `<option value="${x.id}">${esc(texto(x))}</option>`).join('');
+  };
+  opciones(form.elements.proveedor_id, proveedores.filter((x) => x.activo !== 0), (x) => x.nombre, 'Elige el proveedor');
+  opciones(form.elements.cliente_id, clientes, (x) => x.nombre, 'Elige el cliente');
+  opciones(form.elements.vehiculo_id, [...coches].sort((a, b) => a.matricula.localeCompare(b.matricula)),
+    (v) => `${v.matricula.replace(/^(\d{4})([A-Z]{3})$/, '$1 $2')} · ${v.marca} ${v.modelo}`, 'Elige el coche');
+  $('.caja__titulo .nota', seccion).textContent = 'El nº de registro lo pone el programa';
+
+  const valoresIniciales = () => {
+    form.reset();
+    form.elements.fecha.value = diaLocal();
+    form.elements.base.value = '';
+    form.elements.descripcion.value = '';
+    form.elements.factura_proveedor.value = '';
+    form.elements.concepto.value = 'publicidad';
+    form.elements.tipo.value = 'general';
+    form.elements.pagado.checked = false;
+    form.elements.forma_pago.value = 'transferencia';
+    if (soloCoche) form.elements.vehiculo_id.value = soloCoche;
+    recalcular();
+  };
+
+  // El total de abajo, en vivo. El de verdad lo calcula el servidor con la misma fórmula.
+  const retenido = $('.solo-irpf input[readonly]', form);
+  const recalcular = () => {
+    const tipo = form.elements.tipo.value;
+    const base = aCentimos(form.elements.base.value);
+    const iva = tipo === 'rebu' ? 0 : Number(form.elements.iva_pct.value);
+    const irpf = tipo === 'irpf' ? Number(form.elements.irpf_pct.value) : 0;
+    form.elements.iva_pct.disabled = tipo === 'rebu';
+    if (base == null) { $('.gasto-form__total', form).innerHTML = ''; retenido.value = ''; return; }
+    const ivaC = Math.round(base * iva / 100);
+    const irpfC = Math.round(base * irpf / 100);
+    retenido.value = euros2(irpfC).replace(' €', '');
+    const partes = [euros2(base).replace(' €', ''), ivaC ? `+ ${euros2(ivaC).replace(' €', '')} de IVA` : '', irpfC ? `− ${euros2(irpfC).replace(' €', '')} de IRPF` : ''].filter(Boolean);
+    $('.gasto-form__total', form).innerHTML = `${partes.join(' ')} = <b class="cifra">${euros2(base + ivaC - irpfC)}</b>`;
+  };
+  form.addEventListener('input', recalcular);
+  form.elements.concepto.addEventListener('change', () => {
+    // Al elegir el concepto se propone su tipo (se puede cambiar) y, en los alquileres, el 19 %
+    form.elements.tipo.value = TIPO_POR_CONCEPTO[form.elements.concepto.value] ?? 'general';
+    form.elements.irpf_pct.value = form.elements.concepto.value === 'alquileres' ? '19' : '15';
+    recalcular();
+  });
+  form.addEventListener('change', recalcular);
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const e = form.elements;
+    const tipo = e.tipo.value;
+    const base = aCentimos(e.base.value);
+    if (base == null) return mostrarErrores(errorForm, { lista: ['El importe sin IVA va como 120,00'] }, 'No se ha podido apuntar:');
+    const cuerpo = {
+      fecha: e.fecha.value, concepto: e.concepto.value, tipo, base_cent: base,
+      iva_pct: tipo === 'rebu' ? 0 : Number(e.iva_pct.value),
+      irpf_pct: tipo === 'irpf' ? Number(e.irpf_pct.value) : 0,
+      forma_pago: e.forma_pago.value,
+    };
+    for (const campo of ['descripcion', 'factura_proveedor']) if (e[campo].value.trim()) cuerpo[campo] = e[campo].value.trim();
+    const tercero = e.quien.value === 'cliente' ? 'cliente_id' : 'proveedor_id';
+    if (e[tercero].value) cuerpo[tercero] = Number(e[tercero].value);
+    if (['vehiculo', 'rebu'].includes(tipo) && e.vehiculo_id.value) cuerpo.vehiculo_id = Number(e.vehiculo_id.value);
+    const boton = $('button[type="submit"]', form);
+    boton.disabled = true;
+    try {
+      const g = await api('/gastos', { method: 'POST', body: cuerpo });
+      if (e.pagado.checked) await api(`/gastos/${g.id}/pagado`, { method: 'PATCH', body: { pagado: true, forma_pago: cuerpo.forma_pago } });
+      errorForm.hidden = true;
+      valoresIniciales();
+      selMes.value = g.fecha.slice(0, 7);
+      await cargar();
+      $(`tr[data-id="${g.id}"]`)?.classList.add('fila-nueva');
+      $('.caja__titulo .nota', seccion).textContent = `Apuntado con el nº ${g.numero}`;
+    } catch (err) {
+      mostrarErrores(errorForm, err, 'No se ha podido apuntar:');
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  // Lista: se pide el mes entero (las cifras de arriba son del mes) y se filtra aquí
+  let delMes = [];
+  const fila = (g) => {
+    const quien = g.proveedor_nombre ?? g.cliente_nombre ?? g.usuario_nombre;
+    const sub = [quien, g.factura_proveedor ? `fra. ${g.factura_proveedor}` : ''].filter(Boolean).join(' · ');
+    const coche = g.vehiculo_id ? `<span class="nota">${esc(`${g.vehiculo_marca} ${g.vehiculo_modelo}`)} · <span class="matricula">${matricula(g.vehiculo_matricula)}</span></span>` : '';
+    const iva = g.tipo === 'rebu' ? '<span class="nota">REBU</span>' : g.iva_pct ? euros2(g.iva_cent) : '<span class="nota">Sin IVA</span>';
+    const pago = g.pagado_en
+      ? `<span class="estado cobro--cobrada" title="Pagado el ${esc(fechaCorta(g.pagado_en))}">Pagado</span>`
+      : `<button class="estado cobro--vencida gasto-pagar" type="button" data-pagar="${g.id}" title="Marcar pagado hoy">Sin pagar</button>`;
+    return `<tr data-id="${g.id}"${g.pagado_en ? '' : ' class="fila-pendiente"'}>
+        <td class="cifra gasto-registro" data-rotulo="Nº de registro">${g.numero}</td>
+        <td class="cifra" data-rotulo="Fecha">${esc(new Date(`${g.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</td>
+        <td class="t-titulo"><span class="coche-celda"><b>${esc(g.descripcion || CONCEPTOS_GASTO[g.concepto])}</b>${sub ? `<span class="nota">${esc(sub)}</span>` : ''}${coche}</span></td>
+        <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--${esc(g.tipo)}">${esc(TIPOS_GASTO[g.tipo])}</span><span class="gasto-concepto">${esc(CONCEPTOS_GASTO[g.concepto])}</span></span></td>
+        <td class="derecha cifra" data-rotulo="Sin IVA">${euros2(g.base_cent)}</td>
+        <td class="derecha cifra" data-rotulo="IVA${g.iva_pct ? ` ${g.iva_pct} %` : ''}">${iva}</td>
+        <td class="derecha cifra" data-rotulo="IRPF${g.irpf_pct ? ` ${g.irpf_pct} %` : ''}">${g.irpf_cent ? `−${euros2(g.irpf_cent)}` : '<span class="nota">—</span>'}</td>
+        <td class="derecha cifra" data-rotulo="Total"><b>${euros2(g.total_cent)}</b></td>
+        <td data-rotulo="Pago">${pago}</td>
+      </tr>`;
+  };
+  const suma = (lista, campo) => lista.reduce((t, g) => t + g[campo], 0);
+
+  const pintarLista = () => {
+    const f = new FormData(filtros);
+    const tipo = f.get('filtro-tipo');
+    const concepto = f.get('filtro-concepto');
+    const pago = f.get('filtro-pago');
+    const lista = delMes.filter((g) => (!tipo || g.tipo === tipo) && (!concepto || g.concepto === concepto) && (pago !== '0' || !g.pagado_en));
+    cuerpo.innerHTML = lista.map(fila).join('');
+    $('.tabla-caja').hidden = !lista.length;
+    vacio.hidden = !!lista.length;
+    const mes = mesTitulo(selMes.value).split(' ')[0].toLowerCase();
+    $('#lista h2').textContent = `Gastos de ${mes}${soloCoche ? ' de este coche' : ''}`;
+    $('#lista .tablero-cabecera__pista').textContent = `${lista.length} ${lista.length === 1 ? 'gasto' : 'gastos'} · el más reciente arriba`;
+    const celdas = pie.querySelectorAll('td');
+    celdas[0].textContent = tipo || concepto || pago ? 'Total con este filtro' : `Total de ${mes}`;
+    celdas[1].textContent = euros2(suma(lista, 'base_cent'));
+    celdas[2].textContent = euros2(suma(lista, 'iva_cent'));
+    celdas[3].textContent = `−${euros2(suma(lista, 'irpf_cent'))}`;
+    celdas[4].innerHTML = `<b>${euros2(suma(lista, 'total_cent'))}</b>`;
+  };
+
+  const anterior = (mes) => { const [a, m] = mes.split('-').map(Number); return diaLocal(new Date(a, m - 2, 1)).slice(0, 7); };
+  const cargar = async () => {
+    const mes = selMes.value;
+    const extra = soloCoche ? `&vehiculo=${encodeURIComponent(soloCoche)}` : '';
+    const [actual, previo] = await Promise.all([api(`/gastos?mes=${mes}${extra}`), api(`/gastos?mes=${anterior(mes)}${extra}`)]);
+    delMes = actual.gastos;
+    const t = actual.totales;
+    const nombre = mesTitulo(mes).split(' ')[0].toLowerCase();
+    $('.contactos-resumen').innerHTML = `<strong class="cifra">${euros2(t.base_cent)}</strong> sin IVA en ${esc(nombre)}${t.pendientes ? ` <span class="portada__alerta">· ${euros2(t.pendiente_cent)} sin pagar</span>` : ''}`;
+    // Tarjetas: el total y una por tipo
+    const tarjetas = document.querySelectorAll('.cifras--6 .cifras__dato');
+    $('.cifra', tarjetas[0]).textContent = euros2(t.base_cent);
+    $('.nota', tarjetas[0]).textContent = `${mesTitulo(anterior(mes)).split(' ')[0]}: ${euros2(previo.totales.base_cent)}`;
+    Object.keys(TIPOS_GASTO).forEach((tipo, i) => {
+      const caja = tarjetas[i + 1];
+      const x = t.por_tipo[tipo] ?? { gastos: 0, base_cent: 0, irpf_cent: 0 };
+      caja.dataset.tipo = tipo;
+      $('.cifra', caja).textContent = euros2(x.base_cent);
+      const cuantos = `${x.gastos} ${tipo === 'rebu' ? (x.gastos === 1 ? 'compra' : 'compras') : x.gastos === 1 ? 'gasto' : 'gastos'}`;
+      $('.nota', caja).textContent = tipo === 'irpf' && x.irpf_cent ? `${cuantos} · ${euros2(x.irpf_cent)} retenidos` : cuantos;
+    });
+    pintarLista();
+  };
+
+  // Pulsar una tarjeta filtra la lista por su tipo
+  $('.cifras--6').addEventListener('click', (ev) => {
+    const caja = ev.target.closest('[data-tipo]');
+    if (!caja) return;
+    filtros.querySelector(`input[name="filtro-tipo"][value="${caja.dataset.tipo}"]`).checked = true;
+    pintarLista();
+  });
+  filtros.addEventListener('change', pintarLista);
+  selMes.addEventListener('change', () => {
+    history.replaceState(null, '', `?${new URLSearchParams({ mes: selMes.value, ...(soloCoche ? { vehiculo: soloCoche } : {}) })}`);
+    cargar();
+  });
+  // «Sin pagar» se pulsa y queda pagado hoy, con la forma de pago que tuviera
+  cuerpo.addEventListener('click', async (ev) => {
+    const boton = ev.target.closest('[data-pagar]');
+    if (!boton) return;
+    boton.disabled = true;
+    try {
+      await api(`/gastos/${boton.dataset.pagar}/pagado`, { method: 'PATCH', body: { pagado: true } });
+      await cargar();
+    } catch (err) {
+      boton.disabled = false;
+      mostrarErrores(errorForm, err, 'No se ha podido marcar pagado:');
+    }
+  });
+
+  valoresIniciales();
+  await cargar();
+}
+
+// --- Incentivos (los dos roles: el comercial ve lo suyo, sin margen) ----------------------------
+
+/** La regla en palabras. Al comercial no se le dice el porcentaje: con él y el incentivo saca el margen. */
+function textoRegla(regla, gerencia = true) {
+  if (!regla) return null;
+  if (regla.tipo === 'fijo_por_coche') return `${euros2(regla.valor).replace(',00 €', ' €')} fijos por coche`;
+  return gerencia ? `${(regla.valor / 100).toLocaleString('es-ES', { maximumFractionDigits: 2 })} % del margen` : 'Un porcentaje del margen de cada coche';
+}
+const eurosRedondos = (cent) => euros2(cent).replace(',00 €', ' €');
+const diaMesCorto = (s) => new Date(`${s.slice(0, 10)}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+async function paginaIncentivos(usuario) {
+  const gerencia = usuario.rol === 'gerencia';
+  document.querySelector('.version-separador')?.remove();
+  if (gerencia) {
+    $('[data-version="comercial"]').remove();
+  } else {
+    $('main > .cabecera').remove();
+    $('[data-version="gerencia"]').remove();
+    $('.cabecera--seguida').classList.remove('cabecera--seguida');
+  }
+  const bloque = $('.version-incentivos');
+  const selMes = $('.cabecera__acciones select[name="mes"]');
+  const hoy = new Date();
+  const mesActual = diaLocal(hoy).slice(0, 7);
+  const meses = Array.from({ length: 12 }, (_, i) => diaLocal(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)).slice(0, 7));
+  selMes.innerHTML = meses.map((m) => `<option value="${m}">${esc(mayuscula(nombreMes(m)))}${m === mesActual ? ' (en curso)' : ''}</option>`).join('');
+  // Gerencia abre el último mes cerrado (el que se liquida); el comercial, el que lleva
+  selMes.value = MES_RE.test(params.get('mes') ?? '') ? params.get('mes') : gerencia ? meses[1] : meses[0];
+  const anterior = (mes) => { const [a, m] = mes.split('-').map(Number); return diaLocal(new Date(a, m - 2, 1)).slice(0, 7); };
+  const nombres = gerencia ? new Map((await api('/incentivos/reglas')).map((u) => [u.usuario_id, u.nombre])) : new Map();
+  const cajaError = document.createElement('div');
+  cajaError.className = 'error error--lista';
+  cajaError.setAttribute('role', 'alert');
+  cajaError.hidden = true;
+  bloque.prepend(cajaError);
+
+  const filaCoche = (c) => `<tr>
+      <td class="cifra" data-rotulo="Fecha">${esc(diaMesCorto(c.fecha_venta))}</td>
+      <td class="t-titulo"><span class="coche-celda"><a href="coche.html?id=${c.id}">${esc(`${c.marca} ${c.modelo}`)}</a><span class="matricula">${matricula(c.matricula)}</span></span></td>
+      <td class="derecha cifra" data-rotulo="Precio">${c.pvp_cent == null ? '—' : eurosRedondos(c.pvp_cent)}</td>
+      ${gerencia ? `<td class="derecha cifra" data-rotulo="Margen">${c.margen_cent == null ? '<span class="nota">Sin margen</span>' : eurosRedondos(c.margen_cent)}</td>` : ''}
+      <td class="derecha cifra" data-rotulo="${gerencia ? 'Incentivo' : 'Tu incentivo'}"><b>${eurosRedondos(c.incentivo_cent)}</b></td>
+    </tr>`;
+
+  // Gerencia: una caja por comercial
+  const cajaComercial = (c, cerrado) => {
+    const regla = textoRegla(c.regla);
+    const quien = regla
+      ? `${esc(regla)} · <a class="enlace" href="#" data-regla="${c.usuario_id}">Cambiar regla</a>`
+      : `<span class="dias dias--aviso">Sin regla</span> · <a class="enlace" href="#" data-regla="${c.usuario_id}">Ponerle una</a>`;
+    let accion;
+    if (c.liquidado) {
+      const por = nombres.get(c.liquidado.liquidado_por);
+      accion = `<span class="estado cobro--cobrada">Liquidado</span><span class="nota">${esc(diaMesCorto(c.liquidado.liquidado_en))}${por ? `, por ${esc(por)}` : ''} · ${eurosRedondos(c.liquidado.importe_cent)}</span>`;
+    } else if (!c.regla) accion = '<button class="boton boton--pequeno" type="button" disabled>Liquidar</button><span class="nota">Primero, su regla</span>';
+    else if (!cerrado) accion = '<span class="estado cobro--pendiente">Mes en curso</span><span class="nota">Se liquida cuando acabe</span>';
+    else accion = `<span class="estado cobro--pendiente">Sin liquidar</span><button class="boton boton--pequeno" type="button" data-liquidar="${c.usuario_id}">Liquidar ${eurosRedondos(c.total_cent)}</button>`;
+    const clase = c.liquidado ? ' incentivo--liquidado' : !c.regla ? ' incentivo--sin-regla' : '';
+    return `<section class="caja incentivo${clase}" data-usuario="${c.usuario_id}">
+        <div class="incentivo__cabeza">
+          <span class="contacto__inicial usuario__inicial--${c.rol === 'gerencia' ? 'gerencia' : 'comercial'}" aria-hidden="true">${esc(iniciales(c.nombre ?? '?'))}</span>
+          <div class="incentivo__quien">
+            <h2>${esc(c.nombre ?? 'Usuario borrado')}</h2>
+            <p class="nota">${quien}</p>
+          </div>
+          <p class="incentivo__dato"><span class="rotulo">Coches</span><b class="cifra">${c.coches.length}</b></p>
+          <p class="incentivo__dato"><span class="rotulo">Importe</span><b class="cifra">${eurosRedondos(c.total_cent)}</b></p>
+          <div class="incentivo__accion">${accion}</div>
+        </div>
+        <form class="incentivo__regla" hidden>
+          <label class="campo"><span class="campo__nombre">Regla</span>
+            <select name="tipo"><option value="porcentaje_margen">Porcentaje del margen</option><option value="fijo_por_coche">Fijo por coche</option></select></label>
+          <label class="campo"><span class="campo__nombre">Valor</span>
+            <span class="con-unidad" data-unidad="%"><input name="valor" inputmode="decimal" required></span></label>
+          <button class="boton boton--pequeno" type="submit">Guardar</button>
+          <button class="boton boton--secundario boton--pequeno" type="button" data-cerrar>Cancelar</button>
+        </form>
+        ${c.coches.length ? `<div class="tabla-caja">
+          <table class="tabla tabla--tarjetas">
+            <thead><tr><th>Fecha</th><th>Coche</th><th class="derecha">Precio</th><th class="derecha">Margen</th><th class="derecha">Incentivo</th></tr></thead>
+            <tbody>${c.coches.map(filaCoche).join('')}</tbody>
+          </table>
+        </div>` : '<p class="nota incentivo__nada">Sin ventas este mes.</p>'}
+      </section>`;
+  };
+
+  let datos = null;
+  const pintarGerencia = () => {
+    const mes = datos.mes;
+    const cerrado = mes < mesActual;
+    const lista = datos.comerciales;
+    const total = lista.reduce((t, c) => t + c.total_cent, 0);
+    const liquidado = lista.reduce((t, c) => t + (c.liquidado?.importe_cent ?? 0), 0);
+    const pendientes = lista.filter((c) => !c.liquidado && c.total_cent > 0);
+    const sinLiquidar = pendientes.reduce((t, c) => t + c.total_cent, 0);
+    const coches = lista.reduce((t, c) => t + c.coches.length, 0);
+    const nombre = nombreMes(mes).split(' ')[0];
+    $('.contactos-resumen').innerHTML = `<strong class="cifra">${eurosRedondos(total)}</strong> en ${esc(nombre)}${cerrado && sinLiquidar ? ` <span class="portada__alerta">· ${eurosRedondos(sinLiquidar)} sin liquidar</span>` : ''}`;
+    const cifras = bloque.querySelectorAll('.cifras__dato');
+    $('.cifra', cifras[0]).textContent = coches;
+    $('.rotulo', cifras[0]).textContent = 'Coches vendidos';
+    $('.nota', cifras[0]).textContent = datos.sin_vendedor ? `Y ${datos.sin_vendedor} sin vendedor apuntado` : `En ${nombre}`;
+    $('.cifra', cifras[1]).textContent = eurosRedondos(total);
+    $('.nota', cifras[1]).textContent = liquidado ? `${eurosRedondos(liquidado)} ya liquidados` : 'Nada liquidado aún';
+    $('.cifra', cifras[2]).textContent = eurosRedondos(sinLiquidar);
+    $('.rotulo', cifras[2]).textContent = cerrado ? 'Sin liquidar' : 'Por liquidar al acabar el mes';
+    $('.nota', cifras[2]).textContent = pendientes.map((c) => c.nombre).join(', ') || 'Nadie';
+    cifras[2].classList.toggle('cifras__dato--alerta', cerrado && sinLiquidar > 0);
+    $('.incentivos', bloque).innerHTML = lista.map((c) => cajaComercial(c, cerrado)).join('') || '<div class="vacio"><strong>Nadie vendió este mes</strong></div>';
+  };
+
+  // Comercial: lo suyo, con el mes anterior al lado
+  const pintarComercial = (previo) => {
+    const yo = datos.comerciales[0];
+    const antes = previo.comerciales[0];
+    const nombre = nombreMes(datos.mes).split(' ')[0];
+    const nombreAntes = nombreMes(previo.mes).split(' ')[0];
+    $('.contactos-resumen').innerHTML = `<strong class="cifra">${eurosRedondos(yo.total_cent)}</strong> en ${esc(nombre)} <span>· ${yo.coches.length} ${yo.coches.length === 1 ? 'coche' : 'coches'}</span>`;
+    const regla = textoRegla(yo.regla, false);
+    $('.cabecera .nota').textContent = regla ? `${regla}. Si algo no te cuadra, habla con gerencia.` : 'Aún no tienes regla de incentivos: habla con gerencia.';
+    const cifras = bloque.querySelectorAll('.cifras__dato');
+    $('.cifra', cifras[0]).textContent = yo.coches.length;
+    $('.nota', cifras[0]).textContent = `En ${nombreAntes}, ${antes.coches.length}`;
+    $('.cifra', cifras[1]).textContent = eurosRedondos(yo.total_cent);
+    $('.nota', cifras[1]).textContent = `En ${nombreAntes}, ${eurosRedondos(antes.total_cent)}`;
+    const estado = yo.liquidado ? '<span class="estado cobro--cobrada">Liquidado</span>' : `<span class="estado cobro--pendiente">${datos.mes < mesActual ? 'Sin liquidar' : 'Mes en curso'}</span>`;
+    $('strong', cifras[2]).innerHTML = estado;
+    $('.nota', cifras[2]).textContent = yo.liquidado ? `El ${new Date(`${yo.liquidado.liquidado_en.slice(0, 10)}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}: ${eurosRedondos(yo.liquidado.importe_cent)}` : 'Se liquida cuando acaba el mes';
+    const caja = $('section.caja', bloque);
+    $('.caja__titulo h2', caja).textContent = `Tus coches de ${nombre}`;
+    $('tbody', caja).innerHTML = yo.coches.map(filaCoche).join('') || `<tr><td colspan="4" class="nota">Sin ventas en ${esc(nombre)}.</td></tr>`;
+    $('tfoot tr', caja).innerHTML = `<td colspan="3" class="t-titulo">Total de ${esc(nombre)}</td><td class="derecha cifra" data-rotulo="Total"><b>${eurosRedondos(yo.total_cent)}</b></td>`;
+  };
+
+  const cargar = async () => {
+    const mes = selMes.value;
+    history.replaceState(null, '', `?mes=${mes}`);
+    if (gerencia) {
+      datos = await api(`/incentivos?mes=${mes}`);
+      pintarGerencia();
+    } else {
+      const [actual, previo] = await Promise.all([api(`/incentivos?mes=${mes}`), api(`/incentivos?mes=${anterior(mes)}`)]);
+      datos = actual;
+      pintarComercial(previo);
+    }
+  };
+  selMes.addEventListener('change', () => cargar().catch((e) => mostrarErrores(cajaError, e, 'No se ha podido cargar:')));
+
+  if (gerencia) {
+    const lista = $('.incentivos', bloque);
+    lista.addEventListener('click', async (ev) => {
+      // Cambiar la regla: el formulario de esa caja
+      const enlace = ev.target.closest('[data-regla]');
+      if (enlace) {
+        ev.preventDefault();
+        const caja = enlace.closest('.incentivo');
+        const form = $('.incentivo__regla', caja);
+        const c = datos.comerciales.find((x) => x.usuario_id === Number(enlace.dataset.regla));
+        form.elements.tipo.value = c.regla?.tipo ?? 'porcentaje_margen';
+        form.elements.valor.value = c.regla ? (c.regla.valor / 100).toLocaleString('es-ES', { maximumFractionDigits: 2 }) : '';
+        form.querySelector('.con-unidad').dataset.unidad = form.elements.tipo.value === 'fijo_por_coche' ? '€' : '%';
+        form.hidden = false;
+        form.elements.valor.focus();
+        return;
+      }
+      if (ev.target.closest('[data-cerrar]')) { ev.target.closest('form').hidden = true; return; }
+      // Liquidar: dos pulsaciones, la segunda confirma (es dinero)
+      const boton = ev.target.closest('[data-liquidar]');
+      if (!boton) return;
+      if (!boton.dataset.seguro) {
+        boton.dataset.seguro = '1';
+        boton.textContent = `¿Seguro? ${boton.textContent}`;
+        setTimeout(() => { if (boton.isConnected && !boton.disabled) { delete boton.dataset.seguro; boton.textContent = boton.textContent.replace('¿Seguro? ', ''); } }, 4000);
+        return;
+      }
+      boton.disabled = true;
+      try {
+        await api('/incentivos/liquidar', { method: 'POST', body: { mes: datos.mes, usuario_id: Number(boton.dataset.liquidar) } });
+        cajaError.hidden = true;
+        await cargar();
+      } catch (e) {
+        boton.disabled = false;
+        mostrarErrores(cajaError, e, 'No se ha podido liquidar:');
+      }
+    });
+    lista.addEventListener('change', (ev) => {
+      if (ev.target.name === 'tipo') ev.target.form.querySelector('.con-unidad').dataset.unidad = ev.target.value === 'fijo_por_coche' ? '€' : '%';
+    });
+    lista.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const form = ev.target;
+      const id = form.closest('.incentivo').dataset.usuario;
+      const valor = aCentimos(form.elements.valor.value); // 5,5 % → 550 centésimas; 150 € → 15000 céntimos
+      if (valor == null) return mostrarErrores(cajaErrorEn(form), { lista: ['El valor va como 5 o 5,5 (porcentaje) o 150 (euros)'] }, 'No se ha podido guardar:');
+      try {
+        await api(`/incentivos/reglas/${id}`, { method: 'PUT', body: { tipo: form.elements.tipo.value, valor } });
+        await cargar();
+      } catch (e) {
+        mostrarErrores(cajaErrorEn(form), e, 'No se ha podido guardar:');
+      }
+    });
+  }
+
+  await cargar();
+}
+
+// --- Proveedores (solo gerencia) ----------------------------------------------------------------
+
+const TIPOS_PROVEEDOR = { profesional: 'Profesional', particular: 'Particular', subasta: 'Subasta', comisionista: 'Comisionista' };
+
+async function paginaProveedores() {
+  const filtros = $('form.filtros');
+  const lista = $('.terceros');
+  const vacio = $('.ficha__principal .vacio');
+  const ficha = $('#ficha');
+  const seccion = $('#nuevo');
+  const form = $('form', seccion);
+  let abierto = Number(params.get('id')) || null;
+  let proveedores = [];
+
+  const tarjeta = (p) => {
+    const datos = [
+      p.nif ? `<span>${esc(p.nif)}</span>` : '<span class="nota">Sin NIF</span>',
+      p.telefono ? enlaceTel(p.telefono) : p.movil ? enlaceTel(p.movil) : '',
+      p.email ? `<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>` : '',
+      p.poblacion ? `<span>${esc(p.poblacion)}</span>` : '',
+    ].join('');
+    const etiqueta = p.activo
+      ? `<span class="estado tipo-tercero--${esc(p.tipo)}">${esc(TIPOS_PROVEEDOR[p.tipo] ?? p.tipo)}</span>${p.clase === 'acreedor' ? ' <span class="nota">Acreedor</span>' : ''}`
+      : '<span class="estado tipo-tercero--apagado">Desactivado</span>';
+    const resumen = p.clase === 'acreedor' && !p.n_coches
+      ? '<b>Servicios</b>Sale en los gastos'
+      : `<b class="cifra">${p.n_coches} ${p.n_coches === 1 ? 'coche' : 'coches'}</b>${p.comprado_cent ? `${eurosRedondos(p.comprado_cent)} comprados` : 'Nada comprado aún'}`;
+    return `<li class="contacto tercero${p.id === abierto ? ' tercero--abierto' : ''}${p.activo ? '' : ' tercero--apagado'}">
+        <span class="contacto__inicial tercero__inicial--${esc(p.tipo)}" aria-hidden="true">${esc(iniciales(p.nombre))}</span>
+        <div class="contacto__cuerpo">
+          <p class="contacto__linea"><a class="tercero__nombre" href="?id=${p.id}" data-proveedor="${p.id}"${p.id === abierto ? ' aria-current="true"' : ''}><strong>${esc(p.nombre)}</strong></a> ${etiqueta}</p>
+          <p class="contacto__datos">${datos}</p>
+        </div>
+        <p class="tercero__resumen">${resumen}</p>
+      </li>`;
+  };
+
+  let peticion = 0;
+  const pintarLista = async () => {
+    const { q = '', tipo = '', clase = '' } = Object.fromEntries(new FormData(filtros));
+    const esta = ++peticion;
+    // También los desactivados (al final y en gris): si no, no habría forma de volver a activarlos
+    const todos = (await api(`/proveedores?activos=0${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`)).sort((a, b) => b.activo - a.activo);
+    if (esta !== peticion) return;
+    proveedores = todos.filter((p) => (!tipo || p.tipo === tipo) && (!clase || p.clase === clase));
+    lista.innerHTML = proveedores.map(tarjeta).join('');
+    lista.hidden = !proveedores.length;
+    vacio.hidden = !!proveedores.length;
+    $('.lista-pie__cuantos').textContent = `${proveedores.length} ${proveedores.length === 1 ? 'proveedor' : 'proveedores'}${q.trim() || tipo || clase ? ' con este filtro' : ''}`;
+    if (!q.trim() && !tipo && !clase) {
+      const activos = todos.filter((p) => p.activo);
+      const coches = todos.reduce((t, p) => t + p.n_coches, 0);
+      $('.contactos-resumen').innerHTML = `<strong class="cifra">${activos.length}</strong> ${activos.length === 1 ? 'proveedor' : 'proveedores'} <span>· ${coches} ${coches === 1 ? 'coche comprado' : 'coches comprados'}</span>`;
+    }
+  };
+
+  const abrir = async (id, { sinHistorial = false } = {}) => {
+    abierto = id;
+    lista.querySelectorAll('.tercero').forEach((li) => {
+      const suyo = Number($('[data-proveedor]', li)?.dataset.proveedor) === id;
+      li.classList.toggle('tercero--abierto', suyo);
+      $('[data-proveedor]', li)?.toggleAttribute('aria-current', suyo);
+    });
+    if (!sinHistorial) history.replaceState(null, '', `?id=${id}`);
+    const p = await api(`/proveedores/${id}`);
+    if (abierto === id) pintarFicha(p);
+  };
+
+  const pintarFicha = (p) => {
+    const lugar = [p.codigo_postal, p.poblacion].filter(Boolean).join(' ');
+    const direccion = [p.direccion, lugar ? lugar + (p.provincia ? ` (${p.provincia})` : '') : p.provincia].filter((t) => t && t.trim()).map(esc).join('<br>');
+    const fila = (titulo, valor) => (valor ? `<div><dt>${titulo}</dt><dd>${valor}</dd></div>` : '');
+    const total = p.coches.reduce((t, v) => t + (v.precio_compra_cent ?? 0), 0);
+    const coches = p.coches.length
+      ? p.coches.map((v) => `<li><span class="coche-celda"><a href="coche.html?id=${v.id}">${esc(`${v.marca} ${v.modelo}`)}</a><span class="matricula">${matricula(v.matricula)}</span></span><span class="cifra">${v.precio_compra_cent == null ? '—' : eurosRedondos(v.precio_compra_cent)}</span></li>`).join('')
+      : '<li class="nota">Todavía no le hemos comprado ninguno.</li>';
+    const iban = p.iban ? p.iban.replace(/(.{4})/g, '$1 ').trim() : '';
+    ficha.innerHTML = `
+      <section class="caja">
+        <div class="ficha-tercero__cabeza">
+          <span class="contacto__inicial tercero__inicial--${esc(p.tipo)}" aria-hidden="true">${esc(iniciales(p.nombre))}</span>
+          <div>
+            <h2>${esc(p.nombre)}</h2>
+            <p class="ficha-tercero__linea"><span class="estado tipo-tercero--${p.activo ? esc(p.tipo) : 'apagado'}">${p.activo ? esc(TIPOS_PROVEEDOR[p.tipo] ?? p.tipo) : 'Desactivado'}</span>
+              <span class="nota">${p.clase === 'acreedor' ? 'Acreedor: da un servicio' : 'Proveedor de coches'}</span></p>
+          </div>
+        </div>
+        <dl class="reserva-activa">
+          ${fila(/^[A-Z]/.test(p.nif ?? '') ? 'CIF' : 'NIF', p.nif ? esc(p.nif) : '<span class="nota">Sin NIF</span>')}
+          ${fila('Teléfono', p.telefono && enlaceTel(p.telefono))}
+          ${fila('Móvil', p.movil && enlaceTel(p.movil))}
+          ${fila('Correo', p.email && `<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>`)}
+          ${fila('Contacto', p.persona_contacto && esc(p.persona_contacto))}
+          ${fila(p.direccion ? 'Dirección' : 'Población', direccion)}
+          ${fila('IBAN', iban && `<span class="cifra">${esc(iban)}</span>`)}
+          ${fila('Forma de pago', p.forma_pago && esc(FORMAS_PAGO[p.forma_pago] ?? p.forma_pago))}
+        </dl>
+        ${p.notas ? `<p class="nota ficha-tercero__notas">${esc(p.notas)}</p>` : ''}
+        <div class="ficha-tercero__acciones">
+          ${p.telefono || p.movil ? `<a class="boton boton--secundario boton--pequeno" href="tel:${esc((p.movil || p.telefono).replace(/[^\d+]/g, ''))}">Llamar</a>` : ''}
+          <button class="boton boton--secundario boton--pequeno" type="button" data-editar>Editar datos</button>
+          <a class="boton boton--secundario boton--pequeno" href="gastos.html">Apuntar un gasto</a>
+          <button class="boton boton--secundario boton--pequeno" type="button" data-activo="${p.activo ? 0 : 1}">${p.activo ? 'Desactivar' : 'Volver a activar'}</button>
+        </div>
+      </section>
+      <section class="caja dinero">
+        <div class="caja__titulo"><h2>Coches que nos ha vendido</h2><span class="rotulo">Solo gerencia</span></div>
+        <ul class="canales canales--oscuro">${coches}</ul>
+        <div class="margen"><span>Pagado en total</span><strong class="cifra">${eurosRedondos(total)}</strong></div>
+      </section>`;
+    ficha.hidden = false;
+    $('[data-editar]', ficha).addEventListener('click', () => editar(p));
+    $('[data-activo]', ficha).addEventListener('click', async (ev) => {
+      ev.target.disabled = true;
+      try {
+        await api(`/proveedores/${p.id}`, { method: 'PUT', body: { activo: ev.target.dataset.activo === '1' } });
+        await pintarLista();
+        await abrir(p.id, { sinHistorial: true });
+      } catch (e) {
+        ev.target.disabled = false;
+        mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido cambiar:');
+      }
+    });
+  };
+
+  // El mismo formulario para alta y edición. editando = null → alta.
+  let editando = null;
+  const caja = cajaErrorEn(form);
+  caja.classList.add('campo--ancho');
+  const titulo = $('#nuevo-titulo');
+  const boton = $('button[type="submit"]', form);
+  const CAMPOS = ['tipo', 'clase', 'nombre', 'nif', 'telefono', 'movil', 'email', 'persona_contacto', 'direccion', 'codigo_postal', 'poblacion', 'provincia', 'pais', 'iban', 'forma_pago', 'notas'];
+  const limpiar = () => {
+    editando = null;
+    form.reset();
+    caja.hidden = true;
+    titulo.textContent = 'Nuevo proveedor';
+    boton.textContent = 'Guardar proveedor';
+  };
+  const editar = (p) => {
+    limpiar();
+    editando = p;
+    for (const campo of CAMPOS) fijarValor(form, campo, p[campo]);
+    titulo.textContent = `Editar ${p.nombre}`;
+    boton.textContent = 'Guardar cambios';
+    seccion.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    caja.hidden = true;
+    const datos = Object.fromEntries([...new FormData(form)].map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v]));
+    if (!editando) for (const k of Object.keys(datos)) if (datos[k] === '') delete datos[k];
+    boton.disabled = true;
+    try {
+      const guardado = editando
+        ? await api(`/proveedores/${editando.id}`, { method: 'PUT', body: Object.fromEntries(Object.entries(datos).map(([k, v]) => [k, v === '' && k !== 'clase' ? null : v])) })
+        : await api('/proveedores', { method: 'POST', body: datos });
+      limpiar();
+      abierto = guardado.id;
+      await pintarLista();
+      await abrir(guardado.id);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      mostrarErrores(caja, e.status === 409 ? Object.assign(e, { lista: ['Ya hay un proveedor con ese NIF. Búscalo arriba.'] }) : e,
+        editando ? 'No se han podido guardar los cambios:' : 'No se ha podido dar de alta:');
+    } finally {
+      boton.disabled = false;
+    }
+  });
+  $('.form-tercero__pie a', seccion)?.addEventListener('click', (ev) => { ev.preventDefault(); limpiar(); });
+  document.querySelectorAll('a[href="#nuevo"]').forEach((a) => a.addEventListener('click', () => limpiar()));
+
+  lista.addEventListener('click', (ev) => {
+    const enlace = ev.target.closest('[data-proveedor]');
+    if (!enlace) return;
+    ev.preventDefault();
+    abrir(Number(enlace.dataset.proveedor)).catch((e) => mostrarErrores(cajaErrorEn(filtros), e, 'No se ha podido abrir la ficha:'));
+  });
+  let espera;
+  filtros.addEventListener('input', (ev) => {
+    if (ev.target.name !== 'q') return;
+    clearTimeout(espera);
+    espera = setTimeout(pintarLista, 250);
+  });
+  filtros.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintarLista(); });
+  filtros.addEventListener('submit', (ev) => { ev.preventDefault(); pintarLista(); });
+
+  ficha.hidden = true;
+  await pintarLista();
+  const primero = abierto ?? proveedores[0]?.id;
+  if (primero) await abrir(primero, { sinHistorial: true });
+}
+
+// --- Avisos (los dos roles; el comercial, sin cobros: la API no se los manda) ------------------
+
+const TIPOS_AVISO = {
+  tareas_vencidas: { nombre: 'Tarea', punto: 'tarea' },
+  contactos_sin_atender: { nombre: 'Contacto sin atender', punto: 'contacto' },
+  coches_parados: { nombre: 'Coche parado', punto: 'parado' },
+  vendidos_publicados: { nombre: 'Vendido y publicado', punto: 'vendido' },
+  itv: { nombre: 'ITV', punto: 'itv' },
+  cobros_vencidos: { nombre: 'Cobro vencido', punto: 'cobro' },
+};
+
+// El botón según adónde lleva el enlace
+const accionAviso = (enlace) => ({ factura: 'Ver factura', coche: 'Ver coche', contactos: 'Ver contacto', clientes: 'Ver cliente' })[enlace.split('.')[0]] ?? 'Ver en el CRM';
+
+// La línea gris de abajo. «fecha» viene como su columna: UTC con segundos, hora de Rubí (tareas) o un día.
+function cuandoAviso(a) {
+  const dia = (d) => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  const hora = (d) => d.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit' });
+  const t = `<time datetime="${esc(a.fecha)}">`;
+  if (a.tipo === 'tareas_vencidas') {
+    const d = new Date(a.fecha.replace(' ', 'T'));
+    return a.fecha.slice(0, 10) === diaLocal() ? `Hoy a las ${t}${hora(d)}</time>` : `El ${t}${dia(d)}</time> a las ${hora(d)}`;
+  }
+  if (a.fecha.length === 10) {
+    const d = new Date(`${a.fecha}T00:00:00`);
+    const hoy = new Date(`${diaLocal()}T00:00:00`);
+    const n = Math.round((d - hoy) / 86400000);
+    const lejos = n < 0 ? `hace ${-n} ${n === -1 ? 'día' : 'días'}` : n === 0 ? 'hoy' : `dentro de ${n} ${n === 1 ? 'día' : 'días'}`;
+    const verbo = a.tipo === 'itv' ? (n < 0 ? 'Caducó' : 'Caduca') : 'Venció';
+    return `${verbo} el ${t}${dia(d)}</time>, ${lejos}`;
+  }
+  const d = fechaSql(a.fecha);
+  if (a.tipo === 'contactos_sin_atender') return `Escribió el ${t}${dia(d)} a las ${hora(d)}</time>, ${haceCuanto(d)}`;
+  if (a.tipo === 'coches_parados') return `Publicado el ${t}${dia(d)}</time>`;
+  return `Desde el ${t}${dia(d)}</time>, ${haceCuanto(d)}`;
+}
+
+async function paginaAvisos(usuario) {
+  const gerencia = usuario.rol === 'gerencia';
+  // Fuera lo que en la maqueta solo servía para enseñar las otras versiones
+  document.querySelectorAll('.version-separador, .version-avisos').forEach((el) => el.remove());
+  const vacio = $('.avisos-vacio');
+  const grupos = { alta: $('#avisos-alta').closest('.avisos-grupo'), media: $('#avisos-media').closest('.avisos-grupo') };
+  const filtro = $('.filtros--avisos');
+
+  $('.portada__antetitulo').textContent = mayuscula(new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }));
+  if (!gerencia) {
+    $('main h1').textContent = 'Tus avisos';
+    $('.cabecera--portada .nota').textContent = 'Tus tareas y lo que piden los coches y los contactos de la web.';
+    $('.portada__cifras small').textContent = 'Contactos, ITV caducada, vendidos';
+  }
+
+  const fila = (a) => {
+    const tipo = TIPOS_AVISO[a.tipo] ?? { nombre: a.tipo, punto: 'tarea' };
+    return `<li class="aviso aviso--${esc(a.gravedad)}" data-tipo="${esc(a.tipo)}">
+        <div>
+          <p class="aviso__texto">${esc(a.texto)}</p>
+          <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--${tipo.punto}"></i>${esc(tipo.nombre)}</span><span>${cuandoAviso(a)}</span></p>
+        </div>
+        <a class="boton boton--secundario boton--pequeno aviso__accion" href="${esc(a.enlace)}">${esc(accionAviso(a.enlace))}</a>
+      </li>`;
+  };
+
+  const avisos = await api('/avisos');
+  const n = { alta: 0, media: 0 };
+  for (const g of ['alta', 'media']) {
+    const suyos = avisos.filter((a) => a.gravedad === g);
+    n[g] = suyos.length;
+    $('.avisos', grupos[g]).innerHTML = suyos.map(fila).join('');
+    $('.avisos-grupo__n', grupos[g]).textContent = suyos.length;
+  }
+  const cifras = document.querySelectorAll('.portada__cifras dd');
+  cifras[0].textContent = n.alta;
+  cifras[1].textContent = n.media;
+  const contadores = document.querySelectorAll('.filtros--avisos .segmentos__n');
+  [avisos.length, n.alta, n.media].forEach((v, i) => { contadores[i].textContent = v; });
+
+  const pintar = () => {
+    const g = new FormData(filtro).get('gravedad');
+    for (const k of ['alta', 'media']) grupos[k].hidden = !n[k] || (g && g !== k);
+    vacio.hidden = avisos.length > 0;
+  };
+  filtro.hidden = !avisos.length;
+  filtro.addEventListener('change', pintar);
+  pintar();
+}
+
 // --- Arranque ----------------------------------------------------------------------------------
 
 const PAGINAS = {
@@ -2478,6 +3185,10 @@ const PAGINAS = {
   'contrato.html': paginaContrato,
   'factura.html': paginaFactura,
   'crm.html': paginaCrm,
+  'avisos.html': paginaAvisos,
+  'proveedores.html': paginaProveedores,
+  'incentivos.html': paginaIncentivos,
+  'gastos.html': paginaGastos,
   'informes.html': paginaInformes,
 };
 
