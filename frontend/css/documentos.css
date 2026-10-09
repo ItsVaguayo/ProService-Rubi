@@ -152,3 +152,5 @@
 .factura-cobros .dias--aviso { background: var(--aviso-fondo); color: var(--aviso); }
 .factura-cobros .nota { color: var(--tinta-3); }
 @media (max-width: 600px) { .factura-cobros__lista li { grid-template-columns: 80px minmax(0, 1fr) auto; } .factura-cobros__quitar { grid-column: 2 / -1; justify-self: end; } }
+.factura-cobros__nota { grid-column: 2 / -1; margin-top: -4px; font-size: .8125rem; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .factura-cobros__nota { grid-column: 1 / -1; } }

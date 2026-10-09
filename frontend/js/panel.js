@@ -32,6 +32,8 @@ async function api(ruta, { method = 'GET', body } = {}) {
   return datos;
 }
 
+// «1 día», «2 días»: el número con su palabra en singular o plural
+const cuenta = (n, uno, varios) => `${n} ${Number(n) === 1 ? uno : varios}`;
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const cifra = (n) => (n == null || n === '' ? '—' : Number(n).toLocaleString('es-ES', { maximumFractionDigits: 0, useGrouping: 'always' }));
 const euros = (cent) => (cent == null ? '—' : `${cifra(cent / 100)} €`);
@@ -769,7 +771,7 @@ async function paginaFicha(usuario) {
   $('.ficha-cabecera__info > .nota').textContent = [v.anio, v.kilometros != null && `${cifra(v.kilometros)} km`, v.combustible && nombre(v.combustible),
     v.cambio && nombre(v.cambio), v.propiedad === 'deposito' ? 'En depósito' : 'Propio', v.ubicacion && nombre(v.ubicacion), `Ref. ${v.referencia}`].filter(Boolean).join(' · ');
   const lineaPrecio = document.querySelectorAll('.ficha-cabecera__linea')[1];
-  lineaPrecio.innerHTML = `<span class="ficha-cabecera__precio cifra">${euros(v.pvp_cent)}</span><span class="${claseDiasStock(diasDesde(v.creado_en))}">${diasDesde(v.creado_en)} días en stock</span>`;
+  lineaPrecio.innerHTML = `<span class="ficha-cabecera__precio cifra">${euros(v.pvp_cent)}</span><span class="${claseDiasStock(diasDesde(v.creado_en))}">${cuenta(diasDesde(v.creado_en), 'día', 'días')} en stock</span>`;
 
   // Cambiar estado
   const formEstado = $('.cambiar-estado');
@@ -814,7 +816,7 @@ async function paginaFicha(usuario) {
     fila('Puertas / plazas', v.puertas || v.plazas ? `${v.puertas ?? '—'} / ${v.plazas ?? '—'}` : null, true), fila('Color', nombre(v.color_exterior)),
     fila('Tapicería', nombre(v.tapiceria)), fila('Llantas', v.llantas), fila('ITV hasta', v.itv_caducidad && fechaCorta(v.itv_caducidad), true), fila('Última ITV', v.itv_ultima && fechaCorta(v.itv_ultima), true),
     fila('Uso anterior', v.uso_anterior && mayuscula(v.uso_anterior), true),
-    fila('Última revisión', v.ultima_revision && fechaCorta(v.ultima_revision), true), fila('Garantía', v.garantia_meses != null ? `${v.garantia_meses} meses` : null, true),
+    fila('Última revisión', v.ultima_revision && fechaCorta(v.ultima_revision), true), fila('Garantía', v.garantia_meses != null ? cuenta(v.garantia_meses, 'mes', 'meses') : null, true),
     fila('Llaves', v.num_llaves, true),
   ].join('');
 
@@ -890,7 +892,7 @@ function pintarReserva(v, reserva) {
         <div><dt>Cliente</dt><dd>${esc(reserva.cliente)}</dd></div>
         <div><dt>Señal</dt><dd class="cifra">${euros(reserva.senal_cent)}</dd></div>
         <div><dt>Reservado el</dt><dd class="cifra">${esc(fechaHora(reserva.fecha))}${reserva.usuario ? ` · ${esc(reserva.usuario)}` : ''}</dd></div>
-        <div><dt>Caduca</dt><dd class="cifra">${reserva.caduca_en ? `${esc(fechaSql(reserva.caduca_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))} <span class="dias ${quedan <= 2 ? 'dias--peligro' : 'dias--aviso'}">${quedan > 0 ? `quedan ${quedan} días` : 'caducada'}</span>` : '—'}</dd></div>
+        <div><dt>Caduca</dt><dd class="cifra">${reserva.caduca_en ? `${esc(fechaSql(reserva.caduca_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))} <span class="dias ${quedan <= 2 ? 'dias--peligro' : 'dias--aviso'}">${quedan > 0 ? `quedan ${cuenta(quedan, 'día', 'días')}` : 'caducada'}</span>` : '—'}</dd></div>
       </dl>
       <div class="pila">
         <button class="boton boton--oscuro" type="button" data-vender>Marcar como vendido</button>
@@ -1924,6 +1926,9 @@ function cabeceraDocumento(e) {
 const ESTADOS_COBRO = { borrador: 'Borrador', pendiente: 'Pendiente', parcial: 'Parcial', cobrada: 'Cobrada', vencida: 'Vencida', anulada: 'Anulada', rectificativa: 'Rectificativa' };
 const FORMAS_PAGO = { transferencia: 'Transferencia', contado: 'Contado', tarjeta: 'Tarjeta', a_la_vista: 'A la vista', pago_30: 'Pago a 30 días', pago_30_60: 'Pago a 30 y 60 días' };
 const FORMAS_COBRO = { ...FORMAS_PAGO, financiera: 'Financiera', senal: 'Señal de la reserva' };
+// Lo que se propone al apuntar un cobro: la forma de pago de la factura si dice cómo llega el dinero; si
+// solo es un plazo (pago a 30 días, a la vista), transferencia, que es como se suele cobrar ese plazo
+const formaCobro = (f) => (['contado', 'tarjeta', 'transferencia'].includes(f.forma_pago) ? f.forma_pago : 'transferencia');
 // Céntimos con dos decimales: en una factura no se redondea al euro
 const euros2 = (cent) => (cent == null ? '—' : `${(cent / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' })} €`);
 const aCent = (texto) => {
@@ -1966,7 +1971,7 @@ async function paginaFacturas() {
     return `<tr class="${f.estado_cobro === 'vencida' ? 'fila-vencida' : ''}" data-id="${f.id}">
         <td class="t-titulo"><b class="cifra">${f.codigo ? esc(f.codigo) : '<span class="nota">Sin número</span>'}</b></td>
         <td class="cifra" data-rotulo="Fecha">${esc(new Date(`${f.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</td>
-        <td data-rotulo="Cliente"><a href="clientes.html?id=${f.cliente_id}">${esc(f.cliente_nombre)}</a></td>
+        <td data-rotulo="Cliente" class="celda-cliente"><a class="dos-lineas" href="clientes.html?id=${f.cliente_id}" title="${esc(f.cliente_nombre)}">${esc(f.cliente_nombre)}</a></td>
         <td data-rotulo="Coche">${coche}</td>
         <td class="derecha cifra" data-rotulo="Total">${euros(f.total_cent)}</td>
         <td class="derecha cifra" data-rotulo="Cobrado">${cobrado}</td>
@@ -2001,7 +2006,7 @@ async function paginaFacturas() {
     tr.insertAdjacentHTML('afterend', `<tr class="fila-cobro"><td colspan="8">
         <form class="cobro-form">
           <label class="campo"><span class="campo__nombre">Importe</span><span class="con-unidad" data-unidad="€"><input name="importe" inputmode="decimal" value="${(f.saldo_cent / 100).toFixed(2).replace('.', ',')}" required></span></label>
-          <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === (f.forma_pago ?? 'transferencia') ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+          <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === formaCobro(f) ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
           <label class="campo"><span class="campo__nombre">Fecha</span><input type="date" name="fecha" value="${diaLocal()}" required></label>
           <div class="cobro-form__botones">
             <button class="boton boton--pequeno" type="submit">Apuntar ${euros2(f.saldo_cent)}</button>
@@ -2282,8 +2287,8 @@ async function paginaFactura() {
     const vence = !f.saldo_cent || dias == null ? '' : dias < 0 ? `<span class="dias dias--peligro">Venció hace ${-dias} ${dias === -1 ? 'día' : 'días'}</span>`
       : dias === 0 ? '<span class="dias dias--aviso">Vence hoy</span>' : `<span class="nota">Vence el ${esc(fechaLarga(f.vencimiento))}, dentro de ${dias} ${dias === 1 ? 'día' : 'días'}</span>`;
     const filas = f.cobros.length
-      ? f.cobros.map((k) => `<li><span class="cifra">${esc(fechaCorta(k.fecha))}</span><span>${esc(FORMAS_COBRO[k.forma_pago] ?? k.forma_pago)}${k.nota ? ` <span class="nota">· ${esc(k.nota)}</span>` : ''}</span><b class="cifra">${euros2(k.importe_cent)}</b>
-          <button class="factura-cobros__quitar" type="button" data-quitar="${k.id}" title="Quitar este cobro" aria-label="Quitar el cobro de ${esc(euros2(k.importe_cent))}">Quitar</button></li>`).join('')
+      ? f.cobros.map((k) => `<li><span class="cifra">${esc(fechaCorta(k.fecha))}</span><span>${esc(FORMAS_COBRO[k.forma_pago] ?? k.forma_pago)}</span><b class="cifra">${euros2(k.importe_cent)}</b>
+          <button class="factura-cobros__quitar" type="button" data-quitar="${k.id}" title="Quitar este cobro" aria-label="Quitar el cobro de ${esc(euros2(k.importe_cent))}">Quitar</button>${k.nota ? `<span class="nota factura-cobros__nota">${esc(k.nota)}</span>` : ''}</li>`).join('')
       : '<li class="nota">Todavía no se ha cobrado nada.</li>';
     panel.hidden = false;
     panel.innerHTML = `
@@ -2296,7 +2301,7 @@ async function paginaFactura() {
       <ul class="factura-cobros__lista">${filas}</ul>
       ${f.saldo_cent ? `<form class="cobro-form factura-cobros__form">
         <label class="campo"><span class="campo__nombre">Importe</span><span class="con-unidad" data-unidad="€"><input name="importe" inputmode="decimal" value="${(f.saldo_cent / 100).toFixed(2).replace('.', ',')}" required></span></label>
-        <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === (f.forma_pago ?? 'transferencia') ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+        <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === formaCobro(f) ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
         <label class="campo"><span class="campo__nombre">Fecha</span><input type="date" name="fecha" value="${diaLocal()}" required></label>
         <div class="cobro-form__botones">
           <button class="boton boton--pequeno" type="submit">Apuntar cobro</button>
@@ -2814,7 +2819,7 @@ async function paginaInformes() {
     // Los que más llevan
     $('.ficha__lateral .canales').innerHTML = stock.mas_antiguos.length
       ? stock.mas_antiguos.map((v) => `<li><a href="coche.html?id=${v.id}">${esc([v.marca, v.modelo, v.version].filter(Boolean).join(' '))}</a>
-          <span class="dias cifra${v.dias > 90 ? ' dias--peligro' : v.dias > 60 ? ' dias--aviso' : ''}">${v.dias} días</span></li>`).join('')
+          <span class="dias cifra${v.dias > 90 ? ' dias--peligro' : v.dias > 60 ? ' dias--aviso' : ''}">${cuenta(v.dias, 'día', 'días')}</span></li>`).join('')
       : '<li class="nota">No hay coches en stock.</li>';
   };
 
@@ -2967,6 +2972,11 @@ async function paginaGastos() {
   let delMes = [];
   const fila = (g) => {
     const quien = g.proveedor_nombre ?? g.cliente_nombre ?? g.usuario_nombre;
+    // Los costes de la ficha del coche se llamaban todos «Desde la ficha del coche»: se nombran por lo que son
+    const COSTE_FICHA = { transporte: 'Transporte', taller: 'Taller', preparacion: 'Preparación y limpieza', impuestos: 'Impuestos y trámites' };
+    const titulo = g.coste_ficha && (!g.descripcion || g.descripcion === 'Desde la ficha del coche')
+      ? COSTE_FICHA[g.coste_ficha] ?? CONCEPTOS_GASTO[g.concepto]
+      : g.descripcion || CONCEPTOS_GASTO[g.concepto];
     const sub = [quien, g.factura_proveedor ? `fra. ${g.factura_proveedor}` : ''].filter(Boolean).join(' · ');
     const coche = g.vehiculo_id ? `<span class="nota">${esc(`${g.vehiculo_marca} ${g.vehiculo_modelo}`)} · <span class="matricula">${matricula(g.vehiculo_matricula)}</span></span>` : '';
     const iva = g.tipo === 'rebu' ? '<span class="nota">REBU</span>' : g.iva_pct ? euros2(g.iva_cent) : '<span class="nota">Sin IVA</span>';
@@ -2977,7 +2987,7 @@ async function paginaGastos() {
     return `<tr data-id="${g.id}"${g.pagado_en ? '' : ' class="fila-pendiente"'}>
         <td class="cifra gasto-registro" data-rotulo="Nº de registro">${g.numero}</td>
         <td class="cifra" data-rotulo="Fecha">${esc(new Date(`${g.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</td>
-        <td class="t-titulo"><span class="coche-celda"><b>${esc(g.descripcion || CONCEPTOS_GASTO[g.concepto])}</b>${sub ? `<span class="nota">${esc(sub)}</span>` : ''}${coche}</span></td>
+        <td class="t-titulo"><span class="coche-celda"><b class="dos-lineas" title="${esc(titulo)}">${esc(titulo)}</b>${sub ? `<span class="nota dos-lineas" title="${esc(sub)}">${esc(sub)}</span>` : ''}${coche}</span></td>
         <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--${esc(g.tipo)}">${esc(TIPOS_GASTO[g.tipo])}</span><span class="gasto-concepto">${esc(CONCEPTOS_GASTO[g.concepto])}</span></span></td>
         <td class="derecha cifra" data-rotulo="Sin IVA">${euros2(g.base_cent)}</td>
         <td class="derecha cifra" data-rotulo="IVA${g.iva_pct ? ` ${g.iva_pct} %` : ''}">${iva}</td>

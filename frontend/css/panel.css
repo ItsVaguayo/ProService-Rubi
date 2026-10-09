@@ -2628,3 +2628,7 @@ html.cargando:not(.listo) body::before {
 .factura-previa div span:first-child { color: var(--tinta-2); }
 
 #nueva-factura { margin-bottom: var(--espacio-l); }
+
+/* Facturas: la columna del cliente con sitio para una razón social (antes, ocho líneas en una columna estrecha) */
+.celda-cliente { min-width: 120px; max-width: 220px; }
+.tabla--gastos .coche-celda .nota.dos-lineas { display: -webkit-box; }

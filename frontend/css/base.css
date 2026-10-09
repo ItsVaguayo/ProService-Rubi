@@ -394,3 +394,8 @@ p { margin: 0 0 var(--espacio-m); }
 .aviso-ok--dentro { opacity: 1; transform: translate(-50%, 0); transition: opacity .2s cubic-bezier(.23, 1, .32, 1), transform .2s cubic-bezier(.23, 1, .32, 1); }
 .aviso-ok--fuera { opacity: 0; transform: translate(-50%, 4px); transition: opacity .15s ease-out, transform .15s ease-out; }
 .aviso-ok::before { content: '✓'; margin-right: 8px; color: #6fd39b; font-weight: 700; }
+
+/* Textos sin espacios donde partir (correos, webs, números de factura largos): se parten donde haga falta
+   en vez de ensanchar la página. Y dos líneas como mucho en las celdas de nombres largos (con title). */
+a[href^="mailto:"], .contacto__datos, .reserva-activa dd { overflow-wrap: anywhere; }
+.dos-lineas, .coche-celda .dos-lineas { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
