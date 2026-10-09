@@ -28,7 +28,7 @@ export function eurosTexto(cent) {
   return `${n.toLocaleString('es-ES', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2, useGrouping: 'always' })} €`;
 }
 const hueco = (valor, largo = 20) => (valor == null || valor === '' ? '_'.repeat(largo) : String(valor));
-const FORMAS = { transferencia: 'TRANSFERENCIA', contado: 'CONTADO', tarjeta: 'TARJETA', a_la_vista: 'A LA VISTA', pago_30: 'PAGO A 30 DÍAS', pago_30_60: 'PAGO A 30 Y 60 DÍAS', financiera: 'FINANCIACIÓN', senal: 'SEÑAL' };
+const FORMAS = { transferencia: 'TRANSFERENCIA', contado: 'CONTADO', tarjeta: 'TARJETA', a_la_vista: 'A LA VISTA', pago_30: 'PAGO A 30 DÍAS', pago_30_60: 'PAGO A 30 Y 60 DÍAS', financiera: 'FINANCIACIÓN', senal: 'SEÑAL', parte_pago: 'ENTREGA DE VEHÍCULO USADO' };
 
 // Una parte del contrato (empresa, cliente, proveedor o dueño), con los mismos datos que la cabecera de los
 // contratos de Pymecar. Lo que falte sale como hueco para rellenar a mano.
@@ -65,9 +65,27 @@ export function datosCoche(v, km) {
 const intro = 'Ambas partes actúan en nombre propio y se reconocen mutuamente capacidad legal para la firma de este contrato.';
 const cierre = 'Y para que conste y donde convenga, se extiende el presente contrato por duplicado y a un solo efecto, quedando un ejemplar en cada una de las partes interesadas.';
 
+// El anexo con el estado del vehículo que nombran las cláusulas (la «Revisión componentes» de Pymecar): cada
+// componente con su estado y su nota, y lo que se entrega con el coche. Sin nada revisado, no hay anexo.
+const ESTADO_COMPONENTE = { controlado: 'Controlado', sustituido: 'Sustituido', cubierto: 'Cubierto' };
+function anexoDeRevision(r) {
+  if (!r) return null;
+  const componentes = r.componentes.filter((c) => c.estado || c.nota);
+  const entrega = r.entrega.filter((e) => e.marcado).map((e) => e.nombre);
+  if (!componentes.length && !entrega.length) return null;
+  return {
+    titulo: 'Anexo: estado del vehículo',
+    revisado: r.revisado_en ? diaEsp(r.revisado_en.slice(0, 10)) : null,
+    componentes: componentes.map((c) => ({ nombre: c.nombre, estado: ESTADO_COMPONENTE[c.estado] ?? null, nota: c.nota })),
+    entrega,
+  };
+}
+
 // --- Compraventa (Pymecar) ---
 function compraventa(d) {
-  const pagos = d.pagos.length ? d.pagos.map((p) => `${FORMAS[p.forma] ?? p.forma.toUpperCase()}: ${eurosTexto(p.importe_cent)}`) : [`${hueco(null, 15)}: ${eurosTexto(d.precio_cent)}`];
+  const pagos = d.pagos.length
+    ? d.pagos.map((p) => `${FORMAS[p.forma] ?? p.forma.toUpperCase()}${p.detalle ? ` (${p.detalle})` : ''}: ${eurosTexto(p.importe_cent)}`)
+    : [`${hueco(null, 15)}: ${eurosTexto(d.precio_cent)}`];
   return {
     partes: [parte('Vendedor', d.empresa, { empresa: true }), parte('Comprador', d.cliente)],
     intro: [
@@ -122,6 +140,7 @@ function compraventa(d) {
       },
     ],
     firmas: ['Firma y sello del vendedor', 'Firma del comprador'],
+    anexo: anexoDeRevision(d.revision),
   };
 }
 

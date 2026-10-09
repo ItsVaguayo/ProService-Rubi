@@ -5,9 +5,10 @@ import { COSTES_SQL, costeTotal, ivaDeLaVenta, margenBruto, margenNeto } from '.
 import { separarCostes, guardarCostes } from './costes.js';
 import { registrar } from '../auditoria.js';
 import { limpiarDatos, quitarDinero } from './campos.js';
-import { motivosParaNoEntrar, faltanParaPublicar, cierraLaReserva } from './reglas.js';
+import { motivosParaNoEntrar, faltanParaPublicar, cierraLaReserva, errorDePrecios } from './reglas.js';
 import { emitirCambioEstado } from './eventos.js';
 import { liberarReserva } from './reservas.js';
+import { revisionDe, guardarRevision } from './revision.js';
 
 const esGerencia = (usuario) => usuario?.rol === 'gerencia';
 
@@ -135,6 +136,21 @@ export function rutasVehiculos(db) {
     res.json({ ok: true });
   });
 
+  // Revisión: recepción, entrega y componentes (revision.js). Los dos roles.
+  r.get('/:id/revision', (req, res) => {
+    const v = leer.get(req.params.id);
+    if (!v) return res.status(404).json({ error: 'No existe' });
+    res.json(revisionDe(db, v.id));
+  });
+
+  r.put('/:id/revision', (req, res) => {
+    const v = leer.get(req.params.id);
+    if (!v) return res.status(404).json({ error: 'No existe' });
+    const errores = guardarRevision(db, v, req.body, req.usuario);
+    if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
+    res.json(revisionDe(db, v.id));
+  });
+
   r.get('/:id', (req, res) => {
     const v = leer.get(req.params.id);
     if (!v) return res.status(404).json({ error: 'No existe' });
@@ -143,6 +159,8 @@ export function rutasVehiculos(db) {
 
   r.post('/', (req, res) => {
     const { datos, errores } = limpiarDatos(req.body, { puedeDinero: esGerencia(req.usuario) });
+    const precios = errorDePrecios(datos);
+    if (precios) errores.push(precios);
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
 
     // Las columnas salen de la lista blanca de campos.js, nunca del cuerpo de la petición.
@@ -168,6 +186,8 @@ export function rutasVehiculos(db) {
     const antes = leer.get(req.params.id);
     if (!antes) return res.status(404).json({ error: 'No existe' });
     const { datos, errores } = limpiarDatos(req.body, { parcial: true, puedeDinero: esGerencia(req.usuario) });
+    const precios = errorDePrecios({ ...antes, ...datos });
+    if (precios) errores.push(precios);
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
     const costes = separarCostes(datos);
     const columnas = Object.keys(datos);
