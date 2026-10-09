@@ -4,6 +4,8 @@
 import { Router } from 'express';
 import { registrar } from '../auditoria.js';
 import { ESTADOS_WEB } from '../estados.js';
+import { configCorreo } from '../correo/envio.js';
+import { correoDeContacto } from '../correo/mensajes.js';
 
 export const TIPOS = ['informacion', 'prueba', 'financiacion', 'tasacion'];
 const TELEFONO = /^[+\d][\d\s().-]{5,19}$/;
@@ -57,8 +59,13 @@ export function rutasContactosPublicas(db) {
     else if (typeof b.coche === 'string' && b.coche.trim()) vehiculoId = cocheDeReferencia.get(b.coche.trim().toUpperCase(), ...ESTADOS_WEB)?.id ?? null;
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
 
-    db.prepare('INSERT INTO contactos (nombre, telefono, email, tipo, vehiculo_id, mensaje) VALUES (?, ?, ?, ?, ?, ?)')
-      .run(nombre, telefono, email, b.tipo, vehiculoId, mensaje);
+    // El contacto y su correo al comercial, juntos: o entran los dos o ninguno. El correo sale después (correo/envio.js).
+    db.transaction(() => {
+      const id = Number(db.prepare('INSERT INTO contactos (nombre, telefono, email, tipo, vehiculo_id, mensaje) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(nombre, telefono, email, b.tipo, vehiculoId, mensaje).lastInsertRowid);
+      const coche = vehiculoId ? db.prepare('SELECT marca, modelo, version, referencia FROM vehiculos WHERE id = ?').get(vehiculoId) : null;
+      correoDeContacto(db, configCorreo(), { id, nombre, telefono, email, tipo: b.tipo, mensaje }, coche);
+    })();
     res.status(201).json({ ok: true });
   });
 

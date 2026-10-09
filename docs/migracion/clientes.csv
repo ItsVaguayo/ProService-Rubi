@@ -1,0 +1,2 @@
+nombre;nif;tipo;direccion;codigo_postal;poblacion;provincia;pais;telefono;email;origen;estado_comercial;notas
+Cliente De Ejemplo;12345678Z;particular;C/ Falsa 2;08191;Rubí;Barcelona;ES;600000000;cliente@ejemplo.com;tienda;ganado;Fila de ejemplo: borrarla

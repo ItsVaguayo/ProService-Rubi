@@ -11,13 +11,15 @@
     "seed": "node scripts/sembrar-pruebas.js --reset",
     "dev:pruebas": "node --watch scripts/arrancar-pruebas.js",
     "copia": "node --env-file-if-exists=../.env scripts/copia-seguridad.js",
-    "peor-caso": "node scripts/peor-caso.js"
+    "peor-caso": "node scripts/peor-caso.js",
+    "migrar": "node --env-file-if-exists=../.env scripts/migrar-pymecar.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "multer": "^2.4.0",
+    "nodemailer": "10.0.10",
     "sharp": "^0.35.5"
   },
   "engines": {
