@@ -1976,7 +1976,7 @@ function cabeceraDocumento(e) {
 
 const ESTADOS_COBRO = { borrador: 'Borrador', pendiente: 'Pendiente', parcial: 'Parcial', cobrada: 'Cobrada', vencida: 'Vencida', anulada: 'Anulada', rectificativa: 'Rectificativa' };
 const FORMAS_PAGO = { transferencia: 'Transferencia', contado: 'Contado', tarjeta: 'Tarjeta', a_la_vista: 'A la vista', pago_30: 'Pago a 30 días', pago_30_60: 'Pago a 30 y 60 días' };
-const FORMAS_COBRO = { ...FORMAS_PAGO, financiera: 'Financiera', senal: 'Señal de la reserva' };
+const FORMAS_COBRO = { ...FORMAS_PAGO, financiera: 'Financiera', senal: 'Señal de la reserva', parte_pago: 'Coche entregado' };
 // Lo que se propone al apuntar un cobro: la forma de pago de la factura si dice cómo llega el dinero; si
 // solo es un plazo (pago a 30 días, a la vista), transferencia, que es como se suele cobrar ese plazo
 const formaCobro = (f) => (['contado', 'tarjeta', 'transferencia'].includes(f.forma_pago) ? f.forma_pago : 'transferencia');
@@ -2061,7 +2061,7 @@ async function paginaFacturas() {
     tr.insertAdjacentHTML('afterend', `<tr class="fila-cobro"><td colspan="8">
         <form class="cobro-form despliega">
           <label class="campo"><span class="campo__nombre">Importe</span><span class="con-unidad" data-unidad="€"><input name="importe" inputmode="decimal" value="${(f.saldo_cent / 100).toFixed(2).replace('.', ',')}" required></span></label>
-          <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === formaCobro(f) ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+          <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal' && k !== 'parte_pago').map(([k, n]) => `<option value="${k}"${k === formaCobro(f) ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
           <label class="campo"><span class="campo__nombre">Fecha</span><input type="date" name="fecha" value="${diaLocal()}" required></label>
           <div class="cobro-form__botones">
             <button class="boton boton--pequeno" type="submit">Apuntar ${euros2(f.saldo_cent)}</button>
@@ -2358,7 +2358,7 @@ async function paginaFactura() {
       <ul class="factura-cobros__lista">${filas}</ul>
       ${f.saldo_cent ? `<form class="cobro-form factura-cobros__form">
         <label class="campo"><span class="campo__nombre">Importe</span><span class="con-unidad" data-unidad="€"><input name="importe" inputmode="decimal" value="${(f.saldo_cent / 100).toFixed(2).replace('.', ',')}" required></span></label>
-        <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === formaCobro(f) ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+        <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal' && k !== 'parte_pago').map(([k, n]) => `<option value="${k}"${k === formaCobro(f) ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
         <label class="campo"><span class="campo__nombre">Fecha</span><input type="date" name="fecha" value="${diaLocal()}" required></label>
         <div class="cobro-form__botones">
           <button class="boton boton--pequeno" type="submit">Apuntar cobro</button>
@@ -2451,6 +2451,7 @@ async function paginaFactura() {
         </tbody>
       </table>
       <div class="factura__totales">${totales}</div>
+      ${f.parte_pago_cent ? `<section class="factura__bloque"><h2>Entrega de vehículo usado como parte del pago</h2><p>${esc(f.parte_pago_vehiculo ?? '')}, valorado en ${euros2(f.parte_pago_cent)}. Queda por pagar ${euros2(f.total_cent - f.parte_pago_cent)}.</p></section>` : ''}
       ${rebu ? '<p class="factura__mencion">Régimen especial de los bienes usados</p>' : ''}
       ${garantia || f.observaciones ? `<section class="factura__bloque"><h2>Condiciones</h2>${garantia ? `<p>${esc(garantia)}</p>` : ''}${f.observaciones ? `<p>${esc(f.observaciones)}</p>` : ''}</section>` : ''}
       ${empresa.registro_mercantil ? `<footer class="factura__pie">${esc(empresa.registro_mercantil)}</footer>` : ''}`;
@@ -2603,7 +2604,15 @@ async function paginaContrato(usuario) {
       ${k.clausulas_adicionales ? `<h2>Cláusulas adicionales</h2><p>${esc(k.clausulas_adicionales).replace(/\n/g, '<br>')}</p>` : ''}
       <p>${esc(k.cierre)}</p>
       <div class="contrato__firmas">${k.firmas.map(() => '<div></div>').join('')}</div>
-      <div class="contrato__firmas" style="margin-top:0">${k.firmas.map((f, i) => `<p><b>${esc(f)}</b><br>${esc(k.partes[i]?.nombre ?? '')}${k.partes[i]?.nif && !/^_+$/.test(k.partes[i].nif) ? ` · ${esc(k.partes[i].nif)}` : ''}</p>`).join('')}</div>`;
+      <div class="contrato__firmas" style="margin-top:0">${k.firmas.map((f, i) => `<p><b>${esc(f)}</b><br>${esc(k.partes[i]?.nombre ?? '')}${k.partes[i]?.nif && !/^_+$/.test(k.partes[i].nif) ? ` · ${esc(k.partes[i].nif)}` : ''}</p>`).join('')}</div>
+      ${k.anexo ? `<section class="contrato__anexo">
+        <h2>${esc(k.anexo.titulo)}</h2>
+        <p>${esc([v.marca, v.modelo, v.version].filter(Boolean).join(' '))} · ${esc(v.matricula)}${k.anexo.revisado ? ` · Revisado el ${esc(k.anexo.revisado)}` : ''}</p>
+        ${k.anexo.componentes.length ? `<table class="contrato__cuadro contrato__revision"><thead><tr><th>Componente</th><th>Controlado</th><th>Sustituido</th><th>Cubierto</th><th>Información adicional</th></tr></thead><tbody>
+          ${k.anexo.componentes.map((x) => `<tr><td>${esc(x.nombre)}</td>${['Controlado', 'Sustituido', 'Cubierto'].map((e) => `<td>${x.estado === e ? '✕' : ''}</td>`).join('')}<td>${esc(x.nota ?? '')}</td></tr>`).join('')}</tbody></table>` : ''}
+        ${k.anexo.entrega.length ? `<p><b>Se entrega con:</b> ${esc(k.anexo.entrega.join(', '))}.</p>` : ''}
+        <div class="contrato__firmas">${k.firmas.map(() => '<div></div>').join('')}</div>
+      </section>` : ''}`;
     barra.innerHTML = '<button class="boton boton--secundario boton--pequeno" type="button" data-imprimir>Imprimir o guardar en PDF</button>';
     $('[data-imprimir]', barra).addEventListener('click', () => window.print());
   }

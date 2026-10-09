@@ -21,7 +21,7 @@ Todo va bajo `/api`, en JSON. La sesión es una cookie (`ps_sesion`, httpOnly) q
 
 ## Coches
 
-Campos que se pueden escribir: los de `api/src/modules/vehiculos/campos.js` y ninguno más (un campo desconocido da 400). Los marcados `dinero: true` solo los escribe y los recibe gerencia: compra, costes, precio mínimo, régimen de IVA, datos del dueño en depósito y proveedor. `video_url` tiene que ser un enlace `http` o `https` (otro esquema, como `javascript:`, da 400).
+Campos que se pueden escribir: los de `api/src/modules/vehiculos/campos.js` y ninguno más (un campo desconocido da 400). Los marcados `dinero: true` solo los escribe y los recibe gerencia: compra, costes, precio mínimo, régimen de IVA, datos del dueño en depósito y proveedor. `video_url` tiene que ser un enlace `http` o `https` (otro esquema, como `javascript:`, da 400). `precio_sin_oferta_cent` (el precio tachado de una oferta; lo ven y lo escriben los dos roles, como el PVP) tiene que ser mayor que `pvp_cent`, también si se cambia el PVP después: si no, 400. `seguro_flota`: `con`, `sin`, `alta_solicitada` o `baja_solicitada`. `revisado_en` y `revisado_por` no se escriben aquí: los pone la revisión.
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
@@ -33,6 +33,8 @@ Campos que se pueden escribir: los de `api/src/modules/vehiculos/campos.js` y ni
 | `PATCH /vehiculos/:id/estado` | con sesión | `{ estado }`. Para entrar en la web desde fuera (a «Publicado», o de taller directo a «Vendido») hacen falta todos los datos de publicar y 15 fotos públicas que no sean de daños; si no, 409 con `motivos`. Para «Reservado», una reserva activa. Un coche con reserva activa solo sale de «Reservado» a «Vendido» o «Entregado», que cierran la reserva como `vendida`; para lo demás, 409: hay que cancelarla antes |
 | `GET /vehiculos/:id/historial` | con sesión | Cambios de estado, del más reciente al más antiguo, con quién los hizo. `usuario: null` = lo hizo el sistema (por ejemplo, una reserva que caduca) |
 | `GET /vehiculos/:id/extras` | con sesión | Nombres de los extras marcados |
+| `GET /vehiculos/:id/revision` | con sesión | La revisión, como la pestaña de Pymecar: `recepcion` y `entrega` (`{ id, nombre, marcado }`), `componentes` (`{ id, nombre, estado, nota }`, con `estado` `controlado`, `sustituido`, `cubierto` o `null`), `revisado_en`, `revisado_por` y `revisado_por_nombre` |
+| `PUT /vehiculos/:id/revision` | con sesión | Cambia solo lo que llega: `{ recepcion?: { id: true }, entrega?: { id: false }, componentes?: { id: { estado?, nota? } }, revisado?: true }`. `revisado: true` exige que todos los componentes tengan estado; si no, 400 y no se guarda nada de la petición. Dejar un componente sin estado le quita el «revisado». Queda en `auditoria` (`revision`) |
 | `PUT /vehiculos/:id/extras` | con sesión | `{ extras: ["Navegador", …] }` sustituye la lista entera. Solo nombres del catálogo (migración `0003`): uno que no exista da 400 con `desconocidos` y no se guarda nada |
 
 ## Reservas
@@ -212,9 +214,9 @@ En `api/src/modules/facturacion`. Verifactu queda para octubre de 2028 (duda H1)
 |---|---|
 | `GET /facturas?estado=&q=&desde=&hasta=&cliente=` | Lista (borradores primero, luego por fecha). `cliente` (id) deja solo las de ese cliente. `estado`: `borrador`, `pendiente`, `parcial`, `cobrada`, `vencida`, `anulada` o `rectificativa`. `q` busca en número, cliente y matrícula. Devuelve `{ facturas, resumen }`; el resumen es de todas: `pendiente_cent`, `pendientes`, `vencido_cent`, `vencidas`, `vencida_mas_antigua`, `borradores` |
 | `GET /facturas/:id` | Una, con sus `cobros` |
-| `POST /facturas` | Borrador. Obligatorio `cliente_id`; normalmente `vehiculo_id`. Del coche salen, si no llegan, `precio_cent` (su PVP) y `regimen` (`REBU`, o `general` si el coche es `deducible`; el depósito, siempre REBU). Opcionales: `fecha` (hoy), `vencimiento`, `suplidos_cent`, `forma_pago`, `uso_destino`, `garantia_tipo` (`directa`, `comprada`, `sin`), `garantia_meses` (0-36), `km_entrega`, `observaciones`. 201 |
+| `POST /facturas` | Borrador. Obligatorio `cliente_id`; normalmente `vehiculo_id`. Del coche salen, si no llegan, `precio_cent` (su PVP) y `regimen` (`REBU`, o `general` si el coche es `deducible`; el depósito, siempre REBU). Opcionales: `fecha` (hoy), `vencimiento`, `suplidos_cent`, `forma_pago`, `uso_destino`, `garantia_tipo` (`directa`, `comprada`, `sin`), `garantia_meses` (0-36), `parte_pago_cent` con `parte_pago_vehiculo` (texto) o `parte_pago_vehiculo_id` (un coche del stock: la descripción sale de su ficha), `km_entrega`, `observaciones`. 201 |
 | `PUT /facturas/:id` · `DELETE /facturas/:id` | Solo un borrador (emitida: 409). Los importes se recalculan |
-| `POST /facturas/:id/emitir` | Le da número (serie del año: `V26-00039`), congela una copia de la empresa, el cliente y el coche (`datos_*`) y pone al cliente como comprador del coche. 409 con `faltan` si falta la dirección fiscal de la empresa, el NIF o la dirección del cliente, el coche o su precio de compra (REBU). 409 si el coche ya está en otra factura sin rectificar, si la fecha es anterior a la última de la serie o si es posterior a hoy |
+| `POST /facturas/:id/emitir` | Le da número (serie del año: `V26-00039`), congela una copia de la empresa, el cliente y el coche (`datos_*`) y pone al cliente como comprador del coche. Si lleva un coche entregado como parte del pago, su valor queda como cobro (`forma_pago: parte_pago`) con la fecha de la factura. 409 con `faltan` si falta la dirección fiscal de la empresa, el NIF o la dirección del cliente, el coche o su precio de compra (REBU). 409 si el coche ya está en otra factura sin rectificar, si la fecha es anterior a la última de la serie o si es posterior a hoy |
 | `POST /facturas/:id/rectificar` | `{ motivo }`. Rectificativa por el total, en la serie `R26`, con fecha de hoy e importes en negativo. La original queda `anulada` |
 | `POST /facturas/:id/cobros` | `{ importe_cent, forma_pago, fecha?, nota? }` o `{ senal: true }`, que aplica la señal de la reserva del coche (una vez). Nunca más de lo que queda (409) |
 | `DELETE /facturas/:id/cobros/:cobro` | Quita un cobro mal apuntado |
@@ -228,7 +230,7 @@ Importes (`importes.js`): en REBU el cliente ve un solo total, sin IVA desglosad
 
 ## Contratos
 
-En `api/src/modules/contratos`. Se generan con los datos del momento y se guardan ya escritos (`contenido`): un contrato firmado no cambia aunque cambie la ficha o la plantilla. Número correlativo del año: `C26-0001`. Se imprimen en `contrato.html?id=` y se firman en papel. Todos llevan `pendiente_abogado: true` (duda H3).
+En `api/src/modules/contratos`. Se generan con los datos del momento y se guardan ya escritos (`contenido`): un contrato firmado no cambia aunque cambie la ficha o la plantilla. Número correlativo del año: `C26-0001`. Se imprimen en `contrato.html?id=` y se firman en papel. Todos llevan `pendiente_abogado: true` (duda H3). El de compraventa lleva `anexo` (el estado del vehículo que nombran sus cláusulas): los componentes revisados con su estado y su nota, lo que se entrega con el coche y la fecha de la revisión; sin nada revisado, `anexo: null`. En la forma de pago, el coche entregado sale con su descripción.
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|

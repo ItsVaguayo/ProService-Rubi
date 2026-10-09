@@ -85,9 +85,9 @@ Decidido el 7-oct: lo que no tiene datos en Pymecar no se lleva a la plataforma.
 
 ## Lo que esto cambia en nuestra plataforma
 
-- **Ficha:** añadir uso anterior, última ITV, precio sin oferta, seguro de flota y revisado (con el checklist de recepción y entrega).
+- **Ficha:** añadir uso anterior, última ITV, precio sin oferta, seguro de flota y revisado (con el checklist de recepción y entrega). ✅ Todo (migraciones `0015` y `0019`). La lista de componentes de la revisión es provisional: falta ver la de Pymecar.
 - **Compras:** documento de compra REBU para particulares, numerado; factura del proveedor para empresas; la cesión como forma de entrada.
-- **Factura de venta:** uso destino, suplidos de gestoría, coche entregado como parte del pago, formas de pago adicionales, garantía (tipo y meses), datos del contrato y devolución.
+- **Factura de venta:** uso destino, suplidos de gestoría, coche entregado como parte del pago, formas de pago adicionales, garantía (tipo y meses), datos del contrato y devolución. ✅ Todo menos subvención y descuento, que esperan a la gestoría (H7). Las formas de pago adicionales son los cobros de cada factura, cada uno con su forma, y así salen en el contrato. El contrato de compraventa ya lleva el anexo del estado del vehículo.
 - **Contratos:** que salgan de la factura o de la reserva, como en Pymecar.
 - **Tres libros:** ingresos, REBU y gastos.
 - **Proveedores:** IBAN, móvil, forma de pago, persona de contacto, y proveedor o acreedor.

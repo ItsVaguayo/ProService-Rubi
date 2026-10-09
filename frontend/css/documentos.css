@@ -87,6 +87,10 @@
 .contrato__firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 12mm; margin-top: 10mm; break-inside: avoid; }
 .contrato__firmas div { padding-top: 22mm; border-bottom: 1px solid var(--tinta); }
 .contrato__firmas p { margin: 2mm 0 0; font-size: 8.5pt; text-align: left; }
+/* Anexo con la revisión de componentes: en hoja aparte al imprimir */
+.contrato__anexo { margin-top: 10mm; break-before: page; }
+.contrato__revision th { width: auto; }
+.contrato__revision td:nth-child(2), .contrato__revision td:nth-child(3), .contrato__revision td:nth-child(4) { width: 18mm; text-align: center; }
 
 /* El formulario para generar un contrato (no sale en papel) */
 .documento--form { min-height: 0; }
