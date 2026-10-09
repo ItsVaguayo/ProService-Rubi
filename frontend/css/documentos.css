@@ -113,7 +113,7 @@
 /* Factura: «Rectificar…» plegado en la barra (se usa poco y no tiene vuelta) */
 .factura__rectificar { position: relative; color: var(--blanco); font-size: .8125rem; }
 .factura__rectificar summary { cursor: pointer; padding: 8px 4px; color: #c5c9ce; }
-.factura__rectificar summary:hover { color: var(--blanco); }
+@media (hover: hover) and (pointer: fine) { .factura__rectificar summary:hover { color: var(--blanco); } }
 .factura__rectificar-caja { position: absolute; right: 0; top: 100%; z-index: 5; display: grid; gap: 10px; width: min(340px, 90vw); padding: 14px; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--blanco); color: var(--tinta); box-shadow: 0 8px 24px rgba(23, 25, 28, .15); }
 .factura__rectificar-caja .campo { margin: 0; }
 @media (max-width: 760px) { .factura__rectificar-caja { position: static; width: auto; } }
@@ -135,7 +135,8 @@
 .factura-cobros__lista { margin: 0; padding: 0; list-style: none; }
 .factura-cobros__lista li { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--linea); }
 .factura-cobros__quitar { padding: 4px 8px; border: 0; border-radius: 4px; background: none; color: var(--tinta-3); font-size: .75rem; cursor: pointer; }
-.factura-cobros__quitar:hover, .factura-cobros__quitar[data-seguro] { background: var(--peligro-fondo); color: var(--peligro); }
+.factura-cobros__quitar[data-seguro] { background: var(--peligro-fondo); color: var(--peligro); }
+@media (hover: hover) and (pointer: fine) { .factura-cobros__quitar:hover { background: var(--peligro-fondo); color: var(--peligro); } }
 .factura-cobros__form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; margin-top: 12px; padding-top: 14px; border-top: 1px solid var(--linea); }
 .factura-cobros__form .campo { display: grid; gap: 4px; margin: 0; min-width: 140px; }
 .factura-cobros__form .campo__nombre { font-size: .8125rem; font-weight: 600; }

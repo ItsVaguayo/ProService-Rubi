@@ -101,6 +101,24 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .cabecera--portada :focus-visible,
 .portada :focus-visible { outline-color: var(--blanco); }
 
+/* Móvil: que se sienta una app y no una web (skill mobile-native) */
+html {
+  -webkit-tap-highlight-color: transparent; /* sin el destello gris al tocar: cada control tiene su :active */
+  -webkit-text-size-adjust: 100%;           /* sin agrandar la letra al girar el móvil */
+}
+/* iPhone acerca la página al tocar un campo con letra de menos de 16 px, y no vuelve. Solo en táctil. */
+@media (pointer: coarse) {
+  input, select, textarea { font-size: 16px !important; }
+}
+/* Controles: el toque se responde al momento (sin esperar al doble toque) y su texto no se selecciona */
+button, a, label, summary, [role="button"], .boton {
+  touch-action: manipulation;
+}
+button, .boton, summary, .segmentos label, .opciones label {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
@@ -211,20 +229,21 @@ p { margin: 0 0 var(--espacio-m); }
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  transition: background .15s, border-color .15s, color .15s;
+  transition: background .15s, border-color .15s, color .15s, transform .12s cubic-bezier(.23, 1, .32, 1);
 }
+.boton:active:not(:disabled) { transform: scale(.97); } /* responde al apoyar el dedo, no al soltarlo */
 
-.boton:hover { background: var(--rojo-oscuro); border-color: var(--rojo-oscuro); }
+@media (hover: hover) and (pointer: fine) { .boton:hover { background: var(--rojo-oscuro); border-color: var(--rojo-oscuro); } }
 
 .boton--secundario {
   background: var(--blanco);
   border-color: var(--linea-fuerte);
   color: var(--tinta);
 }
-.boton--secundario:hover { background: var(--fondo); border-color: var(--tinta-3); }
+@media (hover: hover) and (pointer: fine) { .boton--secundario:hover { background: var(--fondo); border-color: var(--tinta-3); } }
 
 .boton--oscuro { background: var(--negro); border-color: var(--negro); }
-.boton--oscuro:hover { background: var(--negro-3); border-color: var(--negro-3); }
+@media (hover: hover) and (pointer: fine) { .boton--oscuro:hover { background: var(--negro-3); border-color: var(--negro-3); } }
 
 .boton--pequeno { min-height: 32px; padding: 0 14px; font-size: .8125rem; }
 /* En el móvil, a la medida del dedo */
@@ -280,9 +299,7 @@ p { margin: 0 0 var(--espacio-m); }
 .campo input::placeholder,
 .campo textarea::placeholder { color: #a3a8ae; }
 
-.campo input:hover,
-.campo select:hover,
-.campo textarea:hover { border-color: var(--tinta-3); }
+@media (hover: hover) and (pointer: fine) { .campo input:hover, .campo select:hover, .campo textarea:hover { border-color: var(--tinta-3); } }
 
 .campo input:focus,
 .campo select:focus,
@@ -332,7 +349,7 @@ p { margin: 0 0 var(--espacio-m); }
 }
 
 .tabla tr:last-child td { border-bottom: 0; }
-.tabla tbody tr:hover { background: #fafbfb; }
+@media (hover: hover) and (pointer: fine) { .tabla tbody tr:hover { background: #fafbfb; } }
 
 /* Columnas de números alineadas a la derecha */
 .tabla .derecha { text-align: right; white-space: nowrap; }
@@ -364,3 +381,16 @@ p { margin: 0 0 var(--espacio-m); }
 }
 .vacio strong { font-size: 1rem; }
 .vacio .nota { max-width: 420px; margin: 0 0 8px; }
+
+/* Aviso breve de «guardado» (avisar() en panel.js): abajo en el centro, por encima del home del iPhone.
+   Entra en 200 ms y se va más rápido (150 ms): la salida no debe hacerse esperar. */
+.aviso-ok {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 60;
+  max-width: min(420px, calc(100vw - 32px)); padding: 10px 16px; border-radius: 8px;
+  background: var(--negro); color: var(--blanco); font-size: .875rem; font-weight: 500;
+  box-shadow: 0 8px 24px rgb(0 0 0 / .18); pointer-events: none;
+  opacity: 0; transform: translate(-50%, 8px);
+}
+.aviso-ok--dentro { opacity: 1; transform: translate(-50%, 0); transition: opacity .2s cubic-bezier(.23, 1, .32, 1), transform .2s cubic-bezier(.23, 1, .32, 1); }
+.aviso-ok--fuera { opacity: 0; transform: translate(-50%, 4px); transition: opacity .15s ease-out, transform .15s ease-out; }
+.aviso-ok::before { content: '✓'; margin-right: 8px; color: #6fd39b; font-weight: 700; }

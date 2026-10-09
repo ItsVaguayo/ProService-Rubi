@@ -7,6 +7,8 @@
 
 const PAGINA = location.pathname.split('/').pop() || 'index.html';
 const params = new URLSearchParams(location.search);
+// El contenido de la maqueta no se enseña mientras llegan los datos (ver html.cargando en panel.css)
+if (PAGINA !== 'login.html') document.documentElement.classList.add('cargando');
 
 async function api(ruta, { method = 'GET', body } = {}) {
   const res = await fetch(`/api${ruta}`, {
@@ -114,6 +116,32 @@ function avisoMaqueta() {
   // Debajo de la banda negra: encima, la banda (que sube con margen negativo) lo taparía
   const banda = main.querySelector(':scope > .cabecera--portada, :scope > .portada, :scope > .ficha-cabecera');
   banda ? banda.after(aviso) : main.prepend(aviso);
+}
+
+// Aviso breve abajo cuando algo se ha guardado: si no, la página solo cambia y no se sabe si fue bien.
+// Lo anuncian los lectores de pantalla (role="status") y se va solo. Un error nunca va aquí: va en su caja.
+function avisar(texto) {
+  let caja = $('.aviso-ok');
+  if (!caja) {
+    caja = document.createElement('div');
+    caja.className = 'aviso-ok';
+    caja.setAttribute('role', 'status');
+    document.body.append(caja);
+  }
+  caja.textContent = texto;
+  caja.classList.remove('aviso-ok--fuera');
+  caja.classList.add('aviso-ok--dentro');
+  clearTimeout(caja._fin);
+  caja._fin = setTimeout(() => caja.classList.replace('aviso-ok--dentro', 'aviso-ok--fuera'), 3000);
+}
+// Para lo que recarga o cambia de página: el aviso sale al llegar
+function avisarAlVolver(texto) {
+  try { sessionStorage.setItem('aviso-ok', texto); } catch { /* sin almacenamiento, sin aviso */ }
+}
+function avisoPendiente() {
+  let texto = null;
+  try { texto = sessionStorage.getItem('aviso-ok'); sessionStorage.removeItem('aviso-ok'); } catch { /* nada */ }
+  if (texto) avisar(texto);
 }
 
 // --- Menú común --------------------------------------------------------------------------------
@@ -577,6 +605,7 @@ function arrastrarEnTablero(todos) {
     }
     try {
       await api(`/vehiculos/${v.id}/estado`, { method: 'PATCH', body: { estado: destino } });
+      avisar(`${tituloCoche(v)}: ${estado(destino).nombre}`);
       cajaError.hidden = true;
       await paginaTablero();
     } catch (e) {
@@ -760,6 +789,7 @@ async function paginaFicha(usuario) {
     }
     try {
       await api(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: selEstado.value } });
+      avisarAlVolver(`Ahora está en «${estado(selEstado.value).nombre}»`);
       location.reload();
     } catch (e) {
       mostrarErrores(cajaError, e, `No se puede pasar a «${estado(selEstado.value).nombre}» todavía:`);
@@ -869,14 +899,14 @@ function pintarReserva(v, reserva) {
         <p class="nota">Si se cancela, el coche vuelve a «Publicado».</p>
       </div>`;
     const vender = () =>
-      api(`/vehiculos/${v.id}/estado`, { method: 'PATCH', body: { estado: 'vendido' } }).then(() => location.reload(), (e) => mostrarErrores($('.error--lista'), e, 'No se puede vender:'));
+      api(`/vehiculos/${v.id}/estado`, { method: 'PATCH', body: { estado: 'vendido' } }).then(() => { avisarAlVolver('Vendido'); location.reload(); }, (e) => mostrarErrores($('.error--lista'), e, 'No se puede vender:'));
     $('[data-vender]', caja).addEventListener('click', vender);
     // Duda C6: al cancelar se apunta si se devuelve la señal. Se pregunta aquí, con botones que dicen
     // lo que hacen, para que «echarse atrás» no se confunda con «no se devuelve».
     const pila = $('.pila', caja);
     const botones = pila.innerHTML;
     const cancelar = (senal_devuelta) =>
-      api(`/vehiculos/${v.id}/reserva`, { method: 'DELETE', body: { senal_devuelta } }).then(() => location.reload(), (e) => mostrarErrores($('.error--lista'), e, 'No se pudo cancelar:'));
+      api(`/vehiculos/${v.id}/reserva`, { method: 'DELETE', body: { senal_devuelta } }).then(() => { avisarAlVolver('Reserva anulada'); location.reload(); }, (e) => mostrarErrores($('.error--lista'), e, 'No se pudo cancelar:'));
     const preguntar = () => {
       pila.innerHTML = `
         <p class="nota">¿Se le devuelve la señal de ${euros(reserva.senal_cent)} a ${esc(reserva.cliente)}? El coche vuelve a «Publicado».</p>
@@ -905,6 +935,7 @@ function pintarReserva(v, reserva) {
     const d = Object.fromEntries(new FormData(form));
     try {
       await api(`/vehiculos/${v.id}/reserva`, { method: 'POST', body: { cliente: d.cliente, senal_cent: Math.round(Number(d.senal_cent) * 100), dias: Number(d.dias || 7) } });
+      avisarAlVolver('Reservado. La señal queda apuntada');
       location.reload();
     } catch (e) {
       mostrarErrores($('.error--lista'), e, 'No se ha podido reservar:');
@@ -996,6 +1027,7 @@ async function paginaAlta(usuario) {
     try {
       const guardado = await api(id ? `/vehiculos/${id}` : '/vehiculos', { method: id ? 'PUT' : 'POST', body: datos });
       await api(`/vehiculos/${guardado.id}/extras`, { method: 'PUT', body: { extras: casillas.filter((c) => c.checked).map(textoCasilla) } });
+      avisarAlVolver('Coche guardado');
       location.href = urlCoche(guardado);
     } catch (e) {
       mostrarErrores(cajaError, e, 'No se ha podido guardar:');
@@ -1101,6 +1133,7 @@ async function paginaUsuarios(yo) {
     boton.disabled = true;
     try {
       await api(`/usuarios/${tarjeta.dataset.id}`, { method: 'PATCH', body: { activo: boton.dataset.activar === 'true' } });
+      avisar(boton.dataset.activar === 'true' ? 'Usuario activado' : 'Usuario desactivado');
       await cargar();
     } catch (e) {
       mostrarErrores(errorLista, e, 'No se ha podido cambiar:');
@@ -1134,6 +1167,7 @@ async function paginaUsuarios(yo) {
     const datos = Object.fromEntries(new FormData(formNuevo));
     try {
       await api('/usuarios', { method: 'POST', body: datos });
+      avisar('Usuario dado de alta');
       formNuevo.reset();
       // Que se vea el nuevo: vuelve a «Activos»
       filtro.elements.estado.value = 'activos';
@@ -1241,6 +1275,7 @@ async function paginaContactos() {
     boton.disabled = true;
     try {
       await api(`/contactos/${boton.dataset.atendido}`, { method: 'PATCH', body: { atendido: boton.dataset.valor === 'true' } });
+      avisar(boton.dataset.valor === 'true' ? 'Contacto atendido' : 'Vuelve a pendiente');
       await Promise.all([pintar(), resumen(), actualizarContadorContactos()]);
     } catch (e) {
       boton.disabled = false;
@@ -1410,6 +1445,7 @@ async function paginaClientes(usuario) {
       boton.disabled = true;
       try {
         await api(`/actividades/${boton.dataset.hecha}/hecha`, { method: 'PATCH', body: {} });
+        avisar('Hecho');
         await abrir(c.id, { sinHistorial: true });
       } catch (e) {
         boton.disabled = false;
@@ -1422,6 +1458,7 @@ async function paginaClientes(usuario) {
       select.disabled = true;
       try {
         await api(`/clientes/${c.id}`, { method: 'PUT', body: { estado_comercial: select.value } });
+        avisar(`Estado: ${ESTADOS_COMERCIALES[select.value]}`);
         await pintarLista();
         await abrir(c.id, { sinHistorial: true });
       } catch (e) {
@@ -1472,6 +1509,7 @@ async function paginaClientes(usuario) {
       const guardado = editando
         ? await api(`/clientes/${editando.id}`, { method: 'PUT', body: Object.fromEntries(Object.entries(datos).map(([k, v]) => [k, v === '' ? null : v])) })
         : await api('/clientes', { method: 'POST', body: datos });
+        avisar(editando ? 'Cambios guardados' : 'Cliente dado de alta');
       limpiar();
       abierto = guardado.id;
       await pintarLista();
@@ -1618,6 +1656,7 @@ async function paginaCrm(usuario) {
     try {
       if (boton.dataset.hecha) {
         await api(`/actividades/${boton.dataset.hecha}/hecha`, { method: 'PATCH', body: {} });
+        avisar('Hecho');
       } else {
         // Un día después del suyo y, como poco, mañana (la atrasada no se queda en el pasado). Misma hora.
         const a = await api(`/actividades/${boton.dataset.posponer}`);
@@ -1627,6 +1666,7 @@ async function paginaCrm(usuario) {
         const siguiente = diaLocal(new Date(an, mes - 1, di + 1));
         const dia = siguiente > manana ? siguiente : manana;
         await api(`/actividades/${a.id}`, { method: 'PUT', body: { programada_para: `${dia} ${a.programada_para.slice(11, 16)}` } });
+        avisar(`Pasada al ${new Date(`${dia}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' })}`);
       }
       cajaError.hidden = true;
       await Promise.all([pintarHoy(), pintarEmbudo()]);
@@ -1685,7 +1725,7 @@ async function paginaCrm(usuario) {
     }).join('');
     const enMarcha = visibles.filter((c) => !['ganado', 'perdido'].includes(c.estado_comercial)).length;
     pintarCifras(visibles);
-    $('.tablero-cabecera__pista').textContent = `${enMarcha} ${enMarcha === 1 ? 'cliente' : 'clientes'} en marcha. Arrastra un cliente a otro tramo para cambiar su estado.`;
+    $('.tablero-cabecera__pista').textContent = `${enMarcha} ${enMarcha === 1 ? 'cliente' : 'clientes'} en marcha. ${matchMedia('(pointer: coarse)').matches ? 'Para cambiar el estado, toca el cliente y cámbialo en su ficha.' : 'Arrastra un cliente a otro tramo para cambiar su estado.'}`;
   };
 
   // Las cifras de la cabecera, con los mismos clientes que el embudo (ganados y perdidos: 30 días)
@@ -1761,6 +1801,7 @@ async function paginaCrm(usuario) {
     if (columna.dataset.estado === c.estado_comercial) return;
     try {
       await api(`/clientes/${c.id}`, { method: 'PUT', body: { estado_comercial: columna.dataset.estado } });
+      avisar(`${c.nombre}: ${ESTADOS_COMERCIALES[columna.dataset.estado]}`);
       cajaError.hidden = true;
       await pintarEmbudo();
     } catch (e) {
@@ -1847,6 +1888,7 @@ async function paginaCrm(usuario) {
     enviar.disabled = true;
     try {
       await api('/actividades', { method: 'POST', body: cuerpo });
+      avisar('Actividad apuntada');
       cerrar();
       await Promise.all([pintarHoy(), pintarEmbudo()]);
     } catch (e) {
@@ -1976,6 +2018,7 @@ async function paginaFacturas() {
     const guardar = async (cuerpo) => {
       try {
         await api(`/facturas/${id}/cobros`, { method: 'POST', body: cuerpo });
+        avisar('Cobro apuntado');
         cajaError.hidden = true;
         await pintar();
       } catch (e) {
@@ -2001,6 +2044,7 @@ async function paginaFacturas() {
       emitir.disabled = true;
       try {
         await api(`/facturas/${emitir.dataset.emitir}/emitir`, { method: 'POST' });
+        avisar('Factura emitida');
         cajaError.hidden = true;
         await pintar();
       } catch (e) {
@@ -2135,6 +2179,7 @@ async function prepararAltaFactura() {
     }
     try {
       const f = await api('/facturas', { method: 'POST', body: cuerpo });
+      avisarAlVolver('Borrador guardado: revísalo y emítelo');
       location.href = `factura.html?id=${f.id}`; // a revisarla antes de emitir
     } catch (e) {
       mostrarErrores(error, e, 'No se ha podido guardar:');
@@ -2185,6 +2230,7 @@ async function prepararEmpresaYSeries() {
     for (const k of ['razon_social', 'nif']) if (d[k] === empresa[k]) delete d[k];
     try {
       Object.assign(empresa, await api('/facturas/empresa', { method: 'PUT', body: d }));
+      avisar('Datos de la empresa guardados');
       error.hidden = true;
       $('summary .estado', caja)?.remove();
       $('button[type="submit"]', formEmpresa).textContent = 'Guardado';
@@ -2197,6 +2243,7 @@ async function prepararEmpresaYSeries() {
     ev.preventDefault();
     try {
       const r = await api(`/facturas/series/V${anio}`, { method: 'PUT', body: { ultimo: Number(ev.target.elements.ultimo.value) } });
+      avisar(`La siguiente será la ${r.codigo_siguiente}`);
       ev.target.querySelector('.nota').innerHTML = `La siguiente factura será la <b>${esc(r.codigo_siguiente)}</b>.`;
     } catch (e) {
       mostrarErrores(error, e, 'No se ha podido guardar la numeración:');
@@ -2260,6 +2307,7 @@ async function paginaFactura() {
     const guardar = async (cuerpo) => {
       try {
         await api(`/facturas/${id}/cobros`, { method: 'POST', body: cuerpo });
+        avisar('Cobro apuntado');
         cajaError.hidden = true;
         await pintar();
       } catch (e) {
@@ -2279,6 +2327,7 @@ async function paginaFactura() {
       b.disabled = true;
       try {
         await api(`/facturas/${id}/cobros/${b.dataset.quitar}`, { method: 'DELETE' });
+        avisar('Cobro quitado');
         cajaError.hidden = true;
         await pintar();
       } catch (e) {
@@ -2367,6 +2416,7 @@ async function paginaFactura() {
       ev.target.disabled = true;
       try {
         await api(`/facturas/${id}/emitir`, { method: 'POST' });
+        avisar('Factura emitida');
         cajaError.hidden = true;
         await pintar();
       } catch (e) {
@@ -2385,6 +2435,7 @@ async function paginaFactura() {
       ev.target.disabled = true;
       try {
         const r = await api(`/facturas/${id}/rectificar`, { method: 'POST', body: { motivo } });
+        avisarAlVolver('Rectificativa creada');
         location.href = `factura.html?id=${r.id}`;
       } catch (e) {
         ev.target.disabled = false;
@@ -2453,6 +2504,7 @@ async function paginaContrato(usuario) {
     boton.disabled = true;
     try {
       const c = await api('/contratos', { method: 'POST', body: cuerpo });
+      avisarAlVolver('Contrato generado');
       location.replace(`contrato.html?id=${c.id}`);
     } catch (e) {
       boton.disabled = false;
@@ -2889,6 +2941,7 @@ async function paginaGastos() {
     let g;
     try {
       g = await api('/gastos', { method: 'POST', body: cuerpo });
+      avisar(`Gasto apuntado con el nº ${g.numero}`);
     } catch (err) {
       boton.disabled = false;
       return mostrarErrores(errorForm, err, 'No se ha podido apuntar:');
@@ -3012,6 +3065,7 @@ async function paginaGastos() {
     boton.disabled = true;
     try {
       await api(`/gastos/${boton.dataset.pago}/pagado`, { method: 'PATCH', body: { pagado: boton.dataset.pagado === '1' } });
+      avisar(boton.dataset.pagado === '1' ? 'Marcado como pagado' : 'Pago quitado');
       errorLista.hidden = true;
       await cargar();
     } catch (err) {
@@ -3223,6 +3277,7 @@ async function paginaIncentivos(usuario) {
       boton.disabled = true;
       try {
         await api('/incentivos/liquidar', { method: 'POST', body: { mes: datos.mes, usuario_id: Number(boton.dataset.liquidar) } });
+        avisar('Incentivo liquidado y apuntado en gastos');
         cajaError.hidden = true;
         await cargar();
       } catch (e) {
@@ -3241,6 +3296,7 @@ async function paginaIncentivos(usuario) {
       if (valor == null) return mostrarErrores(cajaErrorEn(form), { lista: ['El valor va como 5 o 5,5 (porcentaje) o 150 (euros)'] }, 'No se ha podido guardar:');
       try {
         await api(`/incentivos/reglas/${id}`, { method: 'PUT', body: { tipo: form.elements.tipo.value, valor } });
+        avisar('Regla guardada');
         await cargar();
       } catch (e) {
         mostrarErrores(cajaErrorEn(form), e, 'No se ha podido guardar:');
@@ -3368,6 +3424,7 @@ async function paginaProveedores() {
       ev.target.disabled = true;
       try {
         await api(`/proveedores/${p.id}`, { method: 'PUT', body: { activo: ev.target.dataset.activo === '1' } });
+        avisar(ev.target.dataset.activo === '1' ? 'Proveedor activado' : 'Proveedor desactivado');
         await pintarLista();
         await abrir(p.id, { sinHistorial: true });
       } catch (e) {
@@ -3410,6 +3467,7 @@ async function paginaProveedores() {
       const guardado = editando
         ? await api(`/proveedores/${editando.id}`, { method: 'PUT', body: Object.fromEntries(Object.entries(datos).map(([k, v]) => [k, v === '' && k !== 'clase' ? null : v])) })
         : await api('/proveedores', { method: 'POST', body: datos });
+        avisar(editando ? 'Cambios guardados' : 'Proveedor dado de alta');
       limpiar();
       abierto = guardado.id;
       await pintarLista();
@@ -3581,6 +3639,7 @@ const PAGINAS = {
     // Con los datos reales ya puestos, se enseña el contenido por partes (ver «.listo» en panel.css)
     entrarPorPartes();
     document.documentElement.classList.add('listo');
+    avisoPendiente();
   }
 })();
 
