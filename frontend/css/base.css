@@ -19,6 +19,7 @@
   /* Marca (medidos en su logo y en su web) */
   --rojo: #ea2d2d;
   --rojo-oscuro: #c91f1f;
+  --rojo-boton: #d92424;     /* el de marca, un punto más oscuro: el blanco encima se lee (5:1) */
   --rojo-suave: #fdecec;
   --gris-marca: #9aa2ab;     /* la barra inclinada del logo */
   --negro: #151515;          /* fondo de su web */
@@ -28,7 +29,7 @@
   /* Texto sobre fondo claro */
   --tinta: #17191c;
   --tinta-2: #4a5057;
-  --tinta-3: #767c83;
+  --tinta-3: #686e75;        /* antes #767c83: no llegaba a 4,5:1 sobre --fondo */
 
   /* Fondos y bordes del panel */
   --fondo: #f4f5f6;
@@ -95,6 +96,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
   outline: 2px solid var(--azul-matricula);
   outline-offset: 2px;
 }
+/* Sobre negro (menú y bandas de cabecera) el azul no se ve: blanco */
+.menu :focus-visible,
+.cabecera--portada :focus-visible,
+.portada :focus-visible { outline-color: var(--blanco); }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
@@ -197,9 +202,9 @@ p { margin: 0 0 var(--espacio-m); }
   gap: var(--espacio-s);
   min-height: 40px;
   padding: 0 20px;
-  border: 1px solid var(--rojo);
+  border: 1px solid var(--rojo-boton);
   border-radius: var(--radio-boton);
-  background: var(--rojo);
+  background: var(--rojo-boton);
   color: var(--blanco);
   font-size: .9375rem;
   font-weight: 600;
@@ -222,6 +227,10 @@ p { margin: 0 0 var(--espacio-m); }
 .boton--oscuro:hover { background: var(--negro-3); border-color: var(--negro-3); }
 
 .boton--pequeno { min-height: 32px; padding: 0 14px; font-size: .8125rem; }
+/* En el móvil, a la medida del dedo */
+@media (max-width: 760px) {
+  .boton--pequeno { min-height: 40px; }
+}
 
 
 /* --- Estado del coche ---

@@ -790,6 +790,7 @@ html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-j
 .contacto__mensaje--vacio { color: var(--tinta-3); font-style: italic; }
 .contacto__datos { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; font-size: .8125rem; }
 .contacto__datos a { color: var(--tinta-3); text-decoration: none; }
+@media (max-width: 760px) { .contacto__datos a[href^="tel:"] { padding: 8px 0; } } /* el teléfono, pulsable con el dedo */
 .contacto__datos a:hover { color: var(--tinta); text-decoration: underline; }
 
 /* El coche por el que pregunta: foto, modelo y matrícula */
@@ -1679,7 +1680,9 @@ a.contacto__coche:hover { background: var(--fondo); }
 
 @media (max-width: 1150px) {
   .ficha,
-  .portales { grid-template-columns: 1fr; }
+  .portales { grid-template-columns: minmax(0, 1fr); } /* minmax: una tabla ancha no estira la página */
+  /* Ficha del coche en una columna: arriba el dinero, la reserva y la publicación; después datos y fotos */
+  .ficha:has(#dinero) .ficha__lateral { order: -1; }
   .ficha-cabecera { grid-template-columns: 160px 1fr; }
   .cambiar-estado { grid-column: 1 / -1; }
   .recorrido { grid-template-columns: repeat(5, 1fr); row-gap: 14px; }
@@ -2147,7 +2150,8 @@ a.contacto__coche:hover { background: var(--fondo); }
 .hoy .hoy__lista { height: 340px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--linea) transparent; }
 .hoy .actividad-dia { position: sticky; top: 0; z-index: 1; } /* el día se queda arriba al bajar */
 @media (max-width: 760px) {
-  .hoy .hoy__lista { height: 420px; }
+  /* En el móvil, sin barra propia: una lista con scroll dentro de la página escondía tareas de hoy */
+  .hoy .hoy__lista { height: auto; overflow: visible; }
 }
 /* Las pestañas «Hoy» y «Próximos 7 días» hacen de título de la caja; el número es lo pendiente */
 .hoy .caja__titulo { flex-wrap: wrap; row-gap: 8px; }
@@ -2558,11 +2562,11 @@ a.contacto__coche:hover { background: var(--fondo); }
 
 /* El punto de cada tipo, con los colores de los estados (sin rojo: ese es de la gravedad) */
 .aviso-tipo--tarea { color: var(--reservado); }
-.aviso-tipo--contacto { color: var(--venta); }
+.aviso-tipo--contacto { color: var(--aviso); } /* el verde es «bien» en el resto del panel */
 .aviso-tipo--parado { color: var(--preparacion); }
 .aviso-tipo--vendido { color: var(--vendido); }
 .aviso-tipo--itv { color: var(--llegada); }
-.aviso-tipo--cobro { color: var(--azul-matricula); }
+.aviso-tipo--cobro { color: var(--peligro); }
 
 /* Sin avisos: el .vacio de siempre, con el botón al tablero */
 .avisos-vacio .boton { margin-top: 4px; }
@@ -2570,4 +2574,12 @@ a.contacto__coche:hover { background: var(--fondo); }
 @media (max-width: 600px) {
   .aviso { grid-template-columns: minmax(0, 1fr); padding: 14px 16px 14px 18px; }
   .aviso__accion { justify-self: start; }
+}
+
+/* Gastos en el móvil: el formulario plegado tras «Apuntar un gasto» */
+.gasto-form__abrir { display: none; width: 100%; }
+@media (max-width: 760px) {
+  .gasto-form__abrir { display: inline-flex; }
+  .gasto-form--plegado > form,
+  .gasto-form--plegado > .caja__titulo { display: none; }
 }

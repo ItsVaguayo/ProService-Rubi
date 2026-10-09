@@ -2223,14 +2223,23 @@ async function paginaFactura() {
       ${garantia || f.observaciones ? `<section class="factura__bloque"><h2>Condiciones</h2>${garantia ? `<p>${esc(garantia)}</p>` : ''}${f.observaciones ? `<p>${esc(f.observaciones)}</p>` : ''}</section>` : ''}
       ${empresa.registro_mercantil ? `<footer class="factura__pie">${esc(empresa.registro_mercantil)}</footer>` : ''}`;
 
-    // La barra: imprimir siempre; emitir un borrador; rectificar una emitida sin rectificar
+    // La barra: emitir un borrador (lo principal entonces); en una emitida, imprimir es lo principal.
+    // Rectificar se usa poco y no tiene vuelta: va plegado, con su campo etiquetado y doble pulsación.
+    const rectificable = f.estado === 'emitida' && f.tipo === 'venta' && !f.anulada;
     barra.innerHTML = `${f.estado === 'borrador' ? '<button class="boton boton--pequeno" type="button" data-emitir>Emitir factura</button>' : ''}
-      ${f.estado === 'emitida' && f.tipo === 'venta' && !f.anulada ? '<input name="motivo" placeholder="Motivo para rectificarla" maxlength="500"><button class="boton boton--secundario boton--pequeno" type="button" data-rectificar>Rectificar</button>' : ''}
       ${f.rectificada_por ? `<span class="nota" style="color:#c5c9ce">Rectificada por la ${esc(f.rectificada_por)}</span>` : ''}
-      ${f.estado === 'emitida' && f.tipo === 'venta' && !f.anulada ? (contratos.length
+      ${rectificable ? (contratos.length
         ? `<a class="boton boton--secundario boton--pequeno" href="contrato.html?id=${contratos[0].id}">Contrato ${esc(contratos[0].codigo)}</a>`
-        : `<a class="boton boton--pequeno" href="contrato.html?nuevo=compraventa&factura=${id}">Contrato de compraventa</a>`) : ''}
-      <button class="boton boton--secundario boton--pequeno" type="button" data-imprimir>Imprimir o guardar en PDF</button>`;
+        : `<a class="boton boton--secundario boton--pequeno" href="contrato.html?nuevo=compraventa&factura=${id}">Contrato de compraventa</a>`) : ''}
+      <button class="boton${f.estado === 'borrador' ? ' boton--secundario' : ''} boton--pequeno" type="button" data-imprimir>Imprimir o guardar en PDF</button>
+      ${rectificable ? `<details class="factura__rectificar">
+        <summary>Rectificar…</summary>
+        <div class="factura__rectificar-caja">
+          <label class="campo"><span class="campo__nombre">Motivo de la rectificación</span><input name="motivo" maxlength="500" placeholder="Error en el precio, devolución del coche…"></label>
+          <button class="boton boton--secundario boton--pequeno" type="button" data-rectificar>Rectificar la factura</button>
+          <span class="nota">Crea una rectificativa por el total y la anula. No se puede deshacer.</span>
+        </div>
+      </details>` : ''}`;
     $('[data-imprimir]', barra).addEventListener('click', () => window.print());
     $('[data-emitir]', barra)?.addEventListener('click', async (ev) => {
       ev.target.disabled = true;
@@ -2246,6 +2255,11 @@ async function paginaFactura() {
     $('[data-rectificar]', barra)?.addEventListener('click', async (ev) => {
       const motivo = $('input[name="motivo"]', barra).value.trim();
       if (!motivo) return mostrarErrores(cajaError, { lista: ['Escribe el motivo de la rectificación.'] }, 'No se ha podido rectificar:');
+      if (!ev.target.dataset.seguro) {
+        ev.target.dataset.seguro = '1';
+        ev.target.textContent = '¿Seguro? Pulsa otra vez';
+        return;
+      }
       ev.target.disabled = true;
       try {
         const r = await api(`/facturas/${id}/rectificar`, { method: 'POST', body: { motivo } });
@@ -2763,6 +2777,23 @@ async function paginaGastos() {
       mostrarErrores(errorLista, err, 'No se ha podido cambiar el pago:');
     }
   });
+
+  // En el móvil el formulario va plegado: si no, para ver la lista hay que bajar el formulario entero
+  if (matchMedia('(max-width: 760px)').matches) {
+    const abrir = document.createElement('button');
+    abrir.type = 'button';
+    abrir.className = 'boton gasto-form__abrir';
+    abrir.textContent = 'Apuntar un gasto';
+    form.before(abrir);
+    seccion.classList.add('gasto-form--plegado');
+    abrir.addEventListener('click', () => {
+      const plegado = seccion.classList.toggle('gasto-form--plegado');
+      abrir.textContent = plegado ? 'Apuntar un gasto' : 'Cerrar';
+      abrir.classList.toggle('boton--secundario', !plegado);
+      if (!plegado) form.elements.base.focus();
+    });
+    if (soloCoche || soloProveedor) abrir.click(); // viene a apuntar uno: abierto
+  }
 
   valoresIniciales();
   await cargar();
