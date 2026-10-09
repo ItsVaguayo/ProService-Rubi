@@ -16,6 +16,11 @@
    Para cambiar un color en todo el proyecto, cámbialo solo aquí. */
 
 :root {
+  /* Movimiento: las dos curvas del panel (skill animate). Entradas y salidas, --ease-out; lo que se mueve
+     de un sitio a otro en pantalla, --ease-in-out. Nada de ease-in en la interfaz. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
   /* Marca (medidos en su logo y en su web) */
   --rojo: #ea2d2d;
   --rojo-oscuro: #c91f1f;
@@ -119,8 +124,10 @@ button, .boton, summary, .segmentos label, .opciones label {
   -webkit-user-select: none;
 }
 
+/* Reducir movimiento: menos y más suave, no cero. Se quedan los fundidos y los cambios de color (ayudan a
+   ver qué ha cambiado); se van los desplazamientos y las escalas. */
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+  *, *::before, *::after { transition-property: opacity, color, background-color, border-color !important; }
 }
 
 
@@ -229,7 +236,7 @@ p { margin: 0 0 var(--espacio-m); }
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  transition: background .15s, border-color .15s, color .15s, transform .12s cubic-bezier(.23, 1, .32, 1);
+  transition: background .15s, border-color .15s, color .15s, transform .12s var(--ease-out);
 }
 .boton:active:not(:disabled) { transform: scale(.97); } /* responde al apoyar el dedo, no al soltarlo */
 
@@ -391,7 +398,7 @@ p { margin: 0 0 var(--espacio-m); }
   box-shadow: 0 8px 24px rgb(0 0 0 / .18); pointer-events: none;
   opacity: 0; transform: translate(-50%, 8px);
 }
-.aviso-ok--dentro { opacity: 1; transform: translate(-50%, 0); transition: opacity .2s cubic-bezier(.23, 1, .32, 1), transform .2s cubic-bezier(.23, 1, .32, 1); }
+.aviso-ok--dentro { opacity: 1; transform: translate(-50%, 0); transition: opacity .2s var(--ease-out), transform .2s var(--ease-out); }
 .aviso-ok--fuera { opacity: 0; transform: translate(-50%, 4px); transition: opacity .15s ease-out, transform .15s ease-out; }
 .aviso-ok::before { content: '✓'; margin-right: 8px; color: #6fd39b; font-weight: 700; }
 
@@ -399,3 +406,18 @@ p { margin: 0 0 var(--espacio-m); }
    en vez de ensanchar la página. Y dos líneas como mucho en las celdas de nombres largos (con title). */
 a[href^="mailto:"], .contacto__datos, .reserva-activa dd { overflow-wrap: anywhere; }
 .dos-lineas, .coche-celda .dos-lineas { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+
+/* Lo que se despliega (formularios de alta, la regla de un incentivo, la fila de un cobro): entra desde un
+   poco más arriba en vez de aparecer de golpe. Solo al abrir; al cerrar desaparece sin más. */
+.despliega { transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
+@starting-style { .despliega { opacity: 0; transform: translateY(-6px); } }
+
+/* Mantener pulsado para confirmar (mantenerPulsado en panel.js). Encima del botón, una copia en oscuro que
+   se descubre de izquierda a derecha mientras se aprieta: lineal, porque es progreso. Al soltar, vuelve en 200 ms. */
+.mantener { position: relative; overflow: hidden; isolation: isolate; -webkit-touch-callout: none; }
+.mantener__relleno {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--negro); color: var(--blanco); white-space: nowrap;
+  clip-path: inset(0 100% 0 0); transition: clip-path 200ms var(--ease-out);
+}
+.mantener--pulsando .mantener__relleno { clip-path: inset(0 0 0 0); transition: clip-path var(--mantener-ms, 1.5s) linear; }

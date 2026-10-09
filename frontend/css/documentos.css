@@ -154,3 +154,9 @@
 @media (max-width: 600px) { .factura-cobros__lista li { grid-template-columns: 80px minmax(0, 1fr) auto; } .factura-cobros__quitar { grid-column: 2 / -1; justify-self: end; } }
 .factura-cobros__nota { grid-column: 2 / -1; margin-top: -4px; font-size: .8125rem; overflow-wrap: anywhere; }
 @media (max-width: 600px) { .factura-cobros__nota { grid-column: 1 / -1; } }
+
+/* «Rectificar…» sale de su botón (arriba a la derecha), no del centro */
+.factura__rectificar-caja { transform-origin: top right; transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out); }
+@starting-style { .factura__rectificar[open] .factura__rectificar-caja { opacity: 0; transform: scale(0.96); } }
+.factura__rectificar-caja .mantener { width: 100%; }
+@media (max-width: 760px) { .factura__rectificar-caja { transform-origin: top left; } }

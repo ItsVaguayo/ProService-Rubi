@@ -146,6 +146,51 @@ function avisoPendiente() {
   if (texto) avisar(texto);
 }
 
+// --- Movimiento ---------------------------------------------------------------------------------
+// Poco y con motivo (skill animate): solo transform y opacity, la curva de --ease-out (base.css) y,
+// con «reducir movimiento», un fundido sin desplazamiento ni escala.
+const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+const reducirMovimiento = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Una tarjeta que acaba de cambiar de columna se asienta en su sitio: si no, aparece de golpe
+function asentar(el) {
+  if (!el?.animate) return;
+  el.animate(reducirMovimiento() ? [{ opacity: 0.6 }, { opacity: 1 }] : [{ transform: 'scale(0.98)', opacity: 0.6 }, { transform: 'none', opacity: 1 }],
+    { duration: 180, easing: EASE_OUT });
+}
+// Una barra de progreso que ya tiene su ancho nuevo crece desde el de antes (sin animar el ancho:
+// arranca encogida a la proporción anterior y vuelve a su tamaño)
+function crecerBarra(barra, antes, ahora) {
+  if (!barra?.animate || !(ahora > 0) || antes == null || antes === ahora) return;
+  if (reducirMovimiento()) { barra.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: 150, easing: EASE_OUT }); return; }
+  barra.style.transformOrigin = 'left center';
+  barra.animate([{ transform: `scaleX(${antes / ahora})` }, { transform: 'scaleX(1)' }], { duration: 300, easing: EASE_OUT });
+}
+// Mantener pulsado para confirmar algo que no tiene vuelta. El relleno avanza mientras se aprieta
+// (lineal: es progreso) y vuelve rápido al soltar. Con teclado (Intro o espacio), dos pulsaciones.
+function mantenerPulsado(boton, alConfirmar, { ms = 1500, texto = 'Mantén pulsado' } = {}) {
+  const etiqueta = boton.textContent;
+  boton.classList.add('mantener');
+  boton.innerHTML = `<span class="mantener__texto">${esc(etiqueta)}</span><span class="mantener__relleno" aria-hidden="true">${esc(etiqueta)}</span>`;
+  boton.style.setProperty('--mantener-ms', `${ms}ms`);
+  boton.title = `${texto} para confirmar`;
+  let reloj = null;
+  const soltar = () => { clearTimeout(reloj); boton.classList.remove('mantener--pulsando'); };
+  boton.addEventListener('pointerdown', (ev) => {
+    if (ev.button !== 0 || boton.disabled) return;
+    boton.setPointerCapture?.(ev.pointerId);
+    boton.classList.add('mantener--pulsando');
+    reloj = setTimeout(() => { boton.classList.remove('mantener--pulsando'); alConfirmar(); }, ms);
+  });
+  for (const fin of ['pointerup', 'pointercancel', 'pointerleave']) boton.addEventListener(fin, soltar);
+  boton.addEventListener('contextmenu', (ev) => ev.preventDefault()); // en el móvil, sin el menú de mantener pulsado
+  // Teclado: click con detail 0. La primera pregunta, la segunda confirma.
+  boton.addEventListener('click', (ev) => {
+    if (ev.detail !== 0) return;
+    if (!boton.dataset.seguro) { boton.dataset.seguro = '1'; $('.mantener__texto', boton).textContent = '¿Seguro? Pulsa otra vez'; return; }
+    alConfirmar();
+  });
+}
+
 // --- Menú común --------------------------------------------------------------------------------
 
 function prepararMenu(usuario) {
@@ -610,6 +655,7 @@ function arrastrarEnTablero(todos) {
       avisar(`${tituloCoche(v)}: ${estado(destino).nombre}`);
       cajaError.hidden = true;
       await paginaTablero();
+      asentar($(`.tablero .ficha-mini[data-id="${v.id}"]`));
     } catch (e) {
       mostrarErrores(cajaError, e, `El ${tituloCoche(v)} no puede pasar a «${nombre}» todavía:`);
     }
@@ -1803,9 +1849,11 @@ async function paginaCrm(usuario) {
     if (columna.dataset.estado === c.estado_comercial) return;
     try {
       await api(`/clientes/${c.id}`, { method: 'PUT', body: { estado_comercial: columna.dataset.estado } });
+      const movido = c.id;
       avisar(`${c.nombre}: ${ESTADOS_COMERCIALES[columna.dataset.estado]}`);
       cajaError.hidden = true;
       await pintarEmbudo();
+      asentar($(`.ficha-mini[data-id="${movido}"]`));
     } catch (e) {
       mostrarErrores(cajaError, e, `No se ha podido mover a ${c.nombre}:`);
     }
@@ -1814,7 +1862,7 @@ async function paginaCrm(usuario) {
   // --- Apuntar actividad ---
   const boton = $('.cabecera__acciones a.boton');
   const seccion = document.createElement('section');
-  seccion.className = 'caja form-tercero form-actividad';
+  seccion.className = 'caja form-tercero form-actividad despliega';
   seccion.hidden = true;
   // Si no llega la lista, al menos uno mismo: así se ve a quién se apunta, en vez de un desplegable vacío
   const responsables = gerencia ? (await api('/usuarios').catch(() => [usuario])).filter((u) => u.activo !== 0) : [];
@@ -1986,8 +2034,12 @@ async function paginaFacturas() {
     const esta = ++peticion;
     const { facturas: lista, resumen } = await api(`/facturas?${new URLSearchParams({ ...(q.trim() ? { q: q.trim() } : {}), ...(estado ? { estado } : {}) })}`);
     if (esta !== peticion) return;
+    // Lo cobrado de cada una antes de repintar: la barra de la que cambió (un cobro) crece desde ahí
+    const parteDe = (f) => (f.total_cent > 0 ? Math.min(100, Math.round((f.cobrado_cent / f.total_cent) * 100)) : 0);
+    const antes = new Map(facturas.map((f) => [f.id, parteDe(f)]));
     facturas = lista;
     tbody.innerHTML = lista.map(fila).join('');
+    for (const f of lista) crecerBarra(tbody.querySelector(`tr[data-id="${f.id}"] .cobrado__barra span`), antes.get(f.id), parteDe(f));
     $('.tabla-caja').hidden = !lista.length;
     vacio.hidden = !!lista.length;
     $('strong', vacio).textContent = estado === 'vencida' ? 'Ninguna factura vencida' : 'Ninguna factura con estos filtros';
@@ -2004,7 +2056,7 @@ async function paginaFacturas() {
     const f = facturas.find((x) => x.id === id);
     const tr = tbody.querySelector(`tr[data-id="${id}"]`);
     tr.insertAdjacentHTML('afterend', `<tr class="fila-cobro"><td colspan="8">
-        <form class="cobro-form">
+        <form class="cobro-form despliega">
           <label class="campo"><span class="campo__nombre">Importe</span><span class="con-unidad" data-unidad="€"><input name="importe" inputmode="decimal" value="${(f.saldo_cent / 100).toFixed(2).replace('.', ',')}" required></span></label>
           <label class="campo"><span class="campo__nombre">Cómo</span><select name="forma_pago">${Object.entries(FORMAS_COBRO).filter(([k]) => k !== 'senal').map(([k, n]) => `<option value="${k}"${k === formaCobro(f) ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
           <label class="campo"><span class="campo__nombre">Fecha</span><input type="date" name="fecha" value="${diaLocal()}" required></label>
@@ -2080,7 +2132,7 @@ async function prepararAltaFactura() {
   const posibles = coches.filter((v) => ['publicado', 'reservado', 'vendido', 'entregado'].includes(v.estado) && !facturados.has(v.id)
     && (v.estado !== 'entregado' || diasDesde(v.en_estado_desde) <= 60));
   const seccion = document.createElement('section');
-  seccion.className = 'caja form-tercero';
+  seccion.className = 'caja form-tercero despliega';
   seccion.id = 'nueva-factura';
   seccion.hidden = true;
   seccion.innerHTML = `
@@ -2282,6 +2334,8 @@ async function paginaFactura() {
     const [texto, clase] = ESTADO_COBRO[f.estado_cobro] ?? [f.estado_cobro, 'pendiente'];
     const cobrado = f.total_cent - f.saldo_cent;
     const parte = f.total_cent ? Math.min(100, Math.round((cobrado / f.total_cent) * 100)) : 0;
+    const parteAntes = panel.dataset.parte == null ? null : Number(panel.dataset.parte);
+    panel.dataset.parte = parte;
     const hoy = new Date(`${diaLocal()}T00:00:00`);
     const dias = f.vencimiento ? Math.round((new Date(`${f.vencimiento}T00:00:00`) - hoy) / 86400000) : null;
     const vence = !f.saldo_cent || dias == null ? '' : dias < 0 ? `<span class="dias dias--peligro">Venció hace ${-dias} ${dias === -1 ? 'día' : 'días'}</span>`
@@ -2308,6 +2362,7 @@ async function paginaFactura() {
           <button class="boton boton--secundario boton--pequeno" type="button" data-senal>Aplicar la señal de la reserva</button>
         </div>
       </form>` : ''}`;
+    crecerBarra($('.factura-cobros__barra span', panel), parteAntes, parte);
     const form = $('form', panel);
     const guardar = async (cuerpo) => {
       try {
@@ -2413,7 +2468,7 @@ async function paginaFactura() {
         <div class="factura__rectificar-caja">
           <label class="campo"><span class="campo__nombre">Motivo de la rectificación</span><input name="motivo" maxlength="500" placeholder="Error en el precio, devolución del coche…"></label>
           <button class="boton boton--secundario boton--pequeno" type="button" data-rectificar>Rectificar la factura</button>
-          <span class="nota">Crea una rectificativa por el total y la anula. No se puede deshacer.</span>
+          <span class="nota">Mantén pulsado el botón: crea una rectificativa por el total y anula esta. No se puede deshacer.</span>
         </div>
       </details>` : ''}`;
     $('[data-imprimir]', barra).addEventListener('click', () => window.print());
@@ -2429,14 +2484,11 @@ async function paginaFactura() {
         mostrarErrores(cajaError, e, 'No se ha podido emitir:');
       }
     });
-    $('[data-rectificar]', barra)?.addEventListener('click', async (ev) => {
+    const botonRectificar = $('[data-rectificar]', barra);
+    if (botonRectificar) mantenerPulsado(botonRectificar, async () => {
       const motivo = $('input[name="motivo"]', barra).value.trim();
       if (!motivo) return mostrarErrores(cajaError, { lista: ['Escribe el motivo de la rectificación.'] }, 'No se ha podido rectificar:');
-      if (!ev.target.dataset.seguro) {
-        ev.target.dataset.seguro = '1';
-        ev.target.textContent = '¿Seguro? Pulsa otra vez';
-        return;
-      }
+      const ev = { target: botonRectificar };
       ev.target.disabled = true;
       try {
         const r = await api(`/facturas/${id}/rectificar`, { method: 'POST', body: { motivo } });
@@ -3178,7 +3230,7 @@ async function paginaIncentivos(usuario) {
           <p class="incentivo__dato"><span class="rotulo">Importe</span><b class="cifra">${eurosRedondos(c.total_cent)}</b></p>
           <div class="incentivo__accion">${accion}</div>
         </div>
-        <form class="incentivo__regla" hidden>
+        <form class="incentivo__regla despliega" hidden>
           <label class="campo"><span class="campo__nombre">Regla</span>
             <select name="tipo"><option value="porcentaje_margen">Porcentaje del margen</option><option value="fijo_por_coche">Fijo por coche</option></select></label>
           <label class="campo"><span class="campo__nombre">Valor</span>

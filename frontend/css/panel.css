@@ -2632,3 +2632,16 @@ html.cargando:not(.listo) body::before {
 /* Facturas: la columna del cliente con sitio para una razón social (antes, ocho líneas en una columna estrecha) */
 .celda-cliente { min-width: 120px; max-width: 220px; }
 .tabla--gastos .coche-celda .nota.dos-lineas { display: -webkit-box; }
+
+/* Gastos en el móvil: el formulario entra al desplegarlo (en escritorio está siempre: no se anima) */
+@media (max-width: 760px) {
+  .gasto-form:not(.gasto-form--plegado) > form { transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
+  @starting-style { .gasto-form:not(.gasto-form--plegado) > form { opacity: 0; transform: translateY(-6px); } }
+  /* Menú del móvil: los enlaces se funden en 120 ms al abrirlo (se abre a menudo: casi imperceptible) */
+  .menu:has(.menu__movil[open]) .menu__buscar,
+  .menu:has(.menu__movil[open]) .menu__enlaces { transition: opacity 120ms var(--ease-out); }
+  @starting-style {
+    .menu:has(.menu__movil[open]) .menu__buscar,
+    .menu:has(.menu__movil[open]) .menu__enlaces { opacity: 0; }
+  }
+}
