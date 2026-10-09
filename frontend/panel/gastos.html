@@ -52,62 +52,26 @@
 
   <main class="contenido">
 
-    <!-- CABECERA en banda negra, como informes. Solo gerencia. -->
-    <header class="cabecera cabecera--portada">
+    <!-- CABECERA en banda negra, como Facturas: lo del mes a la derecha (sin IVA, y lo que queda por pagar).
+         Solo gerencia. «Apuntar gasto» despliega el formulario de debajo. -->
+    <header class="cabecera cabecera--portada cabecera--cifras">
       <div>
         <p class="portada__antetitulo">Gerencia</p>
         <h1>Gastos</h1>
-        <p class="contactos-resumen"><strong class="cifra">17.018,00 €</strong> sin IVA en octubre <span class="portada__alerta">· 605,75 € sin pagar</span></p>
         <p class="nota">El libro de gastos, como en Pymecar. Los de un coche y las compras en REBU se restan de su margen.</p>
+        <p class="cabecera__acciones-factura">
+          <a class="boton" href="#apuntar" data-apuntar>Apuntar gasto</a>
+          <a class="boton boton--secundario" href="libros.html?libro=gastos">Libro para el gestor</a>
+        </p>
       </div>
-      <form class="cabecera__acciones">
-        <label class="campo">
-          <span class="campo__nombre">Mes</span>
-          <select name="mes">
-            <option value="2026-10" selected>Octubre 2026</option>
-            <option value="2026-09">Septiembre 2026</option>
-            <option value="2026-08">Agosto 2026</option>
-          </select>
-        </label>
-        <a class="boton boton--secundario" href="#">Exportar para el gestor</a>
-      </form>
+      <div class="portada__mes">
+        <p class="portada__mes-titulo">Octubre 2026</p>
+        <dl class="portada__cifras">
+          <div><dt>Sin IVA<small>8 gastos · septiembre 15.870 €</small></dt><dd class="cifra">17.018 €</dd></div>
+          <div><dt>Sin pagar<small>3 gastos</small></dt><dd class="cifra baja">605,75 €</dd></div>
+        </dl>
+      </div>
     </header>
-
-    <!-- TOTAL DEL MES POR TIPO, sin IVA (T07b). Los tipos son los de Pymecar y los de la API de gastos
-         (api/src/modules/gastos/campos.js): general, irpf, comision, rebu y vehiculo. Pulsar uno filtra
-         la lista de abajo. -->
-    <section class="cifras cifras--6" aria-label="Gastos del mes por tipo">
-      <div class="cifras__dato">
-        <span class="rotulo">Total del mes</span>
-        <strong class="cifra">17.018,00 €</strong>
-        <span class="nota">Septiembre: 15.870,40 €</span>
-      </div>
-      <a class="cifras__dato cifras__dato--enlace" href="#lista">
-        <span class="rotulo"><i class="punto gasto--general"></i>General</span>
-        <strong class="cifra">503,00 €</strong>
-        <span class="nota">2 gastos</span>
-      </a>
-      <a class="cifras__dato cifras__dato--enlace" href="#lista">
-        <span class="rotulo"><i class="punto gasto--irpf"></i>Con IRPF</span>
-        <strong class="cifra">1.380,00 €</strong>
-        <span class="nota">2 gastos · 255,00 € retenidos</span>
-      </a>
-      <a class="cifras__dato cifras__dato--enlace" href="#lista">
-        <span class="rotulo"><i class="punto gasto--comision"></i>Comisiones</span>
-        <strong class="cifra">300,00 €</strong>
-        <span class="nota">1 gasto</span>
-      </a>
-      <a class="cifras__dato cifras__dato--enlace" href="#lista">
-        <span class="rotulo"><i class="punto gasto--rebu"></i>REBU</span>
-        <strong class="cifra">14.200,00 €</strong>
-        <span class="nota">1 compra</span>
-      </a>
-      <a class="cifras__dato cifras__dato--enlace" href="#lista">
-        <span class="rotulo"><i class="punto gasto--vehiculo"></i>Vehículo</span>
-        <strong class="cifra">635,00 €</strong>
-        <span class="nota">2 gastos</span>
-      </a>
-    </section>
 
     <!-- APUNTAR UN GASTO (T07b). Dos datos en vez de una categoría:
          - TIPO: cómo se calcula y a qué libro va. general, irpf, comision, rebu, vehiculo.
@@ -128,8 +92,8 @@
          - «Ya está pagado» no va en el alta: después, PATCH /api/gastos/:id/pagado
            { pagado: true, forma_pago }. Con la casilla sin marcar, forma_pago va en el alta (cómo se pagará). -->
 
-    <!-- Formulario 1 de 2: GASTO GENERAL -->
-    <section class="caja gasto-form" aria-labelledby="gasto-titulo">
+    <!-- El formulario: con «Gasto con IRPF» salen la retención y su importe -->
+    <section class="caja gasto-form despliega" id="apuntar" aria-labelledby="gasto-titulo" hidden>
       <div class="caja__titulo"><h2 id="gasto-titulo">Apuntar un gasto</h2><span class="nota">Registro nº <b class="cifra">314</b></span></div>
       <form class="gasto-form__campos gasto-form__campos--tipo">
         <fieldset class="opciones opciones--pequenas gasto-form__categoria">
@@ -240,122 +204,7 @@
         <div class="gasto-form__pie">
           <label class="casilla"><input type="checkbox" name="pagado" checked> Ya está pagado</label>
           <p class="nota gasto-form__total">120,00 + 25,20 de IVA = <b class="cifra">145,20 €</b></p>
-          <button class="boton" type="submit">Apuntar gasto</button>
-        </div>
-      </form>
-    </section>
-
-    <!-- Formulario 2 de 2: GASTO CON IRPF. Aparecen el % de retención (15 % por defecto, 19 % en
-         alquileres, 7 % el reducido) y su importe. Total a pagar = base + IVA − retención. -->
-    <section class="caja gasto-form" aria-labelledby="gasto-irpf-titulo">
-      <div class="caja__titulo"><h2 id="gasto-irpf-titulo">Apuntar un gasto</h2><span class="nota">Registro nº <b class="cifra">314</b></span></div>
-      <form class="gasto-form__campos gasto-form__campos--tipo">
-        <fieldset class="opciones opciones--pequenas gasto-form__categoria">
-          <legend class="campo__nombre">Tipo <em>*</em></legend>
-          <label><input type="radio" name="tipo" value="general"><span><i class="punto gasto--general"></i>Gasto general</span></label>
-          <label><input type="radio" name="tipo" value="irpf" checked><span><i class="punto gasto--irpf"></i>Gasto con IRPF</span></label>
-          <label><input type="radio" name="tipo" value="comision"><span><i class="punto gasto--comision"></i>Comisiones agentes</span></label>
-          <label><input type="radio" name="tipo" value="rebu"><span><i class="punto gasto--rebu"></i>Factura con REBU</span></label>
-          <label><input type="radio" name="tipo" value="vehiculo"><span><i class="punto gasto--vehiculo"></i>Gasto vehículo</span></label>
-        </fieldset>
-        <label class="campo">
-          <span class="campo__nombre">Concepto <em>*</em></span>
-          <select name="concepto">
-            <option value="alquileres">Alquileres</option>
-            <option value="carburantes">Carburantes</option>
-            <option value="comisiones">Comisiones</option>
-            <option value="compras">Compras</option>
-            <option value="electricidad">Electricidad</option>
-            <option value="gestorias" selected>Gestorías</option>
-            <option value="papelerias">Papelerías</option>
-            <option value="publicidad">Publicidad</option>
-            <option value="vehiculos">Vehículos</option>
-          </select>
-        </label>
-        <label class="campo">
-          <span class="campo__nombre">Fecha <em>*</em></span>
-          <input type="date" name="fecha" value="2026-10-07">
-        </label>
-        <label class="campo">
-          <span class="campo__nombre">Nº de su factura</span>
-          <input name="factura_proveedor" autocomplete="off" placeholder="F-26-000153" value="G-1026">
-        </label>
-        <fieldset class="opciones opciones--pequenas gasto-form__quien">
-          <legend class="campo__nombre">A quién</legend>
-          <label><input type="radio" name="quien" value="proveedor" checked><span>Proveedor</span></label>
-          <label><input type="radio" name="quien" value="cliente"><span>Cliente</span></label>
-        </fieldset>
-        <label class="campo gasto-form__tercero gasto-form__proveedor">
-          <span class="campo__nombre">Proveedor <em>*</em></span>
-          <select name="proveedor_id">
-            <option value="">Elige el proveedor</option>
-            <option selected>Gestoria Arboç</option>
-            <option>Finques Rubí SL</option>
-            <option>Advocats Soler</option>
-          </select>
-        </label>
-        <label class="campo gasto-form__tercero gasto-form__cliente">
-          <span class="campo__nombre">Cliente <em>*</em></span>
-          <select name="cliente_id">
-            <option value="">Elige el cliente</option>
-            <option>Laura Gil Ferrer</option>
-            <option>Pau Serra Vidal</option>
-            <option>Reformas Vallès SL</option>
-          </select>
-        </label>
-        <label class="campo solo-coche">
-          <span class="campo__nombre">Coche <em>*</em></span>
-          <select name="vehiculo_id">
-            <option value="">Elige el coche</option>
-            <option>8890 KZT · Audi A3</option>
-            <option>4473 LBW · Citroën C3</option>
-            <option>4821 LKM · Seat Ateca</option>
-          </select>
-        </label>
-        <label class="campo gasto-form__concepto">
-          <span class="campo__nombre">Observaciones</span>
-          <input name="descripcion" autocomplete="off" placeholder="Qué es, para buscarlo luego" value="Contabilidad de octubre">
-        </label>
-        <label class="campo">
-          <span class="campo__nombre">Importe sin IVA <em>*</em></span>
-          <span class="con-unidad" data-unidad="€"><input name="base" inputmode="decimal" value="180,00"></span>
-        </label>
-        <label class="campo">
-          <span class="campo__nombre">IVA</span>
-          <select name="iva_pct">
-            <option value="21" selected>21 %</option>
-            <option value="10">10 %</option>
-            <option value="4">4 %</option>
-            <option value="0">Sin IVA</option>
-          </select>
-        </label>
-        <label class="campo">
-          <span class="campo__nombre">Forma de pago</span>
-          <select name="forma_pago">
-            <option value="transferencia" selected>Transferencia</option>
-            <option value="contado">Contado</option>
-            <option value="tarjeta">Tarjeta</option>
-            <option value="a_la_vista">A la vista</option>
-            <option value="pago_30">Pago a 30 días</option>
-            <option value="pago_30_60">Pago a 30 y 60 días</option>
-          </select>
-        </label>
-        <!-- RETENCIÓN: solo con «Gasto con IRPF». Los % son los que tiene Pymecar. -->
-        <label class="campo solo-irpf">
-          <span class="campo__nombre">Retención IRPF</span>
-          <select name="irpf_pct">
-            <option value="15" selected>15 %</option>
-            <option value="19">19 % (alquiler)</option>
-            <option value="7">7 %</option>
-          </select>
-        </label>
-        <label class="campo solo-irpf">
-          <span class="campo__nombre">Importe retenido</span>
-          <span class="con-unidad" data-unidad="€"><input inputmode="decimal" value="27,00" readonly aria-label="Importe retenido"></span>
-        </label>
-        <div class="gasto-form__pie">
-          <label class="casilla"><input type="checkbox" name="pagado"> Ya está pagado</label>
-          <p class="nota gasto-form__total">180,00 + 37,80 de IVA − 27,00 de IRPF = <b class="cifra">190,80 €</b></p>
+          <button class="boton boton--secundario" type="button" data-cancelar>Cerrar</button>
           <button class="boton" type="submit">Apuntar gasto</button>
         </div>
       </form>
@@ -365,41 +214,44 @@
          izquierda: sin pagar. Con decimales: aquí los céntimos sí importan.
          Columnas como el libro de gastos de Pymecar: nº de registro, fecha, su nº de factura, a quién,
          concepto, observaciones y total, más IVA e IRPF por separado. -->
-    <div class="tablero-cabecera" id="lista">
-      <div>
-        <h2>Gastos de octubre</h2>
-        <p class="tablero-cabecera__pista">8 gastos · el más reciente arriba</p>
-      </div>
-      <form class="filtros filtros--gastos">
-        <fieldset class="segmentos" aria-label="Tipo">
-          <label><input type="radio" name="filtro-tipo" value="" checked><span>Todos</span></label>
-          <label><input type="radio" name="filtro-tipo" value="general"><span>General</span></label>
-          <label><input type="radio" name="filtro-tipo" value="irpf"><span>IRPF</span></label>
-          <label><input type="radio" name="filtro-tipo" value="comision"><span>Comisiones</span></label>
-          <label><input type="radio" name="filtro-tipo" value="rebu"><span>REBU</span></label>
-          <label><input type="radio" name="filtro-tipo" value="vehiculo"><span>Vehículo</span></label>
-        </fieldset>
-        <label class="campo filtros-gastos__concepto">
-          <span class="oculto">Concepto</span>
-          <select name="filtro-concepto">
-            <option value="">Todos los conceptos</option>
-            <option value="alquileres">Alquileres</option>
-            <option value="carburantes">Carburantes</option>
-            <option value="comisiones">Comisiones</option>
-            <option value="compras">Compras</option>
-            <option value="electricidad">Electricidad</option>
-            <option value="gestorias">Gestorías</option>
-            <option value="papelerias">Papelerías</option>
-            <option value="publicidad">Publicidad</option>
-            <option value="vehiculos">Vehículos</option>
-          </select>
-        </label>
-        <fieldset class="segmentos" aria-label="Pago">
-          <label><input type="radio" name="filtro-pago" value="" checked><span>Todos</span></label>
-          <label><input type="radio" name="filtro-pago" value="0"><span>Sin pagar</span></label>
-        </fieldset>
-      </form>
-    </div>
+    <form class="filtros filtros--gastos" id="lista">
+      <label class="campo filtros-gastos__mes">
+        <span class="oculto">Mes</span>
+        <select name="mes">
+          <option value="2026-10" selected>Octubre 2026</option>
+          <option value="2026-09">Septiembre 2026</option>
+        </select>
+      </label>
+      <fieldset class="segmentos" aria-label="Tipo">
+        <label><input type="radio" name="filtro-tipo" value="" checked><span>Todos</span></label>
+        <label><input type="radio" name="filtro-tipo" value="general"><span><i class="punto gasto--general"></i>General<span class="segmentos__n">2</span></span></label>
+        <label><input type="radio" name="filtro-tipo" value="irpf"><span><i class="punto gasto--irpf"></i>IRPF<span class="segmentos__n">2</span></span></label>
+        <label><input type="radio" name="filtro-tipo" value="comision"><span><i class="punto gasto--comision"></i>Comisiones<span class="segmentos__n">1</span></span></label>
+        <label><input type="radio" name="filtro-tipo" value="rebu"><span><i class="punto gasto--rebu"></i>REBU<span class="segmentos__n">1</span></span></label>
+        <label><input type="radio" name="filtro-tipo" value="vehiculo"><span><i class="punto gasto--vehiculo"></i>Vehículo<span class="segmentos__n">2</span></span></label>
+      </fieldset>
+      <label class="campo filtros-gastos__concepto">
+        <span class="oculto">Concepto</span>
+        <select name="filtro-concepto">
+          <option value="">Todos los conceptos</option>
+          <option value="alquileres">Alquileres</option>
+          <option value="carburantes">Carburantes</option>
+          <option value="comisiones">Comisiones</option>
+          <option value="compras">Compras</option>
+          <option value="electricidad">Electricidad</option>
+          <option value="gestorias">Gestorías</option>
+          <option value="papelerias">Papelerías</option>
+          <option value="publicidad">Publicidad</option>
+          <option value="vehiculos">Vehículos</option>
+        </select>
+      </label>
+      <fieldset class="segmentos" aria-label="Pago">
+        <label><input type="radio" name="filtro-pago" value="" checked><span>Todos</span></label>
+        <label><input type="radio" name="filtro-pago" value="0"><span><i class="punto cobro--vencida"></i>Sin pagar</span></label>
+      </fieldset>
+    </form>
+
+    <p class="lista-pie"><span class="lista-pie__cuantos">8 gastos · el más reciente arriba</span></p>
 
     <div class="tabla-caja">
       <table class="tabla tabla--tarjetas tabla--gastos">
@@ -408,7 +260,7 @@
             <th>Nº</th>
             <th>Fecha</th>
             <th>Gasto</th>
-            <th>Tipo y concepto</th>
+            <th>Tipo</th>
             <th class="derecha">Sin IVA</th>
             <th class="derecha">IVA</th>
             <th class="derecha">IRPF</th>
@@ -421,7 +273,7 @@
             <td class="cifra gasto-registro" data-rotulo="Nº de registro">313</td>
             <td class="cifra" data-rotulo="Fecha">7 oct</td>
             <td class="t-titulo"><span class="coche-celda"><b>ITV y cambio de titular</b><span class="nota">ITV Rubí · fra. IT-26-4418</span><span class="nota">Citroën C3 · <span class="matricula">4473 LBW</span></span></span></td>
-            <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--vehiculo">Vehículo</span><span class="gasto-concepto">Vehículos</span></span></td>
+            <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--vehiculo">Vehículo</span></span></td>
             <td class="derecha cifra" data-rotulo="Sin IVA">95,00 €</td>
             <td class="derecha cifra" data-rotulo="IVA 21 %">19,95 €</td>
             <td class="derecha" data-rotulo="IRPF"><span class="nota">—</span></td>
@@ -432,7 +284,7 @@
             <td class="cifra gasto-registro" data-rotulo="Nº de registro">312</td>
             <td class="cifra" data-rotulo="Fecha">6 oct</td>
             <td class="t-titulo"><span class="coche-celda"><b>Taller: cambio de distribución</b><span class="nota">Tallers Can Fatjó · fra. F-26-000153</span><span class="nota">Audi A3 · <span class="matricula">8890 KZT</span></span></span></td>
-            <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--vehiculo">Vehículo</span><span class="gasto-concepto">Vehículos</span></span></td>
+            <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--vehiculo">Vehículo</span></span></td>
             <td class="derecha cifra" data-rotulo="Sin IVA">540,00 €</td>
             <td class="derecha cifra" data-rotulo="IVA 21 %">113,40 €</td>
             <td class="derecha" data-rotulo="IRPF"><span class="nota">—</span></td>
@@ -443,7 +295,7 @@
             <td class="cifra gasto-registro" data-rotulo="Nº de registro">311</td>
             <td class="cifra" data-rotulo="Fecha">5 oct</td>
             <td class="t-titulo"><span class="coche-celda"><b>Comisión por la venta de la Vito</b><span class="nota">Jordi Mas, comisionista · fra. 07/2026</span></span></td>
-            <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--comision">Comisión</span><span class="gasto-concepto">Comisiones</span></span></td>
+            <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--comision">Comisión</span></span></td>
             <td class="derecha cifra" data-rotulo="Sin IVA">300,00 €</td>
             <td class="derecha" data-rotulo="IVA"><span class="nota">Sin IVA</span></td>
             <td class="derecha" data-rotulo="IRPF"><span class="nota">—</span></td>
@@ -454,7 +306,7 @@
             <td class="cifra gasto-registro" data-rotulo="Nº de registro">310</td>
             <td class="cifra" data-rotulo="Fecha">5 oct</td>
             <td class="t-titulo"><span class="coche-celda"><b>Compra del Seat Ateca</b><span class="nota">Autos Vallès SL · fra. AV-26-0212</span><span class="nota">Seat Ateca · <span class="matricula">4821 LKM</span></span></span></td>
-            <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--rebu">REBU</span><span class="gasto-concepto">Compras</span></span></td>
+            <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--rebu">REBU</span></span></td>
             <td class="derecha cifra" data-rotulo="Sin IVA">14.200,00 €</td>
             <td class="derecha" data-rotulo="IVA"><span class="nota">REBU</span></td>
             <td class="derecha" data-rotulo="IRPF"><span class="nota">—</span></td>

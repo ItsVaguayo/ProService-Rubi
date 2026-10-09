@@ -2897,12 +2897,9 @@ function aCentimos(texto) {
 const mesTitulo = (mes) => mayuscula(nombreMes(mes)); // «Octubre 2026»
 
 async function paginaGastos() {
-  // El segundo formulario de la maqueta solo enseñaba el caso con IRPF: aquí es uno solo
-  $('#gasto-irpf-titulo')?.closest('section').remove();
-  const seccion = $('#gasto-titulo').closest('section');
+  const seccion = $('#apuntar');
   const form = $('form', seccion);
   const errorForm = cajaErrorEn(form);
-  const cabecera = $('.cabecera__acciones');
   const filtros = $('.filtros--gastos');
   const cuerpo = $('.tabla--gastos tbody');
   const pie = $('.tabla--gastos tfoot tr');
@@ -2912,7 +2909,7 @@ async function paginaGastos() {
   // Meses: los últimos 12
   const hoy = new Date();
   const meses = Array.from({ length: 12 }, (_, i) => diaLocal(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)).slice(0, 7));
-  const selMes = cabecera.elements.mes;
+  const selMes = filtros.elements.mes;
   selMes.innerHTML = meses.map((m) => `<option value="${m}">${esc(mesTitulo(m))}</option>`).join('');
   // Un mes que no está en la lista (de la dirección o de un gasto antiguo) se añade antes de elegirlo
   const elegirMes = (mes) => {
@@ -2921,9 +2918,6 @@ async function paginaGastos() {
   };
   if (MES_RE.test(params.get('mes') ?? '')) elegirMes(params.get('mes'));
   const soloProveedor = params.get('proveedor'); // desde la ficha del proveedor
-  const exportar = $('a.boton', cabecera);
-  exportar.href = 'libros.html?libro=gastos';
-  exportar.textContent = 'Libro para el gestor';
 
   // Desplegables del formulario
   const [proveedores, clientes, coches] = await Promise.all([api('/proveedores'), api('/clientes'), api('/vehiculos')]);
@@ -3025,6 +3019,8 @@ async function paginaGastos() {
 
   // Lista: se pide el mes entero (las cifras de arriba son del mes) y se filtra aquí
   let delMes = [];
+  // El concepto que ya dice el tipo («Vehículo» y «Vehículos»): debajo solo sale si es otro
+  const CONCEPTO_DEL_TIPO = { vehiculo: 'vehiculos', comision: 'comisiones', rebu: 'compras' };
   const fila = (g) => {
     const quien = g.proveedor_nombre ?? g.cliente_nombre ?? g.usuario_nombre;
     // Los costes de la ficha del coche se llamaban todos «Desde la ficha del coche»: se nombran por lo que son
@@ -3043,7 +3039,7 @@ async function paginaGastos() {
         <td class="cifra gasto-registro" data-rotulo="Nº de registro">${g.numero}</td>
         <td class="cifra" data-rotulo="Fecha">${esc(new Date(`${g.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</td>
         <td class="t-titulo"><span class="coche-celda"><b class="dos-lineas" title="${esc(titulo)}">${esc(titulo)}</b>${sub ? `<span class="nota dos-lineas" title="${esc(sub)}">${esc(sub)}</span>` : ''}${coche}</span></td>
-        <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--${esc(g.tipo)}">${esc(TIPOS_GASTO[g.tipo])}</span><span class="gasto-concepto">${esc(CONCEPTOS_GASTO[g.concepto])}</span></span></td>
+        <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--${esc(g.tipo)}">${esc(TIPOS_GASTO[g.tipo])}</span>${CONCEPTO_DEL_TIPO[g.tipo] === g.concepto ? '' : `<span class="gasto-concepto">${esc(CONCEPTOS_GASTO[g.concepto])}</span>`}</span></td>
         <td class="derecha cifra" data-rotulo="Sin IVA">${euros2(g.base_cent)}</td>
         <td class="derecha cifra" data-rotulo="IVA${g.iva_pct ? ` ${g.iva_pct} %` : ''}">${iva}</td>
         <td class="derecha cifra" data-rotulo="IRPF${g.irpf_pct ? ` ${g.irpf_pct} %` : ''}">${g.irpf_cent ? `−${euros2(g.irpf_cent)}` : '<span class="nota">—</span>'}</td>
@@ -3063,8 +3059,7 @@ async function paginaGastos() {
     $('.tabla-caja').hidden = !lista.length;
     vacio.hidden = !!lista.length;
     const mes = mesTitulo(selMes.value).split(' ')[0].toLowerCase();
-    $('#lista h2').textContent = `Gastos de ${mes}${soloCoche ? ' de este coche' : ''}`;
-    $('#lista .tablero-cabecera__pista').textContent = `${lista.length} ${lista.length === 1 ? 'gasto' : 'gastos'} · el más reciente arriba`;
+    $('.lista-pie__cuantos').textContent = `${cuenta(lista.length, 'gasto', 'gastos')}${soloCoche ? ' de este coche' : ''} · el más reciente arriba`;
     const celdas = pie.querySelectorAll('td');
     celdas[0].textContent = tipo || concepto || pago ? 'Total con este filtro' : `Total de ${mes}`;
     celdas[1].textContent = euros2(suma(lista, 'base_cent'));
@@ -3074,6 +3069,7 @@ async function paginaGastos() {
     celdas[4].innerHTML = `<b>${euros2(suma(lista, 'total_cent'))}</b>`;
   };
 
+  const nombre = (mes) => mesTitulo(mes).split(' ')[0].toLowerCase();
   const anterior = (mes) => { const [a, m] = mes.split('-').map(Number); return diaLocal(new Date(a, m - 2, 1)).slice(0, 7); };
   const cargar = async () => {
     const mes = selMes.value;
@@ -3081,31 +3077,27 @@ async function paginaGastos() {
     const [actual, previo] = await Promise.all([api(`/gastos?mes=${mes}${extra}`), api(`/gastos?mes=${anterior(mes)}${extra}`)]);
     delMes = actual.gastos;
     const t = actual.totales;
-    const nombre = mesTitulo(mes).split(' ')[0].toLowerCase();
-    $('.contactos-resumen').innerHTML = `<strong class="cifra">${euros2(t.base_cent)}</strong> sin IVA en ${esc(nombre)}${t.pendientes ? ` <span class="portada__alerta">· ${euros2(t.pendiente_cent)} sin pagar</span>` : ''}`;
-    // Tarjetas: el total y una por tipo
-    const tarjetas = document.querySelectorAll('.cifras--6 .cifras__dato');
-    $('.cifra', tarjetas[0]).textContent = euros2(t.base_cent);
-    $('.nota', tarjetas[0]).textContent = `${mesTitulo(anterior(mes)).split(' ')[0]}: ${euros2(previo.totales.base_cent)}`;
-    Object.keys(TIPOS_GASTO).forEach((tipo, i) => {
-      const caja = tarjetas[i + 1];
-      const x = t.por_tipo[tipo] ?? { gastos: 0, base_cent: 0, irpf_cent: 0 };
-      caja.dataset.tipo = tipo;
-      $('.cifra', caja).textContent = euros2(x.base_cent);
-      const cuantos = `${x.gastos} ${tipo === 'rebu' ? (x.gastos === 1 ? 'compra' : 'compras') : x.gastos === 1 ? 'gasto' : 'gastos'}`;
-      $('.nota', caja).textContent = tipo === 'irpf' && x.irpf_cent ? `${cuantos} · ${euros2(x.irpf_cent)} retenidos` : cuantos;
-    });
+    // Cabecera: el mes, sin IVA y lo que queda por pagar
+    $('.portada__mes-titulo').textContent = mesTitulo(mes) + (soloCoche ? ' · este coche' : '');
+    const [sinIva, sinPagar] = document.querySelectorAll('.portada__cifras > div');
+    $('dd', sinIva).textContent = euros2(t.base_cent);
+    $('small', sinIva).textContent = `${cuenta(delMes.length, 'gasto', 'gastos')} · ${nombre(anterior(mes))} ${euros2(previo.totales.base_cent)}`;
+    $('dd', sinPagar).textContent = euros2(t.pendiente_cent);
+    $('dd', sinPagar).classList.toggle('baja', !!t.pendientes);
+    $('small', sinPagar).textContent = t.pendientes ? cuenta(t.pendientes, 'gasto', 'gastos') : 'Todo pagado';
+    // Cuántos hay de cada tipo, en su filtro (y lo que suman, al pasar por encima)
+    for (const tipo of Object.keys(TIPOS_GASTO)) {
+      const segmento = $(`input[name="filtro-tipo"][value="${tipo}"] + span`, filtros);
+      let num = $('.segmentos__n', segmento);
+      if (!num) { num = document.createElement('span'); num.className = 'segmentos__n'; segmento.append(num); }
+      const x = t.por_tipo[tipo];
+      num.textContent = x?.gastos || '';
+      segmento.title = x?.gastos ? `${euros2(x.base_cent)} sin IVA` : '';
+    }
     pintarLista();
   };
 
-  // Pulsar una tarjeta filtra la lista por su tipo
-  $('.cifras--6').addEventListener('click', (ev) => {
-    const caja = ev.target.closest('[data-tipo]');
-    if (!caja) return;
-    filtros.querySelector(`input[name="filtro-tipo"][value="${caja.dataset.tipo}"]`).checked = true;
-    pintarLista();
-  });
-  filtros.addEventListener('change', pintarLista);
+  filtros.addEventListener('change', (ev) => { if (ev.target !== selMes) pintarLista(); });
   selMes.addEventListener('change', () => {
     history.replaceState(null, '', `?${new URLSearchParams({ mes: selMes.value, ...(soloCoche ? { vehiculo: soloCoche } : {}) })}`);
     cargar().catch((err) => mostrarErrores(errorLista, err, 'No se ha podido cargar el mes:'));
@@ -3139,22 +3131,16 @@ async function paginaGastos() {
     }
   });
 
-  // En el móvil el formulario va plegado: si no, para ver la lista hay que bajar el formulario entero
-  if (matchMedia('(max-width: 760px)').matches) {
-    const abrir = document.createElement('button');
-    abrir.type = 'button';
-    abrir.className = 'boton gasto-form__abrir';
-    abrir.textContent = 'Apuntar un gasto';
-    form.before(abrir);
-    seccion.classList.add('gasto-form--plegado');
-    abrir.addEventListener('click', () => {
-      const plegado = seccion.classList.toggle('gasto-form--plegado');
-      abrir.textContent = plegado ? 'Apuntar un gasto' : 'Cerrar';
-      abrir.classList.toggle('boton--secundario', !plegado);
-      if (!plegado) form.elements.base.focus();
-    });
-    if (soloCoche || soloProveedor) abrir.click(); // viene a apuntar uno: abierto
-  }
+  // El formulario, plegado tras «Apuntar gasto», como las altas de las demás páginas
+  const abrir = (ev) => {
+    ev?.preventDefault();
+    seccion.hidden = false;
+    seccion.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    form.elements.base.focus({ preventScroll: true });
+  };
+  $('[data-apuntar]').addEventListener('click', abrir);
+  $('[data-cancelar]', form).addEventListener('click', () => { seccion.hidden = true; errorForm.hidden = true; valoresIniciales(); });
+  if (soloCoche || soloProveedor || location.hash === '#apuntar') abrir(); // viene a apuntar uno: abierto
 
   valoresIniciales();
   await cargar();
