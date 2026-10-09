@@ -155,13 +155,20 @@ export async function diagnosticar(cfg, fetchImpl = fetch) {
 
 // --- Sincronización ------------------------------------------------------------------------------
 
+// El usuario de WordPress es Editor, y un Editor puede guardar HTML sin filtrar: un «<script>» escrito en el
+// modelo saldría tal cual en la web pública. Ningún dato de un coche lleva < ni >, así que se quitan.
+export const sinEtiquetas = (texto) => String(texto).replace(/[<>]/g, '');
+
 export function convertir(valor, { formato, valores } = {}) {
   if (valor === null || valor === undefined || valor === '') return null;
   if (valores && Object.hasOwn(valores, valor)) return valores[valor];
   if (formato === 'euros') return Math.round(valor / 100);
   if (formato === 'numero') return Number(valor);
-  if (formato === 'capitalizar') return String(valor).charAt(0).toLocaleUpperCase('es') + String(valor).slice(1);
-  return String(valor);
+  if (formato === 'capitalizar') {
+    const texto = sinEtiquetas(valor);
+    return texto.charAt(0).toLocaleUpperCase('es') + texto.slice(1);
+  }
+  return sinEtiquetas(valor);
 }
 
 /** Ajusta un valor al tipo que anuncia el esquema REST del campo (la web manda). */
@@ -229,10 +236,10 @@ async function sincronizarSinBloqueo(db, cfg, { forzar, fetchImpl }) {
 
 async function publicarCoche(ctx, v, vinculo) {
   const { db, cfg, d, pedir } = ctx;
-  const titulo = [v.marca, v.modelo, v.version].filter(Boolean).join(' ');
+  const titulo = sinEtiquetas([v.marca, v.modelo, v.version].filter(Boolean).join(' '));
   const cuerpo = { title: titulo, status: 'publish' };
 
-  if (d.rutaMarca && v.marca) cuerpo[d.rutaMarca] = [await idMarca(ctx, v.marca)];
+  if (d.rutaMarca && v.marca) cuerpo[d.rutaMarca] = [await idMarca(ctx, sinEtiquetas(v.marca))];
 
   let fotosCompletas = true;
   if (d.acf.expuesto) {

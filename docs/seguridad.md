@@ -18,7 +18,13 @@ Tests en `api/test/seguridad.test.js`.
 
 ## Al montar el servidor
 
-1. **HTTPS** con nginx y Let's Encrypt. El HTTP solo redirige a HTTPS. La API escucha en `127.0.0.1:3001`, nunca abierta a internet.
+1. **HTTPS** con nginx y Let's Encrypt. El HTTP solo redirige a HTTPS. La API escucha en `127.0.0.1:3001`, nunca abierta a internet. En el `location` que pasa a la API, nginx tiene que mandar estas cabeceras:
+   ```
+   proxy_set_header Host              $host;
+   proxy_set_header X-Forwarded-For   $remote_addr;
+   proxy_set_header X-Forwarded-Proto $scheme;
+   ```
+   Sin `X-Forwarded-Proto`, la API cree que la petición llegó por HTTP. Entonces rechaza con 403 todo lo que manda el panel (el origen `https://` no coincide con `http://`) y no pone HSTS. Sin `X-Forwarded-For`, todos los intentos de login y los envíos del formulario de contacto parecen venir de la misma IP (`127.0.0.1`) y comparten el mismo límite.
 2. **Firewall**: solo 80 y 443 abiertos, y SSH con clave (sin contraseña).
 3. **`NODE_ENV=production`** en el `.env` del servidor. Sin `ACCESO_PRUEBAS`.
 4. **Copias**, cada noche con cron:
