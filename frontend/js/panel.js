@@ -391,7 +391,7 @@ async function paginaTablero(usuario = usuarioTablero) {
 
   // Para hoy: los avisos (urgentes primero) y lo que solo sabe el tablero: entregar, fotos y taller
   const tareas = [];
-  const IR_AVISO = { citas: 'Ver agenda', tareas_vencidas: 'Ver', contactos_sin_atender: 'Llamar', coches_parados: 'Revisar precio', vendidos_publicados: 'Retirar', itv: 'Ver', cobros_vencidos: 'Cobrar' };
+  const IR_AVISO = { citas: 'Ver agenda', tareas_vencidas: 'Ver', contactos_sin_atender: 'Llamar', coches_parados: 'Revisar precio', vendidos_publicados: 'Retirar', anuncios_por_retirar: 'Retirar', itv: 'Ver', cobros_vencidos: 'Cobrar' };
   for (const a of (avisos ?? []).filter(enUbicacion)) tareas.push({ texto: a.texto, url: a.enlace, ir: IR_AVISO[a.tipo] ?? 'Ver', urgente: a.gravedad === 'alta' });
   const hoy = (texto, v, ir, urgente) => tareas.push({ texto, url: urlCoche(v), ir, urgente });
   for (const v of enTablero) {
@@ -3877,6 +3877,7 @@ const TIPOS_AVISO = {
   contactos_sin_atender: { nombre: 'Contacto sin atender', punto: 'contacto' },
   coches_parados: { nombre: 'Coche parado', punto: 'parado' },
   vendidos_publicados: { nombre: 'Vendido y publicado', punto: 'vendido' },
+  anuncios_por_retirar: { nombre: 'Anuncio por retirar', punto: 'vendido' },
   itv: { nombre: 'ITV', punto: 'itv' },
   citas: { nombre: 'Prueba de conducción', punto: 'cita' },
   cobros_vencidos: { nombre: 'Cobro vencido', punto: 'cobro' },

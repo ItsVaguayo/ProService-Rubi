@@ -278,6 +278,7 @@ Cada aviso lleva `tipo`, `gravedad` (`alta` o `media`), `texto` (corto, para la 
 | `contactos_sin_atender` | Contacto de la web sin `atendido_en` y recibido hace más de 24 h | `alta` | `contactos.html?id=` (la página baja hasta ese contacto y lo marca) | `recibido_en` (UTC) |
 | `coches_parados` | Coche en «Publicado» desde hace más de 60 días, contados desde la **primera** vez que pasó a «Publicado» en el historial (una reserva cancelada no pone el contador a cero); sin historial, desde el alta | `alta` desde 90 días; `media` de 60 a 90 | `coche.html?id=` | esa fecha (UTC) |
 | `vendidos_publicados` | Coche vendido o entregado con alguna publicación en `retirar`. Un aviso por coche, con los canales en el texto | `alta` | `coche.html?id=` | la `actualizado_en` más antigua de esas publicaciones (UTC) |
+| `anuncios_por_retirar` | Coche que ha dejado de estar a la venta sin venderse (de vuelta al taller, por ejemplo) con alguna publicación en `retirar` | `alta` | `coche.html?id=` | igual que el anterior |
 | `itv` | Coche que ya está en el patio: ni por recoger ni en transporte (todavía no es nuestro), ni vendido ni entregado, con `itv_caducidad` pasada o en los próximos 30 días. Sin fecha de ITV, no hay aviso | `alta` si ya caducó; `media` si caduca pronto | `coche.html?id=` | `itv_caducidad` (día de aquí) |
 | `citas` | Prueba de conducción de hoy (aún no empezada) o de mañana, pedida o confirmada | `alta` si está pedida (sin confirmar); `media` si está confirmada | `agenda.html?semana=` | `inicio` (hora de Rubí) |
 | `cobros_vencidos` | **Solo gerencia.** Factura de venta emitida, sin anular, con saldo pendiente y `vencimiento` pasado (el `estado_cobro` `vencida` de facturación) | `alta` | `factura.html?id=` | `vencimiento` |
@@ -331,7 +332,7 @@ Necesita `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION`; sin ellas, 503. Detalle
 
 ## Portales (Coches.net, Milanuncios y Wallapop)
 
-Ningún portal deja cargar los coches sin un intermediario (`docs/portales.md`). Mientras tanto, el panel deja el anuncio listo para copiar, quien lo sube lo marca como publicado y, cuando el coche se vende, confirma la baja en cada portal. Al pasar a «Vendido» o «Entregado», lo publicado queda en `retirar` (`publicacion/retirada.js`) y sale en los avisos hasta que se confirma la baja. La web no va aquí: la lleva el conector de WordPress.
+Ningún portal deja cargar los coches sin un intermediario (`docs/portales.md`). Mientras tanto, el panel deja el anuncio listo para copiar, quien lo sube lo marca como publicado y, cuando el coche se vende, confirma la baja en cada portal. Cuando un coche deja de estar a la venta (sale de «Publicado» o «Reservado» a cualquier otro estado: venderlo, entregarlo o volver al taller), lo publicado queda en `retirar` (`publicacion/retirada.js`) y sale en los avisos hasta que se confirma la baja. Si vuelve a estar a la venta antes de quitarlo, vuelve a `publicado`. La web no va aquí: la lleva el conector de WordPress.
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
