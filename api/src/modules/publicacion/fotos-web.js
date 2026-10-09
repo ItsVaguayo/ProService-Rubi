@@ -17,6 +17,39 @@ export class ErrorFotosWeb extends Error {
   constructor(status, mensaje) { super(mensaje); this.status = status; }
 }
 
+const BYTES_POR_FOTO = MB_POR_FOTO * 1024 * 1024;
+const SALTOS_MAXIMOS = 3;
+const deLaWeb = (url, origen) => url.host === origen && ['http:', 'https:'].includes(url.protocol);
+
+/**
+ * Baja una foto de la web. Las redirecciones se siguen a mano y solo dentro del mismo dominio: una dirección de
+ * la web no puede llevar al servidor a pedir otra máquina (una interna, por ejemplo). Y se corta en cuanto pasa
+ * de MB_POR_FOTO, aunque la web no diga el tamaño por adelantado.
+ */
+async function bajarFoto(fetchImpl, url, origen) {
+  for (let saltos = 0; ; saltos++) {
+    const res = await fetchImpl(url, { signal: AbortSignal.timeout(30000), redirect: 'manual' });
+    const destino = res.status >= 300 && res.status < 400 ? res.headers.get('location') : null;
+    if (destino) {
+      await res.body?.cancel();
+      if (saltos >= SALTOS_MAXIMOS) throw new Error('demasiadas redirecciones');
+      url = new URL(destino, url);
+      if (!deLaWeb(url, origen)) throw new Error(`redirige fuera de ${origen}`);
+      continue;
+    }
+    if (!res.ok) throw new Error(`la web respondió ${res.status}`);
+    if (Number(res.headers.get('content-length')) > BYTES_POR_FOTO) throw new Error(`pasa de ${MB_POR_FOTO} MB`);
+    const trozos = [];
+    let total = 0;
+    for await (const trozo of res.body ?? []) {
+      total += trozo.length;
+      if (total > BYTES_POR_FOTO) throw new Error(`pasa de ${MB_POR_FOTO} MB`); // salir del bucle cierra la descarga
+      trozos.push(trozo);
+    }
+    return Buffer.concat(trozos);
+  }
+}
+
 const idsDe = (valor) => [].concat(valor ?? []).map((x) => (typeof x === 'object' && x ? x.id ?? x.ID : x)).map(Number).filter((n) => Number.isInteger(n) && n > 0);
 
 /** Baja las fotos de la ficha de la web de un coche que aún no tiene ninguna. Devuelve { traidas, saltadas }. */
@@ -55,14 +88,9 @@ export async function traerFotosDeLaWeb(db, cfg, vehiculoId, { fetchImpl = fetch
   for (const m of medios) {
     let url;
     try { url = new URL(m.source_url); } catch { saltadas.push(`${m.id}: sin dirección`); continue; }
-    if (url.host !== origen || !['http:', 'https:'].includes(url.protocol)) { saltadas.push(`${m.id}: está fuera de ${origen}`); continue; }
+    if (!deLaWeb(url, origen)) { saltadas.push(`${m.id}: está fuera de ${origen}`); continue; }
     try {
-      const res = await fetchImpl(url, { signal: AbortSignal.timeout(30000) });
-      if (!res.ok) throw new Error(`la web respondió ${res.status}`);
-      if (Number(res.headers.get('content-length')) > MB_POR_FOTO * 1024 * 1024) throw new Error(`pasa de ${MB_POR_FOTO} MB`);
-      const bruto = Buffer.from(await res.arrayBuffer());
-      if (bruto.length > MB_POR_FOTO * 1024 * 1024) throw new Error(`pasa de ${MB_POR_FOTO} MB`);
-      fotos.push({ wpId: m.id, jpg: await reducirImagen(bruto) });
+      fotos.push({ wpId: m.id, jpg: await reducirImagen(await bajarFoto(fetchImpl, url, origen)) });
     } catch (e) {
       saltadas.push(`${m.id}: ${e.message}`);
     }

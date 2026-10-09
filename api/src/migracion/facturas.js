@@ -171,6 +171,9 @@ export function importarFacturas(db, filas, { informe, usuarioId, eurosACent, di
     t.nuevos++;
   }
 
+  // Las importadas llevan congelados los datos de la empresa de hoy, no los que tenía al emitirlas
+  if (t.nuevos) aviso(0, `Las ${t.nuevos} facturas importadas llevan los datos de la empresa que hay hoy en el panel (razón social, NIF, dirección). Si alguno ha cambiado desde que se emitieron, la copia del panel no cuadrará con el original de Pymecar.`);
+
   // Cada serie sigue por el número siguiente al más alto. Y si faltan números, se avisa: el export está incompleto.
   for (const [serie, numeros] of series) {
     const todos = new Set([...numeros, ...db.prepare('SELECT numero FROM facturas WHERE serie = ?').all(serie).map((f) => f.numero)]);

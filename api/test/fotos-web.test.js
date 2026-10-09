@@ -23,12 +23,23 @@ async function webFalsa({ galeria = null } = {}) {
   const medios = () => ({
     10: medio(10, 'a.png'), 11: medio(11, 'b.png'), 12: medio(12, 'c.png'),
     13: { id: 13, mime_type: 'image/png', source_url: 'https://otra-web.example/foto.png' },
-    14: medio(14, 'no-es-imagen.png'), 15: { id: 15, mime_type: 'application/pdf', source_url: 'x' },
+    14: medio(14, 'no-es-imagen.png'), 16: medio(16, 'movida.png'), 17: medio(17, 'fuera.png'), 18: medio(18, 'enorme.png'), 15: { id: 15, mime_type: 'application/pdf', source_url: 'x' },
   });
   const servidor = createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     pedidas.push(url.pathname + url.search);
     const json = (datos, codigo = 200) => { res.writeHead(codigo, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(datos)); };
+    // Redirecciones: una dentro del dominio (se sigue) y otra fuera (no); y una foto enorme sin tamaño anunciado
+    if (url.pathname === '/wp-content/uploads/movida.png') { res.writeHead(301, { Location: '/wp-content/uploads/b.png' }); return res.end(); }
+    if (url.pathname === '/wp-content/uploads/fuera.png') { res.writeHead(302, { Location: 'http://127.0.0.1:9/interna' }); return res.end(); }
+    if (url.pathname === '/wp-content/uploads/enorme.png') {
+      res.writeHead(200, { 'Content-Type': 'image/png' }); // sin Content-Length: va por trozos
+      const trozo = Buffer.alloc(1024 * 1024);
+      let enviados = 0;
+      const seguir = () => { while (enviados < 20) { enviados++; if (!res.write(trozo)) return res.once('drain', seguir); } res.end(); };
+      res.on('error', () => {});
+      return seguir();
+    }
     if (url.pathname.startsWith('/wp-content/')) {
       if (url.pathname.endsWith('no-es-imagen.png')) { res.writeHead(200); return res.end('hola'); }
       const img = imagenes[url.pathname];
@@ -87,6 +98,19 @@ test('fotos de la web: con la galería de ACF expuesta, en su orden', async () =
     assert.equal(r.traidas, 3);
     assert.deepEqual(db.prepare('SELECT m.wp_media_id FROM fotos f JOIN wp_medios m ON m.foto_id = f.id WHERE f.vehiculo_id = ? ORDER BY f.orden').all(id).map((f) => f.wp_media_id), [10, 12, 11]);
     assert.ok(!web.pedidas.some((p) => p.includes('parent=')), 'con galería no hacen falta las adjuntas');
+  } finally { fin(); }
+});
+
+test('fotos de la web: redirecciones solo dentro del dominio, y corta la que pasa de 15 MB sin decir su tamaño', async () => {
+  const { db, id, cfg, web, fin } = await preparar({ galeria: [16, 17, 18] });
+  try {
+    vincular(db, id, 500);
+    const r = await traerFotosDeLaWeb(db, cfg, id);
+    assert.equal(r.traidas, 2, 'la destacada y la que se movió dentro de la web');
+    assert.deepEqual(r.saltadas.map((x) => x.split(':')[0]), ['17', '18']);
+    assert.match(r.saltadas[0], /redirige fuera de/);
+    assert.match(r.saltadas[1], /pasa de 15 MB/);
+    assert.ok(web.pedidas.includes('/wp-content/uploads/b.png'), 'siguió la redirección de dentro');
   } finally { fin(); }
 });
 

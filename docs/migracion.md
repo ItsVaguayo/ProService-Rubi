@@ -19,7 +19,7 @@ El export de Pymecar aún no lo tenemos (duda B7). Por eso el importador no lee 
    ```
    Antes de tocar nada copia la base (`proservice.db.antes-de-migrar-…`). Si sale mal, se para la API y se pone esa copia en su sitio.
    Las facturas quedan a nombre de la primera persona de gerencia activa: tiene que existir antes de cargar (`npm run usuario`).
-5. **Fotos del stock**, desde la web: vincular cada coche con su ficha de proservicerubi.com (`POST /api/wordpress/vincular`, las 30 fichas que ya existen) y después `POST /api/wordpress/fotos`. Baja las fotos de todos los vinculados que aún no tienen ninguna. Con 15 o más, el coche ya se puede publicar desde el panel.
+5. **Fotos del stock**, desde la web: vincular cada coche con su ficha de proservicerubi.com (`POST /api/wordpress/vincular`, las 30 fichas que ya existen) y después `POST /api/wordpress/fotos`. Baja las fotos de todos los vinculados que aún no tienen ninguna. Con 15 o más, el coche ya se puede publicar desde el panel. Solo baja fotos del dominio de la web (tampoco sigue redirecciones que salgan de él) y salta las de más de 15 MB. Va coche a coche en la misma petición: con todo el stock puede tardar unos minutos.
 
 ## Reglas
 
@@ -31,7 +31,7 @@ El export de Pymecar aún no lo tenemos (duda B7). Por eso el importador no lee 
 - **Sin costes.** Los costes del coche viven en el libro de gastos, con su fecha. Si se metieran desde la ficha, caerían todos en el trimestre de hoy. Una columna `coste_*` es un error. Van con la migración del libro de gastos (pendiente, abajo).
 - Todo lo cargado queda en `auditoria` con la acción `migracion`, la fila del CSV y, en los coches, su `ref_pymecar`.
 
-- **Facturas.** Entran emitidas, con su número de Pymecar (`V25-00012`; también vale `F-V25-00012`, como sale en su lista) y los importes que calculó Pymecar. Si falta la base, el IVA o el total, se calculan como lo haría la plataforma. Si están y no cuadran con esa cuenta, se deja el de Pymecar con un aviso (puede ser una subvención o un descuento). Se congela una copia del cliente y del coche, como al emitir: salen en los libros de ingresos y de REBU. Por defecto, cada factura de venta entra **cobrada entera** (son ventas cerradas). Con `cobrado` se pone lo que se cobró de verdad, y con 0 queda pendiente.
+- **Facturas.** Entran emitidas, con su número de Pymecar (`V25-00012`; también vale `F-V25-00012`, como sale en su lista) y los importes que calculó Pymecar. Si falta la base, el IVA o el total, se calculan como lo haría la plataforma. Si están y no cuadran con esa cuenta, se deja el de Pymecar con un aviso (puede ser una subvención o un descuento). Se congela una copia del cliente y del coche, como al emitir: salen en los libros de ingresos y de REBU. Los datos de la empresa que se congelan son los que hay hoy en el panel, no los de la fecha de emisión; el informe lo avisa. Si la razón social, el NIF o la dirección han cambiado en estos 5 años, las copias no cuadrarán con los originales de Pymecar (decide Diego si importa). Por defecto, cada factura de venta entra **cobrada entera** (son ventas cerradas). Con `cobrado` se pone lo que se cobró de verdad, y con 0 queda pendiente.
 - **La serie sigue donde la dejó Pymecar.** Al acabar, cada serie queda en su número más alto: si `V26` llega a la 38, la primera factura desde el panel es la `V26-00039`. Si faltan números en medio, se avisa: Hacienda pide la numeración sin huecos y lo más probable es que el export esté incompleto.
 
 ## Las plantillas

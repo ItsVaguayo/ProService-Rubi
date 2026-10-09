@@ -141,7 +141,8 @@ test('migración: las facturas de Pymecar entran emitidas, cobradas, en los libr
     assert.deepEqual(informe.errores, []);
     assert.equal(informe.facturas.nuevos, 3);
     assert.equal(informe.facturas.cobros, 1, 'la cobrada entera; la de cobrado 0 queda sin cobro');
-    assert.match(informe.avisos.find((a) => a.fichero === 'facturas.csv').aviso, /V26 faltan números: V26-00001, V26-00002, V26-00003, V26-00004/);
+    assert.ok(informe.avisos.some((a) => a.fichero === 'facturas.csv' && /datos de la empresa que hay hoy/.test(a.aviso)), 'avisa de que la empresa es la de hoy');
+    assert.match(informe.avisos.find((a) => a.fichero === 'facturas.csv' && /faltan/.test(a.aviso)).aviso, /V26 faltan números: V26-00001, V26-00002, V26-00003, V26-00004/);
 
     const lista = (await pide('/facturas')).json.facturas;
     const v5 = lista.find((f) => f.codigo === 'V26-00005');
