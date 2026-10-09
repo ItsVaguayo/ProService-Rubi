@@ -20,6 +20,10 @@
      de un sitio a otro en pantalla, --ease-in-out. Nada de ease-in en la interfaz. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  /* Hover: un cambio de color que se ve decenas de veces al día, corto y con ease (no se nota que tarda) */
+  --hover: 150ms ease;
+  --fondo-hover: #fafbfb;   /* fila o tarjeta con el ratón encima */
+  --fondo-pulsado: #eef0f2; /* fila o tarjeta al tocarla en el móvil */
 
   /* Marca (medidos en su logo y en su web) */
   --rojo: #ea2d2d;
@@ -356,7 +360,7 @@ p { margin: 0 0 var(--espacio-m); }
 }
 
 .tabla tr:last-child td { border-bottom: 0; }
-@media (hover: hover) and (pointer: fine) { .tabla tbody tr:hover { background: #fafbfb; } }
+@media (hover: hover) and (pointer: fine) { .tabla tbody tr:hover { background: var(--fondo-hover); } }
 
 /* Columnas de números alineadas a la derecha */
 .tabla .derecha { text-align: right; white-space: nowrap; }

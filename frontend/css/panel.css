@@ -171,14 +171,16 @@ html.cargando:not(.listo) body::before {
   background: var(--negro-2);
   opacity: 0;
   pointer-events: none;
-  transition: transform .25s cubic-bezier(.2, .8, .2, 1), height .25s cubic-bezier(.2, .8, .2, 1), opacity .15s;
+  /* Lo más usado del panel (cien veces al día): rápido y solo transform. El alto se pone sin animar (los
+     enlaces miden lo mismo); animarlo obligaba a recalcular el diseño en cada fotograma. */
+  transition: transform 150ms var(--ease-in-out), opacity 150ms ease;
 }
-/* De vuelta a la página actual al sacar el ratón: más lento y suave */
-.menu__resalte--volviendo { transition: transform .5s cubic-bezier(.4, 0, .2, 1), height .5s cubic-bezier(.4, 0, .2, 1), opacity .15s; }
-.menu__enlaces--resalte a { z-index: 1; transition: color .15s, padding-left .2s ease-out; }
+/* De vuelta a la página actual al sacar el ratón: un poco más suave, sin hacerse esperar */
+.menu__resalte--volviendo { transition: transform 200ms var(--ease-in-out), opacity 150ms ease; }
+.menu__enlaces--resalte a { z-index: 1; transition: color var(--hover), transform 150ms var(--ease-out); }
 .menu__enlaces--resalte a[aria-current="page"] { background: transparent; }
 @media (hover: hover) and (pointer: fine) { .menu__enlaces--resalte a:hover { background: transparent; } }
-@media (hover: hover) and (pointer: fine) { .menu__enlaces--resalte a:hover { padding-left: 16px; } }
+@media (hover: hover) and (pointer: fine) { .menu__enlaces--resalte a:hover { transform: translateX(3px); } } /* antes padding-left: movía el diseño */
 
 .menu__enlaces a.menu__separado { margin-top: 12px; }
 .menu__enlaces a.menu__separado::after {
@@ -338,7 +340,7 @@ html.cargando:not(.listo) body::before {
   border-right: 1px solid var(--linea);
   color: var(--tinta);
   text-decoration: none;
-  transition: background .2s;
+  transition: background-color var(--hover);
 }
 .estados__paso:last-child { border-right: 0; }
 @media (hover: hover) and (pointer: fine) { .estados__paso:hover { background: var(--fondo); } }
@@ -395,7 +397,7 @@ html.cargando:not(.listo) body::before {
   border-top: 1px solid var(--linea);
   text-decoration: none;
 }
-@media (hover: hover) and (pointer: fine) { .para-hoy li a:hover { background: #fafbfb; } }
+@media (hover: hover) and (pointer: fine) { .para-hoy li a:hover { background: var(--fondo-hover); } }
 
 .para-hoy__cifra {
   display: grid;
@@ -696,8 +698,8 @@ html.cargando:not(.listo) body::before {
 .ordenar[aria-sort] { color: var(--tinta); }
 
 /* Una fila por coche; toda la fila abre la ficha */
-.fila-coche { cursor: pointer; transition: background .12s; }
-@media (hover: hover) and (pointer: fine) { .fila-coche:hover { background: #fafbfc; } }
+.fila-coche { cursor: pointer; transition: background-color var(--hover); }
+@media (hover: hover) and (pointer: fine) { .fila-coche:hover { background: var(--fondo-hover); } }
 .fila-coche .miniatura { display: block; width: 84px; height: 56px; }
 .fila-coche__titulo { color: var(--tinta); font-weight: 600; text-decoration: none; }
 @media (hover: hover) and (pointer: fine) { .fila-coche:hover .fila-coche__titulo { text-decoration: underline; } }
@@ -1151,7 +1153,7 @@ html.cargando:not(.listo) body::before {
   transition: border-color .15s, background .15s;
 }
 .subida:focus-within { border-color: var(--tinta); background: #fafbfb; }
-@media (hover: hover) and (pointer: fine) { .subida:hover { border-color: var(--tinta); background: #fafbfb; } }
+@media (hover: hover) and (pointer: fine) { .subida:hover { border-color: var(--tinta); background: var(--fondo-hover); } }
 .subida__titulo { font-weight: 700; }
 /* Con fotos arrastradas encima */
 .subida--encima { border-color: var(--rojo); background: var(--rojo-suave); }
@@ -1327,7 +1329,7 @@ html.cargando:not(.listo) body::before {
   color: var(--tinta-2);
   font-size: .875rem;
   text-decoration: none;
-  transition: color .2s, border-color .2s;
+  transition: color var(--hover), border-color var(--hover);
 }
 @media (hover: hover) and (pointer: fine) { .indice-alta a:hover { border-left-color: var(--tinta); color: var(--tinta); } }
 .indice-alta__n { color: var(--gris-marca); font-size: .6875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -1831,7 +1833,7 @@ html.cargando:not(.listo) body::before {
 .cifras__dato--alerta strong { color: var(--peligro); }
 /* Una cifra que filtra la lista: se nota que se puede pulsar */
 .cifras__dato--enlace { color: inherit; text-decoration: none; transition: background .15s; }
-@media (hover: hover) and (pointer: fine) { .cifras__dato--enlace:hover { background: #fafbfb; } }
+@media (hover: hover) and (pointer: fine) { .cifras__dato--enlace:hover { background: var(--fondo-hover); } }
 .cifras--6 .rotulo { display: flex; align-items: center; gap: 6px; }
 /* Con seis datos y céntimos, la cifra más pequeña y en una línea: el « €» no se queda solo abajo */
 .cifras--6 .cifras__dato strong { font-size: 1.375rem; white-space: nowrap; }
@@ -2562,7 +2564,7 @@ html.cargando:not(.listo) body::before {
 /* Un aviso: el texto y, debajo, el tipo y la fecha; a la derecha, el botón */
 .aviso { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 20px; padding: 14px 20px; border-top: 1px solid var(--linea); }
 .aviso:first-child { border-top: 0; }
-@media (hover: hover) and (pointer: fine) { .aviso:hover { background: #fafbfb; } }
+@media (hover: hover) and (pointer: fine) { .aviso:hover { background: var(--fondo-hover); } }
 .aviso__texto { margin: 0; color: var(--tinta); font-weight: 600; overflow-wrap: anywhere; }
 .aviso__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 4px 0 0; color: var(--tinta-3); font-size: .8125rem; }
 .aviso__tipo { display: inline-flex; align-items: center; gap: 6px; color: var(--tinta-2); font-weight: 500; }
@@ -2644,4 +2646,19 @@ html.cargando:not(.listo) body::before {
     .menu:has(.menu__movil[open]) .menu__buscar,
     .menu:has(.menu__movil[open]) .menu__enlaces { opacity: 0; }
   }
+}
+
+/* Hovers que cambiaban de golpe: el mismo cambio corto que el resto (var --hover). Con :where() esta regla no
+   pesa nada, así que donde ya había una transición propia, manda la propia. */
+:where(.tabla tbody tr, .para-hoy li a, .aviso, .volver, .pestanas a, .enlace, .ordenar, .enlace-pequeno,
+  .contacto__datos a, .saltos a, .login__ver, .tercero, .menu__enlaces a, .cabecera--portada .volver,
+  .ficha-cabecera .volver, .ficha-cabecera .enlace-pequeno, .segmentos label span, a.contacto__coche,
+  .foto-fila__mover button, .foto-fila__quitar, .gasto-pago, .cifras__dato--enlace) {
+  transition: color var(--hover), background-color var(--hover), border-color var(--hover), filter var(--hover);
+}
+
+/* En el móvil no hay hover: filas y tarjetas responden al tocarlas (al apoyar el dedo, no al soltarlo) */
+@media (hover: none) {
+  .tabla tbody tr:active, .fila-coche:active, .para-hoy li a:active, .aviso:active, .cifras__dato--enlace:active { background-color: var(--fondo-pulsado); }
+  .ficha-mini:active, .contacto:active { transform: scale(0.98); transition: transform 100ms var(--ease-out); }
 }
