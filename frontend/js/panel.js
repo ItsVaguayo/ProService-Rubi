@@ -3436,7 +3436,7 @@ async function paginaIncentivos(usuario) {
     const nombreAntes = nombreMes(previo.mes).split(' ')[0];
     $('.contactos-resumen').innerHTML = `<strong class="cifra">${eurosRedondos(yo.total_cent)}</strong> en ${esc(nombre)} <span>· ${yo.coches.length} ${yo.coches.length === 1 ? 'coche' : 'coches'}</span>`;
     const regla = textoRegla(yo.regla, false);
-    $('.cabecera .nota').textContent = regla ? `${regla}. Si algo no te cuadra, habla con gerencia.` : 'Aún no tienes regla de incentivos: habla con gerencia.';
+    $('.cabecera .nota').textContent = regla ?? 'Aún no tienes regla de incentivos: habla con gerencia.';
     const cifras = bloque.querySelectorAll('.cifras__dato');
     $('.cifra', cifras[0]).textContent = yo.coches.length;
     $('.nota', cifras[0]).textContent = `En ${nombreAntes}, ${antes.coches.length}`;
@@ -4088,7 +4088,6 @@ async function paginaAvisos(usuario) {
   $('.portada__antetitulo').textContent = mayuscula(new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }));
   if (!gerencia) {
     $('main h1').textContent = 'Tus avisos';
-    $('.cabecera--portada .nota').textContent = 'Tus tareas y lo que piden los coches y los contactos de la web.';
     $('.portada__cifras small').textContent = 'Contactos, ITV caducada, vendidos';
   }
 

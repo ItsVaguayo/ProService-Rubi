@@ -1980,9 +1980,9 @@ html.cargando:not(.listo) body::before {
 .filtros--gastos { align-items: center; }
 .filtros--gastos .filtros-gastos__mes { min-width: 160px; }
 .filtros--gastos .segmentos .punto { margin-right: 6px; }
-/* El número va dentro del segmento: sin el alto ni el relleno de .segmentos span */
-.filtros--gastos .segmentos .segmentos__n { display: inline; min-height: 0; padding: 0; }
-.filtros--gastos .segmentos__n:empty { display: none; }
+/* El número va dentro del segmento: sin el alto ni el relleno de .segmentos span (en todos los filtros) */
+.segmentos .segmentos__n { display: inline; min-height: 0; padding: 0; }
+.segmentos__n:empty { display: none; }
 .filtros--gastos .segmentos > label > span { padding-inline: 12px; } /* mes, tipo, concepto y pago caben en una fila */
 @media (max-width: 760px) {
   /* Los tipos en una fila que se desliza, como pestañas: envueltos en tres líneas no se leían */
@@ -2118,7 +2118,7 @@ html.cargando:not(.listo) body::before {
 .version-separador { display: flex; align-items: center; gap: 14px; margin: 48px 0 var(--espacio-l); color: var(--tinta-3); font-size: .75rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
 .version-separador::before,
 .version-separador::after { content: ""; flex: 1; border-top: 2px dashed var(--linea-fuerte); }
-.version-incentivos > * + * { margin-top: var(--espacio-l); }
+.version-incentivos > * + *:not(.cabecera--portada) { margin-top: var(--espacio-l); } /* la banda negra sube hasta arriba aunque el JS meta algo delante */
 .version-incentivos .cifras { margin-bottom: 0; }
 
 @media (max-width: 1150px) {
