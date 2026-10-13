@@ -77,3 +77,29 @@ test('portales: lo que no se puede', () =>
     assert.equal((await pide('/portales?estado=raro')).status, 400);
     assert.equal((await pide('/portales', { como: null })).status, 401);
   }));
+
+test('portales: un coche que vuelve al taller queda por retirar, con su aviso; si vuelve a la venta, sigue publicado', () =>
+  conServidor(async ({ db, pide }) => {
+    const id = await publicado(db, pide);
+    await marcar(pide, id, 'wallapop', { estado: 'publicado' });
+    await marcar(pide, id, 'coches_net', { estado: 'publicado' });
+    const estado = (e) => pide(`/vehiculos/${id}/estado`, { method: 'PATCH', body: { estado: e } });
+    const enPortal = async () => Object.fromEntries((await pide(`/portales/${id}`)).json.portales.map((p) => [p.canal, p.estado]));
+
+    assert.equal((await estado('en_taller')).status, 200);
+    assert.deepEqual(await enPortal(), { coches_net: 'retirar', milanuncios: 'sin_publicar', wallapop: 'retirar' });
+    const aviso = (await pide('/avisos', { como: 'comercial' })).json.find((a) => a.tipo === 'anuncios_por_retirar');
+    assert.match(aviso.texto, /ya no está a la venta \(en taller o mecánica\) y sigue anunciado en (Coches\.net, Wallapop|Wallapop, Coches\.net)$/);
+    assert.equal(aviso.gravedad, 'alta');
+    assert.equal(aviso.enlace, `coche.html?id=${id}`);
+
+    // Se confirma la baja en uno; el otro sigue colgado cuando vuelve a la venta
+    await marcar(pide, id, 'wallapop', { estado: 'retirado' });
+    assert.equal((await estado('publicado')).status, 200);
+    assert.deepEqual(await enPortal(), { coches_net: 'publicado', milanuncios: 'sin_publicar', wallapop: 'retirado' });
+    assert.equal((await pide('/avisos')).json.some((a) => a.tipo === 'anuncios_por_retirar'), false);
+
+    // Reservar no lo saca de la venta
+    await pide(`/vehiculos/${id}/reserva`, { method: 'POST', body: { cliente: 'Ana', senal_cent: 30000 } });
+    assert.equal((await enPortal()).coches_net, 'publicado');
+  }));

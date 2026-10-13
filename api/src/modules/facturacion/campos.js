@@ -17,6 +17,10 @@ const CAMPOS = {
   garantia_meses: { entero: [0, 36] },
   km_entrega: { entero: [0, 9999999] },
   observaciones: { texto: 2000 },
+  // 0019: un coche que entrega el cliente como parte del pago, con su valor (al emitir, se apunta como cobro)
+  parte_pago_cent: { cent: true },
+  parte_pago_vehiculo: { texto: 200 },
+  parte_pago_vehiculo_id: { id: true },
 };
 const NO_VACIOS = ['fecha', 'cliente_id', 'precio_cent', 'regimen'];
 

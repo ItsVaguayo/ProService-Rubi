@@ -17,7 +17,7 @@ import { importesFactura } from './importes.js';
 import { rutasLibros } from './libros.js';
 
 const LETRA_SERIE = { venta: 'V', rectificativa: 'R' };
-export const FORMAS_COBRO = [...FORMAS_PAGO, 'senal', 'financiera'];
+export const FORMAS_COBRO = [...FORMAS_PAGO, 'senal', 'financiera', 'parte_pago']; // parte_pago: el coche entregado (al emitir)
 
 /** 'V26-00039' */
 export const codigoDe = (serie, numero) => `${serie}-${String(numero).padStart(5, '0')}`;
@@ -192,6 +192,21 @@ export function rutasFacturas(db) {
     return { ...d, compra_cent: compra, ...importesFactura({ regimen: d.regimen, precio_cent: d.precio_cent, compra_cent: compra, suplidos_cent: d.suplidos_cent ?? 0 }) };
   };
 
+  // El coche entregado como parte del pago: con qué coche es, que no sea el que se vende y que no valga más que
+  // la factura. Si viene su id y no su descripción, la descripción sale de su ficha. Devuelve el error o null.
+  const parteDePago = (fila) => {
+    if (fila.parte_pago_vehiculo_id) {
+      const e = leerCoche.get(fila.parte_pago_vehiculo_id);
+      if (!e) return 'El coche entregado como parte del pago no existe';
+      if (e.id === fila.vehiculo_id) return 'El coche entregado como parte del pago no puede ser el que se vende';
+      fila.parte_pago_vehiculo ??= `${e.marca} ${e.modelo} ${e.matricula}`;
+    }
+    if (!fila.parte_pago_cent) return null;
+    if (!fila.parte_pago_vehiculo) return 'Falta qué coche se entrega como parte del pago (parte_pago_vehiculo o parte_pago_vehiculo_id)';
+    if (fila.parte_pago_cent > fila.total_cent) return 'El coche entregado como parte del pago no puede valer más que la factura';
+    return null;
+  };
+
   // Alta de un borrador. Del coche salen, si no llegan, el precio (su PVP) y el régimen.
   r.post('/', (req, res) => {
     const { datos, errores } = limpiarFactura(req.body);
@@ -206,6 +221,8 @@ export function rutasFacturas(db) {
     };
     if (d.precio_cent == null) return res.status(400).json({ error: 'Falta el precio: el coche no tiene PVP' });
     const fila = conImportes(d);
+    const parte = parteDePago(fila);
+    if (parte) return res.status(400).json({ error: parte });
     const columnas = Object.keys(fila);
     const id = db.transaction(() => {
       const nuevo = Number(db.prepare(`INSERT INTO facturas (${columnas.join(',')}) VALUES (${columnas.map(() => '?').join(',')})`).run(...columnas.map((c) => fila[c])).lastInsertRowid);
@@ -232,7 +249,11 @@ export function rutasFacturas(db) {
     if (datos.cliente_id && !leerCliente.get(datos.cliente_id)) return res.status(400).json({ error: 'Ese cliente no existe' });
     if (datos.vehiculo_id && !leerCoche.get(datos.vehiculo_id)) return res.status(400).json({ error: 'Ese coche no existe' });
     const fila = conImportes({ ...antes, ...datos });
-    const columnas = [...Object.keys(datos), 'compra_cent', 'base_cent', 'iva_pct', 'iva_cent', 'total_cent'];
+    // Otro coche entregado sin su descripción: la descripción sale del nuevo, no se queda la del anterior
+    if ('parte_pago_vehiculo_id' in datos && !('parte_pago_vehiculo' in datos)) fila.parte_pago_vehiculo = null;
+    const parte = parteDePago(fila);
+    if (parte) return res.status(400).json({ error: parte });
+    const columnas = [...new Set([...Object.keys(datos), 'compra_cent', 'base_cent', 'iva_pct', 'iva_cent', 'total_cent', 'parte_pago_vehiculo'])];
     db.transaction(() => {
       db.prepare(`UPDATE facturas SET ${columnas.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`).run(...columnas.map((c) => fila[c]), antes.id);
       registrar(db, { usuarioId: req.usuario.id, entidad: 'factura', entidadId: antes.id, accion: 'edicion',
@@ -286,6 +307,8 @@ export function rutasFacturas(db) {
     const otra = db.prepare(`SELECT codigo FROM facturas WHERE vehiculo_id = ? AND tipo = 'venta' AND estado = 'emitida'
                                AND id NOT IN (SELECT rectifica_id FROM facturas WHERE rectifica_id IS NOT NULL)`).get(v.id);
     if (otra) return res.status(409).json({ error: `Este coche ya está facturado en la ${otra.codigo}. Si hay que repetirla, rectifica antes esa` });
+    const parte = parteDePago(conImportes(f));
+    if (parte) return res.status(409).json({ error: parte });
 
     try {
       db.transaction(() => {
@@ -297,6 +320,12 @@ export function rutasFacturas(db) {
           .run(serie, numero, codigo, fila.compra_cent, fila.base_cent, fila.iva_cent, fila.total_cent,
             JSON.stringify(e), JSON.stringify(c), JSON.stringify(copiaDelCoche(db, v)), req.usuario.id, f.id);
         db.prepare('UPDATE vehiculos SET comprador_id = ? WHERE id = ?').run(f.cliente_id, v.id);
+        // El coche que entrega el cliente paga parte de la factura: queda como un cobro más, con la fecha de la factura
+        if (f.parte_pago_cent > 0) {
+          const k = Number(db.prepare(`INSERT INTO cobros (factura_id, fecha, importe_cent, forma_pago, nota, creado_por)
+                                       VALUES (?, ?, ?, 'parte_pago', ?, ?)`).run(f.id, f.fecha, f.parte_pago_cent, `Coche entregado: ${f.parte_pago_vehiculo}`, req.usuario.id).lastInsertRowid);
+          registrar(db, { usuarioId: req.usuario.id, entidad: 'cobro', entidadId: k, accion: 'alta', despues: { factura: codigo, forma_pago: 'parte_pago', importe_cent: f.parte_pago_cent } });
+        }
         registrar(db, { usuarioId: req.usuario.id, entidad: 'factura', entidadId: f.id, accion: 'emision', despues: { codigo, total_cent: fila.total_cent } });
       })();
     } catch (err) {

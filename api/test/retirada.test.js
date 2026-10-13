@@ -72,10 +72,12 @@ test('venta anulada: lo que aún estaba por retirar vuelve a publicado; lo ya re
     assert.deepEqual(estados(db, id), { coches_net: 'publicado', wallapop: 'retirado' });
   }));
 
-test('otros cambios de estado no tocan los anuncios', () =>
+test('dejar de estar a la venta sin venderlo también deja los anuncios en «retirar»; entre estados de fuera, nada', () =>
   conServidor(async ({ db, pide }) => {
     const id = await publicado(db, pide);
     anuncios(db, id, { coches_net: 'publicado' });
     await cambiar(pide, id, 'en_taller');
-    assert.deepEqual(estados(db, id), { coches_net: 'publicado' });
+    assert.deepEqual(estados(db, id), { coches_net: 'retirar' }, 'un coche en el taller no puede seguir anunciado');
+    await cambiar(pide, id, 'en_preparacion');
+    assert.deepEqual(estados(db, id), { coches_net: 'retirar' }, 'de taller a preparación no cambia nada');
   }));

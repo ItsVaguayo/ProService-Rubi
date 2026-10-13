@@ -5,6 +5,7 @@
 import { Router } from 'express';
 import { ZONA, hoyLocal } from '../../fechas.js';
 import { estadoCobro } from '../facturacion/routes.js';
+import { ESTADOS } from '../estados.js';
 
 export const DIAS_PARADO = 60;         // publicado desde hace más de esto: aviso
 export const DIAS_PARADO_ALTA = 90;    // y desde aquí, con gravedad alta
@@ -23,6 +24,7 @@ const euros = (cent) => `${(cent / 100).toLocaleString('es-ES', { minimumFractio
 // La matrícula con su espacio (1234 BCD), como en el resto del panel
 const matricula = (m) => String(m ?? '').replace(/^(\d{4})([A-Z]{3})$/, '$1 $2');
 const coche = (v) => `${v.marca} ${v.modelo} ${matricula(v.matricula)}`;
+const nombreEstado = (id) => (ESTADOS.find((e) => e.id === id)?.nombre ?? id).toLowerCase();
 const CANALES = { web: 'la web', coches_net: 'Coches.net', milanuncios: 'Milanuncios', wallapop: 'Wallapop' };
 // Lo que se dice de cada actividad sin hacer y ya pasada de hora (las notas no cuentan: no se «hacen»)
 const VENCIDA = { tarea: 'Tarea vencida', llamada: 'Llamada vencida', visita: 'Visita vencida', prueba: 'Prueba vencida', whatsapp: 'WhatsApp sin mandar', email: 'Correo sin mandar' };
@@ -74,11 +76,12 @@ export function calculadorDeAvisos(db) {
       SELECT c.id, c.inicio, c.estado, c.nombre, v.marca, v.modelo, v.matricula
         FROM citas c JOIN vehiculos v ON v.id = c.vehiculo_id
        WHERE c.estado IN ('pedida', 'confirmada') AND c.inicio > ? AND c.inicio < ?`),
-    vendidosPublicados: db.prepare(`
+    // Anuncios por retirar: de coches vendidos o entregados, o que han dejado de estar a la venta (retirada.js)
+    porRetirar: db.prepare(`
       SELECT v.id, v.marca, v.modelo, v.matricula, v.estado,
              GROUP_CONCAT(p.canal, ', ') AS canales, MIN(p.actualizado_en) AS desde
         FROM vehiculos v JOIN publicaciones p ON p.vehiculo_id = v.id
-       WHERE v.estado IN ('vendido', 'entregado') AND p.estado = 'retirar'
+       WHERE p.estado = 'retirar'
        GROUP BY v.id`),
     // itv_caducidad es un día de aquí ('AAAA-MM-DD')
     itv: db.prepare(`
@@ -131,11 +134,15 @@ export function calculadorDeAvisos(db) {
     }
 
     // 4. Vendidos o entregados que siguen en algún portal
-    for (const v of consultas.vendidosPublicados.all()) {
+    //    y anuncios de coches que han dejado de estar a la venta sin venderse (de vuelta al taller, por ejemplo)
+    for (const v of consultas.porRetirar.all()) {
+      const canales = v.canales.split(', ').map((c) => CANALES[c] ?? c).join(', ');
+      const vendido = ['vendido', 'entregado'].includes(v.estado);
       avisos.push({
-        tipo: 'vendidos_publicados', gravedad: 'alta',
-        texto: `${coche(v)} está ${v.estado} y sigue por retirar en ${v.canales.split(', ').map((c) => CANALES[c] ?? c).join(', ')}`, enlace: `coche.html?id=${v.id}`,
-        fecha: v.desde, orden: enUtc(v.desde),
+        tipo: vendido ? 'vendidos_publicados' : 'anuncios_por_retirar', gravedad: 'alta',
+        texto: vendido ? `${coche(v)} está ${v.estado} y sigue por retirar en ${canales}`
+          : `${coche(v)} ya no está a la venta (${nombreEstado(v.estado)}) y sigue anunciado en ${canales}`,
+        enlace: `coche.html?id=${v.id}`, fecha: v.desde, orden: enUtc(v.desde),
       });
     }
 

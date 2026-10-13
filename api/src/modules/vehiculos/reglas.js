@@ -46,3 +46,9 @@ export function motivosParaNoEntrar(db, vehiculo, destino) {
 
   return motivos;
 }
+
+// El precio tachado de una oferta tiene que ser mayor que el que se pide: si no, el anuncio engaña.
+export function errorDePrecios(v) {
+  if (v.precio_sin_oferta_cent == null || v.pvp_cent == null) return null;
+  return v.precio_sin_oferta_cent > v.pvp_cent ? null : 'El precio sin oferta (el tachado) tiene que ser mayor que el PVP';
+}

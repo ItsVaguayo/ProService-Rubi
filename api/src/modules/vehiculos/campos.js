@@ -43,6 +43,7 @@ export const CAMPOS = {
   garantia_meses: { tipo: 'entero' },
   ubicacion: { tipo: 'texto' },
   num_llaves: { tipo: 'entero' },
+  seguro_flota: { tipo: 'texto' }, // 0019: con, sin, alta_solicitada o baja_solicitada (la base lo comprueba)
 
   // Depósito
   propietario_nombre: { tipo: 'texto', dinero: true },
@@ -65,6 +66,7 @@ export const CAMPOS = {
   coste_preparacion_cent: { tipo: 'cent', dinero: true },
   coste_impuestos_cent: { tipo: 'cent', dinero: true },
   pvp_cent: { tipo: 'cent' }, // el PVP sale en la web: lo ve todo el mundo
+  precio_sin_oferta_cent: { tipo: 'cent' }, // 0019: el de antes de la oferta, tachado en la web. Mayor que el PVP
   precio_financiado_cent: { tipo: 'cent' },
   precio_minimo_cent: { tipo: 'cent', dinero: true },
   regimen_iva: { tipo: 'texto', dinero: true },
