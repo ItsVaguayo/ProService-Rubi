@@ -9,14 +9,18 @@ const PAGINA = location.pathname.split('/').pop() || 'index.html';
 const params = new URLSearchParams(location.search);
 // El contenido de la maqueta no se enseña mientras llegan los datos (ver html.cargando en panel.css)
 if (PAGINA !== 'login.html') document.documentElement.classList.add('cargando');
-// El rol del último que entró en este navegador, antes de preguntar a la API: el CSS esconde lo de gerencia
-// mientras no sepa que lo es (panel.css, «Menú según el rol»). Así el comercial no ve ni un instante el menú
-// de gerencia, y gerencia lo ve entero desde el principio. Lo que vale es lo que diga /auth/yo.
-const fijarRol = (rol) => {
-  if (rol) document.documentElement.dataset.rol = rol; else delete document.documentElement.dataset.rol;
-  try { rol ? localStorage.setItem('rol', rol) : localStorage.removeItem('rol'); } catch { /* sin almacenamiento: el CSS esconde igual */ }
+// Quién entró por última vez en este navegador (nombre y rol), antes de preguntar a la API. Con él, el menú sale
+// ya como toca al cambiar de página: el CSS esconde lo de gerencia mientras no sepa que lo es (panel.css, «Menú
+// según el rol») y el usuario del pie se pinta al momento en vez de esperar oculto. Lo que vale es /auth/yo.
+const pintarUsuarioMenu = (u) => {
+  const caja = document.querySelector('.menu__usuario');
+  if (caja) caja.innerHTML = `<strong>${esc(u.nombre)}</strong> ${u.rol === 'gerencia' ? 'Gerencia' : 'Comercial'} · <a href="#" data-salir>Salir</a>`;
 };
-try { const rol = localStorage.getItem('rol'); if (rol) document.documentElement.dataset.rol = rol; } catch { /* nada */ }
+const fijarUsuario = (u) => {
+  const html = document.documentElement;
+  if (u) { html.dataset.rol = u.rol; html.classList.add('usuario-conocido'); } else { delete html.dataset.rol; html.classList.remove('usuario-conocido'); }
+  try { u ? localStorage.setItem('usuario', JSON.stringify({ nombre: u.nombre, rol: u.rol })) : localStorage.removeItem('usuario'); } catch { /* sin almacenamiento: se espera a la API */ }
+};
 
 // Sin red o con el servidor colgado, fetch falla en inglés («Failed to fetch») o no acaba nunca: el botón se
 // quedaba bloqueado. Se corta a los 20 s y se dice qué pasa y qué hacer.
@@ -58,6 +62,13 @@ async function api(ruta, { method = 'GET', body } = {}) {
 // «1 día», «2 días»: el número con su palabra en singular o plural
 const cuenta = (n, uno, varios) => `${n} ${Number(n) === 1 ? uno : varios}`;
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+// El usuario recordado (ver fijarUsuario, arriba): menú y pie como toca desde el primer momento
+if (PAGINA !== 'login.html') {
+  try {
+    const u = JSON.parse(localStorage.getItem('usuario') ?? 'null');
+    if (u?.nombre && u.rol) { fijarUsuario(u); pintarUsuarioMenu(u); }
+  } catch { /* sin almacenamiento o dato roto: se espera a /auth/yo */ }
+}
 const cifra = (n) => (n == null || n === '' ? '—' : Number(n).toLocaleString('es-ES', { maximumFractionDigits: 0, useGrouping: 'always' }));
 const euros = (cent) => (cent == null ? '—' : `${cifra(cent / 100)} €`);
 const fechaSql = (s) => (s ? new Date(`${s.replace(' ', 'T')}Z`) : null);
@@ -219,11 +230,11 @@ function mantenerPulsado(boton, alConfirmar, { ms = 1500, texto = 'Mantén pulsa
 function prepararMenu(usuario) {
   const caja = $('.menu__usuario');
   if (caja) {
-    caja.innerHTML = `<strong>${esc(usuario.nombre)}</strong> ${usuario.rol === 'gerencia' ? 'Gerencia' : 'Comercial'} · <a href="#" data-salir>Salir</a>`;
+    pintarUsuarioMenu(usuario);
     $('[data-salir]', caja).addEventListener('click', async (ev) => {
       ev.preventDefault();
       await api('/auth/salir', { method: 'POST' }).catch(() => {});
-      fijarRol(null);
+      fijarUsuario(null);
       location.href = 'login.html';
     });
   }
@@ -327,7 +338,7 @@ async function paginaLogin() {
     const datos = Object.fromEntries(new FormData(form));
     try {
       const quien = await api('/auth/entrar', { method: 'POST', body: { email: datos.email, contrasena: datos.contrasena } });
-      fijarRol(quien.rol); // la primera página ya sale con el menú de quien entra, no del anterior
+      fijarUsuario(quien); // la primera página ya sale con el menú de quien entra, no del anterior
       location.href = destinoTrasEntrar();
     } catch (e) {
       error.textContent = e.status === 429 ? e.message : 'El correo o la contraseña no son correctos. Revisa las mayúsculas.';
@@ -4255,7 +4266,7 @@ const PAGINAS = {
   if (PAGINA === 'login.html') return paginaLogin();
   try {
     const usuario = await api('/auth/yo');
-    fijarRol(usuario.rol);
+    fijarUsuario(usuario);
     if (usuario.rol !== 'gerencia' && ['informes.html', 'usuarios.html', 'proveedores.html', 'gastos.html', 'facturas.html', 'factura.html', 'libros.html'].includes(PAGINA)) return (location.href = 'index.html');
     const menu = prepararMenu(usuario);
     const pagina = PAGINAS[PAGINA];

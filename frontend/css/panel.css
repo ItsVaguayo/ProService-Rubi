@@ -22,18 +22,19 @@
    Para que no se vea el cambio, las piezas del contenido (no el fondo de la cabecera), el usuario del menú y el contador esperan ocultos hasta
    que panel.js pone .listo en <html>, y entonces aparecen con un fundido. Si el JavaScript no llega a
    ejecutarse (por ejemplo, al abrir la maqueta como fichero), se enseñan igual a los 1,5 s.
-   El contenido entra por partes, en cascada: panel.js marca cada bloque con .entra y su turno (--i). */
+   El contenido entra por partes, en cascada: panel.js marca cada bloque con .entra y su turno (--i).
+   El usuario del menú no espera si panel.js ya lo recuerda (.usuario-conocido): así no parpadea al cambiar de página. */
 .menu__usuario,
 .menu__enlaces .contador { transition: opacity .35s ease; }
 html:not(.listo) .contenido > :not(header),
 html:not(.listo) .contenido > header > *,
-html:not(.listo) .menu__usuario,
+html:not(.listo):not(.usuario-conocido) .menu__usuario,
 html:not(.listo) .menu__enlaces .contador { opacity: 0; animation: mostrar-sin-js 0s 1.5s forwards; }
 /* Con el JavaScript ya en marcha (.cargando), lo de la maqueta no sale nunca: se espera a los datos de
    verdad, aunque la red del patio tarde más de 1,5 s. Arriba, una raya que avanza dice que está cargando. */
 html.cargando:not(.listo) .contenido > :not(header),
 html.cargando:not(.listo) .contenido > header > *,
-html.cargando:not(.listo) .menu__usuario,
+html.cargando:not(.listo):not(.usuario-conocido) .menu__usuario,
 html.cargando:not(.listo) .menu__enlaces .contador { animation: none; opacity: 0; }
 html.cargando:not(.listo) body::before {
   content: ''; position: fixed; inset: 0 0 auto; z-index: 50; height: 3px;
