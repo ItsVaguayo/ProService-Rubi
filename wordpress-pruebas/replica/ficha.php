@@ -125,6 +125,14 @@ $cilindrada = replica_campo($id, 'cilindrada');
 </section>
 
 <?php
+// Lo que haría Francesc en su ficha: el formulario de la plataforma con [proservice_contacto] (prueba con día y
+// hora, tasación con fotos). No está en su web: sin el plugin activo, esta réplica sigue siendo igual que la real.
+if (shortcode_exists('proservice_contacto')) {
+    $formulario = do_shortcode('[proservice_contacto]');
+    if ($formulario !== '') {
+        echo '<section class="section light" id="ps-contacto"><header class="section-intro"><h2>Pregúntanos por este coche</h2></header>' . $formulario . '</section>';
+    }
+}
 replica_aviso_solicitud();
 echo replica_parte('ficha-despues.html'); // termina en </main>
 ?>
