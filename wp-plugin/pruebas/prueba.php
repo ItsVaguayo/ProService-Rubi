@@ -169,9 +169,42 @@ afirmar(strpos($html, 'type="hidden" name="web"') === false, 'y no es type="hidd
 afirmar(strpos($html, 'value="prueba"') !== false && strpos($html, 'value="tasacion"') !== false && strpos($html, 'data-ps-tipo="financiacion"') !== false, 'los tipos con el valor que espera la API');
 afirmar(strpos($html, 'aún no envía') === false && strpos($html, 'type="submit" disabled') === false, 'sin la nota de «aún no envía» ni el botón desactivado');
 afirmar(strpos($html, 'onsubmit') === false, 'sin onsubmit="return false"');
+// Prueba con día y hora (bloque 10) y tasación con fotos (E4)
+afirmar(strpos($html, 'data-citas="https://stock.ejemplo.test/api/citas"') !== false && strpos($html, 'data-ps-solo="prueba"') !== false, 'con referencia, la prueba se pide con día y hora (API de citas)');
+afirmar(strpos($html, 'name="dia"') !== false && strpos($html, 'name="hora" disabled') !== false, 'día y hora: la hora se activa al elegir día');
+afirmar(strpos($html, 'data-ps-solo="tasacion" hidden') !== false && preg_match('/<input type="file" name="fotos" accept="image\/jpeg,image\/png,image\/webp" multiple>/', $html), 'tasación: bloque oculto hasta elegirla, con hasta 5 fotos');
+foreach (['tasacion_marca', 'tasacion_modelo', 'tasacion_anio', 'tasacion_km'] as $c) {
+    afirmar(preg_match('/name="' . $c . '"[^>]*data-ps-obligatorio/', $html) && !preg_match('/name="' . $c . '"[^>]*required/', $html), "{$c}: obligatorio solo con la tasación elegida (lo pone el JS)");
+}
+afirmar(wp_script_is('proservice-formulario', 'enqueued'), 'el envío va en assets/formulario.js, encolado al pintar el formulario');
+afirmar(strpos($html, "fetch(form.getAttribute('data-api')") === false, 'y ya no va suelto en la plantilla');
 delete_post_meta($ateca, 'referencia');
-afirmar(strpos(pintar_ficha($ateca), 'data-coche=""') !== false, 'sin referencia en la web, el formulario sale igual (y dice el coche en el mensaje)');
+$sin_ref = pintar_ficha($ateca);
+afirmar(strpos($sin_ref, 'data-coche=""') !== false, 'sin referencia en la web, el formulario sale igual (y dice el coche en el mensaje)');
+afirmar(strpos($sin_ref, 'data-citas=""') !== false && strpos($sin_ref, 'data-ps-solo="prueba"') === false, 'sin referencia no hay cita con hora: la API la necesita para saber el coche');
+afirmar(strpos($sin_ref, 'data-ps-solo="tasacion"') !== false, 'la tasación sí, no depende del coche');
+
+// [proservice_contacto]: el mismo formulario para ponerlo en la ficha del tema
+update_post_meta($ateca, 'referencia', 'PS-00031');
+query_posts(['p' => $ateca, 'post_type' => 'coches']);
+the_post();
+$corto = do_shortcode('[proservice_contacto]');
+afirmar(strpos($corto, '<div class="ps-web ps-web--incrustado"><form class="formulario-web" data-ps-contacto') === 0, 'el shortcode pinta el formulario dentro de .ps-web (los estilos del plugin no pisan el tema)');
+afirmar(strpos($corto, 'data-coche="PS-00031"') !== false && strpos($corto, 'data-citas="https://stock.ejemplo.test/api/citas"') !== false, 'con el coche de la ficha en la que está');
+afirmar(wp_style_is('proservice-web', 'enqueued'), 'y encola los estilos');
+wp_reset_query();
+$pagina = wp_insert_post(['post_type' => 'page', 'post_title' => 'Contacto', 'post_status' => 'publish']);
+query_posts(['page_id' => $pagina]);
+the_post();
+afirmar(do_shortcode('[proservice_contacto]') === '', 'fuera de la ficha de un coche no pinta nada');
+wp_reset_query();
+wp_delete_post($pagina, true);
 ProService_Ajustes::guardar(['api_url' => '']);
+query_posts(['p' => $ateca, 'post_type' => 'coches']);
+the_post();
+afirmar(do_shortcode('[proservice_contacto]') === '', 'sin dirección de la API, tampoco');
+wp_reset_query();
+delete_post_meta($ateca, 'referencia');
 
 query_posts(['p' => $ateca, 'post_type' => 'coches']);
 ProService_Ajustes::guardar(['ficha_propia' => true]);

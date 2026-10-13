@@ -93,6 +93,13 @@ class ProService_Ajustes
         return $base !== '' ? $base . '/api/contactos' : '';
     }
 
+    /** Base de la cita previa de pruebas (…/api/citas: huecos y pedir), o '' si no está configurada. */
+    public static function url_citas()
+    {
+        $base = untrailingslashit((string) self::get('api_url'));
+        return $base !== '' ? $base . '/api/citas' : '';
+    }
+
     /** Campo de la web donde está un dato, o null si no está mapeado. */
     public static function meta_de($dato)
     {

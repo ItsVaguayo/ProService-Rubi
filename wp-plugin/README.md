@@ -19,7 +19,9 @@ API ──REST (usuario Editor)──► posts «coches» + marca + campos ACF +
   - Con `cabecera="si"` pinta también el título de la maqueta.
 - **301 de los coches retirados.** Cuando la API vende o entrega un coche, pasa su post a borrador. Su URL (`/coches/<nombre>/`) está indexada y daría 404, así que el plugin la manda con un 301 a la página del listado. Una URL que nunca existió, o un coche borrado a mano en WordPress, siguen dando 404.
 - **Ficha del coche** con el diseño de `frontend/web/coche.html`. Va apagada por defecto, porque en la web real manda la plantilla del tema hijo. Se activa en Ajustes.
-- **Formulario «Pregúntanos por este coche»** en esa ficha. Manda el contacto a `POST /api/contactos` de la plataforma (nombre, teléfono, tipo, coche, mensaje y privacidad) y sale en la página Contactos del panel.
+- **Formulario «Pregúntanos por este coche»** en esa ficha y, con **`[proservice_contacto]`**, en la ficha del tema (la que usa proservicerubi.com): Francesc lo pone donde quiera dentro de la plantilla del coche. Fuera de la ficha de un coche, el shortcode no pinta nada. HTML en `plantillas/formulario.php`, envío en `assets/formulario.js`. Manda el contacto a `POST /api/contactos` de la plataforma (nombre, teléfono, tipo, coche, mensaje y privacidad) y sale en la página Contactos del panel.
+  - **Probarlo**: si el coche tiene referencia, elige día y hora entre los huecos libres de la agenda (`GET /api/citas/huecos`) y la pide (`POST /api/citas/pedir`): entra en la agenda del panel como «pedida». Si la hora se acaba de coger, lo dice y vuelve a cargar los huecos. Con «Prefiero que me llaméis», o si los huecos no cargan, va como contacto.
+  - **Tasar mi coche**: marca, modelo, año y kilómetros de su coche y hasta 5 fotos (JPG, PNG o WebP, 10 MB cada una). Con fotos va en multipart. Los datos solo son obligatorios con la tasación elegida.
   - La dirección de la API se pone en Ajustes. Sin ella, la ficha no enseña el formulario ni los botones «Pedir prueba», «Financiarlo» y «Tasar mi coche», que dejan elegido el tipo.
   - El coche va por su referencia (`PS-00031`), que la API deja en el campo `referencia`. Su web no tiene ese campo (duda B16): mientras no exista, el formulario pone en el mensaje el título y la dirección de la ficha.
   - Campo trampa `web`, fuera de la pantalla con CSS (no `type="hidden"`), con `tabindex="-1"` y `autocomplete="off"`. La API descarta los envíos que lo traen relleno.
@@ -38,6 +40,7 @@ Instalar un plugin requiere **administrador** (una sola vez). La publicación de
 1. Subir `proservice-stock/` a `wp-content/plugins/` y activarlo.
 2. En **Ajustes → Pro Service Buscador**, ajustar el mapa a los nombres reales de los campos ACF y poner la dirección de la API.
 3. Poner `[proservice_buscador]` en la página del listado.
+4. Poner `[proservice_contacto]` en la plantilla de la ficha del coche del tema (por ejemplo, `<?php echo do_shortcode('[proservice_contacto]'); ?>`), si se quiere el formulario de la plataforma en vez del suyo (duda B14).
 
 ## Pruebas
 
@@ -45,10 +48,11 @@ Instalar un plugin requiere **administrador** (una sola vez). La publicación de
 wp-plugin/pruebas/probar.sh
 ```
 
-Hace una copia temporal del WordPress de pruebas (la imitación de `wordpress-pruebas/`), le pone el plugin, crea coches como los deja la API por REST y pasa 59 comprobaciones: buscador, caché, ficha y su formulario, 301 y ajustes. El WordPress de pruebas no se toca.
+Hace una copia temporal del WordPress de pruebas (la imitación de `wordpress-pruebas/`), le pone el plugin, crea coches como los deja la API por REST y pasa 75 comprobaciones: buscador, caché, ficha y su formulario (también el shortcode, la cita y la tasación), 301 y ajustes. El WordPress de pruebas no se toca.
 
 ## Versiones
 
+- **0.6.0**: `[proservice_contacto]`; el formulario pide la prueba con día y hora (cita previa) y la tasación con el coche y hasta 5 fotos. El envío pasa a `assets/formulario.js`.
 - **0.5.0**: el formulario de la ficha envía a la API (`POST /api/contactos`), con campo trampa. Vuelve el ajuste de la dirección de la API y la referencia entra en el mapa.
 - **0.4.1**: vuelve el 301 de los coches retirados, ahora sin depender de la plataforma: basta con que el post no esté publicado.
 - **0.4.0**: la 0.3 leía un feed de la API cada 5 minutos y escribía ella los posts. Eso pasó a la API (vía REST), así que se quitaron la sincronización, las órdenes de WP-CLI y la caja de vincular. Si se actualiza encima de la 0.3, el plugin borra la tarea programada y entiende el mapa guardado.

@@ -381,6 +381,13 @@ body.web {
 .formulario-web .boton { grid-column: 1 / -1; }
 .formulario-web .boton { justify-self: start; min-width: 180px; }
 .formulario-web .casilla { color: #c9ced3; font-size: .875rem; }
+/* Lo que solo va con un tipo: el día y la hora de la prueba, el coche que se quiere tasar */
+.formulario-web__extra { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.formulario-web__extra[hidden] { display: none; }
+.formulario-web__extra legend { grid-column: 1 / -1; margin-bottom: 4px; padding: 0; }
+.formulario-web__extra .campo--ancho { grid-column: 1 / -1; }
+.formulario-web input[type="file"] { padding: 10px; font-size: .875rem; }
+.formulario-web select:disabled { opacity: .5; }
 
 /* Vacío sobre fondo negro */
 .web .vacio { border-color: #3a3c41; margin-top: 8px; }
@@ -430,7 +437,8 @@ body.web {
   .listado-titulo { padding: 32px 0 24px; }
   .galeria__miniaturas { grid-template-columns: repeat(4, 1fr); }
   .equipamiento { grid-template-columns: 1fr; }
-  .formulario-web { grid-template-columns: 1fr; padding: 18px; }
+  .formulario-web, .formulario-web__extra { grid-template-columns: 1fr; padding: 18px; }
+  .formulario-web__extra { padding: 0; }
 
   .whatsapp-fijo {
     position: fixed;

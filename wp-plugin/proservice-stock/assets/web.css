@@ -776,6 +776,13 @@
 .ps-web .formulario-web .boton { justify-self: start; min-width: 180px; }
 .ps-web .formulario-web .casilla { color: #c9ced3; font-size: .875rem; }
 
+.ps-web .formulario-web__extra { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.ps-web .formulario-web__extra[hidden] { display: none; }
+.ps-web .formulario-web__extra legend { grid-column: 1 / -1; margin-bottom: 4px; padding: 0; }
+.ps-web .formulario-web__extra .campo--ancho { grid-column: 1 / -1; }
+.ps-web .formulario-web input[type="file"] { padding: 10px; font-size: .875rem; }
+.ps-web .formulario-web select:disabled { opacity: .5; }
+
 
 .ps-web .web .vacio { border-color: #3a3c41; margin-top: 8px; }
 
@@ -824,7 +831,8 @@
   .ps-web .listado-titulo { padding: 32px 0 24px; }
   .ps-web .galeria__miniaturas { grid-template-columns: repeat(4, 1fr); }
   .ps-web .equipamiento { grid-template-columns: 1fr; }
-  .ps-web .formulario-web { grid-template-columns: 1fr; padding: 18px; }
+  .ps-web .formulario-web, .ps-web .formulario-web__extra { grid-template-columns: 1fr; padding: 18px; }
+  .ps-web .formulario-web__extra { padding: 0; }
 
   .ps-web .whatsapp-fijo {
     position: fixed;
