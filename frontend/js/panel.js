@@ -9,6 +9,14 @@ const PAGINA = location.pathname.split('/').pop() || 'index.html';
 const params = new URLSearchParams(location.search);
 // El contenido de la maqueta no se enseña mientras llegan los datos (ver html.cargando en panel.css)
 if (PAGINA !== 'login.html') document.documentElement.classList.add('cargando');
+// El rol del último que entró en este navegador, antes de preguntar a la API: el CSS esconde lo de gerencia
+// mientras no sepa que lo es (panel.css, «Menú según el rol»). Así el comercial no ve ni un instante el menú
+// de gerencia, y gerencia lo ve entero desde el principio. Lo que vale es lo que diga /auth/yo.
+const fijarRol = (rol) => {
+  if (rol) document.documentElement.dataset.rol = rol; else delete document.documentElement.dataset.rol;
+  try { rol ? localStorage.setItem('rol', rol) : localStorage.removeItem('rol'); } catch { /* sin almacenamiento: el CSS esconde igual */ }
+};
+try { const rol = localStorage.getItem('rol'); if (rol) document.documentElement.dataset.rol = rol; } catch { /* nada */ }
 
 // Sin red o con el servidor colgado, fetch falla en inglés («Failed to fetch») o no acaba nunca: el botón se
 // quedaba bloqueado. Se corta a los 20 s y se dice qué pasa y qué hacer.
@@ -215,6 +223,7 @@ function prepararMenu(usuario) {
     $('[data-salir]', caja).addEventListener('click', async (ev) => {
       ev.preventDefault();
       await api('/auth/salir', { method: 'POST' }).catch(() => {});
+      fijarRol(null);
       location.href = 'login.html';
     });
   }
@@ -317,7 +326,8 @@ async function paginaLogin() {
     boton.textContent = 'Entrando…';
     const datos = Object.fromEntries(new FormData(form));
     try {
-      await api('/auth/entrar', { method: 'POST', body: { email: datos.email, contrasena: datos.contrasena } });
+      const quien = await api('/auth/entrar', { method: 'POST', body: { email: datos.email, contrasena: datos.contrasena } });
+      fijarRol(quien.rol); // la primera página ya sale con el menú de quien entra, no del anterior
       location.href = destinoTrasEntrar();
     } catch (e) {
       error.textContent = e.status === 429 ? e.message : 'El correo o la contraseña no son correctos. Revisa las mayúsculas.';
@@ -4245,6 +4255,7 @@ const PAGINAS = {
   if (PAGINA === 'login.html') return paginaLogin();
   try {
     const usuario = await api('/auth/yo');
+    fijarRol(usuario.rol);
     if (usuario.rol !== 'gerencia' && ['informes.html', 'usuarios.html', 'proveedores.html', 'gastos.html', 'facturas.html', 'factura.html', 'libros.html'].includes(PAGINA)) return (location.href = 'index.html');
     const menu = prepararMenu(usuario);
     const pagina = PAGINAS[PAGINA];

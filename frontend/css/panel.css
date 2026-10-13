@@ -180,7 +180,13 @@ html.cargando:not(.listo) body::before {
 @media (hover: hover) and (pointer: fine) { .menu__enlaces--resalte a:hover { background: transparent; } }
 @media (hover: hover) and (pointer: fine) { .menu__enlaces--resalte a:hover { padding-left: 16px; } }
 
-.menu__enlaces a.menu__separado { margin-top: 12px; }
+/* Menú según el rol (fijarRol en panel.js): lo de gerencia no sale hasta saber que lo es. Para el comercial,
+   la raya del bloque de dinero pasa a Incentivos, que es lo único que le queda de él. */
+html:not([data-rol="gerencia"]) .menu__enlaces a:is([href="informes.html"], [href="usuarios.html"], [href="proveedores.html"],
+  [href="gastos.html"], [href="facturas.html"], [href="libros.html"]) { display: none; }
+.menu__enlaces a.menu__separado,
+html:not([data-rol="gerencia"]) .menu__enlaces a[href="incentivos.html"] { margin-top: 12px; }
+html:not([data-rol="gerencia"]) .menu__enlaces a[href="incentivos.html"]::after,
 .menu__enlaces a.menu__separado::after {
   content: "";
   position: absolute;
