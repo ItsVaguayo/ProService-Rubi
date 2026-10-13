@@ -65,8 +65,9 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
 | `POST /contactos` | **sin sesión** | Lo manda el formulario de la web. Ver abajo. Cada contacto apunta su correo para `CORREO_CONTACTOS` (ver «Correos») |
-| `GET /contactos?estado=sin_atender&tipo=prueba` | con sesión | `estado`: `sin_atender` (por defecto, el que más espera primero), `atendidos` o `todos`. `tipo`: `informacion`, `prueba`, `financiacion` o `tasacion`. Cada contacto lleva la matrícula, marca y modelo del coche y quién lo atendió |
+| `GET /contactos?estado=sin_atender&tipo=prueba` | con sesión | `estado`: `sin_atender` (por defecto, el que más espera primero), `atendidos` o `todos`. `tipo`: `informacion`, `prueba`, `financiacion` o `tasacion`. Cada contacto lleva la matrícula, marca y modelo del coche, quién lo atendió y, en una tasación, `tasacion_marca`, `tasacion_modelo`, `tasacion_anio`, `tasacion_km` y `fotos` (`[{ id, url }]`, vacía si no mandó ninguna) |
 | `GET /contactos/sin-atender` | con sesión | `{ total }`, para el contador del menú |
+| `GET /contactos/:id/fotos/:fotoId` | con sesión | Una foto de una tasación (JPG). Sin sesión, 401: lleva la matrícula del coche de un particular |
 | `PATCH /contactos/:id` | con sesión | `{ atendido: true }` lo marca con fecha y usuario; `false` lo devuelve a pendiente |
 | `POST /contactos/:id/cliente` | con sesión | Pasa el contacto a cliente. Si ya hay un cliente con ese teléfono o ese correo, lo une a él: `{ cliente_id, creado: false }` (200). Si no, lo crea con origen `web`: `{ cliente_id, creado: true }` (201) |
 
@@ -91,6 +92,12 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 - Como mucho 5 envíos por IP cada 10 minutos (429). Se cambia con `CONTACTOS_POR_IP`.
 - A la web solo se le devuelve `{ ok: true }`, nunca datos internos.
 - Si el formulario está en otro dominio (proservicerubi.com), ese dominio tiene que estar en `CORS_ORIGENES`.
+
+**Tasación** (`tipo: "tasacion"`, duda E4): además, el coche que quiere dar a cambio, todo opcional: `tasacion_marca` (hasta 60), `tasacion_modelo` (hasta 80), `tasacion_anio` (de 1950 al año que viene) y `tasacion_km` (`80000` o `"80.000"`). Con fotos, el formulario va como `multipart/form-data`: los mismos campos como texto (`privacidad` = `true` u `on`) y hasta **5 fotos** en el campo `fotos`, de 10 MB como mucho cada una (413).
+- Se reducen a JPG como las del panel y se guardan en `UPLOADS_PATH/contactos/`. Si una no es una imagen, o es HEIC (el iPhone en Safari ya las convierte al subirlas), 400 y no se guarda nada.
+- Los datos o las fotos de un coche en un contacto que no es de tasación: 400.
+- El límite de envíos por IP se comprueba **antes** de recibir las fotos.
+- El correo al comercial dice el coche y cuántas fotos ha mandado.
 
 ## Clientes y proveedores
 

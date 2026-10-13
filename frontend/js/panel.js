@@ -1449,6 +1449,13 @@ async function paginaContactos() {
            ? `<a class="boton boton--secundario boton--pequeno" href="agenda.html?semana=${esc(c.cita_inicio.slice(0, 10))}">Ver la cita</a>`
            : `<a class="boton boton--oscuro boton--pequeno" href="agenda.html?contacto=${c.id}">Dar cita</a>`) : ''}
          <button class="boton boton--${c.tipo === 'prueba' && !c.cita_inicio ? 'secundario' : 'oscuro'} boton--pequeno" type="button" data-atendido="${c.id}" data-valor="true">Marcar atendido</button>`;
+    // Tasación: el coche que quiere dar a cambio y sus fotos (se abren en grande en otra pestaña)
+    const tasacion = (k) => {
+      const suyo = [[k.tasacion_marca, k.tasacion_modelo].filter(Boolean).join(' '), k.tasacion_anio, k.tasacion_km != null ? `${cifra(k.tasacion_km)} km` : null].filter(Boolean);
+      if (!suyo.length && !k.fotos?.length) return '';
+      return `<div class="contacto__tasacion">${suyo.length ? `<p><span class="rotulo">Su coche</span> ${esc(suyo.join(' · '))}</p>` : ''}
+        ${k.fotos?.length ? `<div class="contacto__fotos">${k.fotos.map((f, i) => `<a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${esc(f.url)}" alt="Foto ${i + 1} de su coche" loading="lazy" width="72" height="54"></a>`).join('')}</div>` : ''}</div>`;
+    };
     return `<li class="contacto${urgente ? ' contacto--urgente' : ''}${c.atendido_en ? ' contacto--atendido' : ''}${c.id === destacado ? ' contacto--destacado' : ''}" id="contacto-${c.id}">
         <span class="contacto__inicial contacto__inicial--${esc(c.tipo)}" aria-hidden="true">${esc(iniciales(c.nombre))}</span>
         <div class="contacto__cuerpo">
@@ -1456,6 +1463,7 @@ async function paginaContactos() {
             <span class="estado tipo--${esc(c.tipo)}">${esc(TIPOS_CONTACTO[c.tipo] ?? c.tipo)}</span>
             <span class="${urgente ? 'dias dias--peligro' : 'nota'}" title="${esc(fechaHora(c.recibido_en))}">${esc(haceCuanto(recibido))}</span></p>
           <p class="contacto__mensaje${c.mensaje ? '' : ' contacto__mensaje--vacio'}">${esc(c.mensaje || 'Sin mensaje')}</p>
+          ${tasacion(c)}
           <p class="contacto__datos"><a href="tel:${esc(tel)}">${esc(telefonoBonito(c.telefono))}</a>${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}</p>
         </div>
         ${coche}

@@ -7,6 +7,13 @@ const TIPO_CONTACTO = { informacion: 'información', prueba: 'prueba de conducci
 const enlace = (panel, ruta) => (panel ? `${panel}${ruta}` : null);
 const diaEsp = (dia) => dia.split('-').reverse().join('/');
 
+// En una tasación, el coche del cliente: «Su coche: Seat Ibiza, 2019, 80.000 km»
+function suCoche(c) {
+  const partes = [[c.tasacion_marca, c.tasacion_modelo].filter(Boolean).join(' '), c.tasacion_anio,
+    c.tasacion_km != null ? `${c.tasacion_km.toLocaleString('es-ES', { useGrouping: 'always' })} km` : null].filter(Boolean);
+  return partes.length ? `Su coche: ${partes.join(', ')}` : null;
+}
+
 /** Apunta el correo de un contacto que acaba de llegar por la web. Va dentro de la transacción del alta. */
 export function correoDeContacto(db, cfg, contacto, coche) {
   const tipo = TIPO_CONTACTO[contacto.tipo] ?? contacto.tipo;
@@ -16,6 +23,8 @@ export function correoDeContacto(db, cfg, contacto, coche) {
     `Teléfono: ${contacto.telefono}`,
     contacto.email ? `Correo: ${contacto.email}` : null,
     coche ? `Coche: ${coche.marca} ${coche.modelo}${coche.version ? ` ${coche.version}` : ''} (${coche.referencia})` : null,
+    suCoche(contacto),
+    contacto.fotos ? `Ha mandado ${contacto.fotos} foto${contacto.fotos === 1 ? '' : 's'} de su coche: están en el panel.` : null,
     contacto.mensaje ? `\nMensaje:\n${contacto.mensaje}` : null,
     '',
     enlace(cfg.panel, `contactos.html?id=${contacto.id}`) ?? 'Está en el panel, en Contactos.',
