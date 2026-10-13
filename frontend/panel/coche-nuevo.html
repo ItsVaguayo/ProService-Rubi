@@ -380,6 +380,16 @@
             <span class="campo__nombre">Número de llaves</span>
             <input type="number" name="num_llaves" min="0" max="5">
           </label>
+          <label class="campo">
+            <span class="campo__nombre">Seguro de flota</span>
+            <select name="seguro_flota">
+              <option value="">Sin decir</option>
+              <option value="con">Con seguro</option>
+              <option value="sin">Sin seguro</option>
+              <option value="alta_solicitada">Alta pedida</option>
+              <option value="baja_solicitada">Baja pedida</option>
+            </select>
+          </label>
           <label class="campo campo--ancho">
             <span class="campo__nombre">Daños y golpes</span>
             <textarea name="danos" placeholder="Rayón en el paragolpes trasero, lado derecho"></textarea>
@@ -407,6 +417,11 @@
             <span class="campo__nombre">Precio si financia</span>
             <span class="con-unidad" data-unidad="€"><input type="number" name="precio_financiado_cent" min="0" step="0.01"></span>
             <span class="campo__ayuda">Si no tiene, déjalo vacío y no sale</span>
+          </label>
+          <label class="campo">
+            <span class="campo__nombre">Precio antes de la oferta</span>
+            <span class="con-unidad" data-unidad="€"><input type="number" name="precio_sin_oferta_cent" min="0" step="0.01"></span>
+            <span class="campo__ayuda">Solo si está de oferta: el de antes, más alto que el de venta</span>
           </label>
         </div>
       </fieldset>

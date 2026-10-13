@@ -114,6 +114,7 @@
       <a href="#datos">Datos</a>
       <a href="#fotos">Fotos</a>
       <a href="#equipamiento">Equipamiento</a>
+      <a href="#revision">Revisión</a>
       <a href="#dinero">Dinero</a>
       <a href="#reserva">Reserva</a>
       <a href="#publicacion">Dónde está publicado</a>
@@ -192,6 +193,14 @@
             <li>Portón eléctrico</li>
           </ul>
         </section>
+
+        <!-- REVISIÓN, como la pestaña de Pymecar (GET/PUT /api/vehiculos/:id/revision): lo que se recibe con el
+             coche, lo que se entrega con él y el estado de cada componente. El estado de los componentes sale como
+             anexo del contrato de compraventa. Plegada: se abre al recibir el coche y antes de entregarlo. -->
+        <details class="caja revision" id="revision">
+          <summary class="caja__titulo"><h2>Revisión</h2><span class="nota">Sin revisar</span></summary>
+          <form class="revision__form"></form>
+        </details>
 
       </div>
 

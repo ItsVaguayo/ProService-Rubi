@@ -803,6 +803,61 @@ async function paginaListado(usuario) {
 
 // --- Ficha -------------------------------------------------------------------------------------
 
+const SEGURO_FLOTA = { con: 'Con seguro', sin: 'Sin seguro', alta_solicitada: 'Alta pedida', baja_solicitada: 'Baja pedida' };
+const ESTADOS_COMPONENTE = { controlado: 'Controlado', sustituido: 'Sustituido', cubierto: 'Cubierto' };
+
+// Revisión del coche, como en Pymecar (api/src/modules/vehiculos/revision.js): lo que se recibe, lo que se
+// entrega y el estado de cada componente. Se guarda todo junto; «Dar por revisado» pide todos los componentes.
+async function prepararRevision(id) {
+  const caja = $('#revision');
+  const form = $('form', caja);
+  const resumen = $('summary .nota', caja);
+  const pintar = (r) => {
+    const vistos = r.componentes.filter((c) => c.estado).length;
+    resumen.textContent = r.revisado_en
+      ? `Revisado el ${fechaSql(r.revisado_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}${r.revisado_por_nombre ? ` por ${r.revisado_por_nombre}` : ''}`
+      : `Sin revisar · ${vistos} de ${r.componentes.length} componentes vistos`;
+    resumen.classList.toggle('revision__hecha', !!r.revisado_en);
+    const casillas = (fase, titulo) => `<fieldset class="revision__grupo"><legend>${titulo}</legend>
+      <div class="revision__casillas">${r[fase].map((e) => `<label class="casilla"><input type="checkbox" name="${fase}" value="${e.id}"${e.marcado ? ' checked' : ''}> ${esc(e.nombre)}</label>`).join('')}</div></fieldset>`;
+    form.innerHTML = `${casillas('recepcion', 'Se recibe con el coche')}${casillas('entrega', 'Se entrega con el coche')}
+      <fieldset class="revision__grupo"><legend>Componentes</legend>
+        <div class="revision__componentes">${r.componentes.map((c) => `<div class="revision__componente" data-id="${c.id}">
+          <span class="revision__nombre">${esc(c.nombre)}</span>
+          <fieldset class="segmentos" aria-label="${esc(c.nombre)}">${[['', 'Sin ver'], ...Object.entries(ESTADOS_COMPONENTE)].map(([k, n]) =>
+            `<label><input type="radio" name="estado-${c.id}" value="${k}"${(c.estado ?? '') === k ? ' checked' : ''}><span>${n}</span></label>`).join('')}</fieldset>
+          <input class="revision__nota" name="nota-${c.id}" maxlength="500" placeholder="Información adicional" aria-label="Información adicional de ${esc(c.nombre)}" value="${esc(c.nota ?? '')}">
+        </div>`).join('')}</div>
+      </fieldset>
+      <div class="form-tercero__pie">
+        <button class="boton boton--secundario" type="submit" value="guardar">Guardar</button>
+        ${r.revisado_en ? '<button class="boton boton--secundario" type="submit" value="quitar">Quitar el «revisado»</button>'
+          : '<button class="boton" type="submit" value="revisado">Guardar y dar por revisado</button>'}
+      </div>`;
+  };
+  pintar(await api(`/vehiculos/${id}/revision`));
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const que = ev.submitter?.value ?? 'guardar';
+    const marcadas = (fase) => Object.fromEntries([...form.querySelectorAll(`input[name="${fase}"]`)].map((c) => [c.value, c.checked]));
+    const componentes = Object.fromEntries([...form.querySelectorAll('.revision__componente')].map((d) => [d.dataset.id, {
+      estado: $(`input[name="estado-${d.dataset.id}"]:checked`, d)?.value || null,
+      nota: $(`input[name="nota-${d.dataset.id}"]`, d).value.trim() || null,
+    }]));
+    const cuerpo = { recepcion: marcadas('recepcion'), entrega: marcadas('entrega'), componentes };
+    if (que !== 'guardar') cuerpo.revisado = que === 'revisado';
+    const botones = form.querySelectorAll('button');
+    botones.forEach((b) => { b.disabled = true; });
+    try {
+      pintar(await api(`/vehiculos/${id}/revision`, { method: 'PUT', body: cuerpo }));
+      avisar(que === 'revisado' ? 'Coche dado por revisado' : 'Revisión guardada');
+    } catch (e) {
+      botones.forEach((b) => { b.disabled = false; });
+      mostrarErrores(cajaErrorEn(form), e, 'No se ha podido guardar la revisión:');
+    }
+  });
+}
+
 // Los mismos que exige la API (api/src/modules/vehiculos/campos.js), para la barra de progreso del alta
 const OBLIGATORIOS_ALTA = ['matricula', 'marca', 'modelo'];
 const OBLIGATORIOS_PUBLICAR = [
@@ -834,7 +889,7 @@ async function paginaFicha(usuario) {
   $('.ficha-cabecera__info > .nota').textContent = [v.anio, v.kilometros != null && `${cifra(v.kilometros)} km`, v.combustible && nombre(v.combustible),
     v.cambio && nombre(v.cambio), v.propiedad === 'deposito' ? 'En depósito' : 'Propio', v.ubicacion && nombre(v.ubicacion), `Ref. ${v.referencia}`].filter(Boolean).join(' · ');
   const lineaPrecio = document.querySelectorAll('.ficha-cabecera__linea')[1];
-  lineaPrecio.innerHTML = `<span class="ficha-cabecera__precio cifra">${euros(v.pvp_cent)}</span><span class="${claseDiasStock(diasDesde(v.creado_en))}">${cuenta(diasDesde(v.creado_en), 'día', 'días')} en stock</span>`;
+  lineaPrecio.innerHTML = `${v.precio_sin_oferta_cent ? `<s class="ficha-cabecera__antes cifra" title="Precio antes de la oferta">${euros(v.precio_sin_oferta_cent)}</s>` : ''}<span class="ficha-cabecera__precio cifra">${euros(v.pvp_cent)}</span><span class="${claseDiasStock(diasDesde(v.creado_en))}">${cuenta(diasDesde(v.creado_en), 'día', 'días')} en stock</span>`;
 
   // Cambiar estado
   const formEstado = $('.cambiar-estado');
@@ -880,7 +935,7 @@ async function paginaFicha(usuario) {
     fila('Tapicería', nombre(v.tapiceria)), fila('Llantas', v.llantas), fila('ITV hasta', v.itv_caducidad && fechaCorta(v.itv_caducidad), true), fila('Última ITV', v.itv_ultima && fechaCorta(v.itv_ultima), true),
     fila('Uso anterior', v.uso_anterior && mayuscula(v.uso_anterior), true),
     fila('Última revisión', v.ultima_revision && fechaCorta(v.ultima_revision), true), fila('Garantía', v.garantia_meses != null ? cuenta(v.garantia_meses, 'mes', 'meses') : null, true),
-    fila('Llaves', v.num_llaves, true),
+    fila('Llaves', v.num_llaves, true), fila('Seguro de flota', SEGURO_FLOTA[v.seguro_flota]),
   ].join('');
 
   // Fotos
@@ -893,6 +948,9 @@ async function paginaFicha(usuario) {
 
   // Equipamiento
   $('#equipamiento .extras').innerHTML = extras.length ? extras.map((e) => `<li>${esc(e)}</li>`).join('') : '<li class="nota">Sin equipamiento apuntado</li>';
+
+  // Revisión (no bloquea la ficha si falla: se avisa dentro de su caja)
+  prepararRevision(id).catch((e) => mostrarErrores(cajaErrorEn($('#revision form')), e, 'No se ha podido cargar la revisión:'));
 
   // Dinero: solo gerencia. La API ya no se lo manda al comercial; aquí se quita el bloque.
   if (!gerencia) {
@@ -2325,6 +2383,9 @@ async function prepararAltaFactura() {
       <label class="campo"><span class="campo__nombre">Garantía</span><select name="garantia_tipo"><option value="directa">Directa</option><option value="comprada">Comprada</option><option value="sin">Sin garantía</option></select></label>
       <label class="campo"><span class="campo__nombre">Meses</span><input type="number" name="garantia_meses" min="0" max="36" value="12"></label>
       <label class="campo"><span class="campo__nombre">Km a la entrega</span><input type="number" name="km_entrega" min="0"></label>
+      <label class="campo campo--doble"><span class="campo__nombre">Coche que entrega a cambio</span><input name="parte_pago_vehiculo" maxlength="200" autocomplete="off" placeholder="Seat Ibiza 1.0 TSI · 1234 ABC">
+        <span class="campo__ayuda">Si paga una parte con su coche. Al emitir, su valor cuenta como cobrado.</span></label>
+      <label class="campo"><span class="campo__nombre">Valor de su coche</span><span class="con-unidad" data-unidad="€"><input name="parte_pago" inputmode="decimal" placeholder="0,00"></span></label>
       <label class="campo campo--ancho"><span class="campo__nombre">Observaciones</span><textarea name="observaciones" maxlength="2000"></textarea></label>
       <div class="factura-previa campo--ancho" aria-live="polite" hidden></div>
       <div class="form-tercero__pie campo--ancho">
@@ -2364,6 +2425,10 @@ async function prepararAltaFactura() {
         `<div><span>IVA 21 %</span><span class="cifra">${euros2(precio - base)}</span></div>`,
         `<div><span>Total de la factura</span><b class="cifra">${euros2(precio + (suplidos || 0))}</b></div>`);
     }
+    // Coche entregado como parte del pago: lo que queda por pagar después
+    const parte = form.elements.parte_pago.value.trim() ? aCent(form.elements.parte_pago.value) : 0;
+    if (parte > 0 && precio >= 0) filas.push(`<div><span>Su coche, como parte del pago</span><span class="cifra">−${euros2(parte)}</span></div>`,
+      `<div><span>Queda por pagar</span><b class="cifra">${euros2(precio + (suplidos || 0) - parte)}</b></div>`);
     previa.innerHTML = `<p class="factura-previa__titulo">${regimen === 'REBU' ? 'Régimen especial de bienes usados (REBU)' : 'IVA general'} · PVP ${euros2(v.pvp_cent)}${suplidos ? ` · con ${euros2(suplidos)} de gestoría` : ''}</p>${filas.join('')}`;
     previa.hidden = false;
   };
@@ -2375,7 +2440,7 @@ async function prepararAltaFactura() {
     if (v?.comprador_id && !form.elements.cliente_id.value) form.elements.cliente_id.value = String(v.comprador_id);
     pintarPrevia();
   });
-  for (const campo of ['precio', 'suplidos', 'regimen']) form.elements[campo].addEventListener('input', pintarPrevia);
+  for (const campo of ['precio', 'suplidos', 'regimen', 'parte_pago']) form.elements[campo].addEventListener('input', pintarPrevia);
   // Pago aplazado: el vencimiento se propone solo (se puede cambiar)
   const sumarDiasA = (dia, n) => diaLocal(new Date(new Date(`${dia}T12:00:00`).getTime() + n * 86400000));
   const proponerVence = () => {
@@ -2400,6 +2465,8 @@ async function prepararAltaFactura() {
       garantia_tipo: d.garantia_tipo, garantia_meses: d.garantia_meses === '' ? null : Number(d.garantia_meses) };
     if (d.precio.trim()) cuerpo.precio_cent = aCent(d.precio);
     if (d.suplidos.trim()) cuerpo.suplidos_cent = aCent(d.suplidos);
+    if (d.parte_pago.trim()) cuerpo.parte_pago_cent = aCent(d.parte_pago);
+    if (d.parte_pago_vehiculo.trim()) cuerpo.parte_pago_vehiculo = d.parte_pago_vehiculo.trim();
     if (d.regimen) cuerpo.regimen = d.regimen;
     if (d.vencimiento) cuerpo.vencimiento = d.vencimiento;
     if (d.km_entrega !== '') cuerpo.km_entrega = Number(d.km_entrega);
@@ -2779,7 +2846,7 @@ async function paginaContrato(usuario) {
       <div class="contrato__firmas" style="margin-top:0">${k.firmas.map((f, i) => `<p><b>${esc(f)}</b><br>${esc(k.partes[i]?.nombre ?? '')}${k.partes[i]?.nif && !/^_+$/.test(k.partes[i].nif) ? ` · ${esc(k.partes[i].nif)}` : ''}</p>`).join('')}</div>
       ${k.anexo ? `<section class="contrato__anexo">
         <h2>${esc(k.anexo.titulo)}</h2>
-        <p>${esc([v.marca, v.modelo, v.version].filter(Boolean).join(' '))} · ${esc(v.matricula)}${k.anexo.revisado ? ` · Revisado el ${esc(k.anexo.revisado)}` : ''}</p>
+        <p>${esc([v.marca, v.modelo, v.version].filter(Boolean).join(' '))} · ${matricula(v.matricula)}${k.anexo.revisado ? ` · Revisado el ${esc(k.anexo.revisado)}` : ''}</p>
         ${k.anexo.componentes.length ? `<table class="contrato__cuadro contrato__revision"><thead><tr><th>Componente</th><th>Controlado</th><th>Sustituido</th><th>Cubierto</th><th>Información adicional</th></tr></thead><tbody>
           ${k.anexo.componentes.map((x) => `<tr><td>${esc(x.nombre)}</td>${['Controlado', 'Sustituido', 'Cubierto'].map((e) => `<td>${x.estado === e ? '✕' : ''}</td>`).join('')}<td>${esc(x.nota ?? '')}</td></tr>`).join('')}</tbody></table>` : ''}
         ${k.anexo.entrega.length ? `<p><b>Se entrega con:</b> ${esc(k.anexo.entrega.join(', '))}.</p>` : ''}

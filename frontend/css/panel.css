@@ -2806,3 +2806,26 @@ html.cargando:not(.listo) body::before {
 /* Si no llegan los datos, solo el error (y su «Volver a cargar»): el resto es la maqueta, con datos de mentira */
 html.sin-datos main.contenido > :not(.error--lista) { display: none; }
 html.sin-datos main.contenido > .error--lista { margin-top: var(--espacio-l); }
+
+/* Ficha · precio antes de la oferta, tachado junto al de venta */
+.ficha-cabecera__antes { margin-right: 10px; color: rgb(255 255 255 / .55); font-size: 1.125rem; }
+
+/* Ficha · revisión (como la pestaña de Pymecar). Plegada: se abre al recibir el coche y antes de entregarlo */
+.revision > summary { cursor: pointer; list-style: none; }
+.revision > summary::-webkit-details-marker { display: none; }
+.revision > summary h2::before { content: "▸"; display: inline-block; width: 1em; color: var(--tinta-3); transition: transform var(--hover); }
+.revision[open] > summary h2::before { transform: rotate(90deg); }
+.revision__hecha { color: var(--venta); font-weight: 600; }
+.revision__form { display: grid; gap: var(--espacio-m); margin-top: var(--espacio-m); }
+.revision__grupo { margin: 0; padding: 0; border: 0; }
+.revision__grupo legend { margin-bottom: 8px; padding: 0; color: var(--tinta-2); font-size: .8125rem; font-weight: 600; }
+.revision__casillas { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.revision__componentes { display: grid; gap: 6px; }
+.revision__componente { display: grid; grid-template-columns: minmax(120px, 1fr) auto minmax(160px, 1.4fr); align-items: center; gap: 8px 12px; padding: 6px 0; border-top: 1px solid var(--linea); }
+.revision__nombre { font-weight: 600; font-size: .875rem; }
+.revision__componente .segmentos span { padding-inline: 10px; }
+.revision__nota { min-height: 36px; font-size: .875rem; }
+@media (max-width: 900px) {
+  .revision__componente { grid-template-columns: minmax(0, 1fr); }
+  .revision__componente .segmentos { justify-self: start; max-width: 100%; overflow-x: auto; }
+}
