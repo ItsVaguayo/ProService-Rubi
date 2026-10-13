@@ -181,3 +181,46 @@ function replica_aviso_solicitud()
         $ok ? 'Solicitud recibida. (Réplica: queda guardada en este WordPress, no se envía a nadie.)' : 'No se ha podido enviar la solicitud.'
     );
 }
+
+// --- Cabecera y pie de su web ----------------------------------------------------------------------
+// En su web, Elementor Pro pinta la cabecera (plantilla 90) y el pie (190) en todas las páginas. Aquí se
+// ponen los que baja extraer.py, en lugar de los de hello-biz, y solo con su CSS: el JavaScript de Elementor
+// no se trae. Lo poco que hace falta sin él (el menú del móvil, los submenús) va aquí abajo.
+
+function replica_cabecera_pie($nombre)
+{
+    return str_replace(['{{INICIO}}', '{{COCHES}}'], [esc_url(home_url('/')), esc_url(get_post_type_archive_link('coches') ?: home_url('/coches/'))], file_get_contents(REPLICA_DIR . $nombre));
+}
+
+add_action('wp_enqueue_scripts', function () {
+    wp_enqueue_style('replica-cabecera', content_url('mu-plugins/imita-proservicerubi/cabecera.css'), [], (string) filemtime(REPLICA_DIR . 'cabecera.css'));
+    wp_add_inline_style('replica-cabecera', implode("\n", [
+        '#site-header, #site-footer { display: none; }', // los de hello-biz: en su web no salen
+        // Submenús al pasar por encima o con el teclado (en su web los abre SmartMenus, que es JavaScript)
+        '.elementor-nav-menu--main .menu-item-has-children:hover > ul, .elementor-nav-menu--main .menu-item-has-children:focus-within > ul { display: block; }',
+        '.elementor-nav-menu--main .elementor-nav-menu ul { display: none; z-index: 100; background: #fff; }',
+    ]));
+});
+
+// Su body lleva la clase del kit de Elementor: de ella cuelgan su tipografía y sus colores globales
+add_filter('body_class', function ($clases) {
+    return array_merge($clases, ['elementor-default', 'elementor-kit-7']);
+});
+
+add_action('wp_body_open', function () {
+    echo replica_cabecera_pie('cabecera.html'); // phpcs:ignore -- HTML copiado de su web
+});
+
+add_action('wp_footer', function () {
+    echo replica_cabecera_pie('pie.html'); // phpcs:ignore -- HTML copiado de su web
+    // Lo que hace el JavaScript de Elementor y aquí no está: el botón del menú del móvil abre y cierra el
+    // desplegable, y los apartados con submenú llevan su flecha (el icono va en los ajustes del propio menú)
+    echo "<script>(function () {"
+        . " document.querySelectorAll('.elementor-menu-toggle').forEach(function (b) { b.addEventListener('click', function () {"
+        . "   var abierto = b.classList.toggle('elementor-active'); b.setAttribute('aria-expanded', abierto ? 'true' : 'false'); }); });"
+        . " document.querySelectorAll('.elementor-widget-nav-menu[data-settings]').forEach(function (w) {"
+        . "   var icono; try { icono = JSON.parse(w.getAttribute('data-settings')).submenu_icon.value; } catch (e) { return; }"
+        . "   w.querySelectorAll('.menu-item-has-children > a').forEach(function (a) { if (a.querySelector('.sub-arrow')) return;"
+        . "     var s = document.createElement('span'); s.className = 'sub-arrow'; s.innerHTML = icono; a.appendChild(s); }); });"
+        . "})();</script>";
+}, 0);

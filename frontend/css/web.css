@@ -381,6 +381,10 @@ body.web {
 .formulario-web .boton { grid-column: 1 / -1; }
 .formulario-web .boton { justify-self: start; min-width: 180px; }
 .formulario-web .casilla { color: #c9ced3; font-size: .875rem; }
+/* Sobre el fondo oscuro, los rótulos y las notas en claro (el gris de base se queda en 2:1 de contraste).
+   El aviso de enviado, a todo lo ancho; el de error lo pone en rojo claro formulario.js. */
+.formulario-web .campo__nombre { color: #c9ced3; }
+.formulario-web .nota { grid-column: 1 / -1; margin: 0; color: #aab0b6; }
 /* Lo que solo va con un tipo: el día y la hora de la prueba, el coche que se quiere tasar */
 .formulario-web__extra { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
 .formulario-web__extra[hidden] { display: none; }

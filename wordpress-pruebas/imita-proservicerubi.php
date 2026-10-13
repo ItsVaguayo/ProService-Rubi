@@ -79,4 +79,5 @@ add_action('acf/include_fields', function () {
 });
 
 // Sus plantillas de /coches/ y de la ficha
-require_once __DIR__ . '/imita-proservicerubi/replica.php';
+// Enlazado al repo (montar.sh), __DIR__ es wordpress-pruebas/ y la réplica está en replica/; copiado, al lado
+require_once is_file(__DIR__ . '/replica/replica.php') ? __DIR__ . '/replica/replica.php' : __DIR__ . '/imita-proservicerubi/replica.php';
