@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/panel.css">
+  <script src="../js/menu.js"></script>
 </head>
 <body>
 <a class="saltar" href="#contenido">Saltar al contenido</a>
@@ -45,11 +46,12 @@
       <a href="informes.html"><span class="menu__icono" aria-hidden="true"></span>Informes</a>
       <a href="usuarios.html"><span class="menu__icono" aria-hidden="true"></span>Usuarios</a>
     </div>
+    <!-- El nombre y el rol los dibuja el CSS con lo que deja js/menu.js (en <head>) antes de pintar; panel.js
+         pone después el texto de verdad. Vacíos aquí para que no se vea nunca el de la maqueta. -->
     <div class="menu__usuario">
-      <strong>Jaume</strong>
-      Gerencia · <a href="login.html">Salir</a>
+      <strong data-usuario-nombre></strong>
+      <span data-usuario-rol></span> · <a href="login.html" data-salir>Salir</a>
     </div>
-    <script src="../js/menu.js"></script>
   </nav>
 
   <main class="contenido" id="contenido" tabindex="-1">

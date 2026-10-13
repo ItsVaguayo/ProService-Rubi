@@ -9,12 +9,12 @@ const PAGINA = location.pathname.split('/').pop() || 'index.html';
 const params = new URLSearchParams(location.search);
 // El contenido de la maqueta no se enseña mientras llegan los datos (ver html.cargando en panel.css)
 if (PAGINA !== 'login.html') document.documentElement.classList.add('cargando');
-// Quién entró por última vez en este navegador (nombre y rol). Lo lee js/menu.js, que va justo después del menú y
-// se ejecuta antes de pintar: así el menú sale ya como toca al cambiar de página (este módulo llega más tarde).
+// Quién entró por última vez en este navegador (nombre y rol). Lo lee js/menu.js, en <head>, antes de pintar:
+// así el menú sale ya como toca al cambiar de página (este módulo llega más tarde).
 // Se guarda al entrar y al contestar /auth/yo, que es lo que vale, y se borra al salir.
 const pintarUsuarioMenu = (u) => {
   const caja = document.querySelector('.menu__usuario');
-  if (caja) caja.innerHTML = `<strong>${esc(u.nombre)}</strong> ${u.rol === 'gerencia' ? 'Gerencia' : 'Comercial'} · <a href="#" data-salir>Salir</a>`;
+  if (caja) caja.innerHTML = `<strong data-usuario-nombre>${esc(u.nombre)}</strong>\n      <span data-usuario-rol>${u.rol === 'gerencia' ? 'Gerencia' : 'Comercial'}</span> · <a href="#" data-salir>Salir</a>`;
 };
 const fijarUsuario = (u) => {
   const html = document.documentElement;

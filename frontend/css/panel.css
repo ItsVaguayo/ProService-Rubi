@@ -217,6 +217,9 @@ html:not([data-rol="gerencia"]) .menu__enlaces a[href="incentivos.html"]::after,
   color: #8b9097;
 }
 .menu__usuario strong { display: block; color: var(--blanco); font-size: .875rem; }
+/* Mientras panel.js no pone el texto, el nombre y el rol que recuerda js/menu.js (sin parpadeo al cambiar de página) */
+.menu__usuario [data-usuario-nombre]:empty::before { content: var(--usuario-nombre, ""); }
+.menu__usuario [data-usuario-rol]:empty::before { content: var(--usuario-rol, ""); }
 
 /* El botón «Menú» solo existe en el móvil */
 .menu__movil { display: none; }
