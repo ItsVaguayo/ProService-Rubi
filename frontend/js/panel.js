@@ -9,9 +9,9 @@ const PAGINA = location.pathname.split('/').pop() || 'index.html';
 const params = new URLSearchParams(location.search);
 // El contenido de la maqueta no se enseña mientras llegan los datos (ver html.cargando en panel.css)
 if (PAGINA !== 'login.html') document.documentElement.classList.add('cargando');
-// Quién entró por última vez en este navegador (nombre y rol), antes de preguntar a la API. Con él, el menú sale
-// ya como toca al cambiar de página: el CSS esconde lo de gerencia mientras no sepa que lo es (panel.css, «Menú
-// según el rol») y el usuario del pie se pinta al momento en vez de esperar oculto. Lo que vale es /auth/yo.
+// Quién entró por última vez en este navegador (nombre y rol). Lo lee js/menu.js, que va justo después del menú y
+// se ejecuta antes de pintar: así el menú sale ya como toca al cambiar de página (este módulo llega más tarde).
+// Se guarda al entrar y al contestar /auth/yo, que es lo que vale, y se borra al salir.
 const pintarUsuarioMenu = (u) => {
   const caja = document.querySelector('.menu__usuario');
   if (caja) caja.innerHTML = `<strong>${esc(u.nombre)}</strong> ${u.rol === 'gerencia' ? 'Gerencia' : 'Comercial'} · <a href="#" data-salir>Salir</a>`;
@@ -62,13 +62,6 @@ async function api(ruta, { method = 'GET', body } = {}) {
 // «1 día», «2 días»: el número con su palabra en singular o plural
 const cuenta = (n, uno, varios) => `${n} ${Number(n) === 1 ? uno : varios}`;
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-// El usuario recordado (ver fijarUsuario, arriba): menú y pie como toca desde el primer momento
-if (PAGINA !== 'login.html') {
-  try {
-    const u = JSON.parse(localStorage.getItem('usuario') ?? 'null');
-    if (u?.nombre && u.rol) { fijarUsuario(u); pintarUsuarioMenu(u); }
-  } catch { /* sin almacenamiento o dato roto: se espera a /auth/yo */ }
-}
 const cifra = (n) => (n == null || n === '' ? '—' : Number(n).toLocaleString('es-ES', { maximumFractionDigits: 0, useGrouping: 'always' }));
 const euros = (cent) => (cent == null ? '—' : `${cifra(cent / 100)} €`);
 const fechaSql = (s) => (s ? new Date(`${s.replace(' ', 'T')}Z`) : null);
