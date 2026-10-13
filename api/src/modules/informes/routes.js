@@ -8,7 +8,7 @@
 // Los meses van en hora UTC, como las fechas de la base: una venta a las 00:30 del día 1 cuenta en el
 // mes anterior. Para unos informes de lunes no cambia nada.
 import { Router } from 'express';
-import { costeTotal, ivaDeLaVenta, margenNeto, regimenDe } from '../margen.js';
+import { COSTES_SQL, costeTotal, costesDelCoche, ivaDeLaVenta, margenNeto, regimenDe } from '../margen.js';
 import { ventasDelMes } from './ventas.js';
 
 import { MES } from '../../fechas.js';
@@ -34,8 +34,12 @@ export function rutasInformes(db) {
 
   const enStock = db.prepare(`
     SELECT v.id, v.referencia, v.matricula, v.marca, v.modelo, v.version, v.propiedad, v.estado,
+           v.precio_compra_cent, v.pago_propietario_cent, ${COSTES_SQL},
            COALESCE((SELECT MIN(h.fecha) FROM historial_estados h WHERE h.vehiculo_id = v.id), v.creado_en) AS fecha_alta
       FROM vehiculos v WHERE v.estado NOT IN ('vendido', 'entregado')`);
+  // Lo que ya hemos puesto en un coche que sigue sin vender: la compra y sus gastos si es nuestro; en depósito,
+  // solo sus gastos (al dueño se le paga al venderlo). null en uno propio sin precio de compra apuntado.
+  const invertido = (v) => (v.propiedad === 'deposito' ? costesDelCoche(v) : costeTotal(v));
 
   const gastosEstructura = db.prepare(`SELECT COALESCE(SUM(base_cent), 0) AS n FROM gastos
                                          WHERE vehiculo_id IS NULL AND tipo <> 'rebu' AND substr(fecha, 1, 7) = ?`);
@@ -61,6 +65,7 @@ export function rutasInformes(db) {
       facturado_cent: lista.reduce((s, v) => s + (v.precio_venta_cent ?? 0), 0),
       margen_cent: conMargen.length ? margen : null,
       gastos_estructura_cent: gastos,
+      dias_medios_venta: lista.length ? Math.round(lista.reduce((s, v) => s + v.dias_en_stock, 0) / lista.length) : null,
       // Sin ventas con margen, el resultado son solo los gastos (en negativo): el mes también cuesta
       resultado_cent: (conMargen.length ? margen : 0) - gastos,
     };
@@ -85,8 +90,17 @@ export function rutasInformes(db) {
 
     const stock = enStock.all().map((v) => ({ ...v, dias: dias(v.fecha_alta) })).sort((a, b) => b.dias - a.dias);
     // Los 12 meses que acaban en el pedido, del más antiguo al más nuevo (para las gráficas)
+    // y cada venta de esos meses (para la gráfica de días en stock frente a margen)
     const evolucion = [];
-    for (let m = mes, i = 0; i < 12; i++, m = mesAnterior(m)) evolucion.unshift(m === mes ? cifrasDe(m, lista) : cifrasDe(m));
+    const ventasDelAnio = [];
+    for (let m = mes, i = 0; i < 12; i++, m = mesAnterior(m)) {
+      const delMes = m === mes ? lista : ventas(m);
+      evolucion.unshift(cifrasDe(m, delMes));
+      for (const v of delMes) {
+        ventasDelAnio.push({ id: v.id, mes: m, marca: v.marca, modelo: v.modelo, matricula: v.matricula, fecha_venta: v.fecha_venta,
+          precio_venta_cent: v.precio_venta_cent, margen_cent: v.margen_cent, dias_en_stock: v.dias_en_stock });
+      }
+    }
     const meses = new Set([mesActual(), mes, ...mesesConVentas.all().map((f) => f.mes)]);
 
     res.json({
@@ -106,12 +120,19 @@ export function rutasInformes(db) {
       },
       ventas: lista,
       evolucion,
+      ventas_del_anio: ventasDelAnio,
       stock: {
         total: stock.length,
         propios: stock.filter((v) => v.propiedad !== 'deposito').length,
         deposito: stock.filter((v) => v.propiedad === 'deposito').length,
-        tramos: TRAMOS.map((t) => ({ nombre: t.nombre, desde: t.desde, n: stock.filter((v) => v.dias >= t.desde && v.dias < t.hasta).length })),
-        mas_antiguos: stock.slice(0, 5),
+        invertido_cent: stock.reduce((s, v) => s + (invertido(v) ?? 0), 0),
+        sin_coste: stock.filter((v) => invertido(v) == null).length, // propios sin precio de compra: no suman
+        tramos: TRAMOS.map((t) => {
+          const suyos = stock.filter((v) => v.dias >= t.desde && v.dias < t.hasta);
+          return { nombre: t.nombre, desde: t.desde, n: suyos.length, invertido_cent: suyos.reduce((s, v) => s + (invertido(v) ?? 0), 0) };
+        }),
+        mas_antiguos: stock.slice(0, 5).map(({ id, referencia, matricula, marca, modelo, version, propiedad, estado, fecha_alta, dias }) =>
+          ({ id, referencia, matricula, marca, modelo, version, propiedad, estado, fecha_alta, dias })),
       },
     });
   });

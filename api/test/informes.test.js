@@ -138,3 +138,22 @@ test('evolución: los 12 meses que acaban en el pedido, con las mismas cifras qu
     assert.equal(ultimo.resultado_cent, json.resumen.resultado_cent);
     assert.equal(json.evolucion[0].vendidos, 0, 'un mes sin ventas sale a 0, no falta');
   }));
+
+test('para las gráficas: días hasta vender por mes, cada venta del año y lo invertido en el stock', () =>
+  conServidor(async ({ db, pide }) => {
+    const vendido = await cocheCon(db, pide, { alta: 40, vendido: 0 });
+    await cocheCon(db, pide, { alta: 70, cambios: { matricula: '5555EEE', bastidor: 'VIN5' } }); // propio, 70 días
+    await cocheCon(db, pide, { alta: 10, cambios: { matricula: '6666FFF', bastidor: 'VIN6', propiedad: 'deposito', precio_compra_cent: null,
+      propietario_nombre: 'Marta Soler', pago_propietario_cent: 800000 } }); // depósito: solo cuentan sus gastos
+    await cocheCon(db, pide, { alta: 5, cambios: { matricula: '7777GGG', bastidor: 'VIN7', precio_compra_cent: null, coste_transporte_cent: null, coste_taller_cent: null } });
+    const { json } = await pide(`/informes?mes=${mesDe(0)}`);
+    assert.equal(json.evolucion.at(-1).dias_medios_venta, 40);
+    assert.equal(json.evolucion[0].dias_medios_venta, null, 'un mes sin ventas no tiene media');
+    assert.deepEqual(json.ventas_del_anio.map((v) => [v.id, v.mes, v.dias_en_stock, v.margen_cent]), [[vendido, mesDe(0), 40, 272314]]);
+    assert.equal(json.stock.sin_coste, 1, 'el propio sin precio de compra no suma');
+    assert.equal(json.stock.invertido_cent, 950000 + 50000, 'el propio, compra y gastos; el de depósito, solo sus gastos');
+    const tramo = (desde) => json.stock.tramos.find((t) => t.desde === desde);
+    assert.deepEqual([tramo(60).n, tramo(60).invertido_cent], [1, 950000]);
+    assert.deepEqual([tramo(0).n, tramo(0).invertido_cent], [2, 50000]);
+    assert.equal(json.stock.mas_antiguos[0].precio_compra_cent, undefined, 'la lista de los más antiguos no lleva el dinero de cada coche');
+  }));

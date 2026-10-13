@@ -2958,99 +2958,182 @@ async function paginaLibros() {
 }
 
 // --- Gráficas (SVG a mano, sin librerías) -----------------------------------------------------
-// Columnas de una sola serie con énfasis: el mes elegido en rojo, el resto en gris. Un solo eje, que
-// cruza el 0 si hay negativos. Tooltip al pasar el ratón o con el teclado (cada columna se enfoca) y,
-// debajo, la tabla con los mismos datos: el tooltip ayuda, pero nada depende de él.
-//   puntos: [{ etiqueta, corta, valor, detalle: [[rótulo, texto], …] }] · elegido: índice resaltado
-function graficaColumnas(caja, { puntos, elegido, formato, titulo }) {
-  const pintar = () => {
-    const ancho = Math.max(280, caja.clientWidth);
-    const alto = 210;
-    const m = { arriba: 22, abajo: 26, izq: 52, der: 8 };
-    const valores = puntos.map((p) => p.valor ?? 0);
-    let max = Math.max(0, ...valores);
-    let min = Math.min(0, ...valores);
-    if (max === min) max = 1;
-    // Marcas del eje redondas: 1, 2 o 5 por potencia de 10
-    const paso = (() => {
-      const bruto = (max - min) / 4;
-      const p10 = 10 ** Math.floor(Math.log10(bruto));
-      return [1, 2, 5, 10].map((f) => f * p10).find((x) => x >= bruto);
-    })();
-    max = Math.ceil(max / paso) * paso;
-    min = Math.floor(min / paso) * paso;
-    const y = (v) => m.arriba + (max - v) / (max - min) * (alto - m.arriba - m.abajo);
-    const banda = (ancho - m.izq - m.der) / puntos.length;
-    const grosor = Math.min(24, banda * 0.6);
-    const marcas = [];
-    for (let v = min; v <= max + paso / 2; v += paso) marcas.push(v);
-    const r = 4; // extremo redondeado del dato; cuadrado en la línea base
-    const columna = (x, v) => {
+// Tres formas, las que piden los informes: meses (columnas, y una línea encima si hace falta), una línea por meses
+// y puntos sueltos (dispersión). Las tres con las mismas reglas (skill dataviz):
+//   · un solo eje por gráfica: dos medidas distintas van en dos gráficas;
+//   · énfasis: el mes elegido en rojo de marca y el resto en gris; el texto, siempre en tinta;
+//   · tooltip al pasar el ratón y con el teclado (cada punto se enfoca) y, debajo, «Ver los datos» con la tabla;
+//   · se vuelven a dibujar a la medida al cambiar el ancho.
+
+/** Marcas redondas del eje (1, 2 o 5 por potencia de 10) que cubren de min a max */
+function escalaEje(min, max, cuantas = 4) {
+  if (max === min) max = min + 1;
+  const bruto = (max - min) / cuantas;
+  const p10 = 10 ** Math.floor(Math.log10(bruto));
+  const paso = [1, 2, 5, 10].map((f) => f * p10).find((x) => x >= bruto);
+  const desde = Math.floor(min / paso) * paso;
+  const hasta = Math.ceil(max / paso) * paso;
+  const marcas = [];
+  for (let v = desde; v <= hasta + paso / 2; v += paso) marcas.push(Math.round(v * 1000) / 1000);
+  return { min: desde, max: hasta, marcas };
+}
+
+/** Dibuja con pintar(ancho) y vuelve a dibujar al cambiar el ancho de la caja */
+function aLaMedida(caja, pintar) {
+  pintar(Math.max(280, caja.clientWidth));
+  caja._observador?.disconnect();
+  let ultimo = caja.clientWidth;
+  caja._observador = new ResizeObserver(() => { if (Math.abs(caja.clientWidth - ultimo) > 8) { ultimo = caja.clientWidth; pintar(Math.max(280, caja.clientWidth)); } });
+  caja._observador.observe(caja);
+}
+
+/** Tooltip de los [data-i] del lienzo: contenido(i) → { titulo, filas: [[rótulo, texto]], pie? } */
+function tooltipDe(lienzo, contenido) {
+  const tip = $('.grafica__tip', lienzo);
+  const activos = () => lienzo.querySelectorAll('.grafica__punto--activo');
+  const ensenar = (g) => {
+    const c = contenido(Number(g.dataset.i));
+    tip.replaceChildren();
+    const cab = document.createElement('strong');
+    cab.textContent = c.titulo;
+    tip.append(cab);
+    for (const [rotulo, texto] of c.filas) {
+      const fila = document.createElement('span');
+      const b = document.createElement('b');
+      b.textContent = texto;
+      fila.append(b, ` ${rotulo}`);
+      tip.append(fila);
+    }
+    if (c.pie) { const pie = document.createElement('em'); pie.textContent = c.pie; tip.append(pie); }
+    tip.hidden = false;
+    const caja = g.getBBox();
+    const izq = Math.min(Math.max(caja.x + caja.width / 2 - tip.offsetWidth / 2, 0), lienzo.clientWidth - tip.offsetWidth);
+    tip.style.left = `${izq}px`;
+    tip.style.top = `${Math.max(0, caja.y - tip.offsetHeight - 8)}px`;
+    activos().forEach((x) => x.classList.remove('grafica__punto--activo'));
+    g.classList.add('grafica__punto--activo');
+  };
+  const ocultar = () => { tip.hidden = true; activos().forEach((x) => x.classList.remove('grafica__punto--activo')); };
+  lienzo.querySelectorAll('[data-i]').forEach((g) => {
+    g.addEventListener('pointerenter', () => ensenar(g));
+    g.addEventListener('focus', () => ensenar(g));
+    g.addEventListener('blur', ocultar);
+  });
+  lienzo.addEventListener('pointerleave', ocultar);
+}
+
+/** La tabla de «Ver los datos»: columnas [[título, (fila) => texto, derecha?]] */
+const tablaDeDatos = (filas, columnas) => `<details class="grafica__tabla"><summary>Ver los datos</summary>
+  <table class="tabla"><thead><tr>${columnas.map(([t, , d]) => `<th${d ? ' class="derecha"' : ''}>${esc(t)}</th>`).join('')}</tr></thead>
+  <tbody>${filas.map((f) => `<tr>${columnas.map(([, v, d]) => `<td${d ? ' class="derecha cifra"' : ''}>${esc(v(f))}</td>`).join('')}</tr>`).join('')}</tbody></table></details>`;
+
+/**
+ * Doce meses en columnas y, si se pide, una línea encima con la misma unidad (los gastos sobre el margen).
+ *   meses: [{ etiqueta, corta }] · elegido: índice resaltado · columnas: [valor|null] · linea: [valor|null]
+ *   forma: 'columnas' | 'linea' (la serie principal como línea con puntos, para los días)
+ *   formato(v, eje) · tip(i) → { titulo, filas } · tabla: [[título, (i) => texto, derecha?]]
+ */
+function graficaMeses(caja, { titulo, meses, elegido, columnas, linea = null, forma = 'columnas', formato, tip, tabla, nombres = {} }) {
+  aLaMedida(caja, (ancho) => {
+    const alto = 230;
+    const m = { arriba: 24, abajo: 28, izq: 56, der: linea ? 12 : 8 };
+    const todos = [...columnas, ...(linea ?? [])].filter((v) => v != null);
+    const eje = escalaEje(Math.min(0, ...todos), Math.max(0, ...todos, 1));
+    const y = (v) => m.arriba + (eje.max - v) / (eje.max - eje.min) * (alto - m.arriba - m.abajo);
+    const banda = (ancho - m.izq - m.der) / meses.length;
+    const centro = (i) => m.izq + banda * i + banda / 2;
+    const grosor = Math.min(28, banda * 0.58);
+    const columna = (i, v) => {
+      const x = centro(i) - grosor / 2;
       const y0 = y(0);
       const y1 = y(v);
       const h = Math.abs(y1 - y0);
       if (h < 0.5) return '';
-      const rr = Math.min(r, h);
-      return v >= 0
-        ? `M${x},${y0}V${y1 + rr}Q${x},${y1} ${x + rr},${y1}H${x + grosor - rr}Q${x + grosor},${y1} ${x + grosor},${y1 + rr}V${y0}Z`
-        : `M${x},${y0}V${y1 - rr}Q${x},${y1} ${x + rr},${y1}H${x + grosor - rr}Q${x + grosor},${y1} ${x + grosor},${y1 - rr}V${y0}Z`;
+      const r = Math.min(4, h); // extremo redondeado del dato; cuadrado en la línea base
+      const s = v >= 0 ? 1 : -1;
+      return `<path class="grafica__columna" d="M${x},${y0}V${y1 + s * r}Q${x},${y1} ${x + r},${y1}H${x + grosor - r}Q${x + grosor},${y1} ${x + grosor},${y1 + s * r}V${y0}Z"/>`;
     };
+    // Una línea por los meses con dato: se corta donde no hay (un mes sin ventas no tiene días medios)
+    const trazo = (valores, escalon) => {
+      let d = '';
+      let antes = null;
+      valores.forEach((v, i) => {
+        if (v == null) { antes = null; return; }
+        const x0 = escalon ? m.izq + banda * i : centro(i);
+        const x1 = escalon ? m.izq + banda * (i + 1) : centro(i);
+        if (antes == null) d += `M${x0},${y(v)}`;
+        else d += escalon ? `V${y(v)}H${x0}` : `L${x0},${y(v)}`;
+        if (escalon) d += `H${x1}`;
+        antes = v;
+      });
+      return d;
+    };
+    const etiquetaMes = (i) => (banda >= 30 || i === elegido || (elegido - i) % 2 === 0
+      ? `<text class="grafica__mes${i === elegido ? ' grafica__mes--elegido' : ''}" x="${centro(i)}" y="${alto - 8}" text-anchor="middle">${esc(meses[i].corta)}</text>` : '');
+    const principal = forma === 'linea'
+      ? `<path class="grafica__linea" d="${trazo(columnas, false)}"/>`
+        + columnas.map((v, i) => (v == null ? '' : `<circle class="grafica__marca${i === elegido ? ' grafica__marca--elegida' : ''}" cx="${centro(i)}" cy="${y(v)}" r="${i === elegido ? 5 : 4}"/>`)).join('')
+      : columnas.map((v, i) => `<g class="grafica__barra${i === elegido ? ' grafica__barra--elegida' : ''}">${v == null ? '' : columna(i, v)}</g>`).join('');
+    const vElegido = columnas[elegido];
     const svg = `<svg class="grafica__svg" width="${ancho}" height="${alto}" role="group" aria-label="${esc(titulo)}">
-      ${marcas.map((v) => `<line class="grafica__rejilla${v === 0 ? ' grafica__rejilla--cero' : ''}" x1="${m.izq}" x2="${ancho - m.der}" y1="${y(v)}" y2="${y(v)}"/>
+      ${eje.marcas.map((v) => `<line class="grafica__rejilla${v === 0 ? ' grafica__rejilla--cero' : ''}" x1="${m.izq}" x2="${ancho - m.der}" y1="${y(v)}" y2="${y(v)}"/>
         <text class="grafica__eje" x="${m.izq - 8}" y="${y(v) + 4}" text-anchor="end">${esc(formato(v, true))}</text>`).join('')}
-      ${puntos.map((p, i) => {
-        const x = m.izq + banda * i + (banda - grosor) / 2;
-        const v = p.valor ?? 0;
-        const etiqueta = `${p.etiqueta}: ${p.valor == null ? 'sin datos' : formato(p.valor)}`;
-        return `<g class="grafica__punto${i === elegido ? ' grafica__punto--elegido' : ''}" data-i="${i}" tabindex="0" role="img" aria-label="${esc(etiqueta)}">
-          <rect class="grafica__diana" x="${m.izq + banda * i}" y="${m.arriba}" width="${banda}" height="${alto - m.arriba - m.abajo}"/>
-          <path class="grafica__columna" d="${columna(x, v)}"/>
-          ${i === elegido && p.valor != null ? `<text class="grafica__valor" x="${x + grosor / 2}" y="${v >= 0 ? y(v) - 6 : y(v) + 14}" text-anchor="middle">${esc(formato(p.valor))}</text>` : ''}
-          ${banda >= 28 || i === elegido || (elegido - i) % 2 === 0 ? `<text class="grafica__mes${i === elegido ? ' grafica__mes--elegido' : ''}" x="${m.izq + banda * i + banda / 2}" y="${alto - 8}" text-anchor="middle">${esc(p.corta)}</text>` : ''}
-        </g>`;
-      }).join('')}
+      ${meses.map((_, i) => `<rect class="grafica__diana" x="${m.izq + banda * i}" y="${m.arriba}" width="${banda}" height="${alto - m.arriba - m.abajo}"/>`).join('')}
+      ${principal}
+      ${linea ? `<path class="grafica__linea grafica__linea--referencia" d="${trazo(linea, true)}"/>` : ''}
+      ${vElegido != null ? (() => {
+        // La cifra del mes elegido, centrada en su columna; si no cabe a la derecha (el último mes), se alinea hacia dentro
+        const texto = formato(vElegido);
+        const cabe = centro(elegido) + texto.length * 3.6 <= ancho;
+        // Encima de la columna y de la línea, la que quede más alta: así no se monta sobre los gastos
+        // (alineada a la derecha ocupa también el mes de antes)
+        const arriba = Math.max(vElegido, linea?.[elegido] ?? vElegido, cabe ? vElegido : linea?.[elegido - 1] ?? vElegido);
+        return `<text class="grafica__valor" x="${cabe ? centro(elegido) : ancho}" y="${vElegido >= 0 ? y(arriba) - 8 : y(vElegido) + 16}" text-anchor="${cabe ? 'middle' : 'end'}">${esc(texto)}</text>`;
+      })() : ''}
+      ${meses.map((_, i) => etiquetaMes(i)).join('')}
+      ${meses.map((mes, i) => `<rect class="grafica__punto" data-i="${i}" tabindex="0" role="img" aria-label="${esc(`${mes.etiqueta}: ${tip(i).filas.map(([r, t]) => `${t} ${r}`).join(', ')}`)}"
+          x="${m.izq + banda * i}" y="${m.arriba}" width="${banda}" height="${alto - m.arriba - m.abajo}"/>`).join('')}
     </svg>`;
-    caja.innerHTML = `<div class="grafica__lienzo">${svg}<div class="grafica__tip" hidden></div></div>
-      <details class="grafica__tabla"><summary>Ver los datos</summary>
-        <table class="tabla"><thead><tr><th>Mes</th>${puntos[0].detalle.map(([t]) => `<th class="derecha">${esc(t)}</th>`).join('')}</tr></thead>
-        <tbody>${puntos.map((p) => `<tr><td>${esc(p.etiqueta)}</td>${p.detalle.map(([, v]) => `<td class="derecha cifra">${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>
-      </details>`;
+    const leyenda = linea ? `<p class="grafica__leyenda"><span><i class="grafica__muestra"></i>${esc(nombres.columnas)}</span><span><i class="grafica__muestra grafica__muestra--linea"></i>${esc(nombres.linea)}</span></p>` : '';
+    caja.innerHTML = `${leyenda}<div class="grafica__lienzo">${svg}<div class="grafica__tip" hidden></div></div>${tablaDeDatos(meses.map((_, i) => i), tabla)}`;
     const lienzo = $('.grafica__lienzo', caja);
-    const tip = $('.grafica__tip', caja);
-    const ensenar = (g) => {
-      const p = puntos[Number(g.dataset.i)];
-      tip.replaceChildren();
-      const cab = document.createElement('strong');
-      cab.textContent = p.etiqueta;
-      tip.append(cab);
-      for (const [rotulo, texto] of p.detalle) {
-        const fila = document.createElement('span');
-        const b = document.createElement('b');
-        b.textContent = texto;
-        fila.append(b, ` ${rotulo}`);
-        tip.append(fila);
-      }
-      tip.hidden = false;
-      const caj = g.querySelector('.grafica__diana').getBBox();
-      const izq = Math.min(Math.max(caj.x + caj.width / 2 - tip.offsetWidth / 2, 0), lienzo.clientWidth - tip.offsetWidth);
-      tip.style.left = `${izq}px`;
-      lienzo.querySelectorAll('.grafica__punto--activo').forEach((x) => x.classList.remove('grafica__punto--activo'));
-      g.classList.add('grafica__punto--activo');
-    };
-    const ocultar = () => { tip.hidden = true; lienzo.querySelectorAll('.grafica__punto--activo').forEach((x) => x.classList.remove('grafica__punto--activo')); };
-    lienzo.querySelectorAll('.grafica__punto').forEach((g) => {
-      g.addEventListener('pointerenter', () => ensenar(g));
-      g.addEventListener('focus', () => ensenar(g));
-      g.addEventListener('blur', ocultar);
-    });
-    lienzo.addEventListener('pointerleave', ocultar);
-  };
-  pintar();
-  // Al cambiar el ancho (girar el móvil, abrir el menú), se vuelve a dibujar a la medida
-  caja._observador?.disconnect();
-  let ultimo = caja.clientWidth;
-  caja._observador = new ResizeObserver(() => { if (Math.abs(caja.clientWidth - ultimo) > 8) { ultimo = caja.clientWidth; pintar(); } });
-  caja._observador.observe(caja);
+    tooltipDe(lienzo, tip);
+    // La columna o el punto del mes que tiene el ratón, resaltado
+    lienzo.querySelectorAll('[data-i]').forEach((g) => g.addEventListener('pointerenter', () => {
+      lienzo.querySelectorAll('.grafica__barra--encima, .grafica__marca--encima').forEach((x) => x.classList.remove('grafica__barra--encima', 'grafica__marca--encima'));
+      (forma === 'linea' ? lienzo.querySelectorAll('.grafica__marca') : lienzo.querySelectorAll('.grafica__barra'))[g.dataset.i]?.classList.add(forma === 'linea' ? 'grafica__marca--encima' : 'grafica__barra--encima');
+    }));
+  });
+}
+
+/**
+ * Puntos sueltos: cada venta, con los días en stock (x) y el margen (y). Las guías verticales marcan los tramos
+ * de antigüedad. puntos: [{ x, y, resaltado, href, tip: { titulo, filas } }]
+ */
+function graficaDispersion(caja, { titulo, puntos, formatoX, formatoY, guias = [], tabla, nombres }) {
+  aLaMedida(caja, (ancho) => {
+    const alto = 280;
+    const m = { arriba: 16, abajo: 34, izq: 56, der: 16 };
+    const ejeY = escalaEje(Math.min(0, ...puntos.map((p) => p.y)), Math.max(0, ...puntos.map((p) => p.y), 1));
+    const ejeX = escalaEje(0, Math.max(...puntos.map((p) => p.x), ...guias.map((g) => g.x + 10), 30), 5);
+    const x = (v) => m.izq + (v - ejeX.min) / (ejeX.max - ejeX.min) * (ancho - m.izq - m.der);
+    const y = (v) => m.arriba + (ejeY.max - v) / (ejeY.max - ejeY.min) * (alto - m.arriba - m.abajo);
+    // Los del mes elegido, encima de los demás
+    const orden = puntos.map((p, i) => [p, i]).sort((a, b) => Number(a[0].resaltado) - Number(b[0].resaltado));
+    const svg = `<svg class="grafica__svg" width="${ancho}" height="${alto}" role="group" aria-label="${esc(titulo)}">
+      ${ejeY.marcas.map((v) => `<line class="grafica__rejilla${v === 0 ? ' grafica__rejilla--cero' : ''}" x1="${m.izq}" x2="${ancho - m.der}" y1="${y(v)}" y2="${y(v)}"/>
+        <text class="grafica__eje" x="${m.izq - 8}" y="${y(v) + 4}" text-anchor="end">${esc(formatoY(v, true))}</text>`).join('')}
+      ${ejeX.marcas.map((v) => `<text class="grafica__eje" x="${x(v)}" y="${alto - 14}" text-anchor="middle">${esc(formatoX(v, true))}</text>`).join('')}
+      ${guias.map((g) => `<line class="grafica__guia grafica__guia--${g.clase}" x1="${x(g.x)}" x2="${x(g.x)}" y1="${m.arriba}" y2="${alto - m.abajo}"/>
+        <text class="grafica__guia-texto" x="${x(g.x) + 4}" y="${m.arriba + 10}">${esc(g.texto)}</text>`).join('')}
+      ${orden.map(([p, i]) => `<a ${p.href ? `href="${esc(p.href)}"` : ''} class="grafica__punto grafica__dato${p.resaltado ? ' grafica__dato--elegido' : ''}" data-i="${i}" tabindex="0" role="img"
+          aria-label="${esc(`${p.tip.titulo}: ${p.tip.filas.map(([r, t]) => `${t} ${r}`).join(', ')}`)}">
+          <circle class="grafica__diana" cx="${x(p.x)}" cy="${y(p.y)}" r="12"/><circle class="grafica__circulo" cx="${x(p.x)}" cy="${y(p.y)}" r="${p.resaltado ? 6 : 5}"/></a>`).join('')}
+    </svg>`;
+    const leyenda = `<p class="grafica__leyenda"><span><i class="grafica__muestra grafica__muestra--punto grafica__muestra--elegida"></i>${esc(nombres.elegido)}</span><span><i class="grafica__muestra grafica__muestra--punto"></i>${esc(nombres.resto)}</span></p>`;
+    caja.innerHTML = `${leyenda}<div class="grafica__lienzo">${svg}<div class="grafica__tip" hidden></div></div>${tablaDeDatos(puntos.map((_, i) => i), tabla)}`;
+    tooltipDe($('.grafica__lienzo', caja), (i) => ({ ...puntos[i].tip, pie: [puntos[i].tip.pie, puntos[i].href && 'pulsa para abrir el coche'].filter(Boolean).join(' · ') }));
+  });
 }
 
 // --- Informes (solo gerencia) -----------------------------------------------------------------
@@ -3088,33 +3171,91 @@ async function paginaInformes() {
         <span class="rotulo">${esc(rotulo)}</span><strong class="cifra">${esc(valor)}</strong><span class="nota">${esc(nota)}</span>
       </div>`).join('');
 
-    // Gráficas: los 12 meses que acaban en el elegido
+    // Gráficas: los 12 meses que acaban en el elegido. Cada una con su frase de resumen encima (data-titular).
     const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
     const ev = datos.evolucion ?? [];
     const corta = (mes) => MESES_CORTOS[Number(mes.slice(5, 7)) - 1];
     const larga = (mes) => mayuscula(nombreMes(mes));
+    const soloMes = (mes) => nombreMes(mes).split(' ')[0];
     // Euros en el eje, en corto (12 mil €); en el resto, enteros
     const eurosEje = (cent, eje) => (eje && Math.abs(cent) >= 100000 ? `${(cent / 100000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} mil €` : euros(cent));
+    const titular = (clave, html) => { $(`[data-titular="${clave}"]`).innerHTML = html; };
+    const meses = ev.map((m) => ({ etiqueta: larga(m.mes), corta: corta(m.mes) }));
+    const elegido = ev.length - 1;
+    const actual = ev[elegido];
     if (ev.length) {
-      graficaColumnas($('[data-grafica="vendidos"]'), {
-        titulo: 'Coches vendidos por mes',
-        elegido: ev.length - 1,
-        formato: (v) => cifra(v),
-        puntos: ev.map((m) => ({ etiqueta: larga(m.mes), corta: corta(m.mes), valor: m.vendidos,
-          detalle: [['vendidos', cifra(m.vendidos)], ['facturado', euros(m.facturado_cent)]] })),
+      // 1. Margen y gastos de la tienda: si la columna pasa la línea, ese mes se ganó dinero
+      const conActividad = ev.filter((m) => m.vendidos || m.gastos_estructura_cent);
+      const enPositivo = conActividad.filter((m) => m.resultado_cent > 0).length;
+      const total = ev.reduce((t, m) => t + m.resultado_cent, 0);
+      const diferencia = actual.resultado_cent;
+      titular('margen', `${conActividad.length ? `El margen cubrió los gastos en <b>${enPositivo} de ${cuenta(conActividad.length, 'mes', 'meses')}</b>, con un resultado de <b class="${total < 0 ? 'en-rojo' : ''}">${euros(total)}</b> en el año. ` : ''}`
+        + `En ${esc(soloMes(actual.mes))}, ${diferencia >= 0 ? `sobran <b>${euros(diferencia)}</b>` : `faltan <b class="en-rojo">${euros(-diferencia)}</b> para cubrir los gastos`}.`);
+      graficaMeses($('[data-grafica="margen"]'), {
+        titulo: 'Margen neto y gastos de la tienda por mes', meses, elegido, formato: eurosEje,
+        columnas: ev.map((m) => m.margen_cent ?? 0), linea: ev.map((m) => m.gastos_estructura_cent),
+        nombres: { columnas: 'Margen neto de las ventas', linea: 'Gastos de la tienda (alquiler, luz, gestoría…)' },
+        tip: (i) => ({ titulo: meses[i].etiqueta, filas: [
+          ['margen neto', ev[i].margen_cent == null ? '—' : euros(ev[i].margen_cent)],
+          ['gastos de la tienda', euros(ev[i].gastos_estructura_cent)],
+          [ev[i].resultado_cent >= 0 ? 'de beneficio' : 'de pérdida', euros(Math.abs(ev[i].resultado_cent))],
+          ['', cuenta(ev[i].vendidos, 'coche vendido', 'coches vendidos')]] }),
+        tabla: [['Mes', (i) => meses[i].etiqueta], ['Margen neto', (i) => (ev[i].margen_cent == null ? '—' : euros(ev[i].margen_cent)), true],
+          ['Gastos de la tienda', (i) => euros(ev[i].gastos_estructura_cent), true], ['Resultado', (i) => euros(ev[i].resultado_cent), true]],
       });
-      graficaColumnas($('[data-grafica="resultado"]'), {
-        titulo: 'Resultado del mes',
-        elegido: ev.length - 1,
-        formato: eurosEje,
-        puntos: ev.map((m) => ({ etiqueta: larga(m.mes), corta: corta(m.mes), valor: m.resultado_cent,
-          detalle: [['resultado', euros(m.resultado_cent)], ['margen neto', m.margen_cent == null ? '—' : euros(m.margen_cent)], ['gastos de la tienda', euros(m.gastos_estructura_cent)]] })),
+
+      // 2. Coches vendidos
+      const vendidosAnio = ev.reduce((t, m) => t + m.vendidos, 0);
+      titular('vendidos', `<b>${cuenta(vendidosAnio, 'coche', 'coches')}</b> en 12 meses, unos <b>${cifra(Math.round(vendidosAnio / 12 * 10) / 10)}</b> al mes. En ${esc(soloMes(actual.mes))}, <b>${cifra(actual.vendidos)}</b>.`);
+      graficaMeses($('[data-grafica="vendidos"]'), {
+        titulo: 'Coches vendidos por mes', meses, elegido, formato: (v) => cifra(v),
+        columnas: ev.map((m) => m.vendidos),
+        tip: (i) => ({ titulo: meses[i].etiqueta, filas: [['', cuenta(ev[i].vendidos, 'coche vendido', 'coches vendidos')], ['facturados', euros(ev[i].facturado_cent)]] }),
+        tabla: [['Mes', (i) => meses[i].etiqueta], ['Vendidos', (i) => cifra(ev[i].vendidos), true], ['Facturado', (i) => euros(ev[i].facturado_cent), true]],
       });
+
+      // 3. Días hasta vender: la media del año con las ventas de verdad (no la media de las medias)
+      const anio = datos.ventas_del_anio ?? [];
+      const mediaDias = anio.length ? Math.round(anio.reduce((t, v) => t + v.dias_en_stock, 0) / anio.length) : null;
+      titular('dias', mediaDias == null ? 'Sin ventas en los últimos 12 meses.'
+        : `Se venden en <b>${cuenta(mediaDias, 'día', 'días')}</b> de media. ${actual.dias_medios_venta == null ? `En ${esc(soloMes(actual.mes))} no hay ventas.`
+          : `En ${esc(soloMes(actual.mes))}, <b class="${actual.dias_medios_venta > mediaDias ? 'en-rojo' : ''}">${cifra(actual.dias_medios_venta)}</b>: ${actual.dias_medios_venta > mediaDias ? 'más lento' : actual.dias_medios_venta < mediaDias ? 'más rápido' : 'lo normal'}.`}`);
+      graficaMeses($('[data-grafica="dias"]'), {
+        titulo: 'Días medios hasta vender por mes', meses, elegido, forma: 'linea', formato: (v, eje) => (eje ? cifra(v) : cuenta(v, 'día', 'días')),
+        columnas: ev.map((m) => m.dias_medios_venta),
+        tip: (i) => ({ titulo: meses[i].etiqueta, filas: ev[i].dias_medios_venta == null ? [['', 'Sin ventas']]
+          : [['de media', cuenta(ev[i].dias_medios_venta, 'día', 'días')], ['', cuenta(ev[i].vendidos, 'coche vendido', 'coches vendidos')]] }),
+        tabla: [['Mes', (i) => meses[i].etiqueta], ['Días de media', (i) => (ev[i].dias_medios_venta == null ? '—' : cifra(ev[i].dias_medios_venta)), true]],
+      });
+
+      // 4. Cada venta del año: ¿los que tardan más dejan menos? Las ventas sin margen (sin coste apuntado) no salen
+      const conMargen = anio.filter((v) => v.margen_cent != null);
+      const media = (lista) => Math.round(lista.reduce((t, v) => t + v.margen_cent, 0) / lista.length);
+      const rapidos = conMargen.filter((v) => v.dias_en_stock < 60);
+      const lentos = conMargen.filter((v) => v.dias_en_stock >= 60);
+      titular('ventas', !conMargen.length ? 'Sin ventas con margen en los últimos 12 meses.'
+        : rapidos.length && lentos.length
+          ? `Los vendidos en menos de 60 días dejaron <b>${euros(media(rapidos))}</b> de media; los que tardaron más, <b class="${media(lentos) < media(rapidos) ? 'en-rojo' : ''}">${euros(media(lentos))}</b>.`
+          : `<b>${cuenta(conMargen.length, 'venta', 'ventas')}</b>, con <b>${euros(media(conMargen))}</b> de margen medio.`);
+      const cajaVentas = $('[data-grafica="ventas"]');
+      cajaVentas.closest('.grafica').hidden = !conMargen.length;
+      if (conMargen.length) {
+        graficaDispersion(cajaVentas, {
+          titulo: 'Cada venta de los últimos 12 meses: días en stock y margen neto',
+          formatoX: (v) => `${cifra(v)} d`, formatoY: eurosEje,
+          guias: [{ x: 60, texto: '60 días', clase: 'aviso' }, { x: 90, texto: '90', clase: 'peligro' }],
+          nombres: { elegido: `Vendidos en ${soloMes(actual.mes)}`, resto: 'El resto del año' },
+          puntos: conMargen.map((v) => ({ x: v.dias_en_stock, y: v.margen_cent, resaltado: v.mes === actual.mes, href: `coche.html?id=${v.id}`,
+            tip: { titulo: `${v.marca} ${v.modelo}`, filas: [['de margen', euros(v.margen_cent)], ['en stock', cuenta(v.dias_en_stock, 'día', 'días')]], pie: `Vendido en ${soloMes(v.mes)}` } })),
+          tabla: [['Coche', (i) => `${conMargen[i].marca} ${conMargen[i].modelo}`], ['Mes', (i) => larga(conMargen[i].mes)],
+            ['Días', (i) => cifra(conMargen[i].dias_en_stock), true], ['Margen', (i) => euros(conMargen[i].margen_cent), true]],
+        });
+      }
     }
 
     // Ventas del mes
-    $('.ficha__principal .caja__titulo h2').textContent = `Ventas de ${nombreMes(datos.mes).split(' ')[0]}`;
-    $('.ficha__principal tbody').innerHTML = ventas.length
+    $('.ventas-mes .caja__titulo h2').textContent = `Ventas de ${nombreMes(datos.mes).split(' ')[0]}`;
+    $('.ventas-mes tbody').innerHTML = ventas.length
       ? ventas.map((v) => `<tr>
           <td class="cifra">${esc(fechaSql(v.fecha_venta).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</td>
           <td><span class="coche-celda"><a href="coche.html?id=${v.id}">${esc([v.marca, v.modelo, v.version].filter(Boolean).join(' '))}</a><span class="matricula">${matricula(v.matricula)}</span></span></td>
@@ -3128,10 +3269,20 @@ async function paginaInformes() {
       ? `${ventas.length} ${ventas.length === 1 ? 'venta' : 'ventas'}. El margen es neto: después del IVA de la venta y con los gastos de cada coche.`
       : '';
 
-    // Stock por antigüedad: la barra es la parte del stock en cada tramo
-    $('.tramos').innerHTML = stock.tramos.map((t) => `<li class="${t.desde >= 90 ? 'tramos--peligro' : t.desde >= 60 ? 'tramos--aviso' : ''}">
-        <span>${esc(t.nombre)}</span><span class="tramos__barra"><span style="width: ${stock.total ? Math.round((t.n / stock.total) * 100) : 0}%"></span></span><strong class="cifra">${t.n}</strong>
+    // Dinero en el stock: lo invertido en cada tramo de antigüedad (la barra) y cuántos coches
+    const caja = $('.stock-dinero');
+    $('.stock-dinero__total .cifra', caja).textContent = euros(stock.invertido_cent);
+    $('.stock-dinero__total .nota', caja).textContent = `invertidos en ${cuenta(stock.total, 'coche', 'coches')} sin vender`;
+    const maxTramo = Math.max(1, ...stock.tramos.map((t) => t.invertido_cent));
+    $('.tramos--dinero', caja).innerHTML = stock.tramos.map((t) => `<li class="${t.desde >= 90 ? 'tramos--peligro' : t.desde >= 60 ? 'tramos--aviso' : ''}">
+        <span class="tramos__nombre">${esc(t.nombre)}<small>${cuenta(t.n, 'coche', 'coches')}</small></span>
+        <strong class="cifra">${euros(t.invertido_cent)}</strong>
+        <span class="tramos__barra"><span style="width: ${Math.round((t.invertido_cent / maxTramo) * 100)}%"></span></span>
       </li>`).join('');
+    const parado = stock.tramos.filter((t) => t.desde >= 60).reduce((x, t) => x + t.invertido_cent, 0);
+    $('.stock-dinero__pie', caja).textContent = [parado ? `${euros(parado)} llevan más de 60 días parados.` : 'Nada lleva más de 60 días.',
+      'En depósito solo cuentan sus gastos: al dueño se le paga al venderlo.',
+      stock.sin_coste ? `${cuenta(stock.sin_coste, 'coche propio no suma', 'coches propios no suman')}: falta su precio de compra.` : ''].filter(Boolean).join(' ');
 
     // Los que más llevan
     $('.ficha__lateral .canales').innerHTML = stock.mas_antiguos.length
