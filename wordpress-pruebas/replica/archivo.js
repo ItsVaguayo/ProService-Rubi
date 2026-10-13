@@ -1,4 +1,4 @@
-/* Script de su listado · copiado de https://proservicerubi.com el 01-10-2026 por extraer.py · no editar a mano */
+/* Script de su listado · copiado de https://proservicerubi.com el 13-10-2026 por extraer.py · no editar a mano */
 
 document.addEventListener('DOMContentLoaded',()=>{
   // Hover sobre thumbnails
