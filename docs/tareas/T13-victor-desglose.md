@@ -66,13 +66,13 @@ Cada migración se apunta por su nombre en `migraciones_aplicadas`. David y tú 
 ## 10. Bloque 10 · Cita previa
 - ✅ Migración `0018`: `citas` y `horario_pruebas` con el horario de la duda H12; sin solapes por índice único (9-oct).
 - ✅ `GET /api/citas/huecos` y `POST /api/citas/pedir` públicos, con el antispam de contactos; la petición entra pedida y apunta su contacto (9-oct).
-- [ ] Formulario en la ficha de la web y en `wordpress-pruebas/`.
+- ✅ Formulario en la ficha de la web (`[proservice_contacto]`, plugin 0.6.0) y en la réplica de `wordpress-pruebas/`: día y hora de los huecos libres (13-oct).
 - ✅ `agenda.html` conectada (9-oct): semana con paso adelante y atrás, confirmar, cambiar hora, cancelar, hecha y no vino, «Nueva prueba» y «Dar cita» desde un contacto de Contactos.
 
 ## 11. Bloque 9 · Avisos
 - ✅ `modules/avisos` y `GET /api/avisos` (PR #15, 8-oct): tareas vencidas, contactos sin atender, coches parados, ITV, vendidos aún publicados y cobros vencidos.
 - ✅ Avisos de pruebas de hoy y de mañana; en rojo las que siguen sin confirmar (9-oct).
-- [ ] Correo diario (duda H13: falta el SMTP).
+- ✅ Correo diario en modo simulado (PR #18). Sale de verdad cuando haya SMTP (duda H13).
 
 ## 12. Conectar las maquetas de Hafsa
 - ✅ `clientes.html` (7-oct): lista con buscador y filtros, ficha con sus coches y lo último del CRM, alta y edición. La lista de la API trae `n_coches` y `ultima_actividad`. Las facturas del cliente salen cuando esté el bloque 3.
