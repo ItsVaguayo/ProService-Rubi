@@ -82,5 +82,6 @@ npm run wordpress --workspace api -- sincronizar   # publica, actualiza y retira
 - [Dudas abiertas con el cliente](docs/dudas.md)
 - [Portales: cómo publicar de forma automática](docs/portales.md) (T04)
 - [Flujo de ramas](docs/flujo-git.md)
+- [Producción: lo que hay que hacer en el servidor, el DNS y WordPress para arrancar](docs/produccion.md)
 - [Resumen del briefing y dudas abiertas](docs/briefing.md)
 - Briefing original: `Briefing-plataforma-vehiculos-ProService-Rubi.docx`

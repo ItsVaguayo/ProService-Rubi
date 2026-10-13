@@ -6,8 +6,12 @@ import { configCorreo, crearTransporte, enviarPendientes } from './modules/corre
 import { encolarAvisosDelDia } from './modules/correo/mensajes.js';
 
 const port = process.env.PORT || 3001;
+// Solo en la propia máquina: desde fuera se entra por nginx (docs/seguridad.md). HOST=0.0.0.0 para abrirla.
+const host = process.env.HOST || '127.0.0.1';
+// npm start arranca aunque no haya .env (--env-file-if-exists): que se vea si va con la base de desarrollo
+if (!process.env.DB_PATH) console.warn('Aviso: sin DB_PATH (¿falta el .env?). Base de desarrollo: ./data/proservice.db');
 const db = abrirDb();
-crearApp(db).listen(port, () => console.log(`API en http://localhost:${port}`));
+crearApp(db).listen(port, host, () => console.log(`API en http://${host === '127.0.0.1' ? 'localhost' : host}:${port}`));
 
 // Reservas que caducan solas: al arrancar y cada 10 minutos. Un fallo no tumba la API.
 const revisarReservas = () => {

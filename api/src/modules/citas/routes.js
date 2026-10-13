@@ -10,6 +10,9 @@ import { ZONA, DIA, hoyLocal, diaValido } from '../../fechas.js';
 import { configCorreo } from '../correo/envio.js';
 import { correoDeContacto } from '../correo/mensajes.js';
 
+// Peticiones de cita por IP cada 10 minutos: el mismo límite que los contactos de la web (CONTACTOS_POR_IP)
+const MAXIMO_POR_IP = Number(process.env.CONTACTOS_POR_IP) || 5;
+
 export const DURACION_MIN = 30;
 export const ESTADOS_CITA = ['pedida', 'confirmada', 'hecha', 'no_vino', 'cancelada'];
 export const VIVAS = ['pedida', 'confirmada'];
@@ -75,7 +78,7 @@ export function rutasCitasPublicas(db) {
   const { huecos, motivoHoraNoValida } = agenda(db);
   // Solo los que están a la venta: la web también enseña reservados y vendidos, pero esos no se prueban
   const cocheWeb = db.prepare("SELECT id, marca, modelo, version, referencia FROM vehiculos WHERE (id = ? OR referencia = ?) AND estado = 'publicado'");
-  const envios = new Map(); // ip → { n, desde }: como en contactos, 5 cada 10 minutos
+  const envios = new Map(); // ip → { n, desde }: como en contactos
 
   // ?desde=AAAA-MM-DD (por defecto hoy) · ?dias= (1 a 14, por defecto 14)
   r.get('/huecos', (req, res) => {
@@ -90,7 +93,7 @@ export function rutasCitasPublicas(db) {
   r.post('/pedir', (req, res) => {
     const ahora = Date.now();
     const e = envios.get(req.ip);
-    if (e && ahora - e.desde < 600000 && e.n >= 5) return res.status(429).json({ error: 'Has enviado varias peticiones seguidas. Prueba en unos minutos o llámanos.' });
+    if (e && ahora - e.desde < 600000 && e.n >= MAXIMO_POR_IP) return res.status(429).json({ error: 'Has enviado varias peticiones seguidas. Prueba en unos minutos o llámanos.' });
     if (!e || ahora - e.desde >= 600000) envios.set(req.ip, { n: 1, desde: ahora }); else e.n += 1;
 
     const b = req.body ?? {};

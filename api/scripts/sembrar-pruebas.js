@@ -22,6 +22,11 @@ if (!/prueba/i.test(RUTA_DB)) {
   console.error(`Por seguridad, la base de pruebas tiene que llevar «prueba» en el nombre: ${RUTA_DB}`);
   process.exit(1);
 }
+// --reset borra la base: tiene que ser una de pruebas, nunca la real (por si DB_PATH viene de la sesión del servidor)
+if (values.reset && !/prueba/i.test(RUTA_DB)) {
+  console.error(`Por seguridad, con --reset la base tiene que llevar «prueba» en la ruta: ${RUTA_DB}`);
+  process.exit(1);
+}
 // --reset borra la carpeta de fotos entera: tiene que ser también de pruebas, nunca la de las fotos reales
 if (values.reset && !/prueba/i.test(DIR_FOTOS)) {
   console.error(`Por seguridad, con --reset la carpeta de fotos tiene que llevar «prueba» en la ruta: ${DIR_FOTOS}`);
