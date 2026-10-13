@@ -2879,9 +2879,10 @@ const LIBROS = {
     titulo: 'Libro de ingresos',
     explica: 'Las facturas emitidas, por orden. En REBU la base y el IVA son los del margen (precio − compra), como en Pymecar; el cliente ve un solo total.',
     columnas: ['Número', 'Fecha', 'Cliente', 'NIF', 'Régimen', 'Base', 'IVA', 'Total'],
-    fila: (f) => [`<b class="cifra">${esc(f.codigo)}</b>`, esc(fechaCorta(f.fecha)), esc(f.cliente), esc(f.nif ?? '—'), f.regimen === 'REBU' ? 'REBU' : 'General',
+    fila: (f) => [`<a class="cifra libro__factura" href="factura.html?id=${f.id}">${esc(f.codigo)}</a>`, esc(fechaCorta(f.fecha)), esc(f.cliente), esc(f.nif ?? '—'), f.regimen === 'REBU' ? 'REBU' : 'General',
       euros2(f.base_cent), `${euros2(f.iva_cent)} <small class="nota">${f.iva_pct} %</small>`, `<b>${euros2(f.total_cent)}</b>`],
     cifras: (t, n) => [['Facturas', cifra(n)], ['Base imponible', euros(t.base_cent)], ['IVA repercutido', euros(t.iva_cent)], ['Total facturado', euros(t.total_cent)]],
+    pie: (t) => ['', '', '', '', '', euros2(t.base_cent), euros2(t.iva_cent), `<b>${euros2(t.total_cent)}</b>`],
   },
   rebu: {
     titulo: 'Libro de REBU',
@@ -2889,9 +2890,10 @@ const LIBROS = {
     columnas: ['Nº', 'Vehículo', 'Compra', 'Proveedor', 'Venta', 'Cliente', 'Base', 'IVA', 'Total venta'],
     fila: (f) => [cifra(f.numero), esc(f.vehiculo), `${euros2(f.compra_cent)}<small class="nota">${esc(fechaCorta(f.fecha_compra))}</small>`,
       `${esc(f.proveedor ?? '—')}${f.proveedor_nif ? `<small class="nota">${esc(f.proveedor_nif)}</small>` : ''}`,
-      `<b class="cifra">${esc(f.codigo)}</b><small class="nota">${esc(fechaCorta(f.fecha_venta))}</small>`, esc(f.cliente),
+      `<a class="cifra libro__factura" href="factura.html?id=${f.id}">${esc(f.codigo)}</a><small class="nota">${esc(fechaCorta(f.fecha_venta))}</small>`, esc(f.cliente),
       euros2(f.base_cent), euros2(f.iva_cent), `<b>${euros2(f.total_venta_cent)}</b>`],
     cifras: (t, n) => [['Coches', cifra(n)], ['Compras', euros(t.compra_cent)], ['Ventas', euros(t.total_venta_cent)], ['IVA del REBU', euros(t.iva_cent)]],
+    pie: (t) => ['', '', euros2(t.compra_cent), '', '', '', euros2(t.base_cent), euros2(t.iva_cent), `<b>${euros2(t.total_venta_cent)}</b>`],
   },
   gastos: {
     titulo: 'Libro de gastos',
@@ -2903,6 +2905,7 @@ const LIBROS = {
       euros2(g.base_cent), euros2(g.iva_cent), g.irpf_cent ? `−${euros2(g.irpf_cent)}` : '—', `<b>${euros2(g.total_cent)}</b>`,
       g.pagado_en ? esc(fechaCorta(g.pagado_en)) : '<span class="estado cobro--pendiente">Sin pagar</span>'],
     cifras: (t, n) => [['Gastos', cifra(n)], ['Base', euros(t.base_cent)], ['IVA soportado', euros(t.iva_cent)], ['Retenciones de IRPF', euros(t.irpf_cent)]],
+    pie: (t) => ['', '', '', '', euros2(t.base_cent), euros2(t.iva_cent), t.irpf_cent ? `−${euros2(t.irpf_cent)}` : '—', `<b>${euros2(t.total_cent)}</b>`, ''],
   },
 };
 const CONCEPTOS_GASTO = { alquileres: 'Alquileres', carburantes: 'Carburantes', comisiones: 'Comisiones', compras: 'Compras', electricidad: 'Electricidad',
@@ -2911,22 +2914,23 @@ const CONCEPTOS_GASTO = { alquileres: 'Alquileres', carburantes: 'Carburantes', 
 const DERECHA = new Set(['Base', 'IVA', 'IRPF', 'Total', 'Total venta', 'Compra']);
 
 async function paginaLibros() {
-  const periodo = $('.libros-periodo');
-  const filtros = $('form.filtros');
+  const filtros = $('form.filtros--libros');
   const descargar = $('[data-descargar]');
   const hoy = diaLocal();
-  // Años: desde el de la primera factura (o este) hasta este
+  // Años: este y los dos anteriores (lo que se puede pedir a la gestoría)
   const anioActual = Number(hoy.slice(0, 4));
-  periodo.elements.anio.innerHTML = [anioActual, anioActual - 1, anioActual - 2].map((a) => `<option value="${a}">${a}</option>`).join('');
-  periodo.elements.anio.value = params.get('anio') ?? String(anioActual);
+  filtros.elements.anio.innerHTML = [anioActual, anioActual - 1, anioActual - 2].map((a) => `<option value="${a}">${a}</option>`).join('');
+  filtros.elements.anio.value = params.get('anio') ?? String(anioActual);
   // Por defecto, el trimestre en curso: es lo que se le pasa a la gestoría
-  periodo.elements.trimestre.value = params.get('trimestre') ?? String(Math.ceil(Number(hoy.slice(5, 7)) / 3));
+  filtros.elements.trimestre.value = params.get('trimestre') ?? String(Math.ceil(Number(hoy.slice(5, 7)) / 3));
   if (params.get('libro')) filtros.elements.libro.value = params.get('libro');
+  const ORDINAL = { 1: '1.er trimestre', 2: '2.º trimestre', 3: '3.er trimestre', 4: '4.º trimestre' };
+  const diaMes = (d) => `${Number(d.slice(8, 10))}/${Number(d.slice(5, 7))}`;
 
   let peticion = 0;
   const pintar = async () => {
-    const anio = periodo.elements.anio.value;
-    const trimestre = periodo.elements.trimestre.value;
+    const anio = filtros.elements.anio.value;
+    const trimestre = filtros.elements.trimestre.value;
     const libro = filtros.elements.libro.value;
     const q = new URLSearchParams({ anio, ...(trimestre ? { trimestre } : {}) });
     history.replaceState(null, '', `?${new URLSearchParams({ libro, ...Object.fromEntries(q) })}`);
@@ -2937,8 +2941,9 @@ async function paginaLibros() {
     for (const k of Object.keys(LIBROS)) $(`[data-n="${k}"]`).textContent = datos[k].filas.length;
     const def = LIBROS[libro];
     const { filas, totales, desde, hasta } = datos[libro];
+    $('[data-periodo-titulo]').innerHTML = `<strong>${trimestre ? `${ORDINAL[trimestre]} de ${anio}` : `Todo ${anio}`}</strong> <span>· del ${diaMes(desde)} al ${diaMes(hasta)}</span>`;
     $('[data-titulo]').textContent = def.titulo;
-    $('[data-periodo]').textContent = `Del ${fechaCorta(desde)} al ${fechaCorta(hasta)}`;
+    $('[data-periodo]').textContent = cuenta(filas.length, libro === 'gastos' ? 'gasto' : libro === 'rebu' ? 'coche' : 'factura', libro === 'gastos' ? 'gastos' : libro === 'rebu' ? 'coches' : 'facturas');
     $('[data-explica]').textContent = def.explica;
     $('.cifras').innerHTML = def.cifras(totales, filas.length).map(([rotulo, valor]) =>
       `<div class="cifras__dato"><span class="rotulo">${esc(rotulo)}</span><strong class="cifra">${esc(valor)}</strong></div>`).join('');
@@ -2946,14 +2951,19 @@ async function paginaLibros() {
     // En el móvil la tabla pasa a tarjetas: cada celda lleva su rótulo
     $('.tabla--libro tbody').innerHTML = filas.map((f) => `<tr>${def.fila(f).map((celda, i) =>
       `<td data-rotulo="${esc(def.columnas[i])}"${DERECHA.has(def.columnas[i]) ? ' class="derecha cifra"' : ''}>${celda}</td>`).join('')}</tr>`).join('');
+    // Abajo, los totales debajo de su columna; el rótulo ocupa las columnas vacías de la izquierda
+    const pie = def.pie(totales);
+    const antes = pie.findIndex((c) => c !== '');
+    $('.tabla--libro tfoot').innerHTML = filas.length > 1 ? `<tr><td class="t-titulo" colspan="${antes}">Total del periodo</td>${pie.slice(antes).map((celda, i) =>
+      `<td data-rotulo="${esc(def.columnas[antes + i])}"${DERECHA.has(def.columnas[antes + i]) ? ' class="derecha cifra"' : ''}>${celda}</td>`).join('')}</tr>` : '';
     $('.tabla-caja').hidden = !filas.length;
     $('.caja .vacio').hidden = !!filas.length;
     descargar.href = `/api/facturas/libros/${libro}.csv?${q}`;
+    descargar.textContent = `Descargar ${def.titulo.replace('Libro de ', 'el libro de ')} en Excel`;
     descargar.setAttribute('download', `libro-${libro}-${desde}-${hasta}.csv`);
   };
-  periodo.addEventListener('change', pintar);
-  periodo.addEventListener('submit', (ev) => ev.preventDefault());
   filtros.addEventListener('change', pintar);
+  filtros.addEventListener('submit', (ev) => ev.preventDefault());
   await pintar();
 }
 
@@ -3624,6 +3634,8 @@ async function paginaIncentivos(usuario) {
     else if (!cerrado) accion = '<span class="estado cobro--pendiente">Mes en curso</span><span class="nota">Se liquida cuando acabe</span>';
     else accion = `<span class="estado cobro--pendiente">Sin liquidar</span><button class="boton boton--pequeno" type="button" data-liquidar="${c.usuario_id}">Liquidar ${eurosRedondos(c.total_cent)}</button>`;
     const clase = c.liquidado ? ' incentivo--liquidado' : !c.regla ? ' incentivo--sin-regla' : '';
+    // El margen que dejaron sus ventas: el incentivo sale de ahí (o es fijo por coche)
+    const margen = c.coches.reduce((t, x) => t + (x.margen_cent ?? 0), 0);
     return `<section class="caja incentivo${clase}" data-usuario="${c.usuario_id}">
         <div class="incentivo__cabeza">
           <span class="contacto__inicial usuario__inicial--${c.rol === 'gerencia' ? 'gerencia' : 'comercial'}" aria-hidden="true">${esc(iniciales(c.nombre ?? '?'))}</span>
@@ -3632,7 +3644,7 @@ async function paginaIncentivos(usuario) {
             <p class="nota">${quien}</p>
           </div>
           <p class="incentivo__dato"><span class="rotulo">Coches</span><b class="cifra">${c.coches.length}</b></p>
-          <p class="incentivo__dato"><span class="rotulo">Importe</span><b class="cifra">${eurosRedondos(c.total_cent)}</b></p>
+          <p class="incentivo__dato"><span class="rotulo">Importe</span><b class="cifra">${eurosRedondos(c.total_cent)}</b>${c.coches.length ? `<span class="nota">de ${eurosRedondos(margen)} de margen</span>` : ''}</p>
           <div class="incentivo__accion">${accion}</div>
         </div>
         <form class="incentivo__regla despliega" hidden>
@@ -3643,12 +3655,17 @@ async function paginaIncentivos(usuario) {
           <button class="boton boton--pequeno" type="submit">Guardar</button>
           <button class="boton boton--secundario boton--pequeno" type="button" data-cerrar>Cancelar</button>
         </form>
-        ${c.coches.length ? `<div class="tabla-caja">
+        ${c.coches.length ? `<details class="incentivo__coches"${c.liquidado ? '' : ' open'}>
+          <summary>${c.liquidado ? `Ver ${c.coches.length === 1 ? 'su coche' : `sus ${c.coches.length} coches`}` : `${cuenta(c.coches.length, 'coche', 'coches')} vendidos`}</summary>
+          <div class="tabla-caja">
           <table class="tabla tabla--tarjetas">
             <thead><tr><th>Fecha</th><th>Coche</th><th class="derecha">Precio</th><th class="derecha">Margen</th><th class="derecha">Incentivo</th></tr></thead>
             <tbody>${c.coches.map(filaCoche).join('')}</tbody>
+            ${c.coches.length > 1 ? `<tfoot><tr><td class="t-titulo" colspan="3">Total</td><td class="derecha cifra" data-rotulo="Margen">${eurosRedondos(margen)}</td>
+              <td class="derecha cifra" data-rotulo="Incentivo"><b>${eurosRedondos(c.total_cent)}</b></td></tr></tfoot>` : ''}
           </table>
-        </div>` : '<p class="nota incentivo__nada">Sin ventas este mes.</p>'}
+          </div>
+        </details>` : '<p class="nota incentivo__nada">Sin ventas este mes.</p>'}
       </section>`;
   };
 
@@ -4442,18 +4459,26 @@ const PAGINAS = {
 // bloque tiene piezas que también entran (las columnas del tablero, las filas de una tabla), entran
 // las piezas y el bloque no, para que no se funda dos veces. Como mucho 0,7 s de espera para la última.
 function entrarPorPartes() {
+  // Las piezas: cada bloque de la página (las cifras, cada caja, cada tarjeta) y, dentro, las filas de sus tablas
+  // y listas. Un bloque entra entero (con su título y su borde) y sus filas llegan detrás, ya dentro.
   const PIEZAS = [
-    '.contenido > :not(template):not(script)',
-    // La cabecera negra no se mueve (dejaría ver una franja clara arriba): entra lo de dentro
-    '.contenido > header > *',
-    '.tablero > .columna',
-    '.ficha > *', '.alta > *',
-    '.tabla tbody tr:nth-child(-n+12)',
-    '.contactos > li:nth-child(-n+12)',
-    '.fotos-orden > li:nth-child(-n+12)',
+    '.contenido > *', '.contenido > header > *',
+    '.ficha__principal > *', '.ficha__lateral > *', '.alta > *', '.tablero > .columna', '.graficas > *', '.version-incentivos > *',
+    '.incentivos > *', '.tabla tbody tr:nth-child(-n+12)', '.contactos > li:nth-child(-n+12)', '.fotos-orden > li:nth-child(-n+12)',
   ].join(', ');
-  const todas = [...document.querySelectorAll(PIEZAS)].filter((el) => !el.hidden && el.getClientRects().length);
-  const piezas = todas.filter((el) => el.matches('.tabla-caja') || !todas.some((otra) => otra !== el && el.contains(otra)));
+  // Lo que solo agrupa no se mueve: se moverían sus piezas dos veces. La cabecera negra tampoco (dejaría ver una
+  // franja clara arriba): entra lo de dentro.
+  const SOLO_AGRUPA = '.contenido > header, .ficha, .ficha__principal, .ficha__lateral, .alta, .tablero, .graficas, .version-incentivos, .incentivos, template, script';
+  const pantalla = innerHeight * 1.1;
+  const piezas = [...document.querySelectorAll(PIEZAS)]
+    // (lo de un desplegable cerrado tampoco: Chrome le da sitio aunque no se vea)
+    .filter((el) => !el.hidden && !el.matches(SOLO_AGRUPA) && el.getClientRects().length && !el.closest('details:not([open]) > :not(summary)'))
+    // Lo que queda por debajo de la pantalla no se anima: cuando se llega bajando, ya está en su sitio
+    .map((el) => ({ el, r: el.getBoundingClientRect() }))
+    .filter(({ r }) => r.top < pantalla)
+    // En el orden en que se lee: de arriba abajo y, a la misma altura, de izquierda a derecha
+    .sort((a, b) => (Math.abs(a.r.top - b.r.top) < 8 ? a.r.left - b.r.left : a.r.top - b.r.top))
+    .map(({ el }) => el);
   // Lo que va fijo a la pantalla (la barra de guardar del alta) entra aparte, desde abajo. El bloque
   // que lo contiene solo se funde: si se moviera, lo fijo se movería con él y saltaría al acabar.
   const fijas = [...document.querySelectorAll('.barra-guardar')];
@@ -4469,10 +4494,12 @@ function entrarPorPartes() {
   piezas.forEach((el, i) => {
     el.style.setProperty('--i', Math.min(i, 16));
     el.classList.add('entra');
-    if (fijas.some((f) => el.contains(f))) el.classList.add('entra--sin-mover');
+    // Dentro de una pieza que ya se mueve, la fila solo se funde: si también se moviera, bajaría el doble
+    if (fijas.some((f) => el.contains(f)) || piezas.some((otra) => otra !== el && otra.contains(el))) el.classList.add('entra--sin-mover');
     const fin = (ev) => {
       if (ev.target !== el) return; // las piezas de dentro también avisan al terminar
       el.classList.remove('entra', 'entra--sin-mover');
+      el.style.removeProperty('--i');
       el.removeEventListener('animationend', fin);
     };
     el.addEventListener('animationend', fin);

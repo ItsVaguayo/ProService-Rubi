@@ -41,7 +41,7 @@ export function rutasLibros(db) {
 
   // --- Libro de ingresos ---
   const ingresos = (p) => emitidas(p.desde, p.hasta).map((f) => ({
-    codigo: f.codigo, serie: f.serie, numero: f.numero, fecha: f.fecha, tipo: f.tipo, regimen: f.regimen,
+    id: f.id, codigo: f.codigo, serie: f.serie, numero: f.numero, fecha: f.fecha, tipo: f.tipo, regimen: f.regimen,
     cliente: f.cliente.nombre, nif: f.cliente.nif, forma_pago: f.forma_pago,
     base_cent: f.base_cent, iva_pct: f.iva_pct, iva_cent: f.iva_cent, suplidos_cent: f.suplidos_cent, total_cent: f.total_cent,
   }));
@@ -66,7 +66,7 @@ export function rutasLibros(db) {
 
   // --- Libro de REBU: una línea por coche vendido en REBU (y su rectificativa, en negativo) ---
   const rebu = (p) => emitidas(p.desde, p.hasta, "AND regimen = 'REBU'").map((f, i) => ({
-    numero: i + 1, codigo: f.codigo, tipo: f.tipo,
+    numero: i + 1, id: f.id, codigo: f.codigo, tipo: f.tipo,
     vehiculo: f.coche ? `${f.coche.marca} ${f.coche.modelo} (${f.coche.matricula})` : '',
     fecha_compra: f.coche?.fecha_compra ?? null, proveedor: f.coche?.proveedor_nombre ?? null, proveedor_nif: f.coche?.proveedor_nif ?? null,
     compra_cent: f.compra_cent,

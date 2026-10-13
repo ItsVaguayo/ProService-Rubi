@@ -56,34 +56,34 @@
 
   <main class="contenido" id="contenido" tabindex="-1">
 
-    <!-- CABECERA: el periodo (año y, si se quiere, trimestre: la gestoría trabaja por trimestres) y la descarga -->
+    <!-- CABECERA: el periodo que se está mirando (lo pinta panel.js) y la descarga para la gestoría -->
     <header class="cabecera cabecera--portada">
       <div>
         <p class="portada__antetitulo">Gerencia</p>
         <h1>Libros</h1>
+        <p class="contactos-resumen" data-periodo-titulo><strong>4.º trimestre de 2026</strong> <span>· del 1/10 al 31/12</span></p>
       </div>
-      <form class="cabecera__acciones libros-periodo">
-        <label class="campo"><span class="campo__nombre">Año</span><select name="anio"></select></label>
-        <label class="campo"><span class="campo__nombre">Periodo</span>
-          <select name="trimestre">
-            <option value="">Todo el año</option>
-            <option value="1">1.er trimestre</option>
-            <option value="2">2.º trimestre</option>
-            <option value="3">3.er trimestre</option>
-            <option value="4">4.º trimestre</option>
-          </select>
-        </label>
-        <a class="boton boton--secundario" href="#" data-descargar download>Descargar en Excel</a>
-      </form>
+      <div class="cabecera__acciones">
+        <a class="boton" href="#" data-descargar download>Descargar en Excel</a>
+      </div>
     </header>
 
-    <!-- QUÉ LIBRO. La cuenta de cada uno sale al lado. -->
-    <form class="filtros">
+    <!-- QUÉ LIBRO Y QUÉ PERIODO, en una barra como en Facturas y Gastos. La gestoría trabaja por trimestres:
+         por defecto, el trimestre en curso. La cuenta de cada libro sale a su lado. -->
+    <form class="filtros filtros--libros">
       <fieldset class="segmentos" aria-label="Libro">
         <label><input type="radio" name="libro" value="ingresos" checked><span>Ingresos <span class="segmentos__n" data-n="ingresos"></span></span></label>
         <label><input type="radio" name="libro" value="rebu"><span>REBU <span class="segmentos__n" data-n="rebu"></span></span></label>
         <label><input type="radio" name="libro" value="gastos"><span>Gastos <span class="segmentos__n" data-n="gastos"></span></span></label>
       </fieldset>
+      <fieldset class="segmentos" aria-label="Trimestre">
+        <label><input type="radio" name="trimestre" value="1"><span aria-label="primer trimestre">1T</span></label>
+        <label><input type="radio" name="trimestre" value="2"><span aria-label="segundo trimestre">2T</span></label>
+        <label><input type="radio" name="trimestre" value="3"><span aria-label="tercer trimestre">3T</span></label>
+        <label><input type="radio" name="trimestre" value="4" checked><span aria-label="cuarto trimestre">4T</span></label>
+        <label><input type="radio" name="trimestre" value=""><span>Todo el año</span></label>
+      </fieldset>
+      <label class="campo filtros-libros__anio"><span class="oculto">Año</span><select name="anio"></select></label>
     </form>
 
     <!-- TOTALES del libro elegido. Los rellena panel.js. -->
@@ -95,6 +95,7 @@
         <table class="tabla tabla--tarjetas tabla--libro">
           <thead></thead>
           <tbody></tbody>
+          <tfoot></tfoot>
         </table>
       </div>
       <div class="vacio" hidden><strong>Nada en este periodo</strong><p class="nota">Prueba con otro trimestre o con todo el año.</p></div>

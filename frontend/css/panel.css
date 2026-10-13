@@ -45,15 +45,17 @@ html.cargando:not(.listo) body::before {
 @media (prefers-reduced-motion: reduce) { html.cargando:not(.listo) body::before { animation: none; background: var(--rojo-boton); opacity: .5; } }
 @keyframes mostrar-sin-js { to { opacity: 1; } }
 
-.entra { animation: entrar .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 45ms); }
+/* Cada pieza entra 45 ms después de la anterior; las filas de una caja, ya dentro de ella, solo se funden */
+.entra { animation: entrar .4s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 45ms); }
 @keyframes entrar { from { opacity: 0; transform: translateY(10px); } }
 .entra--sin-mover { animation-name: aparecer; }
 @keyframes aparecer { from { opacity: 0; } }
 /* Lo fijo abajo (la barra de guardar del alta) sube desde fuera de la pantalla, al final de la cascada */
-.entra-abajo { animation: entrar-abajo .5s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 45ms); }
+.entra-abajo { animation: entrar-abajo .5s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 45ms); }
 @keyframes entrar-abajo { from { transform: translateY(100%); } }
+/* Con menos movimiento: sin desplazamiento ni cascada, solo un fundido corto de todo a la vez */
 @media (prefers-reduced-motion: reduce) {
-  .entra, .entra-abajo { animation: none; }
+  .entra, .entra-abajo { animation: aparecer .2s ease both; animation-delay: 0s; }
 }
 
 /* Paso de una página a otra. El fondo negro de la cabecera no espera a los datos (arriba solo se
@@ -2043,7 +2045,6 @@ html:not([data-rol="gerencia"]) .menu__enlaces a[href="incentivos.html"]::after,
 .contratos-coche li { margin-top: 4px; }
 .contratos-coche a { color: #e6e8eb; }
 .tabla--libro small { display: block; margin-top: 2px; font-size: .75rem; }
-.libros-periodo { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
 .ajustes-factura summary { cursor: pointer; padding: 4px 0; }
 .ajustes-factura form { margin-top: var(--espacio-m); }
 .ajustes-factura form + form { padding-top: var(--espacio-m); border-top: 1px solid var(--linea); }
@@ -2108,7 +2109,7 @@ html:not([data-rol="gerencia"]) .menu__enlaces a[href="incentivos.html"]::after,
 
 /* Cabeza de cada comercial: quién y su regla, coches, importe y la acción */
 .incentivo { padding: 0; overflow: hidden; }
-.incentivo__cabeza { display: grid; grid-template-columns: 44px minmax(0, 1fr) 90px 110px 190px; align-items: center; gap: 18px; padding: 18px 20px; }
+.incentivo__cabeza { display: grid; grid-template-columns: 44px minmax(0, 1fr) 90px 150px 190px; align-items: center; gap: 18px; padding: 18px 20px; }
 .incentivo__quien h2 { font-size: 1rem; }
 .incentivo__quien .nota { margin: 2px 0 0; font-size: .8125rem; }
 .incentivo__dato { display: flex; flex-direction: column; margin: 0; }
@@ -2117,7 +2118,17 @@ html:not([data-rol="gerencia"]) .menu__enlaces a[href="incentivos.html"]::after,
 .incentivo__accion .nota { font-size: .75rem; }
 .incentivo .tabla-caja { border: 0; border-top: 1px solid var(--linea); border-radius: 0; }
 .incentivo--liquidado .incentivo__cabeza { background: #fafbfb; }
-.incentivo--sin-regla { border-color: #e0a23a; }
+/* Sin regla: una raya ámbar a la izquierda (falta algo por hacer), no el borde entero */
+.incentivo--sin-regla { box-shadow: inset 4px 0 0 #e0a23a; }
+.incentivo__dato .nota { margin-top: 2px; font-size: .75rem; white-space: nowrap; }
+/* Sus coches: abiertos mientras falta liquidar; ya liquidado, plegados (no hay nada que revisar) */
+.incentivo__coches { border-top: 1px solid var(--linea); }
+.incentivo__coches > summary { padding: 10px 20px; color: var(--tinta-2); font-size: .8125rem; font-weight: 600; cursor: pointer; list-style-position: inside; }
+@media (hover: hover) and (pointer: fine) { .incentivo__coches > summary:hover { color: var(--tinta); background: var(--fondo-hover); } }
+.incentivo__coches[open] > summary { border-bottom: 1px solid var(--linea); }
+.incentivo__coches .tabla-caja { border-top: 0; }
+.incentivo tfoot td { padding: 12px 16px; border-top: 1px solid var(--linea-fuerte); background: #fafbfb; font-weight: 600; }
+@media (max-width: 760px) { .incentivo tfoot td { padding: 0; border: 0; background: none; } }
 .incentivo__regla { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; padding: 14px 20px; border-top: 1px solid var(--linea); background: #fafbfb; }
 .incentivo__regla .campo { margin: 0; min-width: 160px; }
 .incentivo__regla .error--lista { flex-basis: 100%; }
@@ -2882,4 +2893,16 @@ html.sin-datos main.contenido > .error--lista { margin-top: var(--espacio-l); }
 @media (max-width: 900px) {
   .revision__componente { grid-template-columns: minmax(0, 1fr); }
   .revision__componente .segmentos { justify-self: start; max-width: 100%; overflow-x: auto; }
+}
+
+/* Libros: libro, trimestre y año en una barra; los totales del periodo al pie de la tabla */
+.filtros--libros { align-items: center; }
+.filtros--libros .filtros-libros__anio { min-width: 110px; }
+.tabla--libro tfoot td { padding: 12px 16px; border-top: 1px solid var(--linea-fuerte); background: #fafbfb; font-weight: 600; }
+.libro__factura { color: var(--tinta); font-weight: 700; text-decoration: none; }
+@media (hover: hover) and (pointer: fine) { .libro__factura:hover { text-decoration: underline; } }
+@media (max-width: 760px) {
+  .filtros--libros .segmentos { flex-wrap: nowrap; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .filtros--libros .segmentos span { white-space: nowrap; }
+  .tabla--libro tfoot td { padding: 0; border: 0; background: none; }
 }
