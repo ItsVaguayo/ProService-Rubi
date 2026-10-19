@@ -49,7 +49,7 @@ Su web ya tiene listado y filtro propios, que funcionan con lo que manda la API 
 python3 wordpress-pruebas/replica/extraer.py && wordpress-pruebas/montar.sh
 ```
 
-Comprobado el 1-oct: el listado y la ficha de la réplica tienen la misma estructura de bloques que los suyos. Entonces la única diferencia era la línea de la cuota, que la plataforma no mandaba; desde el 19-oct sí la manda. Su filtro AJAX responde igual (estado, precio y potencia) y el formulario rechaza el campo trampa como el suyo.
+Comprobado el 1-oct: el listado y la ficha de la réplica tienen la misma estructura de bloques que los suyos. La única diferencia es la línea de la cuota, porque la plataforma no la manda. Su filtro AJAX responde igual (estado, precio y potencia) y el formulario rechaza el campo trampa como el suyo.
 
 Las imágenes fijas (la foto de Jaume, los fondos) se cargan de su web, y Swiper, GLightbox y Font Awesome de sus CDN: para ver la réplica entera hace falta internet.
 
