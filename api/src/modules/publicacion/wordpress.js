@@ -23,9 +23,9 @@ export const MAPA_POR_DEFECTO = {
   modelo: { acf: 'modelo', formato: 'texto' },
   pvp_cent: { acf: 'precio', formato: 'euros' },
   // «Desde X €/mes» (cuota.js). Calculada aquí: no es una columna del coche. cuota_condiciones solo se manda
-  // si la web tiene ese campo; sirve para enseñar el tipo y el plazo junto a la cuota.
+  // si la web tiene ese campo (opcional: sin él no hay aviso); sirve para enseñar el tipo y el plazo junto a la cuota.
   cuota: { acf: 'cuota', formato: 'numero' },
-  cuota_condiciones: { acf: 'cuota_condiciones', formato: 'texto' },
+  cuota_condiciones: { acf: 'cuota_condiciones', formato: 'texto', opcional: true },
   anio: { acf: 'anio', formato: 'numero' },
   kilometros: { acf: 'kilometros', formato: 'numero' },
   combustible: {
@@ -152,7 +152,7 @@ export async function diagnosticar(cfg, fetchImpl = fetch) {
     d.avisos.push('Los campos de ACF no están expuestos en la API REST: solo se puede enviar título, estado y marca. '
       + 'Para mandar precio, datos y fotos, un administrador tiene que activar «Mostrar en la API REST» en el grupo de campos de ACF del tipo «coches».');
   } else {
-    const faltan = d.mapa.filter((m) => m.estado !== 'ok').map((m) => m.acf);
+    const faltan = d.mapa.filter((m) => m.estado !== 'ok' && !cfg.mapa[m.campo].opcional).map((m) => m.acf);
     if (faltan.length) d.avisos.push(`Campos del mapa que la web no tiene: ${faltan.join(', ')}. Ajustar WP_MAPA a los nombres reales.`);
   }
   if (d.acf.expuesto && !d.puede.subir_fotos) d.avisos.push('El usuario no puede subir fotos: la galería no se enviará.');
