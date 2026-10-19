@@ -10,7 +10,7 @@ Las fotos y los recortes ampliados (`matriculas.png`, `logos.png`, `colt-rueda.p
 - Plató blanco con suelo gris pulido, focos en el techo y el logo pintado en la pared, encima del coche. El coche tiene reflejo y sombra en el suelo: no parece recortado y pegado.
 - Una banda abajo (unos 180 px, el 17 % del alto) con cuatro sellos y una línea con la dirección y el teléfono (Ctra. de Terrassa 83, 648 473 853).
 - No siempre igual: la frontal del i20 (`i20-2`) no lleva banda.
-- **Dos marcas distintas.** El i20 sale con «PROSERVICE RUBI» en verde y sellos «Garantía 12 meses · Vehículos revisados · Confianza y transparencia · Entrega en toda España». El Colt, con «Grupo ProService Rubí» en negro y rojo y otros sellos: «Garantía mínima 12 meses · Taller integral propio · Aceptamos su coche como parte de pago · Gestionamos transportes a toda España». Hay que preguntar cuál es la buena.
+- **Dos marcas distintas** (resuelto el 19-oct, ver abajo). El i20 sale con «PROSERVICE RUBI» en verde y sellos «Garantía 12 meses · Vehículos revisados · Confianza y transparencia · Entrega en toda España». El Colt, con «Grupo ProService Rubí» en negro y rojo y otros sellos: «Garantía mínima 12 meses · Taller integral propio · Aceptamos su coche como parte de pago · Gestionamos transportes a toda España». **La buena es la roja y negra, «Grupo ProService Rubí»**: Diego la comprobó el 19-oct con el logo de su web. Es el mismo logo que ya tenemos en `frontend/img/logo-proservice-papel.webp` (letras negras, para fondo claro; `logo-proservice.webp` es la versión de fondo oscuro).
 
 ## Lo que más importa: la IA les cambia el coche
 
@@ -29,6 +29,7 @@ Conclusión: usan una herramienta generativa que vuelve a dibujar la foto entera
 - **El coche, con sus píxeles.** Si se usa una IA que reilumina o genera suelo y reflejo, después se vuelve a poner encima el coche recortado de la foto original, para que la matrícula, las llantas y los golpes sean los de verdad. O se compara: si la zona del coche cambia más de un umbral, la foto se marca para revisar.
 - **Matrícula.** Decidir con Jaume si se publica, se tapa o se pixela. Si se tapa, que lo haga nuestro código sobre una zona marcada, no la IA.
 - **Limpiar el parabrisas** (pegatinas, rotulador) es un retoque que sí quieren y que no cabe en «solo el fondo». Hay que decidirlo aparte: o se pide que lo quiten antes de la foto, o se acepta un retoque localizado y revisado.
+- **Banda.** Diego la recortó de una foto suya publicada: 1448 × 162, opaca y con fondo blanco. Está en `Pruebas rembg/pipeline/Footer/Footer 1.png`. Es la de la marca roja (garantía mínima 12 meses, taller propio, coche como parte de pago, transportes). Si algún día cambian un texto, hay que pedirles el original: recortada de una foto no se puede editar.
 - **Plantilla por tipo de foto.** La banda no va en todas (la frontal del i20 no la lleva). Plantilla con banda y sin banda, elegida por el hueco del orden fijo.
 - **Formato de salida.** 1448 × 1086 en 4:3. Hoy reducimos a 1.600 px de lado largo; la plantilla debería fijar el tamaño final. Y JPG en vez de PNG (sus PNG pesan varias veces más sin ganar nada en una foto).
 - **Revisión obligatoria** antes de publicar al principio, con la original al lado, como en la maqueta del panel.
@@ -36,7 +37,7 @@ Conclusión: usan una herramienta generativa que vuelve a dibujar la foto entera
 ## Para preguntar a Jaume (las pasa Diego)
 
 - ¿Qué herramienta o empresa les hace hoy estas fotos y cuánto pagan?
-- ¿Cuál de las dos marcas es la buena, y quieren la banda en todas las fotos?
+- ¿Quieren la banda en todas las fotos? (la marca ya está clara: la roja)
 - ¿Sabían que la herramienta les ha cambiado la matrícula del i20 y las llantas del Colt?
 - ¿La matrícula se publica?
 
@@ -49,7 +50,7 @@ Capas, de abajo arriba, en 1448 × 1086:
 1. **Plató:** pared blanca con tres focos suaves y suelo gris claro. Generado por código mientras falte el fondo del cliente (D2); con su foto se sustituye por ella.
 2. **Sombras y reflejo,** sacados de la silueta del coche: una sombra amplia y suave, otra fina y oscura donde apoyan las ruedas, y el coche dado la vuelta, muy tenue, como reflejo en el suelo pulido.
 3. **El coche, con sus píxeles originales.** Antes se limpia el recorte: se separa lo que cuelga de un hilo (una farola sobre el techo), se queda la pieza más grande, se quita la sombra semitransparente del suelo original y se afina el borde 1 px para que no quede halo del fondo viejo.
-4. **Logo y banda,** imágenes fijas. En el prototipo el logo es texto provisional: falta el fichero bueno (H14) y saber cuál de las dos marcas es la de ahora.
+4. **Su logo y su banda,** imágenes fijas: `logo-proservice-papel.webp` a 640 px arriba, centrado, y la banda de 1448 × 162 abajo, sobre blanco. Con eso el formato ya es el suyo.
 
 Resultado: de lejos se parece bastante a lo suyo y el coche no cambia (la matrícula, las llantas y el alerón son los de la foto). De cerca se nota:
 
