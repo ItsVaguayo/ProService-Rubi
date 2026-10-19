@@ -29,7 +29,7 @@ Tests en `api/test/seguridad.test.js`.
 3. **`NODE_ENV=production`** en el `.env` del servidor. Sin `ACCESO_PRUEBAS`.
 4. **Copias**, cada noche con cron:
    ```
-   15 3 * * *  cd /ruta/ProService-Rubi/api && npm run copia >> /var/log/proservice-copia.log 2>&1
+   15 3 * * *  cd /ruta/ProService-Rubi/api && umask 077 && npm run copia >> /var/log/proservice-copia.log 2>&1
    ```
    Y sacarlas del servidor (por ejemplo `rclone sync` de `COPIAS_PATH` a Google Drive). **Restaurar una vez** antes del arranque: parar la API, copiar `proservice-AAAA-MM-DD.db` encima de `DB_PATH` y la carpeta `uploads`, arrancar y comprobar que el panel enseña los coches.
 5. **Aviso si se cae**: un monitor gratuito (UptimeRobot o similar) contra `https://<dominio>/api/salud`, que avise por correo.

@@ -8,6 +8,8 @@ Quién es quién: Victor coordina y monta el servidor, Diego decide (servidor, g
 
 Bloqueo a 13-oct: no hay servidor de producción para la API. Hasta que Diego lo decida, la sección 1 no se puede empezar.
 
+**Ensayo del 19-oct.** Se montó todo esto en una máquina limpia (Ubuntu 26.04, Node 22.23, nginx 1.28), sin DNS ni certbot (certificado propio) y sin root (systemd de usuario, puertos 8480 y 8443): clon del repo, `npm ci --omit=dev`, 222 tests en verde, `.env` de producción, el nginx de abajo tal cual y la unidad de systemd. Pasaron 31 de 32 comprobaciones: redirección a HTTPS, lo que no se sirve (maquetas, `web/`, `package.json`, `.env`), cabeceras sin repetir, HSTS también en la API, cookie `Secure`, origen ajeno con 403, el comercial sin precio de compra, 25 fotos de 14,6 MB en una petición (365 MB, 26 s en local), la foto de más de 15 MB parada por la API, tasación con 5 fotos de 10 MB desde la web con CORS, JSON de 2 MB cortado por nginx, el límite de 5 formularios por IP real (no se puede falsear `X-Forwarded-For`), copia y restauración con base y fotos borradas, migración de las plantillas de ejemplo en ensayo y con `--aplicar`, systemd que reinicia la API si muere y que no la arranca sin `.env`. La que falló (nginx decía su versión) y lo demás que salió ya están corregidos abajo: `server_tokens off`, `UMask` y `RestartSec` en la unidad y `umask` en el cron. Sin ensayar: DNS, certbot, firewall, usuario propio del sistema y las copias fuera del servidor.
+
 ## 1. Antes del día
 
 ### Servidor
@@ -51,8 +53,9 @@ server {
 }
 
 server {
-    listen 443 ssl http2;
+    listen 443 ssl http2;            # desde nginx 1.25: «listen 443 ssl;» y «http2 on;» (con la vieja solo avisa)
     server_name stock.proservicerubi.com;
+    server_tokens off;               # que no diga la versión de nginx
     # ssl_certificate y ssl_certificate_key: los pone certbot
 
     root /ruta/ProService-Rubi/frontend;
@@ -125,11 +128,16 @@ User=proservice
 WorkingDirectory=/ruta/ProService-Rubi/api
 ExecStart=/usr/bin/node --env-file=../.env src/server.js
 Restart=always
+# Sin pausa, cinco caídas seguidas en 10 s (un .env roto, por ejemplo) y systemd deja de intentarlo
+RestartSec=5
+# La base, las fotos y los registros solo para el usuario de la API (sin esto quedan en 644, legibles por todos)
+UMask=0077
 
 [Install]
 WantedBy=multi-user.target
 ```
 
+- [ ] Si systemd la da por perdida («Start request repeated too quickly»), no vuelve sola aunque se arregle el `.env`: `systemctl reset-failed` y el nombre del servicio, y después `start`. Quién: Victor.
 - [ ] Al arrancar, la API aplica sola las migraciones de `api/migraciones/` que falten. Mirar en el registro que no hay ningún error de migración. Quién: Victor.
 
 ### Variables de entorno
@@ -154,7 +162,7 @@ WantedBy=multi-user.target
 
 ### Copias y vigilancia
 
-- [ ] Cron de la copia cada noche, como en [seguridad.md](seguridad.md#al-montar-el-servidor) (`15 3 * * *`, `npm run copia` desde `api/`, con registro en `/var/log/proservice-copia.log`). El script copia la base, la abre para comprobarla y copia las fotos nuevas. Quién: Victor.
+- [ ] Cron de la copia cada noche, como en [seguridad.md](seguridad.md#al-montar-el-servidor) (`15 3 * * *`, `npm run copia` desde `api/`, con registro en `/var/log/proservice-copia.log`). En el cron, `umask 077 &&` delante de `npm run copia`: si no, las copias de la base (datos de clientes y contraseñas cifradas) quedan legibles por cualquier usuario del servidor. `npm run copia` también arranca sin `.env` y entonces copiaría la base de desarrollo: comprobar en el registro que la ruta es la de `DB_PATH`. El script copia la base, la abre para comprobarla y copia las fotos nuevas. Quién: Victor.
 - [ ] Sacar las copias del servidor (por ejemplo `rclone sync` de `COPIAS_PATH`). El destino y quién lo paga, por decidir (Diego, A3). Quién: Victor.
 - [ ] Restaurar una copia una vez antes del arranque: parar la API, poner la copia encima de `DB_PATH` y la carpeta `uploads`, arrancar y ver los coches en el panel. Plan: lunes 26. Quién: Victor.
 - [ ] Monitor gratuito contra `https://stock.proservicerubi.com/api/salud` que avise por correo si se cae. Quién: Victor.
@@ -229,7 +237,6 @@ El procedimiento entero está en [migracion.md](migracion.md). Aquí solo los pu
 | B9 | Quién da de alta hoy los coches en la web (33 a mano a 13-oct) | Francesc | Se vinculan los que haya el 28 |
 | B11 | «Mostrar en la API REST» en ACF | Francesc | Solo título, estado y marca |
 | B12 | Campos del nombre y del año en la ficha | Francesc | Modelo y año en los campos más parecidos |
-| B13 | Quién calcula la cuota «Desde X €/mes» | Jaume | Se sigue metiendo a mano en WordPress |
 | B14 | Su formulario actual frente a `[proservice_contacto]` | Francesc | Se deja el suyo |
 | B16 | Campo `referencia` en ACF | Francesc | El coche va escrito en el mensaje |
 | E1 | Correo y WhatsApp para los contactos | Jaume | Sin destinatario, el correo queda simulado |
@@ -272,6 +279,8 @@ Las lee el código con `process.env`. Van en el `.env` de la raíz del repo; tod
 | `CORREO_CONTACTOS` | A quién llega cada contacto de la web | Vacío: queda simulado | Lo que diga Jaume (E1) |
 | `CORREO_AVISOS` | A quién llega el resumen diario (lleva importes) | Vacío: queda simulado | Solo gerencia (F1) |
 | `AVISOS_HORA` | Desde qué hora de Rubí sale el resumen (0 a 23) | `8` | `8`, o la que pida Jaume |
+| `CUOTA_TIN` | Interés anual de la cuota orientativa «Desde X €/mes», en %, con punto | `7.5` (su calculadora de Pymecar, B13) | `7.5`, o el que diga Jaume |
+| `CUOTA_MESES` | Plazo de esa cuota. `0` la apaga en la web y en los portales | `120` | `120` |
 | `WP_URL` | Web de WordPress. Sin ella no hay publicación (503) | Vacío | `https://proservicerubi.com` |
 | `WP_USUARIO` | Usuario Editor | Vacío | El que cree Francesc (B8) |
 | `WP_CLAVE_APLICACION` | Su contraseña de aplicación | Vacío | La que genere Francesc. Solo en el `.env` |
