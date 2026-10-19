@@ -84,3 +84,11 @@ Cuatro fotos publicadas de un Citroën C3 Aircross con la marca verde, pasadas p
 | Oficina con suelo pulido de Julia Taubitz | Descartado: fluorescentes, columnas y extintor; el logo no se lee sobre el techo. |
 
 Lo que tienen todos: la luz del coche es la de su foto, no la del fondo. Para producción, el fondo elegido a tamaño completo y una sola vez en `frontend/img` (o donde viva la plantilla), con su crédito.
+
+## Banda en SVG, fondo según el ángulo y prompt del fondo (19-oct)
+
+**Banda como plantilla.** `Pruebas rembg/plantilla/banda/`: `banda.json` (textos, iconos y colores) y `generar_banda.py`, que crea `banda.svg` y lo pasa a PNG con sharp, el mismo motor que la API. Las columnas se reparten según el largo de los textos, así que cambiar un sello o el teléfono es editar una línea del JSON. Tipografía Barlow Condensed (OFL) e iconos Lucide 0.460.0 (ISC), con sus licencias al lado. Se parece mucho a la suya; la diferencia es que sus iconos son rellenos y estos de trazo (se cambian los `.svg` de `iconos/` sin tocar el código). En el servidor hay que instalar la tipografía, porque el SVG la pide por nombre.
+
+**Fondo según el ángulo.** Diego eligió la «sala vacía» y la «esquina de frente» de Julia Taubitz. El prototipo usa una para las fotos de frente o de detrás y otra para las de tres cuartos, y averigua el ángulo solo: mide cuánto se parece la silueta del coche a su reflejo izquierda-derecha. En 11 fotos, las de frente o detrás dan de 0,95 a 0,97 y las de tres cuartos de 0,54 a 0,83; el corte está en 0,90. En la plataforma el hueco del orden fijo ya dice el ángulo, y la simetría sirve de comprobación.
+
+**Prompt para generar el fondo.** `Pruebas rembg/plantilla/fondo/PROMPT-fondo.md`: uno para frente y detrás y otro para tres cuartos, con las medidas de sus fotos (pared blanca mate, cemento pulido gris claro, línea pared/suelo al 47 % del alto, el tercio de arriba limpio para el logo). Se genera una vez y se reutiliza: la IA solo dibuja el plató vacío, nunca el coche.
