@@ -4,12 +4,16 @@ import { configDesdeEntorno, sincronizar } from './modules/publicacion/wordpress
 import { caducarReservas } from './modules/vehiculos/reservas.js';
 import { configCorreo, crearTransporte, enviarPendientes } from './modules/correo/envio.js';
 import { encolarAvisosDelDia } from './modules/correo/mensajes.js';
+import { condicionesCuota } from './modules/publicacion/cuota.js';
 
 const port = process.env.PORT || 3001;
 // Solo en la propia máquina: desde fuera se entra por nginx (docs/seguridad.md). HOST=0.0.0.0 para abrirla.
 const host = process.env.HOST || '127.0.0.1';
 // npm start arranca aunque no haya .env (--env-file-if-exists): que se vea si va con la base de desarrollo
 if (!process.env.DB_PATH) console.warn('Aviso: sin DB_PATH (¿falta el .env?). Base de desarrollo: ./data/proservice.db');
+// Una cuota mal escrita en el .env para el arranque aquí, no en mitad de una petición
+const cuota = condicionesCuota();
+console.log(cuota ? `Cuota orientativa: ${cuota.tin} % en ${cuota.meses} meses` : 'Cuota orientativa apagada (CUOTA_MESES=0)');
 const db = abrirDb();
 crearApp(db).listen(port, host, () => console.log(`API en http://${host === '127.0.0.1' ? 'localhost' : host}:${port}`));
 
