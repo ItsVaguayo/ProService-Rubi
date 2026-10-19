@@ -69,3 +69,18 @@ Cuatro fotos publicadas de un Citroën C3 Aircross con la marca verde, pasadas p
 - **La limpieza del recorte no puede «abrir» la máscara.** Con eso se quitaba la farola del GT-R, pero también la antena del Citroën, que es parte del coche. Ahora solo se queda con la pieza más grande y lo que la toca; lo que esté pegado al coche lo ve quien revisa.
 - **El coche va siempre por debajo del logo.** En las tomas de frente y de detrás las barras del techo tocaban «Rubí»; ahora el coche se escala para quedar debajo.
 - Lo que no se arregla así: si la foto publicada ya la retocó su herramienta (matrícula o llantas cambiadas), la conversión conserva ese retoque. Para esas fotos hay que partir del original del móvil.
+
+## Fondo: no hay plató que pedir, y fondos de stock (19-oct)
+
+**Su plató no es una imagen fija.** En las nueve fotos publicadas, la línea entre la pared y el suelo cae a una altura distinta en cada una (de 469 a 541 px) y el brillo de pared y suelo cambia. Su herramienta genera un fondo nuevo para cada foto: no hay un fichero que pedirles. El fondo lo ponemos nosotros, y es el mismo en todas las fotos, cosa que hoy no pasa.
+
+**Fondos de stock probados.** Siete candidatos de Unsplash (licencia de uso comercial gratis), cuatro probados con el Citroën. Créditos y resultados en `Pruebas rembg/fondos-stock/`. El prototipo admite `--fondo=RUTA:H:R`: H es la altura de la línea pared/suelo en la foto de fondo (se coloca a la altura de las ruedas del coche) y R la fuerza del reflejo (0 en suelo de cemento, que no refleja).
+
+| Fondo | Resultado |
+|---|---|
+| Sala vacía de Julia Taubitz (pared blanca, esquina, cemento gris) | **El que más se parece al suyo.** Neutro, con profundidad por la esquina, y el logo se lee bien. Recomendado. |
+| Esquina de frente de Julia Taubitz | Bien, pero la pared tira a amarillo y el suelo tiene marcas. |
+| Estudio de Vincenzo Martusciello (pared gris, suelo negro) | Limpio y de estudio, pero el coche se ve más pegado y menos «concesionario». Segunda opción. |
+| Oficina con suelo pulido de Julia Taubitz | Descartado: fluorescentes, columnas y extintor; el logo no se lee sobre el techo. |
+
+Lo que tienen todos: la luz del coche es la de su foto, no la del fondo. Para producción, el fondo elegido a tamaño completo y una sola vez en `frontend/img` (o donde viva la plantilla), con su crédito.
