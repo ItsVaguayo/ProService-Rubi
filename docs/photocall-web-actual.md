@@ -60,3 +60,12 @@ Resultado: de lejos se parece bastante a lo suyo y el coche no cambia (la matrí
 - **Tiempo:** unos 5 s por foto en este ordenador (recorte, unos 4,5 s; composición, 1 s), con fotos pequeñas. A 1.600 px, algo más.
 
 Lo que sale de aquí para el código: la composición es sharp (ya está en la API) y el recorte, rembg como servicio aparte. La plantilla (fondo, logo, banda) son tres ficheros que se cambian sin tocar código, y cada foto guarda el recorte para recomponerla si cambia la plantilla.
+
+## Conversión de fotos ya publicadas a la marca roja (19-oct)
+
+Cuatro fotos publicadas de un Citroën C3 Aircross con la marca verde, pasadas por el mismo prototipo: se quitan los 186 px de abajo (su banda verde) antes del recorte, rembg saca el coche y se compone con el logo y la banda rojos. Entre 3,4 y 4,8 s por foto. Resultado en `Pruebas rembg/Conversión/convertidas/`.
+
+- Sale bien en las cuatro (3/4 delantera, frontal, trasera y 3/4 trasera): marca roja, misma matrícula (6328 LBL) y mismas llantas. Para cambiar de marca las fotos ya publicadas no hace falta repetirlas.
+- **La limpieza del recorte no puede «abrir» la máscara.** Con eso se quitaba la farola del GT-R, pero también la antena del Citroën, que es parte del coche. Ahora solo se queda con la pieza más grande y lo que la toca; lo que esté pegado al coche lo ve quien revisa.
+- **El coche va siempre por debajo del logo.** En las tomas de frente y de detrás las barras del techo tocaban «Rubí»; ahora el coche se escala para quedar debajo.
+- Lo que no se arregla así: si la foto publicada ya la retocó su herramienta (matrícula o llantas cambiadas), la conversión conserva ese retoque. Para esas fotos hay que partir del original del móvil.
