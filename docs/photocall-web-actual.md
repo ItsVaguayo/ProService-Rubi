@@ -2,7 +2,7 @@
 
 Revisado el 19-oct-2026 con cinco fotos publicadas en proservicerubi.com: tres de un Hyundai i20 y dos de un Mitsubishi Colt. Completa la prueba de [photocall.md](photocall.md): aquella compara herramientas de recorte; esta dice qué resultado esperan y qué riesgo tiene lo que usan hoy.
 
-Las fotos y los recortes ampliados (`matriculas.png`, `logos.png`, `colt-rueda.png`, `colt-parabrisas.png`) **no están en el repositorio**: salen matrículas reales y [photocall/README.md](photocall/README.md) pide el OK de Victor antes de guardarlas aquí. Están en la carpeta compartida del proyecto, `Pruebas rembg/ProService-Publico/` y `Pruebas rembg/notas/`.
+Las fotos y los recortes ampliados (`matriculas.png`, `logos.png`, `colt-rueda.png`, `colt-parabrisas.png`) **no están en el repositorio**: salen matrículas reales y [photocall/README.md](photocall/README.md) pide el OK de Victor antes de guardarlas aquí. Están en la carpeta compartida del proyecto, `Pruebas rembg/01-lo-que-publican-hoy/` (con un `00-LEEME.md` que explica toda la carpeta).
 
 ## Cómo es su «photocall»
 
@@ -29,7 +29,7 @@ Conclusión: usan una herramienta generativa que vuelve a dibujar la foto entera
 - **El coche, con sus píxeles.** Si se usa una IA que reilumina o genera suelo y reflejo, después se vuelve a poner encima el coche recortado de la foto original, para que la matrícula, las llantas y los golpes sean los de verdad. O se compara: si la zona del coche cambia más de un umbral, la foto se marca para revisar.
 - **Matrícula.** Decidir con Jaume si se publica, se tapa o se pixela. Si se tapa, que lo haga nuestro código sobre una zona marcada, no la IA.
 - **Limpiar el parabrisas** (pegatinas, rotulador) es un retoque que sí quieren y que no cabe en «solo el fondo». Hay que decidirlo aparte: o se pide que lo quiten antes de la foto, o se acepta un retoque localizado y revisado.
-- **Banda.** Diego la recortó de una foto suya publicada: 1448 × 162, opaca y con fondo blanco. Está en `Pruebas rembg/pipeline/Footer/Footer 1.png`. Es la de la marca roja (garantía mínima 12 meses, taller propio, coche como parte de pago, transportes). Si algún día cambian un texto, hay que pedirles el original: recortada de una foto no se puede editar.
+- **Banda.** Diego la recortó de una foto suya publicada: 1448 × 162, opaca y con fondo blanco. Está en `Pruebas rembg/plantilla/banda/Footer 1.png`, junto al logo en `plantilla/logo/`. Es la de la marca roja (garantía mínima 12 meses, taller propio, coche como parte de pago, transportes). Si algún día cambian un texto, hay que pedirles el original: recortada de una foto no se puede editar.
 - **Plantilla por tipo de foto.** La banda no va en todas (la frontal del i20 no la lleva). Plantilla con banda y sin banda, elegida por el hueco del orden fijo.
 - **Formato de salida.** 1448 × 1086 en 4:3. Hoy reducimos a 1.600 px de lado largo; la plantilla debería fijar el tamaño final. Y JPG en vez de PNG (sus PNG pesan varias veces más sin ganar nada en una foto).
 - **Revisión obligatoria** antes de publicar al principio, con la original al lado, como en la maqueta del panel.
@@ -43,7 +43,7 @@ Conclusión: usan una herramienta generativa que vuelve a dibujar la foto entera
 
 ## Prototipo por capas (19-oct)
 
-Para ver si se llega a algo parecido sin IA generativa: rembg (`isnet-general-use`) recorta el coche y todo lo demás se compone con código. Probado con dos fotos de internet de un Nissan GT-R (1024 y 739 px), porque aún no hay fotos de Jaume. El guion está fuera del repositorio, en `Pruebas rembg/pipeline/photocall_prototipo.py`, con los resultados al lado.
+Para ver si se llega a algo parecido sin IA generativa: rembg (`isnet-general-use`) recorta el coche y todo lo demás se compone con código. Probado con dos fotos de internet de un Nissan GT-R (1024 y 739 px), porque aún no hay fotos de Jaume. El guion está fuera del repositorio, en `Pruebas rembg/herramientas/photocall_prototipo.py`; los resultados, en `Pruebas rembg/03-photocall-por-capas/`.
 
 Capas, de abajo arriba, en 1448 × 1086:
 
@@ -63,7 +63,7 @@ Lo que sale de aquí para el código: la composición es sharp (ya está en la A
 
 ## Conversión de fotos ya publicadas a la marca roja (19-oct)
 
-Cuatro fotos publicadas de un Citroën C3 Aircross con la marca verde, pasadas por el mismo prototipo: se quitan los 186 px de abajo (su banda verde) antes del recorte, rembg saca el coche y se compone con el logo y la banda rojos. Entre 3,4 y 4,8 s por foto. Resultado en `Pruebas rembg/Conversión/convertidas/`.
+Cuatro fotos publicadas de un Citroën C3 Aircross con la marca verde, pasadas por el mismo prototipo: se quitan los 186 px de abajo (su banda verde) antes del recorte, rembg saca el coche y se compone con el logo y la banda rojos. Entre 3,4 y 4,8 s por foto. Antes y después en `Pruebas rembg/04-cambio-de-marca/`.
 
 - Sale bien en las cuatro (3/4 delantera, frontal, trasera y 3/4 trasera): marca roja, misma matrícula (6328 LBL) y mismas llantas. Para cambiar de marca las fotos ya publicadas no hace falta repetirlas.
 - **La limpieza del recorte no puede «abrir» la máscara.** Con eso se quitaba la farola del GT-R, pero también la antena del Citroën, que es parte del coche. Ahora solo se queda con la pieza más grande y lo que la toca; lo que esté pegado al coche lo ve quien revisa.
@@ -74,7 +74,7 @@ Cuatro fotos publicadas de un Citroën C3 Aircross con la marca verde, pasadas p
 
 **Su plató no es una imagen fija.** En las nueve fotos publicadas, la línea entre la pared y el suelo cae a una altura distinta en cada una (de 469 a 541 px) y el brillo de pared y suelo cambia. Su herramienta genera un fondo nuevo para cada foto: no hay un fichero que pedirles. El fondo lo ponemos nosotros, y es el mismo en todas las fotos, cosa que hoy no pasa.
 
-**Fondos de stock probados.** Siete candidatos de Unsplash (licencia de uso comercial gratis), cuatro probados con el Citroën. Créditos y resultados en `Pruebas rembg/fondos-stock/`. El prototipo admite `--fondo=RUTA:H:R`: H es la altura de la línea pared/suelo en la foto de fondo (se coloca a la altura de las ruedas del coche) y R la fuerza del reflejo (0 en suelo de cemento, que no refleja).
+**Fondos de stock probados.** Siete candidatos de Unsplash (licencia de uso comercial gratis), cuatro probados con el Citroën. Créditos y resultados en `Pruebas rembg/05-fondos-de-stock/`. El prototipo admite `--fondo=RUTA:H:R`: H es la altura de la línea pared/suelo en la foto de fondo (se coloca a la altura de las ruedas del coche) y R la fuerza del reflejo (0 en suelo de cemento, que no refleja).
 
 | Fondo | Resultado |
 |---|---|
