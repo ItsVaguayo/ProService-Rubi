@@ -92,3 +92,10 @@ Lo que tienen todos: la luz del coche es la de su foto, no la del fondo. Para pr
 **Fondo según el ángulo.** Diego eligió la «sala vacía» y la «esquina de frente» de Julia Taubitz. El prototipo usa una para las fotos de frente o de detrás y otra para las de tres cuartos, y averigua el ángulo solo: mide cuánto se parece la silueta del coche a su reflejo izquierda-derecha. En 11 fotos, las de frente o detrás dan de 0,95 a 0,97 y las de tres cuartos de 0,54 a 0,83; el corte está en 0,90. En la plataforma el hueco del orden fijo ya dice el ángulo, y la simetría sirve de comprobación.
 
 **Prompt para generar el fondo.** `Pruebas rembg/plantilla/fondo/PROMPT-fondo.md`: uno para frente y detrás y otro para tres cuartos, con las medidas de sus fotos (pared blanca mate, cemento pulido gris claro, línea pared/suelo al 47 % del alto, el tercio de arriba limpio para el logo). Se genera una vez y se reutiliza: la IA solo dibuja el plató vacío, nunca el coche.
+
+## Fondos generados con el prompt (19-oct)
+
+Diego generó los dos fondos con el prompt (`Pruebas rembg/plantilla/fondo/`, 1448 × 1086): limpios, sin texto ni tinte de color. Línea pared/suelo medida: 0,458 del alto en el de frente (recta) y 0,407 en el centro del de tres cuartos. Probados con los 11 coches que tenemos (`Pruebas rembg/07-fondos-generados/`): el ángulo se eligió solo y acertó en los 11, y es el resultado más parecido a sus fotos, con la ventaja de que todas quedan iguales. **Son los que proponemos usar.**
+
+- Al convertir sus fotos ya publicadas puede colarse algo de su logo antiguo cuando toca el coche (la frontal del i20 sale con una «U» sobre el techo). Con fotos del móvil no pasa; en cualquier caso lo ve quien revisa.
+- Si se vuelven a generar, mejor al doble de tamaño: para encajar la línea del suelo con el coche el programa amplía el fondo un poco y pierde algo de nitidez.
