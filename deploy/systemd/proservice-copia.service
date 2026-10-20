@@ -9,8 +9,12 @@ Group=proservice
 WorkingDirectory=/srv/proservice/current/api
 ExecStart=/usr/local/bin/node --env-file=/etc/proservice/proservice.env scripts/copia-seguridad.js
 UMask=0077
+# rclone: su configuración (con las claves del destino) y una caché temporal, si hay COPIAS_REMOTO
+Environment=RCLONE_CONFIG=/etc/proservice/rclone.conf
+Environment=RCLONE_CACHE_DIR=/tmp/rclone
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
+PrivateTmp=true
 # datos también: abrir una base SQLite en modo WAL, aunque sea para leer, escribe en su fichero -shm
 ReadWritePaths=/srv/proservice/datos /srv/proservice/copias

@@ -5,9 +5,13 @@
 //   uploads/                  las fotos; solo se copian las nuevas, las que ya están no se tocan
 // Cada copia se abre al acabar y se comprueba (integrity_check y que tenga coches y usuarios): una copia
 // que no se puede abrir no sirve de nada. Se guardan las últimas COPIAS_DIAS (14 por defecto).
-// Fuera del servidor: sincroniza COPIAS_PATH con otro sitio (rclone a Google Drive, por ejemplo). Si el
-// servidor se pierde entero, la copia que estaba dentro se pierde con él.
+// Fuera del servidor: con COPIAS_REMOTO (un destino de rclone, como «copias:proservice»), al acabar sube
+// COPIAS_PATH allí con `rclone copy`. Si el servidor se pierde entero, la copia de dentro se pierde con él.
+// copy y no sync: nunca borra nada del destino, así un servidor comprometido no puede vaciar también las de
+// fuera (lo viejo se borra allí con una regla del propio almacenamiento). La configuración de rclone, con sus
+// claves, en RCLONE_CONFIG (en el servidor, /etc/proservice/rclone.conf). Ver docs/despliegue.md.
 import Database from 'better-sqlite3';
+import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
@@ -15,6 +19,7 @@ const RUTA_DB = resolve(process.env.DB_PATH || './data/proservice.db');
 const FOTOS = resolve(process.env.UPLOADS_PATH || './data/uploads');
 const DESTINO = resolve(process.env.COPIAS_PATH || './data/copias');
 const DIAS = Number(process.env.COPIAS_DIAS || 14);
+const REMOTO = process.env.COPIAS_REMOTO || '';
 
 if (!existsSync(RUTA_DB)) {
   console.error(`No existe la base ${RUTA_DB}`);
@@ -59,3 +64,14 @@ if (existsSync(FOTOS)) {
 const viejas = readdirSync(DESTINO).filter((f) => /^proservice-\d{4}-\d{2}-\d{2}\.db$/.test(f)).sort().slice(0, -DIAS);
 for (const f of viejas) rmSync(join(DESTINO, f));
 if (viejas.length) console.log(`${new Date().toISOString()} Borradas ${viejas.length} copias de más de ${DIAS} días`);
+
+// 5. Fuera del servidor, si hay destino y la copia de hoy está bien (una copia rota no se sube encima de nada)
+if (REMOTO && process.exitCode !== 1) {
+  const r = spawnSync(process.env.RCLONE || 'rclone', ['copy', DESTINO, REMOTO, '--checksum', '--stats-one-line', '--stats', '0'], { stdio: ['ignore', 'inherit', 'inherit'] });
+  if (r.error || r.status !== 0) {
+    console.error(`${new Date().toISOString()} NO SE HA PODIDO SUBIR LA COPIA FUERA DEL SERVIDOR (${REMOTO}): ${r.error?.message ?? `rclone salió con ${r.status}`}`);
+    process.exitCode = 1;
+  } else {
+    console.log(`${new Date().toISOString()} Copia subida fuera del servidor: ${REMOTO}`);
+  }
+}
