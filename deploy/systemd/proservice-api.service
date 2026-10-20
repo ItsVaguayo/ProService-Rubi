@@ -1,0 +1,28 @@
+# API de Pro Service Rubí. La instala deploy/preparar-servidor.sh en /etc/systemd/system/.
+# Una sola instancia: server.js lleva dentro las tareas de cada minuto (correo), de cada 10 (reservas)
+# y la publicación en WordPress; con dos procesos un correo podría salir dos veces.
+[Unit]
+Description=API de Pro Service Rubí
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=proservice
+Group=proservice
+WorkingDirectory=/srv/proservice/current/api
+# --env-file (y no --env-file-if-exists): sin el .env no arranca, en vez de arrancar con la base de desarrollo
+ExecStart=/usr/local/bin/node --env-file=/etc/proservice/proservice.env src/server.js
+Restart=always
+# Sin pausa, cinco caídas seguidas en 10 s (un .env roto) y systemd deja de intentarlo
+RestartSec=5
+# La base, las fotos y los registros, solo para el usuario de la API
+UMask=0077
+# Endurecimiento: solo puede escribir en sus datos y sus copias
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/srv/proservice/datos /srv/proservice/copias
+
+[Install]
+WantedBy=multi-user.target

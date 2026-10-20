@@ -1,0 +1,10 @@
+# Cada noche a las 03:15 (hora del servidor). Si el servidor estaba apagado a esa hora, se hace al encender.
+[Unit]
+Description=Copia de seguridad diaria de Pro Service Rubí
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
