@@ -1,0 +1,16 @@
+# Copia diaria de la base y de las fotos (api/scripts/copia-seguridad.js). La lanza proservice-copia.timer.
+[Unit]
+Description=Copia de seguridad de Pro Service Rubí
+
+[Service]
+Type=oneshot
+User=proservice
+Group=proservice
+WorkingDirectory=/srv/proservice/current/api
+ExecStart=/usr/local/bin/node --env-file=/etc/proservice/proservice.env scripts/copia-seguridad.js
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+# datos también: abrir una base SQLite en modo WAL, aunque sea para leer, escribe en su fichero -shm
+ReadWritePaths=/srv/proservice/datos /srv/proservice/copias
