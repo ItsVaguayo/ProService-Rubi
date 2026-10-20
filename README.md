@@ -79,6 +79,7 @@ npm run wordpress --workspace api -- sincronizar   # publica, actualiza y retira
 - **[Fichas de tareas: empezad por aquí](docs/tareas/README.md)**
 
 - [Plan de trabajo](docs/plan.md) y [reparto resumido](docs/reparto.md)
+- **[Guion del arranque: del 21 al 30 de octubre, día a día](docs/arranque.md)**
 - [Dudas abiertas con el cliente](docs/dudas.md)
 - [Portales: cómo publicar de forma automática](docs/portales.md) (T04)
 - [Flujo de ramas](docs/flujo-git.md) y [despliegue: de GitHub al servidor](docs/despliegue.md)
