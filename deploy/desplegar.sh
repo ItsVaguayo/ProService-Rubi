@@ -109,7 +109,7 @@ if [ "${PROSERVICE_SIN_TESTS:-}" != "si" ]; then
   dice "Pasando los tests"
   # Los tests usan bases en memoria y carpetas temporales: no tocan los datos de verdad
   ( cd "$NUEVA" && env -u DB_PATH -u UPLOADS_PATH -u COPIAS_PATH npm test --silent >"$NUEVA/tests.log" 2>&1 ) \
-    || { tail -n 30 "$NUEVA/tests.log"; rm -rf "$NUEVA"; falla "Los tests fallan: no se despliega"; }
+    || { grep -E "^not ok|^# (pass|fail)" "$NUEVA/tests.log" | grep -v "^not ok [0-9]* - .*\.test\.js$" | head -n 20; rm -rf "$NUEVA"; falla "Los tests fallan: no se despliega"; }
   grep -E '^# (pass|fail)' "$NUEVA/tests.log" | tr '\n' ' '; echo
 fi
 
@@ -125,7 +125,7 @@ if [ -n "$DB_PATH_ENV" ] && [ -f "$DB_PATH_ENV" ]; then
 fi
 
 # 4. Cambio de versión
-ANTES="$(readlink -f "$CURRENT" 2>/dev/null || true)"
+ANTES=""; [ -L "$CURRENT" ] && ANTES="$(readlink -f "$CURRENT")"   # en el primer despliegue no hay anterior
 dice "Arrancando $(basename "$NUEVA")"
 cambiar_a "$NUEVA"
 
