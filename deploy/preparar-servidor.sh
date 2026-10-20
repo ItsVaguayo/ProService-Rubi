@@ -72,10 +72,11 @@ chown root:proservice /etc/proservice/proservice.env; chmod 640 /etc/proservice/
 dice "Servicios"
 install -m 644 "$SRC/systemd/proservice-api.service" "$SRC/systemd/proservice-copia.service" "$SRC/systemd/proservice-copia.timer" /etc/systemd/system/
 install -m 755 "$SRC/desplegar.sh" /usr/local/bin/proservice-desplegar
+install -m 755 "$SRC/restaurar.sh" /usr/local/bin/proservice-restaurar
 SYSTEMCTL="$(command -v systemctl)"
 cat > /etc/sudoers.d/proservice <<EOF
-# proservice-desplegar reinicia la API; no puede hacer nada más como root.
-proservice ALL=(root) NOPASSWD: $SYSTEMCTL restart proservice-api, $SYSTEMCTL status proservice-api
+# proservice-desplegar reinicia la API y proservice-restaurar la para y la arranca; nada más como root.
+proservice ALL=(root) NOPASSWD: $SYSTEMCTL restart proservice-api, $SYSTEMCTL stop proservice-api, $SYSTEMCTL start proservice-api, $SYSTEMCTL status proservice-api
 EOF
 chmod 440 /etc/sudoers.d/proservice; visudo -cq
 systemctl daemon-reload
