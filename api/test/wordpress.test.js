@@ -98,6 +98,14 @@ test('diagnóstico: un campo opcional del mapa que la web no tiene no da aviso',
     const aviso = d.avisos.find((a) => a.startsWith('Campos del mapa'));
     assert.match(aviso, /referencia/, 'la referencia sí se pide (B16)');
     assert.doesNotMatch(aviso, /cuota_condiciones/);
+    assert.ok(d.avisos.some((a) => /cuota «Desde X €\/mes» pero no tiene el campo cuota_condiciones/.test(a)),
+      'sin el ejemplo con la TAE, la cuota sola no cumple: aviso aparte');
+  }));
+
+test('diagnóstico: con cuota y cuota_condiciones en la web no hay aviso de la cuota', () =>
+  conEscenario({ acfExpuesto: true, conCuota: true, conCondiciones: true }, async ({ cfg }) => {
+    const d = await diagnosticar(cfg);
+    assert.ok(!d.avisos.some((a) => /cuota_condiciones/.test(a)));
   }));
 
 test('con ACF: la cuota «Desde X €/mes» se calcula del precio si financia o del PVP, y sigue a los cambios', () =>
@@ -106,11 +114,12 @@ test('con ACF: la cuota «Desde X €/mes» se calcula del precio si financia o 
     await sincronizar(db, cfg);
     const post = [...estado.posts.values()].find((p) => p.title === 'Seat Modelo Versión');
     assert.equal(post.acf.cuota, 154, '12.900 € al 7,5 % en 120 meses');
-    assert.match(post.acf.cuota_condiciones, /^Cuota orientativa: 7,5 % TIN, 120 meses/);
+    assert.match(post.acf.cuota_condiciones, /^Ejemplo para 12\.900 € sin entrada: 120 cuotas de 153,13 €, TIN 7,50 %, TAE 7,76 %, importe total adeudado 18\.375,60 €/);
 
     db.prepare('UPDATE vehiculos SET precio_financiado_cent = 1000000 WHERE id = 1').run();
     assert.equal((await sincronizar(db, cfg)).actualizados, 1);
     assert.equal(post.acf.cuota, 119, 'con precio si financia, sobre ese');
+    assert.match(post.acf.cuota_condiciones, /^Ejemplo para 10\.000 € sin entrada: 120 cuotas de 118,70 €/, 'el ejemplo sigue al precio');
     assert.equal(post.acf.precio, 12900, 'el precio de la web sigue siendo el PVP');
 
     assert.equal((await sincronizar(db, { ...cfg, cuota: null })).actualizados, 1);

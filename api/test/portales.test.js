@@ -27,7 +27,7 @@ test('portales: el anuncio sale de la ficha, con las fotos públicas en orden y 
     assert.match(a.descripcion, /^Renault Clio Zen, 90 CV, gasolina, cambio manual\.\nAño 2021 con 45\.000 km\.\n12 meses de garantía\.\nEquipamiento: navegador\./);
     assert.match(a.descripcion, /Ref\. PS-\d{5}$/);
     assert.equal(a.cuota_euros, 154, '12.900 € al 7,5 % en 120 meses');
-    assert.match(a.descripcion, /\nFinanciación desde 154 €\/mes \(orientativa: 7,5 % TIN, 120 meses, sin entrada\)\.\n/);
+    assert.match(a.descripcion, /\nFinanciación desde 154 €\/mes\. Ejemplo para 12\.900 € sin entrada: 120 cuotas de 153,13 €, TIN 7,50 %, TAE 7,76 %, importe total adeudado 18\.375,60 €\. Sin comisiones\. [^\n]*financiera\.\n/);
     assert.equal(a.video_url, 'https://www.youtube.com/watch?v=abc');
     assert.equal(a.fotos.length, 14, 'sin la de daños');
     assert.deepEqual(a.fotos.slice(0, 2).map((f) => f.orden), [1, 3]);

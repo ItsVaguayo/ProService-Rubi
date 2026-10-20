@@ -49,7 +49,7 @@ $marca_modelo = trim(get_the_title());
             <div>
                 <span class="precio cifra"><?php echo esc_html($c['precio'] ?: 'Consultar precio'); ?></span>
                 <?php if ($c['cuota']) : ?>
-                    <p class="cuota cifra">Desde <?php echo esc_html($c['cuota']); ?><small>Cuota orientativa, sujeta a aprobación de la financiera</small></p>
+                    <p class="cuota cifra">Desde <?php echo esc_html($c['cuota']); ?><small><?php echo esc_html($c['cuota_condiciones'] ?: 'Cuota orientativa, sujeta a aprobación de la financiera'); ?></small></p>
                 <?php elseif ($c['financiado']) : ?>
                     <p class="cuota cifra">Financiándolo, <?php echo esc_html($c['financiado']); ?><small>Precio con financiación, sujeto a aprobación de la financiera</small></p>
                 <?php endif; ?>

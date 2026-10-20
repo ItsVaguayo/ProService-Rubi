@@ -78,6 +78,7 @@ class ProService_Ficha
             'contactos'   => ProService_Ajustes::url_contactos(),
             'estado'      => ProService_Buscador::estado($post_id),
             'cuota'       => $d('cuota') !== '' ? ProService_Buscador::cifra($d('cuota')) . ' €/mes' : '',
+            'cuota_condiciones' => (string) $d('cuota_condiciones'),
             'precio'      => $precio_texto,
             'financiado'  => $d('precio_financiado_cent') !== '' ? ProService_Buscador::cifra($d('precio_financiado_cent')) . ' €' : '',
             'resumen'     => array_values(array_filter([$d('anio'), $tecnicos['Kilómetros'] ?? '', $tecnicos['Combustible'] ?? '', $tecnicos['Cambio'] ?? ''])),
