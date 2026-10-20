@@ -100,6 +100,7 @@ fi
 NUEVA="$RELEASES/$(date +%Y%m%d-%H%M%S)-$CORTO"
 mkdir -p "$NUEVA"
 git -C "$REPO" archive "$SHA" | tar -x -C "$NUEVA"
+chmod 755 "$NUEVA"; chmod -R a+rX "$NUEVA/frontend"   # nginx lee el panel de aquí, con el umask que tenga quien despliega
 ln -sfn "$ENV_FILE" "$NUEVA/.env"     # los npm run (copia, usuario, migrar, wordpress) leen ../.env
 
 # 2. Dependencias y tests, sin tocar lo que está en marcha

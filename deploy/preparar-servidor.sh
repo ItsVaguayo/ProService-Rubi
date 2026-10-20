@@ -49,7 +49,11 @@ fi
 
 dice "Usuario proservice y carpetas"
 id proservice >/dev/null 2>&1 || useradd --system --create-home --home-dir "$BASE" --shell /bin/bash proservice
-install -d -o proservice -g proservice -m 750 "$BASE" "$BASE/releases" "$BASE/datos" "$BASE/datos/uploads" "$BASE/copias"
+# nginx (www-data) sirve el panel desde current/frontend: tiene que poder pasar por $BASE (711: pasar sin listar)
+# y leer releases/. Los datos y las copias, solo para proservice.
+install -d -o proservice -g proservice -m 711 "$BASE"
+install -d -o proservice -g proservice -m 755 "$BASE/releases"
+install -d -o proservice -g proservice -m 750 "$BASE/datos" "$BASE/datos/uploads" "$BASE/copias"
 install -d -o proservice -g proservice -m 700 "$BASE/.ssh"
 touch "$BASE/.ssh/authorized_keys"; chown proservice:proservice "$BASE/.ssh/authorized_keys"; chmod 600 "$BASE/.ssh/authorized_keys"
 [ -d "$BASE/repo/.git" ] || sudo -u proservice git clone --quiet "$REPO_URL" "$BASE/repo"
@@ -93,7 +97,8 @@ if [ ! -f "/etc/letsencrypt/live/$DOMINIO/fullchain.pem" ]; then
   ln -sfn "$CONF" /etc/nginx/sites-enabled/proservice
   nginx -t -q && systemctl reload nginx
   IP="$(curl -fsS -4 https://ifconfig.me 2>/dev/null || true)"
-  if getent hosts "$DOMINIO" | grep -q "${IP:-x}"; then
+  # ahostsv4: con «hosts» un dominio con IPv6 devuelve esa dirección y nunca cuadra con la IPv4
+  if getent ahostsv4 "$DOMINIO" | awk '{print $1}' | grep -qxF "${IP:-x}"; then
     certbot certonly --webroot -w /var/www/certbot -d "$DOMINIO" --non-interactive --agree-tos \
       ${CORREO:+-m "$CORREO"} ${CORREO:---register-unsafely-without-email} \
       --deploy-hook "systemctl reload nginx"
