@@ -22,3 +22,7 @@ Cuando algo funciona, PR a `develop`. Victor revisa. Con `npm test` en verde.
 
 - `api/migraciones/` es de Victor. Si necesitáis una columna, pedidla o proponedla en un PR pequeño aparte con una migración nueva (`0002_...sql`). Una migración que ya está en `develop` no se edita nunca.
 - Cada uno toca su módulo de la API: `modules/vehiculos` (Victor), `modules/fotos` (Hafsa), `modules/publicacion` (David).
+
+## A producción
+
+De `develop` a `main` con un PR, con el OK de Diego. Después, `ssh proservice@SERVIDOR proservice-desplegar`: el servidor se baja `main` de GitHub, pasa los tests y cambia de versión, y si no arranca vuelve sola a la anterior. Todo en [despliegue.md](despliegue.md).
