@@ -21,6 +21,19 @@ El export de Pymecar aún no lo tenemos (duda B7). Por eso el importador no lee 
    Las facturas quedan a nombre de la primera persona de gerencia activa: tiene que existir antes de cargar (`npm run usuario`).
 5. **Fotos del stock**, desde la web: vincular cada coche con su ficha de proservicerubi.com (`POST /api/wordpress/vincular`, las 30 fichas que ya existen) y después `POST /api/wordpress/fotos`. Baja las fotos de todos los vinculados que aún no tienen ninguna. Con 15 o más, el coche ya se puede publicar desde el panel. Solo baja fotos del dominio de la web (tampoco sigue redirecciones que salgan de él) y salta las de más de 15 MB. Va coche a coche en la misma petición: con todo el stock puede tardar unos minutos.
 
+## Ensayo general con datos ficticios
+
+Para ensayar todo el recorrido sin el export de Pymecar (y para repetirlo cuando cambie algo):
+
+```
+node scripts/generar-migracion-ficticia.js --dir ./data/migracion-ficticia   # desde api/
+npm run migrar --workspace api -- --dir ./data/migracion-ficticia            # ensayo
+```
+
+Genera las cuatro plantillas con datos inventados (todos los nombres llevan «Ficticio») y el volumen del peor caso del briefing: 60 proveedores, 271 clientes, 50 coches en stock, 250 vendidos en 5 años y sus 250 facturas (`--stock`, `--ventas-por-anio` y `--anios` lo cambian). Todo pasa las validaciones de la API: NIF y CIF con su letra, IBAN, matrículas únicas, series sin huecos y el IVA del REBU como lo calcula la plataforma. Las dos facturas más recientes salen una sin cobrar y otra a medias.
+
+**Ensayado el 20-oct**, sobre una base vacía con el usuario de gerencia: cero errores; la carga con `--aplicar` tarda unos 6 s; los 250 vendidos entran «Entregado» y el stock en sus estados (los publicados, en «Pendiente de fotos»); la serie sigue por la `V26-00041`; el libro REBU de un trimestre suma bien (compra + base + IVA = venta) y las dos sin cobrar salen en Avisos. También en el servidor de ensayo con la API en marcha, y después restaurando la copia de antes de migrar con `proservice-restaurar antes-de-migrar` ([despliegue.md](despliegue.md#copias)).
+
 ## Reglas
 
 - **O entra todo o nada.** Con un solo error no se guarda ninguna fila: se corrige y se vuelve a lanzar.
@@ -31,7 +44,7 @@ El export de Pymecar aún no lo tenemos (duda B7). Por eso el importador no lee 
 - **Sin costes.** Los costes del coche viven en el libro de gastos, con su fecha. Si se metieran desde la ficha, caerían todos en el trimestre de hoy. Una columna `coste_*` es un error. Van con la migración del libro de gastos (pendiente, abajo).
 - Todo lo cargado queda en `auditoria` con la acción `migracion`, la fila del CSV y, en los coches, su `ref_pymecar`.
 
-- **Facturas.** Entran emitidas, con su número de Pymecar (`V25-00012`; también vale `F-V25-00012`, como sale en su lista) y los importes que calculó Pymecar. Si falta la base, el IVA o el total, se calculan como lo haría la plataforma. Si están y no cuadran con esa cuenta, se deja el de Pymecar con un aviso (puede ser una subvención o un descuento). Se congela una copia del cliente y del coche, como al emitir: salen en los libros de ingresos y de REBU. Los datos de la empresa que se congelan son los que hay hoy en el panel, no los de la fecha de emisión; el informe lo avisa. Si la razón social, el NIF o la dirección han cambiado en estos 5 años, las copias no cuadrarán con los originales de Pymecar (decide Diego si importa). Por defecto, cada factura de venta entra **cobrada entera** (son ventas cerradas). Con `cobrado` se pone lo que se cobró de verdad, y con 0 queda pendiente.
+- **Facturas.** Entran emitidas, con su número de Pymecar (`V25-00012`; también vale `F-V25-00012`, como sale en su lista) y los importes que calculó Pymecar. Si falta la base, el IVA o el total, se calculan como lo haría la plataforma. Si están y no cuadran con esa cuenta, se deja el de Pymecar con un aviso (puede ser una subvención o un descuento). Se congela una copia del cliente y del coche, como al emitir: salen en los libros de ingresos y de REBU. Los datos de la empresa que se congelan son los que hay hoy en el panel, no los de la fecha de emisión; el informe lo avisa. Si la razón social, el NIF o la dirección han cambiado en estos 5 años, las copias no cuadrarán con los originales de Pymecar (decide Diego si importa). Por defecto, cada factura de venta entra **cobrada entera** (son ventas cerradas). Con `cobrado` se pone lo que se cobró de verdad, y con 0 queda pendiente. Una venta que queda con algo sin cobrar y viene sin `vencimiento` vence el día de la factura (un coche se paga al entregarlo): si no, nunca saldría en Avisos como cobro vencido. El informe lo avisa con la lista.
 - **La serie sigue donde la dejó Pymecar.** Al acabar, cada serie queda en su número más alto: si `V26` llega a la 38, la primera factura desde el panel es la `V26-00039`. Si faltan números en medio, se avisa: Hacienda pide la numeración sin huecos y lo más probable es que el export esté incompleto.
 
 ## Las plantillas
