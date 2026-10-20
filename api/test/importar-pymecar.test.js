@@ -169,6 +169,21 @@ test('migración: las facturas de Pymecar entran emitidas, cobradas, en los libr
     assert.equal((await pide(`/facturas/${b.id}/emitir`, { method: 'POST' })).json.codigo, 'V26-00007');
   }));
 
+test('migración: una venta sin cobrar del todo y sin vencimiento vence el día de la factura y sale en Avisos', () =>
+  conServidor(async ({ db, pide }) => {
+    const usuarioId = db.prepare("SELECT id FROM usuarios WHERE rol = 'gerencia'").get().id;
+    const datos = PLANTILLAS();
+    datos.facturas = [FACTURA({ cobrado: '4.000,00' })];
+    const informe = importar(db, datos, { ensayo: false, usuarioId });
+    assert.deepEqual(informe.errores, []);
+    assert.ok(informe.avisos.some((a) => /1 facturas de venta quedan con algo sin cobrar.*V26-00005/.test(a.aviso)), 'avisa en el informe');
+    const f = (await pide('/facturas')).json.facturas.find((x) => x.codigo === 'V26-00005');
+    assert.equal(f.vencimiento, '2026-02-20');
+    assert.equal(f.estado_cobro, 'vencida', 'con algo pendiente y el vencimiento pasado');
+    const avisos = (await pide('/avisos')).json;
+    assert.ok(avisos.some((a) => a.tipo === 'cobros_vencidos' && /V26-00005/.test(a.texto)), 'Jaume la ve en Avisos');
+  }));
+
 test('migración: facturas que no se pueden cargar, y avisos de lo que no cuadra', () => {
   const { db, usuarioId } = baseNueva();
   const datos = PLANTILLAS();
