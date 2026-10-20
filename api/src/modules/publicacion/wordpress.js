@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 import { extname, resolve, sep } from 'node:path';
 import { ESTADOS_WEB } from '../estados.js';
 import { caducarReservas } from '../vehiculos/reservas.js';
+import { condicionesCuota, cuotaDe, textoCondiciones } from './cuota.js';
 
 // Dato nuestro → campo ACF de la web, con los nombres que sugieren sus plantillas (1-oct-2026: etiquetas
 // de su ficha y parámetros de su filtro). Los reales se confirman con el diagnóstico. «valores» traduce
@@ -21,6 +22,10 @@ export const MAPA_POR_DEFECTO = {
   referencia: { acf: 'referencia', formato: 'texto' },
   modelo: { acf: 'modelo', formato: 'texto' },
   pvp_cent: { acf: 'precio', formato: 'euros' },
+  // «Desde X €/mes» (cuota.js). Calculada aquí: no es una columna del coche. cuota_condiciones solo se manda
+  // si la web tiene ese campo (opcional: sin él no hay aviso); sirve para enseñar el tipo y el plazo junto a la cuota.
+  cuota: { acf: 'cuota', formato: 'numero' },
+  cuota_condiciones: { acf: 'cuota_condiciones', formato: 'texto', opcional: true },
   anio: { acf: 'anio', formato: 'numero' },
   kilometros: { acf: 'kilometros', formato: 'numero' },
   combustible: {
@@ -48,6 +53,7 @@ export function configDesdeEntorno(env = process.env) {
     mapa: env.WP_MAPA ? JSON.parse(env.WP_MAPA) : MAPA_POR_DEFECTO,
     uploads: resolve(env.UPLOADS_PATH || './data/uploads'),
     fotosPorPasada: Number(env.WP_FOTOS_POR_PASADA || 40),
+    cuota: condicionesCuota(env),
   };
 }
 
@@ -146,7 +152,7 @@ export async function diagnosticar(cfg, fetchImpl = fetch) {
     d.avisos.push('Los campos de ACF no están expuestos en la API REST: solo se puede enviar título, estado y marca. '
       + 'Para mandar precio, datos y fotos, un administrador tiene que activar «Mostrar en la API REST» en el grupo de campos de ACF del tipo «coches».');
   } else {
-    const faltan = d.mapa.filter((m) => m.estado !== 'ok').map((m) => m.acf);
+    const faltan = d.mapa.filter((m) => m.estado !== 'ok' && !cfg.mapa[m.campo].opcional).map((m) => m.acf);
     if (faltan.length) d.avisos.push(`Campos del mapa que la web no tiene: ${faltan.join(', ')}. Ajustar WP_MAPA a los nombres reales.`);
   }
   if (d.acf.expuesto && !d.puede.subir_fotos) d.avisos.push('El usuario no puede subir fotos: la galería no se enviará.');
@@ -244,6 +250,9 @@ async function publicarCoche(ctx, v, vinculo) {
   let fotosCompletas = true;
   if (d.acf.expuesto) {
     const acf = {};
+    // Lo que no es columna del coche se calcula; sin cfg.cuota (pruebas antiguas, config a mano) va la de por defecto
+    const condiciones = cfg.cuota === undefined ? condicionesCuota({}) : cfg.cuota;
+    const datos = { ...v, cuota: cuotaDe(v, condiciones), cuota_condiciones: textoCondiciones(condiciones) };
     for (const [campo, destino] of Object.entries(cfg.mapa)) {
       const esquema = d.acf.campos[destino.acf];
       if (!esquema) continue;
@@ -253,7 +262,7 @@ async function publicarCoche(ctx, v, vinculo) {
         if (ids === null) { fotosCompletas = false; continue; }
         acf[destino.acf] = adaptar(ids, esquema);
       } else {
-        acf[destino.acf] = adaptar(convertir(v[campo], destino), esquema);
+        acf[destino.acf] = adaptar(convertir(datos[campo], destino), esquema);
       }
     }
     if (Object.keys(acf).length) cuerpo.acf = acf;

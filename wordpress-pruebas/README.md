@@ -26,7 +26,7 @@ Los **nombres** de los campos ACF (`precio`, `cuota`, `estado`, `potencia`, `gal
 - **El título grande de la ficha y el «Conoce el …» salen vacíos** en los coches revisados, y el **año** también. Su plantilla lee campos que hoy nadie rellena. En la réplica se supone que el título es el campo `modelo`.
 - **Su filtro por potencia no funciona**: «mínimo 130 CV» devuelve 0 coches y hay un Kia Niro de 138 CV. El de precio sí funciona.
 - **Todos sus coches están «En venta»** (30 de 30), aunque el campo admite «Reservado» y «Vendido».
-- **La cuota «Desde X €/mes» es un dato que meten a mano.** La plataforma no la envía (depende del tipo de interés, duda E2), así que en los coches nuevos esa línea no saldría.
+- **La cuota «Desde X €/mes» hoy la meten a mano.** Desde el 19-oct la calcula la plataforma (7,5 % y 120 meses, como su calculadora de Pymecar; `api/src/modules/publicacion/cuota.js`) y la escribe en el campo `cuota`. Al sincronizar, la que pusieron a mano se sustituye por la calculada. Si la web tiene un campo de texto `cuota_condiciones`, también se manda el tipo y el plazo.
 - **Su formulario de prueba de conducción** no se sabe adónde envía las solicitudes. En la réplica se guardan en la opción `replica_solicitudes` del WordPress de pruebas.
 
 ## Lo que esto significa para la web real

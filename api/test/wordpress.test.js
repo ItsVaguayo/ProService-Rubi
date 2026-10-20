@@ -8,11 +8,14 @@ import { abrirDb } from '../src/db.js';
 import { adaptar, convertir, diagnosticar, sincronizar, vincular, MAPA_POR_DEFECTO } from '../src/modules/publicacion/wordpress.js';
 
 // --- WordPress simulado: lo justo de la API REST que usa el conector ---------------------------------
-function wordpressFalso({ acfExpuesto = false, conReferencia = false } = {}) {
+function wordpressFalso({ acfExpuesto = false, conReferencia = false, conCuota = false, conCondiciones = false } = {}) {
   const estado = { posts: new Map([[500, { id: 500, title: 'VOLKSWAGEN GOLF A MANO', status: 'publish' }]]), terminos: [], medios: 0, siguiente: 1000, peticiones: [] };
   const ACF = { precio: { type: ['number', 'null'] }, kilometros: { type: ['number', 'null'] }, estado: { type: ['string', 'null'] }, combustible: { type: ['string', 'null'] }, galeria: { type: ['string', 'null'] } };
   // Su web no tiene el campo de la referencia (duda B16): solo se añade cuando la prueba lo pide
   if (conReferencia) ACF.referencia = { type: ['string', 'null'] };
+  // La cuota sí la tiene su web («Desde X €/mes»); el campo de las condiciones, no
+  if (conCuota) ACF.cuota = { type: ['number', 'null'] };
+  if (conCondiciones) ACF.cuota_condiciones = { type: ['string', 'null'] };
   const servidor = createServer((req, res) => {
     let cuerpo = [];
     req.on('data', (t) => cuerpo.push(t));
@@ -86,6 +89,33 @@ async function conEscenario(opciones, fn) {
 }
 
 // --- Pruebas -----------------------------------------------------------------------------------------
+
+test('diagnóstico: un campo opcional del mapa que la web no tiene no da aviso', () =>
+  conEscenario({ acfExpuesto: true, conCuota: true }, async ({ cfg }) => {
+    const d = await diagnosticar(cfg);
+    assert.equal(d.mapa.find((m) => m.campo === 'cuota').estado, 'ok');
+    assert.equal(d.mapa.find((m) => m.campo === 'cuota_condiciones').estado, 'no existe en la web', 'se ve en el diagnóstico');
+    const aviso = d.avisos.find((a) => a.startsWith('Campos del mapa'));
+    assert.match(aviso, /referencia/, 'la referencia sí se pide (B16)');
+    assert.doesNotMatch(aviso, /cuota_condiciones/);
+  }));
+
+test('con ACF: la cuota «Desde X €/mes» se calcula del precio si financia o del PVP, y sigue a los cambios', () =>
+  conEscenario({ acfExpuesto: true, conCuota: true, conCondiciones: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat');
+    await sincronizar(db, cfg);
+    const post = [...estado.posts.values()].find((p) => p.title === 'Seat Modelo Versión');
+    assert.equal(post.acf.cuota, 154, '12.900 € al 7,5 % en 120 meses');
+    assert.match(post.acf.cuota_condiciones, /^Cuota orientativa: 7,5 % TIN, 120 meses/);
+
+    db.prepare('UPDATE vehiculos SET precio_financiado_cent = 1000000 WHERE id = 1').run();
+    assert.equal((await sincronizar(db, cfg)).actualizados, 1);
+    assert.equal(post.acf.cuota, 119, 'con precio si financia, sobre ese');
+    assert.equal(post.acf.precio, 12900, 'el precio de la web sigue siendo el PVP');
+
+    assert.equal((await sincronizar(db, { ...cfg, cuota: null })).actualizados, 1);
+    assert.equal(post.acf.cuota, null, 'apagada (CUOTA_MESES=0) se vacía en la web');
+  }));
 
 test('diagnóstico: con ACF oculto avisa de que solo van título, estado y marca', () =>
   conEscenario({}, async ({ cfg }) => {

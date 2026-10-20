@@ -6,12 +6,13 @@
 //   GET /api/portales?estado=retirar   → los anuncios en ese estado, con su coche (los dos roles)
 //   GET /api/portales/:vehiculoId      → el estado en cada portal y el anuncio listo para copiar
 //   PUT /api/portales/:vehiculoId/:canal { estado: 'publicado', enlace? } | { estado: 'retirado' }
-// Sin dinero interno: el anuncio solo lleva el PVP, que sale en la web.
+// Sin dinero interno: el anuncio solo lleva el PVP y la cuota orientativa, que salen en la web.
 import { Router } from 'express';
 import { registrar } from '../auditoria.js';
 import { ENTERO } from '../../fechas.js';
 import { versionFoto } from '../fotos/routes.js';
 import { PORTALES } from './retirada.js';
+import { condicionesCuota, cuotaDe } from './cuota.js';
 
 export const NOMBRES = { coches_net: 'Coches.net', milanuncios: 'Milanuncios', wallapop: 'Wallapop' };
 const ESTADOS = ['pendiente', 'publicado', 'retirar', 'retirado', 'error'];
@@ -32,7 +33,8 @@ function esEnlace(texto) {
 }
 
 /** El anuncio, igual para los tres portales. Solo datos de la ficha: nada de frases que la ficha no respalde. */
-export function anuncioDe(v, extras, fotos, empresa) {
+export function anuncioDe(v, extras, fotos, empresa, condiciones = condicionesCuota()) {
+  const cuota = cuotaDe(v, condiciones);
   const nombre = [v.marca, v.modelo, v.version].filter(Boolean).join(' ');
   const titulo = [
     [nombre, v.potencia_cv ? `${v.potencia_cv} CV` : null].filter(Boolean).join(' '),
@@ -51,12 +53,17 @@ export function anuncioDe(v, extras, fotos, empresa) {
     v.plazas ? `${v.plazas} plazas` : null, v.color_exterior ? `Color ${v.color_exterior}` : null,
   ].filter(Boolean);
   if (carroceria.length) lineas.push(`${carroceria.join('. ')}.`);
+  if (cuota) {
+    const tin = condiciones.tin.toLocaleString('es-ES', { maximumFractionDigits: 2 });
+    lineas.push(`Financiación desde ${miles(cuota)} €/mes (orientativa: ${tin} % TIN, ${condiciones.meses} meses, sin entrada).`);
+  }
   lineas.push(['Pro Service Rubí', empresa?.poblacion, empresa?.telefono].filter(Boolean).join(' · '));
   if (v.referencia) lineas.push(`Ref. ${v.referencia}`);
 
   return {
     titulo,
     precio_euros: v.pvp_cent == null ? null : Math.round(v.pvp_cent / 100),
+    cuota_euros: cuota,
     descripcion: lineas.join('\n'),
     video_url: v.video_url ?? null,
     fotos: fotos.map((f) => ({ id: f.id, orden: f.orden, url: `/api/fotos/${f.vehiculo_id}/${f.id}/archivo?v=${encodeURIComponent(versionFoto(f))}` })),
