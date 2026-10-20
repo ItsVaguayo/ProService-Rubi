@@ -7,11 +7,12 @@ import { join } from 'node:path';
 import { conServidor } from './ayuda.js';
 import { versionDesplegada } from '../src/app.js';
 
-test('salud: sin sesión, con la versión («desarrollo» fuera del servidor)', () =>
+test('salud: sin sesión, con la versión (la de VERSION en el servidor, «desarrollo» fuera)', () =>
   conServidor(async ({ pide }) => {
     const r = await pide('/salud', { como: null });
     assert.equal(r.status, 200);
-    assert.deepEqual(r.json, { ok: true, version: 'desarrollo' });
+    // Los tests también se pasan dentro de una versión desplegada, donde sí hay VERSION
+    assert.deepEqual(r.json, { ok: true, version: versionDesplegada() });
   }));
 
 test('salud: si la base no contesta, 503', () =>
