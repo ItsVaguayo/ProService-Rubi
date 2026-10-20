@@ -172,11 +172,11 @@ WantedBy=multi-user.target
 
 Todo esto toca la web de Jaume: lo hace Francesc o se hace con él. Guía de la conexión en [wordpress-pruebas/README.md](../wordpress-pruebas/README.md#para-la-web-real) y del plugin en [wp-plugin/README.md](../wp-plugin/README.md).
 
-- [ ] Usuario con rol Editor y una contraseña de aplicación creada desde su perfil (B8). Con eso basta para publicar: no hace falta administrador. Francesc nos pasa el usuario y la contraseña de aplicación, que van a `WP_USUARIO` y `WP_CLAVE_APLICACION`. Quién: Francesc.
-- [ ] Marcar «Mostrar en la API REST» en el grupo de campos de ACF de «coches» (B11). A 13-oct seguía sin hacer. Sin ella solo viajan título, estado y marca: ni precio, ni km, ni fotos. Quién: Francesc, con administrador.
+- [x] Usuario con rol Editor y una contraseña de aplicación creada desde su perfil (B8). **Conseguido el 20-oct** ([web-real.md](web-real.md)). Cargar el `.env` siempre con `node --env-file`, nunca con `source`: la clave lleva espacios. Con eso basta para publicar: no hace falta administrador. Francesc nos pasa el usuario y la contraseña de aplicación, que van a `WP_USUARIO` y `WP_CLAVE_APLICACION`. Quién: Francesc.
+- [ ] Marcar «Mostrar en la API REST» en el grupo de campos de ACF de «coches» (B11). A 20-oct sigue sin hacer (comprobado con el Editor). Sin ella solo viajan título, estado y marca: ni precio, ni km, ni fotos. Quién: Francesc, con administrador.
 - [ ] Campo de texto `referencia` en ese mismo grupo (B16), para que un contacto de la ficha quede unido a su coche. Sin él, el formulario escribe el coche en el mensaje. Quién: Francesc.
 - [ ] Qué campos llevan el nombre del coche y el año (B12). Quién: Francesc.
-- [ ] Lanzar el diagnóstico (`npm run wordpress --workspace api -- diagnostico`) con las claves en el `.env`. Dice qué deja escribir la web y qué campos del mapa existen. Si los nombres de ACF no coinciden, se ajusta `WP_MAPA`. Quién: Victor. Depende de: B8 y B11.
+- [ ] Lanzar el diagnóstico (`npm run wordpress --workspace api -- diagnostico`). Primera vez el 20-oct, sin ACF: ver [web-real.md](web-real.md#diagnóstico). Repetirlo cuando esté B11 con las claves en el `.env`. Dice qué deja escribir la web y qué campos del mapa existen. Si los nombres de ACF no coinciden, se ajusta `WP_MAPA`. Quién: Victor. Depende de: B8 y B11.
 - [ ] Instalar el plugin 0.6.0: subir `wp-plugin/proservice-stock/` a `wp-content/plugins/` y activarlo. Necesita administrador una vez. Plan: lunes 26 o martes 27, sin enlazarlo aún en el menú. Quién: Francesc, con Victor.
 - [ ] En Ajustes, Pro Service Buscador: el mapa de campos igual que `WP_MAPA`, la dirección de la API (`https://stock.proservicerubi.com`), el WhatsApp (E1) y la página del listado (destino del 301). La ficha propia del plugin se queda apagada: manda la del tema. Quién: Francesc, con Victor.
 - [ ] `[proservice_buscador]` en la página del listado, si se usa el buscador del plugin. Quién: Francesc.
@@ -194,7 +194,7 @@ El procedimiento entero está en [migracion.md](migracion.md). Aquí solo los pu
 - [ ] Corte el martes 27 por la tarde: desde ahí no se da de alta nada en Pymecar (G6). Quién: Diego da el OK tras ver el ensayo.
 - [ ] Miércoles 28: export final, ensayo otra vez y carga con `--aplicar`, con el OK de Diego. El script copia la base antes de tocar nada (`proservice.db.antes-de-migrar-…`). Quién: Victor.
 - [ ] Copia de seguridad a mano justo después (`npm run copia --workspace api`). Quién: Victor.
-- [ ] Vincular cada coche del stock con su ficha de la web (`POST /api/wordpress/vincular`) antes de la primera sincronización, para no duplicarlas y conservar sus URLs. A 13-oct había 33 coches dados de alta a mano en WordPress (B9). Quién: Victor. Depende de: B8.
+- [ ] Vincular cada coche del stock con su ficha de la web (`POST /api/wordpress/vincular`) antes de la primera sincronización, para no duplicarlas y conservar sus URLs. A 20-oct hay 35 fichas publicadas y ninguna en borrador: las de vendidos no las retira nadie si no se vinculan (B17, tabla en [web-real.md](web-real.md#las-35-fichas-para-jaume)). A 13-oct había 33 coches dados de alta a mano en WordPress (B9). Quién: Victor. Depende de: B8.
 - [ ] Bajar las fotos del stock desde la web (`POST /api/wordpress/fotos`). Si la web no expone la galería de ACF (B11), baja las adjuntas a la ficha y Jaume las ordena. Quién: Victor, después Jaume.
 - [ ] Comprobar en Facturas, Datos de la empresa, que la serie `V26` sigue en el número que dejó Pymecar (H8). Quién: Victor, con Jaume.
 - [ ] Si sale mal: parar la API, poner la copia `antes-de-migrar` en su sitio y arrancar. El plan B es el mes extra de Pymecar (B2). Quién: Victor avisa, Diego decide.
@@ -233,9 +233,12 @@ El procedimiento entero está en [migracion.md](migracion.md). Aquí solo los pu
 | Sin número | Cómo arranca la API (systemd o pm2) y adónde van las copias de fuera | Victor propone, Diego decide si cuesta dinero | Nada en el repo |
 | B2 | ¿Pymecar deja ampliar un mes? | Jaume | Sin plan B si la migración falla |
 | B7 | Export de Pymecar | Jaume | Sin export no hay migración |
-| B8 | Editor de WordPress, administrador una vez, DNS | Francesc | Sin Editor no se publica nada; sin DNS no hay subdominio |
-| B9 | Quién da de alta hoy los coches en la web (33 a mano a 13-oct) | Francesc | Se vinculan los que haya el 28 |
-| B11 | «Mostrar en la API REST» en ACF | Francesc | Solo título, estado y marca |
+| B8 | Administrador una vez y DNS (el Editor ya está, 20-oct) | Francesc | Sin administrador no hay buscador ni 301; sin DNS no hay subdominio |
+| B9 | Quién da de alta hoy los coches en la web (35 a mano a 20-oct) | Francesc | Se vinculan los que haya el 28 |
+| B11 | «Mostrar en la API REST» en ACF | Francesc | Solo título, estado y marca. **Es lo que bloquea conectar la web** |
+| B17 | Cuáles de las 35 fichas siguen en venta | Jaume | Sin la lista no se vincula nada |
+| B18 | Marca (y modelo) en la web | Francesc | Solo la marca |
+| B19 | Toyota Proace publicada dos veces | Jaume | Se pregunta antes de vincular |
 | B12 | Campos del nombre y del año en la ficha | Francesc | Modelo y año en los campos más parecidos |
 | B14 | Su formulario actual frente a `[proservice_contacto]` | Francesc | Se deja el suyo |
 | B16 | Campo `referencia` en ACF | Francesc | El coche va escrito en el mensaje |
