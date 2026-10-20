@@ -30,7 +30,7 @@ Está en [`deploy/desplegar.sh`](../deploy/desplegar.sh). En orden, y parándose
 2. `npm ci` y **los tests**. Si un test falla, se para y dice cuál.
 3. Copia la base (`datos/antes-de-COMMIT.db`), porque la API aplica las migraciones nuevas al arrancar.
 4. Cambia el enlace `current` a la versión nueva y reinicia la API (unos segundos sin servicio).
-5. Espera a que `/api/salud` conteste. **Si en 60 s no contesta, vuelve sola a la versión anterior.**
+5. Espera a que `/api/salud` conteste **con la versión nueva** (cada versión lleva su commit en `VERSION` y la salud lo devuelve; también comprueba que la base responde). **Si en 60 s no contesta así, vuelve sola a la versión anterior.**
 6. Guarda las 5 últimas versiones y apunta el despliegue en `despliegues.log`.
 
 Otras órdenes:
@@ -43,6 +43,8 @@ Otras órdenes:
 | `journalctl -u proservice-api -n 100` | El registro de la API (como root o con `sudo`) |
 
 **Vuelta atrás y base de datos.** Las migraciones del proyecto solo añaden tablas y columnas, así que normalmente una versión vieja funciona con la base de una nueva. Si una migración estropeara datos, la copia de antes del despliegue está en `datos/antes-de-COMMIT.db` (se restaura parando la API y poniéndola en su sitio; ver «Copias»).
+
+**El navegador no se queda con el panel viejo.** nginx manda el panel con `Cache-Control: no-cache`: el navegador pregunta en cada carga si ha cambiado y, si no, recibe un 304 sin volver a bajarlo. Sin esto, tras desplegar podía seguir horas con el JavaScript anterior contra la API nueva.
 
 **Cuándo desplegar.** Al reiniciar, la API está unos segundos sin contestar: mejor fuera del horario de la tienda, o avisando a Jaume.
 
@@ -65,13 +67,13 @@ Otras órdenes:
 2. Las claves: `sudo nano /etc/proservice/proservice.env` (SMTP, destinatarios, WordPress). Ese fichero solo lo lee root y la API, y **nunca** va a Git ni al chat. La contraseña de aplicación de WordPress lleva espacios: no hace falta comillas, el fichero lo lee Node.
 3. Las claves SSH de quien despliega (ver «Quién entra»).
 4. Primer despliegue: `sudo -iu proservice proservice-desplegar`.
-5. El usuario de gerencia, con Jaume delante para que escriba él la contraseña:
+5. El usuario de gerencia, con Jaume delante para que escriba él la contraseña (no se ve al escribir y se pide dos veces):
 
    ```bash
    sudo -iu proservice bash -c 'cd current/api && npm run usuario -- --email CORREO --nombre Jaume --rol gerencia'
    ```
 
-6. Comprobar: `curl -s https://stock.proservicerubi.com/api/salud` y entrar en `https://stock.proservicerubi.com/panel/`.
+6. Comprobar: `curl -s https://stock.proservicerubi.com/api/salud` (tiene que decir `ok` y la versión) y entrar en `https://stock.proservicerubi.com/panel/`.
 
 Después, la migración de Pymecar y la conexión con la web, según [produccion.md](produccion.md) y [web-real.md](web-real.md).
 
@@ -124,6 +126,9 @@ Cuando todos entren con clave, quitar el acceso por contraseña: `PasswordAuthen
 - **El photocall** (rembg como servicio aparte y la tipografía de la banda), cuando esté construido.
 
 ## Ensayado el 20-oct
+
+Por la tarde, otra vez con la salud con versión: desplegar sobre una versión sin `VERSION`, volver a ella y regresar a la nueva; el despliegue paró una versión cuyo test nuevo fallaba dentro de la carpeta desplegada (era el propio test, corregido). nginx: el panel sale con `no-cache` y la segunda petición da 304. `npm run usuario` en una terminal: la contraseña no sale en pantalla y, si las dos no coinciden, no crea nada.
+
 
 Sin root, con systemd de usuario y un repo de ensayo haciendo de GitHub: primer despliegue (36 s, 215 tests), volver a desplegar lo mismo (no hace nada), una versión con un test roto (se para antes de tocar nada y dice qué test), una versión que no arranca (vuelve sola a la anterior), `--volver`, una rama que no es `main` (la rechaza) y el registro de despliegues. La plantilla de nginx, con el nginx 1.28 de Ubuntu: HTTPS, redirección, la comprobación de Let's Encrypt, sin versión de nginx y sin servir lo que no es el panel. La copia diaria con los permisos del servicio (ficheros 600).
 

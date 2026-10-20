@@ -105,7 +105,7 @@ Todo lo demás está resuelto, construido con la opción por defecto o ya no imp
 
 | # | Pregunta al cliente | Ref. | Por qué importa | Si no contestan |
 |---|---|---|---|---|
-| E1 | Número de WhatsApp y correo donde tienen que llegar los contactos de la web. | 5.6 | Formularios y botón de WhatsApp. | Sin defecto. **20-oct:** sigue sin llegar. |
+| E1 | Número de WhatsApp y correo donde tienen que llegar los contactos de la web. | 5.6 | Formularios y botón de WhatsApp. | Sin defecto. **20-oct:** sigue sin llegar. Sin destinatario, los contactos de la web solo se ven en el panel. |
 | E2 ✅ | Tipo de interés orientativo y plazos para la calculadora de cuota. | 5.7 | No podemos publicar un tipo inventado. | **7,5 % y 10 años, de su calculadora de Pymecar (7-oct).** Ver B13. |
 | E3 ✅ | Pedir financiación: ¿el formulario solo os avisa o hay que mandar algo a Lendrock o BBVA? | 5.6, 9.5 | Una cosa es un correo y otra conectar con una financiera. | Solo os avisa. **Construido por defecto:** la petición entra como contacto de tipo `financiacion` en el panel, con su aviso; a la financiera no se manda nada. |
 | E4 ✅ | Tasación: ¿qué datos pedís del coche del cliente? ¿Fotos? | 5.6, 8.7 | El formulario de tasación. | Marca, modelo, año, km, teléfono y hasta 5 fotos. **Construido** (PR #23): esos datos y hasta 5 fotos. |

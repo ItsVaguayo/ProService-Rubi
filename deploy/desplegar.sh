@@ -37,13 +37,17 @@ falla() { printf '\033[31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 apuntar() { printf '%s\t%s\t%s\t%s\n' "$(date '+%F %T')" "${SUDO_USER:-$USER}" "$1" "$2" >> "$REGISTRO"; }
 version_de() { basename "$(readlink -f "$1" 2>/dev/null || echo ninguna)"; }
 
+# Espera a que /api/salud conteste ok y, si se le dice, con esa versión (así no vale un resto de la anterior)
 salud() {
+  local esperada="${1:-}" r
   for _ in $(seq 60); do
-    if curl -fsS --max-time 2 "$SALUD" 2>/dev/null | grep -q '"ok":true'; then return 0; fi
+    r="$(curl -fsS --max-time 2 "$SALUD" 2>/dev/null || true)"
+    if grep -q '"ok":true' <<<"$r" && { [ -z "$esperada" ] || grep -q "\"version\":\"$esperada\"" <<<"$r"; }; then return 0; fi
     sleep 1
   done
   return 1
 }
+version_en() { cat "$1/VERSION" 2>/dev/null || true; }   # las versiones de antes del 20-oct no lo tienen
 
 cambiar_a() {
   # El enlace se cambia de golpe (rename), nunca hay un momento sin «current»
@@ -72,7 +76,7 @@ case "${1:-}" in
     dice "Volviendo de $(basename "$actual") a $(basename "$destino")"
     cambiar_a "$destino"
     ln -sfn "$actual" "$BASE/anterior"
-    salud || falla "La versión anterior tampoco contesta en $SALUD. Mirar: journalctl -u $SERVICIO -n 50"
+    salud "$(version_en "$destino")" || falla "La versión anterior tampoco contesta en $SALUD. Mirar: journalctl -u $SERVICIO -n 50"
     apuntar "--volver" "$(basename "$destino")"
     dice "Hecho. Si la versión nueva cambió la base (migraciones), la copia de antes está en $BASE/datos/antes-de-*.db"
     exit 0 ;;
@@ -102,6 +106,7 @@ mkdir -p "$NUEVA"
 git -C "$REPO" archive "$SHA" | tar -x -C "$NUEVA"
 chmod 755 "$NUEVA"; chmod -R a+rX "$NUEVA/frontend"   # nginx lee el panel de aquí, con el umask que tenga quien despliega
 ln -sfn "$ENV_FILE" "$NUEVA/.env"     # los npm run (copia, usuario, migrar, wordpress) leen ../.env
+echo "$CORTO" > "$NUEVA/VERSION"      # /api/salud la devuelve
 
 # 2. Dependencias y tests, sin tocar lo que está en marcha
 dice "Instalando dependencias"
@@ -130,8 +135,8 @@ ANTES=""; [ -L "$CURRENT" ] && ANTES="$(readlink -f "$CURRENT")"   # en el prime
 dice "Arrancando $(basename "$NUEVA")"
 cambiar_a "$NUEVA"
 
-# 5. ¿Contesta?
-if salud; then
+# 5. ¿Contesta, y es la nueva?
+if salud "$CORTO"; then
   [ -n "$ANTES" ] && ln -sfn "$ANTES" "$BASE/anterior"
   apuntar "$REF" "$(basename "$NUEVA")"
   dice "En marcha: $(basename "$NUEVA")"
@@ -140,7 +145,7 @@ else
   if [ -n "$ANTES" ]; then
     printf '\033[31mLa versión nueva no contesta en %s. Volviendo a %s\033[0m\n' "$SALUD" "$(basename "$ANTES")" >&2
     cambiar_a "$ANTES"
-    salud && echo "La anterior vuelve a estar en marcha." || echo "TAMPOCO contesta la anterior: mirar journalctl -u $SERVICIO -n 50" >&2
+    salud "$(version_en "$ANTES")" && echo "La anterior vuelve a estar en marcha." || echo "TAMPOCO contesta la anterior: mirar journalctl -u $SERVICIO -n 50" >&2
     [ -n "${COPIA:-}" ] && echo "Si la nueva llegó a migrar la base, la copia de antes es $COPIA" >&2
   fi
   falla "Despliegue fallido. Registro: journalctl -u $SERVICIO -n 50"

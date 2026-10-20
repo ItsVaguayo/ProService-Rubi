@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { rutasAuth } from './modules/auth/routes.js';
 import { requiereSesion, requiereRol } from './modules/auth/sesiones.js';
@@ -20,6 +21,16 @@ import { rutasCorreos } from './modules/correo/routes.js';
 import { rutasCitas, rutasCitasPublicas } from './modules/citas/routes.js';
 import { rutasClientes, rutasProveedores } from './modules/terceros/routes.js';
 import { cabecerasDeSeguridad, mismoOrigen } from './seguridad.js';
+
+// La versión desplegada: deploy/desplegar.sh deja el commit en VERSION, en la raíz de cada versión.
+// En los ordenadores del equipo no hay fichero: «desarrollo».
+export function versionDesplegada(ruta = new URL('../../VERSION', import.meta.url)) {
+  try {
+    return readFileSync(ruta, 'utf8').trim() || 'desarrollo';
+  } catch {
+    return 'desarrollo';
+  }
+}
 
 export function crearApp(db) {
   const app = express();
@@ -45,7 +56,18 @@ export function crearApp(db) {
   }
 
   // Público
-  app.get('/api/salud', (_req, res) => res.json({ ok: true }));
+  // Lo mira el despliegue para saber si la versión nueva arrancó (y es la nueva, no un resto de la anterior),
+  // y lo puede mirar un monitor de fuera. Si la base no contesta, 503.
+  const version = versionDesplegada();
+  const comprobarBase = db.prepare('SELECT 1 AS ok');
+  app.get('/api/salud', (_req, res) => {
+    try {
+      comprobarBase.get();
+      res.json({ ok: true, version });
+    } catch {
+      res.status(503).json({ ok: false, version, error: 'La base no contesta' });
+    }
+  });
   app.use('/api/auth', rutasAuth(db));
   app.use('/api/contactos', rutasContactosPublicas(db)); // solo POST: el formulario de la web
   app.use('/api/citas', rutasCitasPublicas(db)); // solo GET /huecos y POST /pedir: la cita previa de la web
