@@ -12,6 +12,7 @@ Un WordPress aparte de la aplicación que se comporta como proservicerubi.com: l
 
 **Sus páginas** (carpeta `replica/`, ver más abajo)
 - Tema `hello-biz` con un tema hijo que pinta `/coches/` y cada ficha con plantillas propias, no con Elementor.
+- **Su cabecera y su pie** en todas las páginas: los de Elementor Pro de su web (logo, menú con el desplegable de Servicios, «Pide cita», redes, navegación, horario y suscripción), con su CSS. Los de `hello-biz` se esconden. Desde el 13-oct; antes salía la cabecera por defecto del tema.
 - `/coches/`: portada, **su propio filtro** (precio máximo, potencia mínima y estado) que va por `admin-ajax.php` con la acción `filtrar_coches`, y tarjetas de 10 en 10.
 - Ficha: portada con la primera foto, precio, «Desde X €/mes», galería con miniaturas y lightbox, ficha técnica de 6 datos (año, combustible, km, potencia, cilindrada, uso anterior), la sección de Jaume, la comparativa, las reseñas y **su formulario de prueba de conducción**.
 - Valores con su texto: estado «En venta», «Reservado» o «Vendido»; combustible «Gasolina», «Diésel», «Híbrido»…
@@ -43,15 +44,19 @@ Su web ya tiene listado y filtro propios, que funcionan con lo que manda la API 
 
 ## La réplica de sus plantillas
 
-`replica/extraer.py` descarga su `/coches/` y la ficha del primer coche, y guarda en `replica/` el CSS, sus scripts y las partes fijas (portada, comparativa, reseñas, formulario). Las partes con datos (tarjetas, portada, galería, ficha técnica) las pintan `archivo.php` y `ficha.php` con el mismo HTML que su web. Si cambian su web, se vuelve a lanzar:
+`replica/extraer.py` descarga su `/coches/` y la ficha del primer coche, y guarda en `replica/` el CSS, sus scripts y las partes fijas (portada, comparativa, reseñas, formulario), y también su cabecera y su pie (`cabecera.html`, `pie.html` y `cabecera.css`: el CSS de Elementor y de sus plantillas, sus fuentes solo en alfabeto latino y el CSS del tema hijo). De su JavaScript de Elementor no se trae nada: el botón del menú del móvil y las flechas de los submenús los pone `replica.php`. En el menú, «Inicio» y «Vehículos Ocasión» llevan a la réplica; lo demás, a su web. Las partes con datos (tarjetas, portada, galería, ficha técnica) las pintan `archivo.php` y `ficha.php` con el mismo HTML que su web. Si cambian su web, se vuelve a lanzar:
 
 ```bash
-python3 wordpress-pruebas/replica/extraer.py && wordpress-pruebas/montar.sh
+python3 wordpress-pruebas/replica/extraer.py
 ```
+
+`montar.sh` **enlaza** la réplica al repo (como el plugin), así que no hace falta volver a montar: el WordPress de pruebas ve al momento lo que baje `extraer.py` o cualquier cambio de una plantilla. Hasta el 13-oct la copiaba y se quedaba en la versión del día del montaje.
 
 Comprobado el 1-oct: el listado y la ficha de la réplica tienen la misma estructura de bloques que los suyos. La única diferencia es la línea de la cuota, porque la plataforma no la manda. Su filtro AJAX responde igual (estado, precio y potencia) y el formulario rechaza el campo trampa como el suyo.
 
-Las imágenes fijas (la foto de Jaume, los fondos) se cargan de su web, y Swiper, GLightbox y Font Awesome de sus CDN: para ver la réplica entera hace falta internet.
+Las imágenes fijas (la foto de Jaume, los fondos, el logo de la cabecera), las fuentes, y Swiper, GLightbox y Font Awesome se cargan de su web o de sus CDN: para ver la réplica entera hace falta internet.
+
+**La portada (`/`) no se imita**: es la de un WordPress vacío. La réplica solo cubre lo que toca a los coches.
 
 ## Montarlo
 

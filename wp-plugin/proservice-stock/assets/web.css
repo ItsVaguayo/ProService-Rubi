@@ -776,6 +776,9 @@
 .ps-web .formulario-web .boton { justify-self: start; min-width: 180px; }
 .ps-web .formulario-web .casilla { color: #c9ced3; font-size: .875rem; }
 
+.ps-web .formulario-web .campo__nombre { color: #c9ced3; }
+.ps-web .formulario-web .nota { grid-column: 1 / -1; margin: 0; color: #aab0b6; }
+
 .ps-web .formulario-web__extra { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
 .ps-web .formulario-web__extra[hidden] { display: none; }
 .ps-web .formulario-web__extra legend { grid-column: 1 / -1; margin-bottom: 4px; padding: 0; }

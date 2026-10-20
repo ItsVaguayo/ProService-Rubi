@@ -68,11 +68,12 @@ mkdir -p "$W/wp-content/mu-plugins"
 rm -f "$W/wp-content/mu-plugins/simula-proservicerubi.php"
 # La página del buscador es del plugin: sin él solo enseñaría el shortcode
 for p in $(wp_ post list --post_type=page --name=coches-de-ocasion --field=ID); do wp_ post delete "$p" --force --quiet; done
-cp "$DIR/imita-proservicerubi.php" "$W/wp-content/mu-plugins/"
-# Réplica de sus plantillas de coches (replica/, partes fijas bajadas de su web con extraer.py)
-rm -rf "$W/wp-content/mu-plugins/imita-proservicerubi"
-mkdir -p "$W/wp-content/mu-plugins/imita-proservicerubi"
-cp "$DIR"/replica/*.php "$DIR"/replica/*.css "$DIR"/replica/*.js "$DIR"/replica/*.html "$W/wp-content/mu-plugins/imita-proservicerubi/"
+# Réplica de su web (replica/: plantillas de coches, cabecera y pie, partes fijas bajadas con extraer.py).
+# Enlazada al repo, como el plugin: si se vuelve a lanzar extraer.py o cambia una plantilla, la réplica lo ve
+# sin volver a montar. Antes se copiaba y se quedaba en la versión del día del montaje.
+rm -rf "$W/wp-content/mu-plugins/imita-proservicerubi" "$W/wp-content/mu-plugins/imita-proservicerubi.php"
+ln -s "$DIR/imita-proservicerubi.php" "$W/wp-content/mu-plugins/imita-proservicerubi.php"
+ln -s "$DIR/replica" "$W/wp-content/mu-plugins/imita-proservicerubi"
 if [ $BUSCADOR = 1 ]; then
   # Lo que haría un administrador en la web real: instalar el plugin y poner el shortcode en una página.
   # El mapa se deja en el de por defecto (los nombres de la réplica): un mapa viejo guardado mandaría.
