@@ -2,7 +2,7 @@
 
 Tarea T08, parte 1. **Sin probar todavía**: faltan las tres fotos de Jaume y el fondo del cliente (duda D2). Hasta entonces, cada dato de la tabla dice «no lo sé (sin probar)». Lo que después de probar siga sin saberse se queda en **no lo sé**: nada de rellenar a ojo.
 
-Diego decide con esta tabla qué herramienta se usa y si se paga. No hay que contratar nada para la prueba.
+Diego decide con esta tabla qué herramienta se usa y si se paga. Lo que hacen hoy en su web, y por qué no basta con «solo el fondo», está en [photocall-web-actual.md](photocall-web-actual.md). No hay que contratar nada para la prueba.
 
 ## Qué se compara
 
