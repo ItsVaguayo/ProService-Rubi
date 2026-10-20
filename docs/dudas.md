@@ -14,7 +14,7 @@ Cuando una duda se cierre, se marca con ✅, se anota la respuesta y la fecha, y
 
 | # | Qué | Quién |
 |---|---|---|
-| A3 | Servidor de producción | Diego |
+| A3 | Servidor de producción | Diego **20-oct:** las copias fuera del servidor ya están hechas (cifradas, con rclone, [copias-fuera.md](copias-fuera.md)): solo falta elegir dónde (un almacenamiento S3 cuesta céntimos al mes para unos pocos GB) y quién lo paga. |
 | B7 | Export de Pymecar (la migración es el 28) | Jaume |
 | B2 | Plan B: un mes más de Pymecar | Jaume |
 | B11 | Exponer ACF en la API REST de su web | Francesc |
@@ -35,7 +35,7 @@ Todo lo demás está resuelto, construido con la opción por defecto o ya no imp
 |---|---|---|
 | A1 | ¿Hay propuesta firmada con alcance, plazo y precio? El briefing promete «alcance cerrado, plazo y precio» antes de arrancar. | Sin alcance firmado, cada cosa que pidan a mitad de obra entra gratis. |
 | A2 | En SaaSFlow hay un trabajo de Pro Service de 2.500 € + IVA con entrega el 31-dic. ¿Es este proyecto? | Si lo es, el plan de cuatro semanas para tres personas no cuadra con el precio, y la fecha tampoco coincide con el 31-oct. **20-oct:** el precio está cerrado en 2.500 € + IVA; la fecha que manda es el 29-oct (Pymecar vence el 31). Falta confirmar si el trabajo de SaaSFlow es este. |
-| A3 | ¿Quién paga el servidor, el servicio de photocall y la carga en los portales si tiene coste? | Son gastos mensuales. Tienen que estar en la propuesta o el cliente los asume aparte. **20-oct:** queda solo el **servidor**. El photocall con rembg corre en nuestro servidor sin coste por foto (D3) y los portales van con el anuncio para pegar, sin servicio de pago (E6). Sin servidor no hay arranque. |
+| A3 | ¿Quién paga el servidor, el servicio de photocall y la carga en los portales si tiene coste? | Son gastos mensuales. Tienen que estar en la propuesta o el cliente los asume aparte. **20-oct:** queda solo el **servidor**. El photocall con rembg corre en nuestro servidor sin coste por foto (D3) y los portales van con el anuncio para pegar, sin servicio de pago (E6). Sin servidor no hay arranque. **20-oct:** las copias fuera del servidor ya están hechas (cifradas, con rclone, [copias-fuera.md](copias-fuera.md)): solo falta elegir dónde (un almacenamiento S3 cuesta céntimos al mes para unos pocos GB) y quién lo paga. |
 | A4 | Con el cliente habla Diego. ¿Por el canal `proservice-plataforma-coches` del Chat? ¿Jaume y Francesc pueden preguntar dudas técnicas directamente a Victor? | Evitar que el cliente reciba mensajes cruzados y que Diego haga de intermediario en cada detalle. |
 | A5 | ¿La reparación de la web de la 5.2 («ya hemos quedado que se repara») la hacemos nosotros? ¿Quién y cuándo? | Si otra persona toca la web a la vez que David instala el plugin, se pisan. |
 | A6 ➖ | ¿Dedicación de Hafsa y David? ¿Jornada completa hasta el 30-oct? | El plan está hecho suponiendo que sí. **Ya no importa (20-oct):** el reparto cambió el 7-oct ([reparto.md](reparto.md)) y casi todo lo de la primera versión está construido. |

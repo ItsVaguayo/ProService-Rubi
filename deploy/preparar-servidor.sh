@@ -32,7 +32,7 @@ falla() { printf '\033[31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 dice "Paquetes del sistema"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq nginx certbot git sqlite3 ufw curl ca-certificates xz-utils unattended-upgrades >/dev/null
+apt-get install -y -qq nginx certbot git sqlite3 ufw curl ca-certificates xz-utils unattended-upgrades rclone >/dev/null
 dpkg-reconfigure -f noninteractive unattended-upgrades >/dev/null
 
 dice "Node $NODE_VERSION"
