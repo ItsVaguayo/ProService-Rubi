@@ -42,46 +42,58 @@ Revisado el 20-oct-2026, el primer día con acceso a la WordPress de proservicer
 4. Vincular cada coche en venta con su ficha (`vincular`). Las de vendidos: a borrador (Francesc o, con su OK, nosotros) o vinculadas a su coche vendido para que las retire la plataforma.
 5. Bajar las fotos de la web (`POST /api/wordpress/fotos`) y sincronizar. Comprobar la ficha en el navegador antes de enlazar nada en el menú.
 
+## Lo que dicen sus fichas públicas (20-oct)
+
+Leídas las 35 páginas públicas como un visitante (solo GET, sin usuario, con pausa entre una y otra). Lista completa en `~/wp-proservice/fichas-publicas-2026-10-20.json` del ordenador de pruebas.
+
+- **Las 35 dicen «En venta».** Ninguna «Reservado» ni «Vendido»: si hay vendidos, siguen anunciados como en venta (B17).
+- **El año está vacío en las 35** (B12). Kilómetros, potencia, cilindrada, combustible y uso anterior sí están.
+- **Cuota «Desde X €/mes» en 34 de 35. Desde julio no sale con el 7,5 % a 120 meses** de su calculadora de Pymecar, sino con un **8,75 % aproximadamente**: 25 de 34 cuadran con un 8,7 % a 8,9 % a 120 meses; las dos de abril sí van al 7,5 %, y siete de coches baratos o viejos cuadran con un plazo más corto (de 60 a 108 meses). Con nuestra configuración (7,5 %), al conectar la web **bajarían 32 de sus 34 cuotas**, 14 € de media y hasta 87 €. Ver B20.
+- **Fotos: 356, todas en su dominio, de 1 a 21 por ficha. 28 de las 35 tienen menos de 15**, el mínimo que pidieron en el briefing y que la plataforma exige para publicar (D10).
+  - En 22 fichas son las **montadas por su herramienta** (PNG de 1448 × 1086, unos 2 MB, con logo y banda verdes).
+  - En 13 fichas (de abril, julio y septiembre) son las **originales del móvil** (JPG de 1600 × 1200, en un aparcamiento a pleno sol): es el material que pide la D9 para probar el photocall.
+  - Se pueden bajar de la página pública sin depender de B11. Pero las montadas llevan su marca vieja y lo que su herramienta haya cambiado del coche: para el stock, mejor las originales.
+
 ## Las 35 fichas (para Jaume)
 
-Una línea por ficha, de la más nueva a la más vieja. En la última columna: **sí** (sigue en venta), **vendido** o **duplicado**.
+Una línea por ficha, de la más nueva a la más vieja, con lo que dice su web para reconocer cada coche. En la última columna: **sí** (sigue en venta), **vendido** o **duplicado**.
 
-| Id | Alta | Título en la web | Dirección | ¿En venta? |
-|---|---|---|---|---|
-| 8847 | 2026-10-13 | NISSAN MICRA ETIQUETA C 5-PUERTAS | /coches/nissan-micra-etiqueta-c-5-puertas/ | |
-| 8835 | 2026-10-13 | MITSUBISHI COLT 5-PUERTAS 90CV | /coches/mitsubishi-colt-5-puertas-90cv/ | |
-| 8805 | 2026-10-07 | MINI ONE 95CV ETIQUETA C | /coches/mini-one-95cv-etiqueta-c/ | |
-| 8790 | 2026-10-07 | FIAT 500X URBAN 150CV GASOLINA ETIQUETA C | /coches/fiat-500x-urban-150cv-gasolina-etiqueta-c/ | |
-| 8765 | 2026-10-06 | LAND ROVER RANGE ROVER EVOQUE 150CV DIESEL 4X4 AUT | /coches/land-rover-range-rover-evoque-150cv-diesel-4x4-aut/ | |
-| 8744 | 2026-09-19 | VOLKSWAGEN GOLF TDI 105CV FAMILIAR | /coches/volkswagen-golf-tdi-105cv-familiar/ | |
-| 8736 | 2026-09-13 | HYUNDAI I20 ACTIVE | /coches/hyundai-i20-active/ | |
-| 8727 | 2026-09-13 | KIA NIRO HYBRIDO MODELO NUEVO AUTOMATICO | /coches/kia-niro-hybrido-modelo-nuevo-automatico/ | |
-| 8715 | 2026-09-13 | CITROEN SPACETOURER TALLA XL B 115CV DIESEL 6-9 PLACES | /coches/citroen-spacetourer-talla-xl-b-115cv-diesel-6-9-places/ | |
-| 8708 | 2026-09-13 | CITROEN C3 AIRCROSS GASOLINA 110CV ACABADO SHINE | /coches/citroen-c3-aircross-gasolina-110cv-acabado-shine/ | |
-| 8701 | 2026-09-13 | JEEP RENEGADE SPORT GASOLINA 120CV | /coches/jeep-renegade-sport-gasolina-120cv/ | |
-| 8693 | 2026-09-13 | VOLSKWAGEN POLO RLINE 95CV ETIQUETA C | /coches/volskwagen-polo-rline-95cv-etiqueta-c/ | |
-| 8679 | 2026-09-13 | FORD FIESTA TDCI DIESEL 75CV | /coches/ford-fiesta-tdci-diesel-75cv/ | |
-| 8666 | 2026-09-13 | CITROEN C3 GASOLINA 83CV ACABADO FEEL | /coches/citroen-c3-gasolina-83cv-acabado-feel/ | |
-| 8655 | 2026-09-13 | KIA RIO 1,2CVVT DRIVE ADVANCED DRIVI 84CV | /coches/kia-rio-12cvvt-drive-advanced-drivi-84cv/ | |
-| 8644 | 2026-09-13 | HYUNDAI I20 1,2 MPI KLAS IVA DEDUCIBLE | /coches/hyundai-i20-12-mpi-klas-iva-deducible/ | |
-| 8631 | 2026-09-13 | KIA RIO 1.2 CVVT CONCEPT -PACK STYLE- (MY20) | /coches/kia-rio-1-2-cvvt-concept-pack-style-my20/ | |
-| 8602 | 2026-09-13 | RENAULT CAPTUR  ETECH PLUG IN 160CV AUT | /coches/renault-captur-etech-plug-in-160cv-aut/ | |
-| 8587 | 2026-09-13 | KIA SPORTAGE 1.6 GDI X-TECH18 132cv | /coches/kia-sportage-1-6-gdi-x-tech18-132cv/ | |
-| 8572 | 2026-08-05 | TOYOTA CHR 140CV ADVANCE VEHICULO DE GERENCIA | /coches/toyota-chr-140cv-advance-vehiculo-de-gerencia/ | |
-| 8554 | 2026-07-31 | CITROEN NUEVO BERLINGO TALLA XL BLUEHDI 130CV ACABADO SHINE 7 PLAZAS | /coches/citroen-nuevo-berlingo-talla-xl-bluehdi-130cv-acabado-shine-7-plazas/ | |
-| 8534 | 2026-07-31 | CITROEN BERLINGO HDI 100CV SOLO14000KM | /coches/citroen-berlingo-hdi-100cv-solo14000km/ | |
-| 8511 | 2026-07-26 | FORD TOURNEO CURIER 100CV GASOLINA ETIQUETA C | /coches/ford-tourneo-curier-100cv-gasolina-etiqueta-c/ | |
-| 8503 | 2026-07-24 | TOYOTA PROACE 150CV DIESEL 8 PLAZAS | /coches/toyota-proace-150cv-diesel-8-plazas-2/ | |
-| 8495 | 2026-07-23 | PEUGEOT 3008 1.2 130CV GASOLINA ACABADO GTLINE | /coches/peugeot-3008-1-2-130cv-gasolina-acabado-gtline/ | |
-| 8474 | 2026-07-20 | PEUGEOT 3008 HDI 130CV GTLINE | /coches/peugeot-3008-hdi-130cv-gtline/ | |
-| 8467 | 2026-07-16 | PEUGEOT 208 HDI 75CV ACTIVE 5-PUERTAS | /coches/peugeot-208-hdi-75cv-active-5-puertas/ | |
-| 8452 | 2026-07-09 | PEUGEOT PARTNER TEPEE OUTDOOR HDI 100CV | /coches/peugeot-partner-tepee-outdoor-hdi-100cv/ | |
-| 8425 | 2026-07-08 | JEEP CHEROKEE LIMITED 4X4 | /coches/jeep-cherokee-limited-4x4/ | |
-| 8414 | 2026-07-08 | CITROEN C3 HDI 120CV AUTOMATICO SHINE | /coches/citroen-c3-hdi-120cv-automatico-shine/ | |
-| 8397 | 2026-07-08 | FORD PUMA ECOBOOST 125CV STLINE XMHEV 5P | /coches/ford-puma-ecoboost-125cv-stline-xmhev-5p/ | |
-| 8362 | 2026-07-08 | TOYOTA PROACE 150CV DIESEL 8 PLAZAS | /coches/toyota-proace-150cv-diesel-8-plazas/ | |
-| 8353 | 2026-07-08 | NISSAN QASHCAI DCI 115N-CONNECTA | /coches/8353/ | |
-| 7869 | 2026-04-19 | Seat Arona Xcellence | /coches/seat-arona-xcellence/ | |
-| 7812 | 2026-04-19 | Toyota Proace | /coches/toyota-proace/ | |
+| Id | Alta | Título en la web | Precio | Km | Fotos | ¿En venta? |
+|---|---|---|---|---|---|---|
+| 8847 | 2026-10-13 | NISSAN MICRA ETIQUETA C 5-PUERTAS | 5.600 € | 180.000 | 10 (montadas) | |
+| 8835 | 2026-10-13 | MITSUBISHI COLT 5-PUERTAS 90CV | 14.500 € | 4.000 | 10 (montadas) | |
+| 8805 | 2026-10-07 | MINI ONE 95CV ETIQUETA C | 5.000 € | 161.000 | 20 (montadas) | |
+| 8790 | 2026-10-07 | FIAT 500X URBAN 150CV GASOLINA ETIQUETA C | 12.000 € | 68.500 | 6 (montadas) | |
+| 8765 | 2026-10-06 | LAND ROVER RANGE ROVER EVOQUE 150CV DIESEL 4X4 AUT | 13.975 € | 180.000 | 8 (montadas) | |
+| 8744 | 2026-09-19 | VOLKSWAGEN GOLF TDI 105CV FAMILIAR | 8.000 € | 228.000 | 7 (montadas) | |
+| 8736 | 2026-09-13 | HYUNDAI I20 ACTIVE | 8.500 € | 171.000 | 7 (montadas) | |
+| 8727 | 2026-09-13 | KIA NIRO HYBRIDO MODELO NUEVO AUTOMATICO | 19.500 € | 92.000 | 8 (montadas) | |
+| 8715 | 2026-09-13 | CITROEN SPACETOURER TALLA XL B 115CV DIESEL 6-9 PLACES | 21.900 € | 113.000 | 11 (montadas) | |
+| 8708 | 2026-09-13 | CITROEN C3 AIRCROSS GASOLINA 110CV ACABADO SHINE | 9.900 € | 89.000 | 5 (montadas) | |
+| 8701 | 2026-09-13 | JEEP RENEGADE SPORT GASOLINA 120CV | 11.975 € | 150.000 | 6 (montadas) | |
+| 8693 | 2026-09-13 | VOLSKWAGEN POLO RLINE 95CV ETIQUETA C | 16.975 € | 107.000 | 7 (montadas) | |
+| 8679 | 2026-09-13 | FORD FIESTA TDCI DIESEL 75CV | 5.000 € | 220.000 | 8 (montadas) | |
+| 8666 | 2026-09-13 | CITROEN C3 GASOLINA 83CV ACABADO FEEL | 9.900 € | 51.344 | 12 (del móvil) | |
+| 8655 | 2026-09-13 | KIA RIO 1,2CVVT DRIVE ADVANCED DRIVI 84CV | 10.500 € | 106.000 | 10 (del móvil) | |
+| 8644 | 2026-09-13 | HYUNDAI I20 1,2 MPI KLAS IVA DEDUCIBLE | 14.000 € | 78.000 | 10 (del móvil) | |
+| 8631 | 2026-09-13 | KIA RIO 1.2 CVVT CONCEPT -PACK STYLE- (MY20) | 11.975 € | 45.000 | 12 (del móvil) | |
+| 8602 | 2026-09-13 | RENAULT CAPTUR  ETECH PLUG IN 160CV AUT | 16.975 € | 82.000 | 15 (del móvil) | |
+| 8587 | 2026-09-13 | KIA SPORTAGE 1.6 GDI X-TECH18 132cv | 15.100 € | 116.000 | 14 (del móvil) | |
+| 8572 | 2026-08-05 | TOYOTA CHR 140CV ADVANCE VEHICULO DE GERENCIA | 31.000 € | 25.000 | 8 (montadas) | |
+| 8554 | 2026-07-31 | CITROEN NUEVO BERLINGO TALLA XL BLUEHDI 130CV ACABADO SHINE 7 PLAZAS | 15.000 € | 201.000 | 7 (montadas) | |
+| 8534 | 2026-07-31 | CITROEN BERLINGO HDI 100CV SOLO14000KM | 19.900 € | 14.000 | 9 (montadas) | |
+| 8511 | 2026-07-26 | FORD TOURNEO CURIER 100CV GASOLINA ETIQUETA C | 12.000 € | 139.000 | 16 (montadas) | |
+| 8503 | 2026-07-24 | TOYOTA PROACE 150CV DIESEL 8 PLAZAS | 28.000 € | 110.998 | 11 (del móvil) | |
+| 8495 | 2026-07-23 | PEUGEOT 3008 1.2 130CV GASOLINA ACABADO GTLINE | 12.600 € | 112.000 | 6 (montadas) | |
+| 8474 | 2026-07-20 | PEUGEOT 3008 HDI 130CV GTLINE | 14.500 € | 10.400 | 1 (montadas) | |
+| 8467 | 2026-07-16 | PEUGEOT 208 HDI 75CV ACTIVE 5-PUERTAS | 7.500 € | 17.000 | 6 (montadas) | |
+| 8452 | 2026-07-09 | PEUGEOT PARTNER TEPEE OUTDOOR HDI 100CV | 12.400 € | 195.941 | 5 (montadas) | |
+| 8425 | 2026-07-08 | JEEP CHEROKEE LIMITED 4X4 | 15.000 € | 39.000 | 15 (del móvil) | |
+| 8414 | 2026-07-08 | CITROEN C3 HDI 120CV AUTOMATICO SHINE | 14.000 € | 110.000 | 10 (del móvil) | |
+| 8397 | 2026-07-08 | FORD PUMA ECOBOOST 125CV STLINE XMHEV 5P | 18.500 € | 49.115 | 16 (del móvil) | |
+| 8362 | 2026-07-08 | TOYOTA PROACE 150CV DIESEL 8 PLAZAS | 29.975 € | 110.998 | 11 (del móvil) | |
+| 8353 | 2026-07-08 | NISSAN QASHCAI DCI 115N-CONNECTA | 18.000 € | 85.000 | 7 (montadas) | |
+| 7869 | 2026-04-19 | Seat Arona Xcellence | 15.975 € | 63.750 | 21 (del móvil) | |
+| 7812 | 2026-04-19 | Toyota Proace | 14.975 € | 115.673 | 21 (del móvil) | |
 
-La misma lista, con marca y fecha de último cambio, en `~/wp-proservice/inventario-web-real-2026-10-20.json` del ordenador de pruebas (sacada con GET el 20-oct).
+La misma lista, con la dirección de cada ficha, en `~/wp-proservice/inventario-web-real-2026-10-20.json` del ordenador de pruebas (sacada con GET el 20-oct).

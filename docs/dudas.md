@@ -19,10 +19,11 @@ Cuando una duda se cierre, se marca con ✅, se anota la respuesta y la fecha, y
 | B2 | Plan B: un mes más de Pymecar | Jaume |
 | B11 | Exponer ACF en la API REST de su web | Francesc |
 | B17 | Cuáles de las 35 fichas de la web siguen en venta | Jaume |
+| D10 | Mínimo de 15 fotos: 28 de las 35 fichas tienen menos | Jaume |
 | E1, H13 | A quién llegan los contactos y desde qué correo salen | Jaume, Francesc |
 | G6, G7 | Corte del martes 27 y media hora con Jaume el lunes 26 | Jaume |
 
-**Importan, pero no paran el arranque:** B8 (administrador y DNS), B12, B16, B18, B19 y B14 (la web), C5 (N2), D4, D7, D8 y D9 (photocall), E5 (privacidad), E9 (TAE de la cuota), H3 (abogado), H7 (gestoría), H8 (número de la serie), H9 (incentivos) y las internas A1, A2, A4, H2 y H15.
+**Importan, pero no paran el arranque:** B8 (administrador y DNS), B20 (el tipo de la cuota: publican al 8,75 %), B12, B16, B18, B19 y B14 (la web), C5 (N2), D4, D7, D8 y D9 (photocall), E5 (privacidad), E9 (TAE de la cuota), H3 (abogado), H7 (gestoría), H8 (número de la serie), H9 (incentivos) y las internas A1, A2, A4, H2 y H15.
 
 Todo lo demás está resuelto, construido con la opción por defecto o ya no importa.
 
@@ -65,6 +66,7 @@ Todo lo demás está resuelto, construido con la opción por defecto o ya no imp
 | B17 | En la web hay **35 fichas publicadas** y ninguna en borrador (20-oct), pero en Pymecar había unos 8 coches en stock. ¿Cuáles siguen en venta? Tabla para rellenar en [web-real.md](web-real.md#las-35-fichas-para-jaume). | 6.6, 2.2 | La plataforma solo retira las fichas que conoce: una ficha que no se vincule a un coche se queda publicada para siempre. Los vendidos que sigan en la web hay que vincularlos o pasarlos a borrador antes de la primera sincronización. | Sin defecto: sin la lista no se vincula nada. | Jaume |
 | B18 | La marca de la web es jerárquica (Seat → Arona) pero solo la llevan 2 de 35 fichas, y faltan marcas del stock (Mini, Mitsubishi, Jeep, Land Rover, Volkswagen). ¿Se usa para algo (filtro, menú)? ¿Hay que poner también el modelo? | 5.4 | La plataforma pone la marca y crea la que falte; el modelo no. | Solo la marca. | Francesc |
 | B19 | «TOYOTA PROACE 150CV DIESEL 8 PLAZAS» está publicada dos veces (fichas 8503 y 8362). ¿Son dos furgonetas o un duplicado? | 2.2 | Si es un duplicado, una de las dos se queda publicada sin coche detrás. | Se pregunta antes de vincular. | Jaume |
+| B20 | Las cuotas «Desde X €/mes» que publicáis desde julio salen a un **8,75 %** aproximadamente (25 de 34 a 120 meses; algunas a un plazo más corto), no al 7,5 % de la calculadora de Pymecar (comprobado el 20-oct en las 35 fichas). ¿Qué tipo y qué plazo usáis ahora? ¿Cambia el plazo según el coche? | 5.7, B13 | La plataforma calcula la cuota de todas las fichas con un solo tipo y un solo plazo (`CUOTA_TIN`, `CUOTA_MESES`). Con el 7,5 %, al conectar la web bajarían 32 de 34 cuotas (14 € de media, hasta 87 €): anunciaríamos menos de lo que da la financiera. | **En producción, `CUOTA_TIN=8.75` hasta que lo confirméis.** Un plazo distinto por coche no está construido. | Jaume |
 
 ---
 
@@ -97,7 +99,8 @@ Todo lo demás está resuelto, construido con la opción por defecto o ya no imp
 | D6 | ¿Hay que migrar fotos antiguas? ¿Cuántos gigas y dónde están? | 13.5 (en blanco) | Espacio en el servidor y tiempo de migración. | Solo las de los coches en stock. El histórico va sin fotos. **20-oct:** las del stock se bajan de su web (PR #20), pero solo cuando ACF esté expuesto (B11). |
 | D7 | La banda de abajo (garantía, taller, dirección y teléfono), ¿en todas las fotos? ¿Y en las de los portales? | 4.4, 6.1 | Hoy no la llevan todas. Creemos que Wallapop y Milanuncios no admiten teléfonos en las fotos (sin comprobar sus normas). | Con banda para la web y sin banda (solo el logo) para los portales. |
 | D8 | La matrícula, ¿se publica o se tapa? | 4.4, 5.5 | Hoy la publican; su herramienta incluso la cambió en una foto del i20. Si se tapa, lo hace nuestro código sobre la foto, no una IA. | Se publica tal cual. |
-| D9 | Fotos de prueba de Jaume hechas con el móvil, como las hace hoy (frontal, tres cuartos e interior). | 4.2, 4.4 | El photocall solo se ha probado con fotos de internet y con las suyas ya retocadas. | Sin defecto: sin ellas no se puede dar por bueno. |
+| D9 | Fotos de prueba de Jaume hechas con el móvil, como las hace hoy (frontal, tres cuartos e interior). | 4.2, 4.4 | El photocall solo se ha probado con fotos de internet y con las suyas ya retocadas. | Sin defecto: sin ellas no se puede dar por bueno. **20-oct: las hay públicas.** 13 fichas de su web llevan las originales del móvil (JPG de 1600 × 1200, [web-real.md](web-real.md#lo-que-dicen-sus-fichas-públicas-20-oct)). Sirven para probar el photocall sin esperar a Jaume. |
+| D10 | En vuestra web, 28 de las 35 fichas tienen menos de 15 fotos (de 1 a 21). En el briefing pedisteis un mínimo de 15, y la plataforma no deja publicar un coche con menos. ¿Lo mantenemos? | 4.1 | Si se mantiene, la mayoría del stock que hoy está en la web no se podrá publicar desde la plataforma hasta tener más fotos. | El mínimo se cambia con `FOTOS_MINIMAS` en el `.env` (por defecto 15). Proponemos empezar con el que digáis y subirlo después. | Jaume |
 
 ---
 
