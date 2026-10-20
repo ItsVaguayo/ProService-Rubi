@@ -21,6 +21,7 @@ Cada fila es una duda de [dudas.md](dudas.md). Si la fecha pasa sin respuesta, s
 | **Viernes 23** | Corte del martes 27 por la tarde y media hora el lunes 26 (G6, G7) | Jaume | Se busca otro hueco esa semana |
 | **Lunes 26** | Cuáles de las 35 fichas de la web siguen en venta (B17) | Jaume | No se vincula nada y la web no se conecta |
 | **Lunes 26** | El tipo de la cuota (B20) y el mínimo de fotos (D10) | Jaume | 8,75 % a 120 meses y 15 fotos |
+| **Lunes 26** | Comisiones de la financiera y campo `cuota_condiciones` en su web, para la TAE junto a la cuota (E9) | Jaume, Francesc | La cuota no se enseña en su web: `CUOTA_MESES=0` al conectarla |
 | **Lunes 26** | Dónde van las copias de fuera (A3) | Diego | Solo la copia de dentro del servidor |
 
 ## Esta semana (del 21 al 23)
