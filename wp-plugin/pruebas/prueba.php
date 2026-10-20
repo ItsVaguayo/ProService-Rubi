@@ -141,6 +141,10 @@ afirmar($f['tecnicos']['Kilómetros'] === '62.000 km' && $f['tecnicos']['Potenci
 afirmar($f['extras'] === [], 'sin equipamiento en la web, la sección no sale');
 $chr_ficha = ProService_Ficha::datos($chr);
 afirmar($chr_ficha['cuota'] === '244 €/mes' && $chr_ficha['estado'] === 'reservado', 'ficha: cuota y estado «Reservado» de su web');
+afirmar($chr_ficha['cuota_condiciones'] === '', 'sin el ejemplo de la API, la ficha pone la letra pequeña genérica');
+update_post_meta($chr, 'cuota_condiciones', 'Ejemplo para 21.500 € sin entrada: 120 cuotas de 255,21 €, TIN 7,50 %, TAE 7,76 %');
+afirmar(strpos(ProService_Ficha::datos($chr)['cuota_condiciones'], 'TAE 7,76 %') !== false, 'con él, la ficha enseña el ejemplo con la TAE');
+delete_post_meta($chr, 'cuota_condiciones');
 afirmar($chr_ficha['extras'] === ['Navegador', 'Faros LED', 'Cámara trasera'], 'equipamiento escrito como texto, por líneas o comas');
 afirmar(ProService_Ficha::datos($manual)['precio'] === '', 'ficha hecha a mano: sin precio, no se inventa');
 afirmar(ProService_Ficha::youtube('https://youtu.be/dQw4w9WgXcQ') === 'dQw4w9WgXcQ' && ProService_Ficha::youtube('https://vimeo.com/1') === null, 'solo enlaces de YouTube');

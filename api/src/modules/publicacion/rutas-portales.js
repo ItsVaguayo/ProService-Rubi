@@ -12,7 +12,7 @@ import { registrar } from '../auditoria.js';
 import { ENTERO } from '../../fechas.js';
 import { versionFoto } from '../fotos/routes.js';
 import { PORTALES } from './retirada.js';
-import { condicionesCuota, cuotaDe } from './cuota.js';
+import { condicionesCuota, cuotaDe, textoCondiciones } from './cuota.js';
 
 export const NOMBRES = { coches_net: 'Coches.net', milanuncios: 'Milanuncios', wallapop: 'Wallapop' };
 const ESTADOS = ['pendiente', 'publicado', 'retirar', 'retirado', 'error'];
@@ -53,10 +53,7 @@ export function anuncioDe(v, extras, fotos, empresa, condiciones = condicionesCu
     v.plazas ? `${v.plazas} plazas` : null, v.color_exterior ? `Color ${v.color_exterior}` : null,
   ].filter(Boolean);
   if (carroceria.length) lineas.push(`${carroceria.join('. ')}.`);
-  if (cuota) {
-    const tin = condiciones.tin.toLocaleString('es-ES', { maximumFractionDigits: 2 });
-    lineas.push(`Financiación desde ${miles(cuota)} €/mes (orientativa: ${tin} % TIN, ${condiciones.meses} meses, sin entrada).`);
-  }
+  if (cuota) lineas.push(`Financiación desde ${miles(cuota)} €/mes. ${textoCondiciones(v, condiciones)}`);
   lineas.push(['Pro Service Rubí', empresa?.poblacion, empresa?.telefono].filter(Boolean).join(' · '));
   if (v.referencia) lineas.push(`Ref. ${v.referencia}`);
 

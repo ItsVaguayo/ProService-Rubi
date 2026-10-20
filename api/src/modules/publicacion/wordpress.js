@@ -23,7 +23,8 @@ export const MAPA_POR_DEFECTO = {
   modelo: { acf: 'modelo', formato: 'texto' },
   pvp_cent: { acf: 'precio', formato: 'euros' },
   // «Desde X €/mes» (cuota.js). Calculada aquí: no es una columna del coche. cuota_condiciones solo se manda
-  // si la web tiene ese campo (opcional: sin él no hay aviso); sirve para enseñar el tipo y el plazo junto a la cuota.
+  // si la web tiene ese campo (opcional: no entra en el aviso de campos que faltan, tiene uno propio); lleva el
+  // ejemplo representativo con la TAE y el total adeudado, que la ley pide junto a la cuota.
   cuota: { acf: 'cuota', formato: 'numero' },
   cuota_condiciones: { acf: 'cuota_condiciones', formato: 'texto', opcional: true },
   anio: { acf: 'anio', formato: 'numero' },
@@ -154,6 +155,12 @@ export async function diagnosticar(cfg, fetchImpl = fetch) {
   } else {
     const faltan = d.mapa.filter((m) => m.estado !== 'ok' && !cfg.mapa[m.campo].opcional).map((m) => m.acf);
     if (faltan.length) d.avisos.push(`Campos del mapa que la web no tiene: ${faltan.join(', ')}. Ajustar WP_MAPA a los nombres reales.`);
+    // La cuota sin su ejemplo representativo (TAE y total adeudado) no cumple la Ley 16/2011 (cuota.js, duda E9)
+    const estadoDe = (campo) => d.mapa.find((m) => m.campo === campo)?.estado;
+    if (estadoDe('cuota') === 'ok' && estadoDe('cuota_condiciones') !== 'ok') {
+      d.avisos.push('La web enseña la cuota «Desde X €/mes» pero no tiene el campo cuota_condiciones: el ejemplo con la TAE y el total '
+        + 'adeudado no saldrá junto a la cuota. Crear ese campo de texto en ACF y enseñarlo en la ficha, o apagar la cuota (CUOTA_MESES=0).');
+    }
   }
   if (d.acf.expuesto && !d.puede.subir_fotos) d.avisos.push('El usuario no puede subir fotos: la galería no se enviará.');
   return d;
@@ -252,7 +259,7 @@ async function publicarCoche(ctx, v, vinculo) {
     const acf = {};
     // Lo que no es columna del coche se calcula; sin cfg.cuota (pruebas antiguas, config a mano) va la de por defecto
     const condiciones = cfg.cuota === undefined ? condicionesCuota({}) : cfg.cuota;
-    const datos = { ...v, cuota: cuotaDe(v, condiciones), cuota_condiciones: textoCondiciones(condiciones) };
+    const datos = { ...v, cuota: cuotaDe(v, condiciones), cuota_condiciones: textoCondiciones(v, condiciones) };
     for (const [campo, destino] of Object.entries(cfg.mapa)) {
       const esquema = d.acf.campos[destino.acf];
       if (!esquema) continue;

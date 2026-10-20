@@ -27,6 +27,8 @@ class ProService_Ajustes
         'pvp_cent'               => 'precio',
         'precio_financiado_cent' => 'precio_financiado',
         'cuota'                  => 'cuota',
+        // El ejemplo con la TAE y el total adeudado que manda la API junto a la cuota (Ley 16/2011, duda E9)
+        'cuota_condiciones'      => 'cuota_condiciones',
         'modelo'                 => 'modelo',
         'anio'                   => 'anio',
         'kilometros'             => 'kilometros',
