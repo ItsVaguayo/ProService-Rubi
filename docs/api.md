@@ -17,7 +17,7 @@ Todo va bajo `/api`, en JSON. La sesión es una cookie (`ps_sesion`, httpOnly) q
 | `POST /auth/entrar` | todos | `{ email, contrasena }`. Pone la cookie y devuelve `{ id, nombre, rol }`. 401 si no cuadra; 429 tras varios fallos seguidos desde la misma IP |
 | `POST /auth/salir` | todos | Cierra la sesión |
 | `GET /auth/yo` | con sesión | `{ id, email, nombre, rol }` |
-| `GET /salud` | todos | `{ ok: true }` |
+| `GET /salud` | todos | `{ ok: true, version }`: `version` es el commit desplegado (fichero `VERSION` que deja `deploy/desplegar.sh`) o `desarrollo`. **503** `{ ok: false }` si la base no contesta. Lo usan el despliegue y el monitor |
 
 ## Coches
 
