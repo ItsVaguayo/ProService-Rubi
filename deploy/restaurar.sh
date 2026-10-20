@@ -78,8 +78,12 @@ if [ -f "$DB" ]; then
     || { $SYSTEMCTL start "$SERVICIO"; falla "No se ha podido guardar la base de ahora: no se ha tocado nada (la API vuelve a arrancar)"; }
   echo "   La de ahora queda en $DESCARTADA"
 fi
+# La copia, primero al lado: si no cabe o falla, la base de ahora sigue entera (con su -wal) y la API vuelve.
+# Con «cp && mv» un cp fallido no para el script (set -e no mira la izquierda de &&) y diría «Restaurada».
+cp "$COPIA" "$DB.restaurando" \
+  || { rm -f "$DB.restaurando" || true; $SYSTEMCTL start "$SERVICIO"; falla "No se ha podido copiar $COPIA: no se ha tocado la base (la API vuelve a arrancar)"; }
 rm -f "$DB-wal" "$DB-shm"
-cp "$COPIA" "$DB.restaurando" && mv -f "$DB.restaurando" "$DB"
+mv -f "$DB.restaurando" "$DB"
 if [ -n "$CON_FOTOS" ]; then
   dice "Trayendo las fotos que falten de $COPIAS/uploads"
   # Sin borrar: las fotos más nuevas que la copia se quedan (no estorban, la base ya no las nombra)
