@@ -14,9 +14,50 @@ if (!values.email || !values.nombre || !ROLES.includes(values.rol)) {
   process.exit(1);
 }
 
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-const contrasena = await rl.question('Contraseña (mínimo 8 caracteres): ');
-rl.close();
+// En una terminal no se ve lo que se escribe (como sudo) y se pide dos veces: el día del alta la escribe
+// Jaume delante de alguien. Por tubería (echo clave | npm run usuario ...) se lee una línea, como antes.
+function preguntarOculta(pregunta) {
+  return new Promise((resolver, rechazar) => {
+    const entrada = process.stdin;
+    process.stdout.write(pregunta);
+    entrada.setRawMode(true);
+    entrada.resume();
+    entrada.setEncoding('utf8');
+    let texto = '';
+    const alTeclear = (trozo) => {
+      for (const c of trozo) {
+        if (c === '\r' || c === '\n') {
+          entrada.setRawMode(false);
+          entrada.pause();
+          entrada.off('data', alTeclear);
+          process.stdout.write('\n');
+          return resolver(texto);
+        }
+        if (c === '\u0003') { // Ctrl+C
+          entrada.setRawMode(false);
+          process.stdout.write('\n');
+          return rechazar(new Error('Cancelado'));
+        }
+        if (c === '\u007f' || c === '\b') texto = texto.slice(0, -1);
+        else if (c >= ' ') texto += c;
+      }
+    };
+    entrada.on('data', alTeclear);
+  });
+}
+
+let contrasena;
+if (process.stdin.isTTY) {
+  contrasena = await preguntarOculta('Contraseña (mínimo 8 caracteres, no se ve al escribir): ');
+  if (contrasena !== await preguntarOculta('Repítela: ')) {
+    console.error('Las dos contraseñas no coinciden. No se ha creado nada.');
+    process.exit(1);
+  }
+} else {
+  const rl = createInterface({ input: process.stdin });
+  contrasena = (await rl[Symbol.asyncIterator]().next()).value ?? '';
+  rl.close();
+}
 
 const db = abrirDb();
 try {
