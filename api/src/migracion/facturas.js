@@ -37,6 +37,7 @@ export function importarFacturas(db, filas, { informe, usuarioId, eurosACent, di
   const cliente = db.prepare('SELECT * FROM clientes WHERE nif = ?');
   const coche = db.prepare('SELECT * FROM vehiculos WHERE matricula = ?');
   const series = new Map(); // serie → { tipo, anio, numeros: Set }
+  const pendientesSinVencimiento = []; // ventas sin cobrar del todo que venían sin vencimiento
   const aviso = (n, texto) => informe.avisos.push({ fichero: 'facturas.csv', fila: n, aviso: texto });
 
   // Las de venta antes que las rectificativas: una rectificativa necesita que ya exista la que anula
@@ -162,6 +163,12 @@ export function importarFacturas(db, filas, { informe, usuarioId, eurosACent, di
           .run(id, fechaCobro, cobrado, forma, usuarioId);
         t.cobros++;
       }
+      // Sin cobrar del todo y sin vencimiento: el aviso de cobros vencidos solo mira las que lo tienen, así que
+      // se le pone el de la propia factura (un coche se paga al entregarlo) para que salga en Avisos
+      if (cobrado < importes.total_cent && !datos.vencimiento) {
+        db.prepare('UPDATE facturas SET vencimiento = ? WHERE id = ?').run(fecha, id);
+        pendientesSinVencimiento.push(codigo);
+      }
     }
     // Como al emitir desde el panel: el cliente queda como comprador del coche, si no lo tenía ya
     if (tipo === 'venta' && v && !v.comprador_id) db.prepare('UPDATE vehiculos SET comprador_id = ? WHERE id = ?').run(c.id, v.id);
@@ -172,6 +179,9 @@ export function importarFacturas(db, filas, { informe, usuarioId, eurosACent, di
   }
 
   // Las importadas llevan congelados los datos de la empresa de hoy, no los que tenía al emitirlas
+  if (pendientesSinVencimiento.length) {
+    aviso(0, `${pendientesSinVencimiento.length} facturas de venta quedan con algo sin cobrar y venían sin vencimiento (${pendientesSinVencimiento.slice(0, 10).join(', ')}${pendientesSinVencimiento.length > 10 ? '…' : ''}): se les pone el de la fecha de la factura para que salgan en Avisos como cobros vencidos. Repasarlas con Jaume.`);
+  }
   if (t.nuevos) aviso(0, `Las ${t.nuevos} facturas importadas llevan los datos de la empresa que hay hoy en el panel (razón social, NIF, dirección). Si alguno ha cambiado desde que se emitieron, la copia del panel no cuadrará con el original de Pymecar.`);
 
   // Cada serie sigue por el número siguiente al más alto. Y si faltan números, se avisa: el export está incompleto.

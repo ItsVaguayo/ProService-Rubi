@@ -40,6 +40,7 @@ Otras órdenes:
 | `proservice-desplegar --estado` | Qué versión está en marcha, cuál era la anterior y los últimos despliegues |
 | `proservice-desplegar --volver` | Vuelve a la versión anterior (si la nueva da problemas aunque arranque) |
 | `proservice-desplegar v2026.10.29` | Una etiqueta o un commit concreto, siempre que esté en `main` |
+| `proservice-restaurar` | Enseña las copias de la base que hay; con `ultima`, `antes-de-migrar`, `antes-de-COMMIT` o una ruta, la restaura (ver «Copias») |
 | `journalctl -u proservice-api -n 100` | El registro de la API (como root o con `sudo`) |
 
 **Vuelta atrás y base de datos.** Las migraciones del proyecto solo añaden tablas y columnas, así que normalmente una versión vieja funciona con la base de una nueva. Si una migración estropeara datos, la copia de antes del despliegue está en `datos/antes-de-COMMIT.db` (se restaura parando la API y poniéndola en su sitio; ver «Copias»).
@@ -117,7 +118,17 @@ Cuando todos entren con clave, quitar el acceso por contraseña: `PasswordAuthen
 
 - Cada noche a las 03:15, `proservice-copia.timer` copia la base y las fotos nuevas a `/srv/proservice/copias/` y comprueba que la copia se abre. Se guardan 14 días. Resultado: `journalctl -u proservice-copia`.
 - **Falta sacarlas del servidor** (A3): si se pierde el servidor, se pierden con él. Con `rclone` a un Drive o a un almacenamiento S3 es un comando más en el temporizador; falta decidir dónde y quién lo paga.
-- Restaurar: `sudo systemctl stop proservice-api`, poner la copia encima de `datos/proservice.db` (y `copias/uploads` en `datos/uploads`), `sudo chown -R proservice:proservice /srv/proservice/datos` y `sudo systemctl start proservice-api`. Ensayarlo una vez antes del arranque.
+- **Restaurar**, como `proservice` ([`deploy/restaurar.sh`](../deploy/restaurar.sh)):
+
+  ```bash
+  proservice-restaurar                    # qué copias hay; no toca nada
+  proservice-restaurar ultima             # la de anoche
+  proservice-restaurar antes-de-migrar    # la que hizo la migración antes de cargar
+  proservice-restaurar antes-de-2ae193e   # la de antes de desplegar esa versión
+  proservice-restaurar ultima --con-fotos # y además las fotos de la copia que falten
+  ```
+
+  Comprueba que la copia está sana antes de tocar nada (si no, se para), pide escribir RESTAURAR, para la API, guarda la base de ahora en `datos/descartada-FECHA.db` (con la copia de SQLite: un solo fichero con todo) y arranca. Para deshacerlo, se restaura esa descartada. Ensayado el 20-oct: la de anoche, deshacerla (vuelve hasta lo que se hizo después de la copia), la de antes de migrar y una copia dañada (la rechaza y la API sigue en marcha). Repetirlo una vez en el servidor antes del arranque.
 
 ## Lo que queda fuera por ahora
 
