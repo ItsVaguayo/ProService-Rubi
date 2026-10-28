@@ -331,6 +331,13 @@ function resalteDelMenu() {
   addEventListener('resize', () => ir(actual(), { sinAnimar: true }));
   // En ventana estrecha los enlaces están dentro del desplegable «Menú»: al abrirlo, se coloca
   $('.menu__movil')?.addEventListener('toggle', () => ir(actual(), { sinAnimar: true }));
+  // Esc cierra el desplegable «Menú» y deja el foco en su botón, como cualquier menú
+  addEventListener('keydown', (ev) => {
+    const movil = $('.menu__movil');
+    if (ev.key !== 'Escape' || !movil?.open) return;
+    movil.open = false;
+    $('summary', movil).focus();
+  });
 }
 
 // --- Entrar ------------------------------------------------------------------------------------
