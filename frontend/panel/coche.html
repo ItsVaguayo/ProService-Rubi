@@ -243,12 +243,12 @@
             </label>
             <label class="campo">
               <span class="campo__nombre">Señal <em>*</em></span>
-              <input type="number" name="senal_cent" min="300" step="50" value="300" required>
+              <input name="senal_cent" inputmode="decimal" autocomplete="off" value="300" required>
               <span class="campo__ayuda">En euros. Mínimo 300 €</span>
             </label>
             <label class="campo">
               <span class="campo__nombre">Días de reserva</span>
-              <input type="number" name="dias" min="1" value="7">
+              <input type="number" name="dias" min="1" max="60" value="7">
             </label>
             <button class="boton" type="submit">Reservar</button>
           </form>

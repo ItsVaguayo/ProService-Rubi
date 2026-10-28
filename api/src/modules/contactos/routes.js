@@ -11,6 +11,7 @@ import { registrar } from '../auditoria.js';
 import { ESTADOS_WEB } from '../estados.js';
 import { configCorreo } from '../correo/envio.js';
 import { correoDeContacto } from '../correo/mensajes.js';
+import { filtroBusqueda } from '../../buscar.js';
 
 export const TIPOS = ['informacion', 'prueba', 'financiacion', 'tasacion'];
 const TELEFONO = /^[+\d][\d\s().-]{5,19}$/;
@@ -177,6 +178,7 @@ export function rutasContactos(db) {
   const leer = { get: (id) => { const c = leerFila.get(id); return c && conFotos(c); } };
 
   // ?estado=sin_atender (por defecto) | atendidos | todos  ·  ?tipo=informacion|prueba|financiacion|tasacion
+  // ?q= busca en el nombre, el teléfono, el correo, el mensaje y el coche (matrícula, marca y modelo)
   r.get('/', (req, res) => {
     const { estado = 'sin_atender', tipo } = req.query;
     const filtros = [];
@@ -189,6 +191,9 @@ export function rutasContactos(db) {
       filtros.push('c.tipo = ?');
       valores.push(tipo);
     }
+    const busqueda = filtroBusqueda(req.query.q, ['c.nombre', 'c.email', 'c.mensaje', 'v.matricula', 'v.marca', 'v.modelo'], ['c.telefono']);
+    if (busqueda?.error) return res.status(400).json({ error: busqueda.error });
+    if (busqueda) { filtros.push(busqueda.sql); valores.push(...busqueda.valores); }
     // Los que llevan más tiempo esperando, primero; los atendidos, del más reciente al más antiguo
     const orden = estado === 'sin_atender' ? 'c.recibido_en ASC' : 'c.recibido_en DESC';
     const donde = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';

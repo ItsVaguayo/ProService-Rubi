@@ -6,6 +6,7 @@ import { registrar } from '../auditoria.js';
 import { limpiarGasto, TIPOS, CONCEPTOS, FORMAS_PAGO } from './campos.js';
 import { importes, reglasIncumplidas } from './calculo.js';
 import { apuntarGasto, ErrorGasto } from './apuntar.js';
+import { filtroBusqueda } from '../../buscar.js';
 
 import { MES, ENTERO, mesLocal as mesActual, hoyLocal } from '../../fechas.js';
 const IMPORTES = ['base_cent', 'iva_cent', 'irpf_cent', 'total_cent'];
@@ -30,13 +31,21 @@ export function rutasGastos(db) {
   const leer = db.prepare(`${SELECT} WHERE g.id = ?`);
 
   // ?mes=AAAA-MM (por defecto, el actual) · ?tipo= · ?concepto= · ?vehiculo=id · ?pagado=1|0
+  // ?q= busca en todos los meses (salvo que llegue ?mes): número, factura del proveedor, observaciones,
+  // proveedor, cliente y coche. Así se encuentra la factura de un proveedor sin saber de qué mes era.
   r.get('/', (req, res) => {
-    const { mes = mesActual(), tipo, concepto, vehiculo, pagado } = req.query;
+    const { tipo, concepto, vehiculo, pagado } = req.query;
     const errores = [];
     const filtros = [];
     const valores = [];
-    if (typeof mes !== 'string' || !MES.test(mes)) errores.push('El mes va como AAAA-MM, por ejemplo 2026-09');
-    else { filtros.push('substr(g.fecha, 1, 7) = ?'); valores.push(mes); }
+    const busqueda = filtroBusqueda(req.query.q, ['g.numero', 'g.factura_proveedor', 'g.descripcion', 'p.nombre', 'p.nif', 'c.nombre', 'u.nombre', 'v.referencia', 'v.matricula', 'v.marca', 'v.modelo']);
+    if (busqueda?.error) errores.push(busqueda.error);
+    else if (busqueda) { filtros.push(busqueda.sql); valores.push(...busqueda.valores); }
+    const mes = req.query.mes ?? (busqueda ? null : mesActual());
+    if (mes !== null) {
+      if (typeof mes !== 'string' || !MES.test(mes)) errores.push('El mes va como AAAA-MM, por ejemplo 2026-09');
+      else { filtros.push('substr(g.fecha, 1, 7) = ?'); valores.push(mes); }
+    }
     if (tipo !== undefined) {
       if (!TIPOS.includes(tipo)) errores.push(`tipo tiene que ser ${TIPOS.join(', ')}`);
       else { filtros.push('g.tipo = ?'); valores.push(tipo); }
@@ -56,7 +65,7 @@ export function rutasGastos(db) {
     }
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
 
-    const gastos = db.prepare(`${SELECT} WHERE ${filtros.join(' AND ')} ORDER BY g.fecha DESC, g.numero DESC`).all(...valores);
+    const gastos = db.prepare(`${SELECT} ${filtros.length ? `WHERE ${filtros.join(' AND ')}` : ''} ORDER BY g.fecha DESC, g.numero DESC`).all(...valores);
     // Los totales son de la lista que se devuelve (con sus filtros), así siempre cuadran con ella
     const por_tipo = Object.fromEntries(TIPOS.map((t) => [t, sumar(gastos.filter((g) => g.tipo === t))]).filter(([, s]) => s.gastos));
     const pendiente = gastos.filter((g) => !g.pagado_en);

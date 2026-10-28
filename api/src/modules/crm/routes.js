@@ -3,6 +3,7 @@
 import { Router } from 'express';
 import { registrar } from '../auditoria.js';
 import { limpiarActividad, fechaValida, DIA } from './campos.js';
+import { filtroBusqueda } from '../../buscar.js';
 
 const SELECT = `SELECT a.*, c.nombre AS cliente_nombre, k.nombre AS contacto_nombre,
                        u.nombre AS responsable_nombre, v.referencia AS vehiculo_referencia,
@@ -20,6 +21,7 @@ export function rutasActividades(db) {
   const leer = db.prepare(`${SELECT} WHERE a.id = ?`);
 
   // ?cliente= · ?vehiculo= · ?responsable=yo|id · ?pendientes=1 · ?dia=AAAA-MM-DD
+  // ?q= busca en la descripción, el resultado, el cliente o contacto (nombre y teléfono) y el coche
   r.get('/', (req, res) => {
     const { cliente, vehiculo, responsable, pendientes, dia } = req.query;
     const filtros = [];
@@ -44,6 +46,9 @@ export function rutasActividades(db) {
       if (typeof dia !== 'string' || !fechaValida(dia, DIA)) errores.push('dia tiene que ser una fecha AAAA-MM-DD');
       else { filtros.push('substr(a.programada_para, 1, 10) = ?'); valores.push(dia); }
     }
+    const busqueda = filtroBusqueda(req.query.q, ['a.descripcion', 'a.resultado', 'c.nombre', 'k.nombre', 'v.referencia', 'v.matricula', 'v.marca', 'v.modelo'], ['c.telefono', 'k.telefono']);
+    if (busqueda?.error) errores.push(busqueda.error);
+    else if (busqueda) { filtros.push(busqueda.sql); valores.push(...busqueda.valores); }
     if (errores.length) return res.status(400).json({ error: errores.join('. '), errores });
 
     const donde = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';

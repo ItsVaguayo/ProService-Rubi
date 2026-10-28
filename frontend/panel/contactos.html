@@ -66,7 +66,11 @@
     </header>
 
     <!-- FILTROS en una fila: a la izquierda qué contactos, a la derecha qué piden -->
-    <form class="filtros filtros--contactos">
+    <form class="filtros filtros--contactos" role="search">
+      <label class="buscador">
+        <span class="oculto">Buscar contacto</span>
+        <input type="search" name="q" placeholder="Nombre, teléfono, mensaje o coche" autocomplete="off">
+      </label>
       <fieldset class="segmentos" aria-label="Mostrar">
         <label><input type="radio" name="estado" value="sin_atender" checked><span>Sin atender</span></label>
         <label><input type="radio" name="estado" value="atendidos"><span>Atendidos</span></label>

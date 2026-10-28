@@ -131,6 +131,7 @@
 /* Cobros de la factura, solo en pantalla: una tarjeta del ancho de la hoja, encima */
 .factura-cobros { width: min(210mm, 100% - 32px); margin: 20px auto 0; padding: 16px 20px; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--blanco); font-size: .875rem; }
 .factura-cobros__aviso { margin: 0; color: var(--tinta-2); }
+.factura-cobros__aviso + .cobro-form__botones { margin-top: 12px; }
 .factura-cobros__cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .factura-cobros__cabeza p { margin: 0; color: var(--tinta-2); }
 .factura-cobros__cabeza b { color: var(--tinta); }

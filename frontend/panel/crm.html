@@ -100,6 +100,10 @@
           <label><input type="radio" name="vista" value="proximos"><span>Próximos 7 días <span class="hoy__cuenta cifra"></span></span></label>
         </fieldset>
         <span class="nota">1 de 6 hechas</span>
+        <label class="buscador hoy__buscador">
+          <span class="oculto">Buscar en el CRM</span>
+          <input type="search" name="q" placeholder="Buscar: cliente, teléfono, coche o texto" autocomplete="off">
+        </label>
       </div>
       <ul class="hoy__lista" data-vista="hoy">
         <li class="actividad actividad--hecha">
@@ -142,6 +146,7 @@
       <!-- PRÓXIMOS 7 DÍAS, en la misma caja: lo pendiente de mañana en adelante, agrupado por día (sale de
            GET /api/actividades?pendientes=1). «+1 día» la mueve un día, a la misma hora. -->
       <ul class="hoy__lista" data-vista="proximos" hidden></ul>
+      <ul class="hoy__lista" data-vista="buscar" hidden></ul>
     </section>
 
 

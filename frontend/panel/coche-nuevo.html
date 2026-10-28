@@ -414,16 +414,16 @@
         <div class="rejilla">
           <label class="campo campo--publicar campo--precio">
             <span class="campo__nombre">Precio de venta</span>
-            <span class="con-unidad" data-unidad="€"><input type="number" name="pvp_cent" min="0" step="0.01"></span>
+            <span class="con-unidad" data-unidad="€"><input name="pvp_cent" inputmode="decimal" autocomplete="off" placeholder="0,00"></span>
           </label>
           <label class="campo">
             <span class="campo__nombre">Precio si financia</span>
-            <span class="con-unidad" data-unidad="€"><input type="number" name="precio_financiado_cent" min="0" step="0.01"></span>
+            <span class="con-unidad" data-unidad="€"><input name="precio_financiado_cent" inputmode="decimal" autocomplete="off" placeholder="0,00"></span>
             <span class="campo__ayuda">Si no tiene, déjalo vacío y no sale</span>
           </label>
           <label class="campo">
             <span class="campo__nombre">Precio antes de la oferta</span>
-            <span class="con-unidad" data-unidad="€"><input type="number" name="precio_sin_oferta_cent" min="0" step="0.01"></span>
+            <span class="con-unidad" data-unidad="€"><input name="precio_sin_oferta_cent" inputmode="decimal" autocomplete="off" placeholder="0,00"></span>
             <span class="campo__ayuda">Solo si está de oferta: el de antes, más alto que el de venta</span>
           </label>
         </div>
@@ -443,7 +443,7 @@
         <div class="rejilla">
           <label class="campo solo-propio">
             <span class="campo__nombre">Precio de compra</span>
-            <span class="con-unidad" data-unidad="€"><input type="number" name="precio_compra_cent" min="0" step="0.01"></span>
+            <span class="con-unidad" data-unidad="€"><input name="precio_compra_cent" inputmode="decimal" autocomplete="off" placeholder="0,00"></span>
           </label>
           <label class="campo solo-propio">
             <span class="campo__nombre">Proveedor</span>
@@ -463,28 +463,28 @@
           </label>
           <label class="campo solo-deposito">
             <span class="campo__nombre">Pactado con el dueño</span>
-            <span class="con-unidad" data-unidad="€"><input type="number" name="pago_propietario_cent" min="0" step="0.01"></span>
+            <span class="con-unidad" data-unidad="€"><input name="pago_propietario_cent" inputmode="decimal" autocomplete="off" placeholder="0,00"></span>
             <span class="campo__ayuda">Lo que se le paga cuando se vende</span>
           </label>
           <label class="campo">
-            <span class="campo__nombre">Transporte</span>
-            <span class="con-unidad" data-unidad="€"><input type="number" name="coste_transporte_cent" min="0" step="0.01" value="0"></span>
+            <span class="campo__nombre">Transporte <small class="nota">sin IVA</small></span>
+            <span class="con-unidad" data-unidad="€"><input name="coste_transporte_cent" inputmode="decimal" autocomplete="off" placeholder="0,00" value="0"></span>
           </label>
           <label class="campo">
-            <span class="campo__nombre">Taller</span>
-            <span class="con-unidad" data-unidad="€"><input type="number" name="coste_taller_cent" min="0" step="0.01" value="0"></span>
+            <span class="campo__nombre">Taller <small class="nota">sin IVA</small></span>
+            <span class="con-unidad" data-unidad="€"><input name="coste_taller_cent" inputmode="decimal" autocomplete="off" placeholder="0,00" value="0"></span>
           </label>
           <label class="campo">
-            <span class="campo__nombre">Preparación y limpieza</span>
-            <span class="con-unidad" data-unidad="€"><input type="number" name="coste_preparacion_cent" min="0" step="0.01" value="0"></span>
+            <span class="campo__nombre">Preparación y limpieza <small class="nota">sin IVA</small></span>
+            <span class="con-unidad" data-unidad="€"><input name="coste_preparacion_cent" inputmode="decimal" autocomplete="off" placeholder="0,00" value="0"></span>
           </label>
           <label class="campo">
-            <span class="campo__nombre">Impuestos y gestoría</span>
-            <span class="con-unidad" data-unidad="€"><input type="number" name="coste_impuestos_cent" min="0" step="0.01" value="0"></span>
+            <span class="campo__nombre">Impuestos y gestoría <small class="nota">sin IVA</small></span>
+            <span class="con-unidad" data-unidad="€"><input name="coste_impuestos_cent" inputmode="decimal" autocomplete="off" placeholder="0,00" value="0"></span>
           </label>
           <label class="campo">
             <span class="campo__nombre">Precio mínimo aceptable</span>
-            <span class="con-unidad" data-unidad="€"><input type="number" name="precio_minimo_cent" min="0" step="0.01"></span>
+            <span class="con-unidad" data-unidad="€"><input name="precio_minimo_cent" inputmode="decimal" autocomplete="off" placeholder="0,00"></span>
             <span class="campo__ayuda">No sale en ningún sitio. Es tu límite al negociar.</span>
           </label>
           <fieldset class="opciones campo--publicar">

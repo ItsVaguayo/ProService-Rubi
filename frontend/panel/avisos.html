@@ -89,7 +89,11 @@
     </header>
 
     <!-- FILTRO por gravedad. En el panel real filtra sin recargar. -->
-    <form class="filtros filtros--avisos">
+    <form class="filtros filtros--avisos" role="search">
+      <label class="buscador">
+        <span class="oculto">Buscar aviso</span>
+        <input type="search" name="q" placeholder="Matrícula, modelo, nombre…" autocomplete="off">
+      </label>
       <fieldset class="segmentos" aria-label="Gravedad">
         <label><input type="radio" name="gravedad" value="" checked><span>Todos <span class="segmentos__n">8</span></span></label>
         <label><input type="radio" name="gravedad" value="alta"><span>Urgentes <span class="segmentos__n">5</span></span></label>
