@@ -30,6 +30,8 @@ test('contactos: ?q= busca en nombre, teléfono sin espacios, mensaje y coche', 
     assert.deepEqual(nombres(await busca('611 222')), ['Pere Vidal'], 'y escrito con espacios aunque se guardó con guiones');
     assert.deepEqual(nombres(await busca('golf')), ['Marta Soler'], 'por el coche');
     assert.deepEqual(nombres(await busca('diésel familiar')), ['Pere Vidal'], 'cada palabra, en cualquier campo');
+    assert.deepEqual(nombres(await busca('diesel')), ['Pere Vidal'], 'sin la tilde');
+    assert.deepEqual(nombres(await busca('DIÉSEL')), ['Pere Vidal'], 'en mayúsculas con tilde');
     assert.deepEqual(await busca('marta diésel'), [], 'todas las palabras tienen que salir');
     assert.deepEqual(await busca('%'), [], 'el % se busca tal cual, no es comodín');
     assert.deepEqual(nombres(await busca('marta', '&tipo=informacion')), ['Marta Soler'], 'se suma a los otros filtros');
@@ -47,6 +49,7 @@ test('actividades: ?q= busca en la descripción, el cliente y el coche', () =>
 
     const busca = async (q) => (await pide(`/actividades?q=${encodeURIComponent(q)}`, { como: 'comercial' })).json.map((a) => a.cliente_nombre);
     assert.deepEqual(await busca('financiación'), ['Marta Soler']);
+    assert.deepEqual(await busca('financiacion'), ['Marta Soler'], 'sin la tilde');
     assert.deepEqual(await busca('golf'), ['Marta Soler']);
     assert.deepEqual(await busca('600 111'), ['Marta Soler'], 'por el teléfono del cliente');
     assert.deepEqual(await busca('pere suv'), ['Pere Vidal']);

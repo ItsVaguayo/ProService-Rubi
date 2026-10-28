@@ -4,6 +4,7 @@
 import { Router } from 'express';
 import { registrar } from '../auditoria.js';
 import { CAMPOS_CLIENTE, CAMPOS_PROVEEDOR, limpiarTercero } from './campos.js';
+import { sinAcentos } from '../../buscar.js';
 
 // Rutas comunes de lista, ficha, alta y edición. `extra(fila)` añade lo propio de cada ficha y
 // `resumen` (SQL) las columnas calculadas de cada fila de la lista.
@@ -27,8 +28,9 @@ function rutasTercero(db, { tabla, entidad, campos, extra, resumen = '' }) {
       const comoNif = q.toUpperCase().replace(/[\s.-]/g, '');
       const comoTelefono = q.replace(/[\s().-]/g, '');
       // El teléfono, sin espacios, guiones, puntos ni paréntesis: igual que al pasar un contacto a cliente
-      filtros.push("(nombre LIKE ? OR nif LIKE ? OR replace(replace(replace(replace(replace(telefono, ' ', ''), '-', ''), '.', ''), '(', ''), ')', '') LIKE ? OR email LIKE ?)");
-      valores.push(`%${q}%`, `%${comoNif}%`, `%${comoTelefono}%`, `%${q}%`);
+      // El nombre y el correo, sin tildes ni mayúsculas: «garcia» encuentra a García
+      filtros.push("(sin_acentos(nombre) LIKE ? OR nif LIKE ? OR replace(replace(replace(replace(replace(telefono, ' ', ''), '-', ''), '.', ''), '(', ''), ')', '') LIKE ? OR sin_acentos(email) LIKE ?)");
+      valores.push(`%${sinAcentos(q)}%`, `%${comoNif}%`, `%${comoTelefono}%`, `%${sinAcentos(q)}%`);
     }
     const donde = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';
     res.json(db.prepare(`SELECT ${tabla}.*${resumen} FROM ${tabla} ${donde} ORDER BY nombre COLLATE NOCASE, id LIMIT 5000`).all(...valores));
