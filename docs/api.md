@@ -391,5 +391,6 @@ En contactos, actividades, gastos y citas. Cada palabra tiene que salir en algun
 
 ## Pendiente
 
+- **Portales en el panel (revisión del 28-oct):** la API de portales (`/portales`, arriba) está hecha, pero `anuncio.html` sigue siendo la maqueta: el panel no la llama y «Preparar anuncio», en la ficha del coche, enlaza sin decir qué coche (`anuncio.html` sin `?id=`). Falta conectarla: el texto y las fotos del anuncio, marcar subido con su enlace y confirmar la retirada cuando el coche se vende.
 - Citas de mañana en los avisos: cuando exista la tabla de citas.
 - El correo sale de verdad cuando haya SMTP (duda H13) y destinatarios (E1). Hasta entonces, simulado.

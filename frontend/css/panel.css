@@ -110,7 +110,8 @@ html.cargando:not(.listo) body::before {
   font-size: .875rem;
 }
 .menu__buscar input::placeholder { color: #8b9097; }
-.menu__buscar input:focus { outline: none; border-color: var(--gris-marca); }
+/* Sobre el negro del menú, el borde gris solo no se distinguía: un anillo claro dice dónde está el foco */
+.menu__buscar input:focus { outline: none; border-color: var(--gris-marca); box-shadow: 0 0 0 3px rgb(255 255 255 / .28); }
 
 .menu__enlaces { display: flex; flex-direction: column; gap: 2px; }
 
