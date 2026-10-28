@@ -71,7 +71,11 @@
 
       <div class="ficha__principal">
         <!-- FILTRO: activos (por defecto), desactivados o todos. El número lo pone panel.js. -->
-        <form class="filtros filtros--contactos">
+        <form class="filtros filtros--contactos" role="search">
+          <label class="buscador">
+            <span class="oculto">Buscar usuario</span>
+            <input type="search" name="q" placeholder="Nombre o correo" autocomplete="off">
+          </label>
           <fieldset class="segmentos" aria-label="Mostrar">
             <label><input type="radio" name="estado" value="activos" checked><span>Activos <b class="segmentos__n cifra">2</b></span></label>
             <label><input type="radio" name="estado" value="desactivados"><span>Desactivados <b class="segmentos__n cifra">1</b></span></label>

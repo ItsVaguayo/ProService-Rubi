@@ -9,6 +9,7 @@ import { registrar } from '../auditoria.js';
 import { ZONA, DIA, hoyLocal, diaValido } from '../../fechas.js';
 import { configCorreo } from '../correo/envio.js';
 import { correoDeContacto } from '../correo/mensajes.js';
+import { filtroBusqueda } from '../../buscar.js';
 
 // Peticiones de cita por IP cada 10 minutos: el mismo límite que los contactos de la web (CONTACTOS_POR_IP)
 const MAXIMO_POR_IP = Number(process.env.CONTACTOS_POR_IP) || 5;
@@ -162,7 +163,18 @@ export function rutasCitas(db) {
 
   // ?desde=AAAA-MM-DD&hasta=AAAA-MM-DD (los dos días incluidos; por defecto, de hoy a dentro de 7 días).
   // Sin las canceladas, salvo ?canceladas=1.
+  // ?q= busca en todas las fechas (nombre, teléfono, correo, cliente y coche): las 200 más cercanas a hoy,
+  // primero las que vienen y luego las pasadas.
   r.get('/', (req, res) => {
+    const busqueda = filtroBusqueda(req.query.q, ['c.nombre', 'c.email', 'k.nombre', 'v.referencia', 'v.matricula', 'v.marca', 'v.modelo'], ['c.telefono']);
+    if (busqueda?.error) return res.status(400).json({ error: busqueda.error });
+    if (busqueda) {
+      const canceladas = req.query.canceladas === '1' ? '' : "AND c.estado <> 'cancelada'";
+      const hoy = `${hoyLocal()} 00:00`;
+      return res.json(db.prepare(`${SELECT} WHERE ${busqueda.sql} ${canceladas}
+                                  ORDER BY c.inicio < ?, CASE WHEN c.inicio < ? THEN '' ELSE c.inicio END, c.inicio DESC, c.id LIMIT 200`)
+        .all(...busqueda.valores, hoy, hoy));
+    }
     const desde = req.query.desde ?? hoyLocal();
     const hasta = req.query.hasta ?? sumarDias(desde, 6);
     if (![desde, hasta].every((d) => typeof d === 'string' && DIA.test(d) && diaValido(d))) return res.status(400).json({ error: 'desde y hasta van como AAAA-MM-DD' });

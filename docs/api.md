@@ -67,7 +67,7 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
 | `POST /contactos` | **sin sesión** | Lo manda el formulario de la web. Ver abajo. Cada contacto apunta su correo para `CORREO_CONTACTOS` (ver «Correos») |
-| `GET /contactos?estado=sin_atender&tipo=prueba` | con sesión | `estado`: `sin_atender` (por defecto, el que más espera primero), `atendidos` o `todos`. `tipo`: `informacion`, `prueba`, `financiacion` o `tasacion`. Cada contacto lleva la matrícula, marca y modelo del coche, quién lo atendió y, en una tasación, `tasacion_marca`, `tasacion_modelo`, `tasacion_anio`, `tasacion_km` y `fotos` (`[{ id, url }]`, vacía si no mandó ninguna) |
+| `GET /contactos?estado=sin_atender&tipo=prueba` | con sesión | `estado`: `sin_atender` (por defecto, el que más espera primero), `atendidos` o `todos`. `tipo`: `informacion`, `prueba`, `financiacion` o `tasacion`. `q`: ver «Buscar» abajo; en nombre, teléfono, correo, mensaje y coche. Cada contacto lleva la matrícula, marca y modelo del coche, quién lo atendió y, en una tasación, `tasacion_marca`, `tasacion_modelo`, `tasacion_anio`, `tasacion_km` y `fotos` (`[{ id, url }]`, vacía si no mandó ninguna) |
 | `GET /contactos/sin-atender` | con sesión | `{ total }`, para el contador del menú |
 | `GET /contactos/:id/fotos/:fotoId` | con sesión | Una foto de una tasación (JPG). Sin sesión, 401: lleva la matrícula del coche de un particular |
 | `PATCH /contactos/:id` | con sesión | `{ atendido: true }` lo marca con fecha y usuario; `false` lo devuelve a pendiente |
@@ -131,7 +131,7 @@ Llamadas, visitas, WhatsApp, correos, pruebas, tareas y notas de cada cliente, c
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
-| `GET /actividades` | con sesión | Filtros: `?cliente=id`, `?vehiculo=id`, `?responsable=yo` o un id, `?pendientes=1` (sin hacer), `?dia=AAAA-MM-DD` (las programadas ese día). Por fecha programada; las que no tienen fecha (notas), al final. Cada una con `cliente_nombre`, `contacto_nombre`, `responsable_nombre`, `vehiculo_referencia`, `vehiculo_marca` y `vehiculo_modelo`. Un filtro mal escrito da 400 |
+| `GET /actividades` | con sesión | Filtros: `?cliente=id`, `?vehiculo=id`, `?responsable=yo` o un id, `?pendientes=1` (sin hacer), `?dia=AAAA-MM-DD` (las programadas ese día), `?q=` (en la descripción, el resultado, el cliente o contacto con su teléfono y el coche). Por fecha programada; las que no tienen fecha (notas), al final. Cada una con `cliente_nombre`, `contacto_nombre`, `responsable_nombre`, `vehiculo_referencia`, `vehiculo_marca` y `vehiculo_modelo`. Un filtro mal escrito da 400 |
 | `GET /actividades/:id` | con sesión | Una actividad, con los mismos nombres |
 | `POST /actividades` | con sesión | `{ tipo, descripcion, cliente_id?, contacto_id?, vehiculo_id?, programada_para?, responsable_id? }`. Hace falta `cliente_id` o `contacto_id` (un contacto de la web que aún no es cliente). Sin `responsable_id`, el responsable es quien la crea. `creado_por` sale siempre de la sesión: si llega en el cuerpo, 400. Un id que no existe, 400. 201 |
 | `PUT /actividades/:id` | con sesión | Solo `tipo`, `descripcion`, `programada_para` y `responsable_id`. El cliente, el contacto y el coche no se cambian: se crea otra actividad. Una ya hecha no se edita: 409 |
@@ -168,7 +168,7 @@ Los gastos de la empresa, como el libro de gastos de Pymecar. Sin `DELETE`: un l
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
-| `GET /gastos?mes=AAAA-MM` | gerencia | Los del mes (sin `mes`, el actual), del más reciente al más antiguo. Filtros: `tipo`, `concepto`, `vehiculo=id`, `pagado=1` o `0`. Devuelve `{ mes, gastos, totales }` |
+| `GET /gastos?mes=AAAA-MM` | gerencia | Los del mes (sin `mes`, el actual), del más reciente al más antiguo. Filtros: `tipo`, `concepto`, `vehiculo=id`, `pagado=1` o `0`. `q` (número, factura del proveedor, observaciones, proveedor, cliente y coche) busca en **todos los meses** salvo que llegue `mes`; entonces `mes` es `null`. Devuelve `{ mes, gastos, totales }` |
 | `GET /gastos/:id` | gerencia | Uno, con `proveedor_nombre`, `cliente_nombre`, `usuario_nombre` y los datos del coche |
 | `POST /gastos` | gerencia | Alta. Ver abajo. 201 |
 | `PUT /gastos/:id` | gerencia | Cambia lo que llegue, recalcula los importes y vuelve a comprobar las reglas con el gasto entero. `numero` no se cambia nunca |
@@ -263,7 +263,7 @@ Las pide la web o se apuntan desde la agenda del panel. Una prueba dura 30 minut
 | `POST /citas/pedir` | público | La web pide una prueba: `{ coche (id o referencia), inicio, nombre, telefono, email?, mensaje?, privacidad: true, web: '' }`. Solo coches publicados. Entra **pedida** y además apunta un contacto de tipo `prueba` (sale en Contactos, en los avisos y en el correo al comercial). La misma protección que los contactos: 5 por IP cada 10 minutos y el campo trampa `web`. Hora ya cogida: 409 |
 | `GET /citas/horario` | con sesión | El horario de pruebas para dibujar la agenda: `{ duracion_min, franjas: [{ dia_semana (1 = lunes), desde, hasta }] }` |
 | `GET /citas/libres?desde=&dias=` | con sesión | Lo mismo que `huecos`, sin el margen de dos horas (para el panel) |
-| `GET /citas?desde=&hasta=` | con sesión | Las citas del periodo (los dos días incluidos; por defecto, de hoy a dentro de 7 días), con `marca`, `modelo`, `version`, `matricula`, `referencia`, `cliente_nombre`. Sin las canceladas, salvo `?canceladas=1` |
+| `GET /citas?desde=&hasta=` | con sesión | Las citas del periodo (los dos días incluidos; por defecto, de hoy a dentro de 7 días), con `marca`, `modelo`, `version`, `matricula`, `referencia`, `cliente_nombre`. Sin las canceladas, salvo `?canceladas=1`. Con `?q=` (nombre, teléfono, correo, cliente y coche) no hay periodo: las 200 más cercanas, primero las que vienen por orden y luego las pasadas |
 | `POST /citas` | con sesión | `{ vehiculo_id, inicio, nombre?, telefono?, email?, cliente_id?, contacto_id?, notas?, estado? }`. Entra **confirmada** (se ha hablado con el cliente), salvo `estado: 'pedida'`. Con `cliente_id` o `contacto_id`, el nombre y el teléfono salen de ahí si no llegan, y el contacto queda atendido. 201 |
 | `PATCH /citas/:id` | con sesión | `{ estado?, inicio?, notas? }`. `estado`: `confirmada`, `hecha`, `no_vino` o `cancelada` (no vuelve a `pedida`; una cancelada no revive). La hora solo se cambia en una cita viva |
 
@@ -384,6 +384,10 @@ La plataforma manda dos correos: el aviso de cada contacto que llega por la web 
 - `stock`: `total`, `propios`, `deposito`, `invertido_cent` (lo que ya hemos puesto en los coches sin vender: compra y gastos en los propios; en depósito, solo sus gastos, porque al dueño se le paga al vender), `sin_coste` (propios sin precio de compra, que no suman), `tramos` (menos de 30, 30-60, 60-90 y más de 90 días, cada uno con `n` e `invertido_cent`) y `mas_antiguos` (los 5 que más llevan, sin importes).
 
 Una venta es el último paso a «Vendido» (o a «Entregado», si se saltó ese paso) de un coche que sigue vendido o entregado: si se deshace la venta, deja de contar. Los meses van en UTC, como las fechas de la base.
+
+## Buscar (`?q=`)
+
+En contactos, actividades, gastos y citas. Cada palabra tiene que salir en alguno de los campos, sin distinguir mayúsculas («golf marta» encuentra la prueba de Marta con el Golf). Los teléfonos se comparan sin espacios, guiones, puntos ni paréntesis. `%` y `_` se buscan tal cual. Más de 100 caracteres: 400. En blanco no filtra. Lo hace `api/src/buscar.js`.
 
 ## Pendiente
 

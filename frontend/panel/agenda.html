@@ -82,6 +82,15 @@
       <li class="nota">De lunes a viernes, de 10:00 a 13:30 y de 16:30 a 19:30; sábado, de 10:00 a 13:30.</li>
     </ul>
 
+    <!-- BUSCADOR: una prueba por nombre, teléfono o coche en cualquier fecha (GET /api/citas?q=). Al pulsar una, su ficha. -->
+    <form class="filtros agenda-buscar" role="search">
+      <label class="buscador">
+        <span class="oculto">Buscar prueba</span>
+        <input type="search" name="q" placeholder="Buscar una prueba: nombre, teléfono o coche" autocomplete="off">
+      </label>
+    </form>
+    <ul class="agenda-encontradas" aria-live="polite" hidden></ul>
+
     <!-- MOVER: al pulsar «Cambiar hora», la agenda pasa a elegir el hueco nuevo. Se puede cambiar de semana. -->
     <div class="agenda-mover" role="status" hidden>
       <p><b>Elige la nueva hora</b> <span data-mover-texto></span></p>

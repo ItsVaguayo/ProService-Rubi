@@ -217,7 +217,11 @@
          izquierda: sin pagar. Con decimales: aquí los céntimos sí importan.
          Columnas como el libro de gastos de Pymecar: nº de registro, fecha, su nº de factura, a quién,
          concepto, observaciones y total, más IVA e IRPF por separado. -->
-    <form class="filtros filtros--gastos" id="lista">
+    <form class="filtros filtros--gastos" id="lista" role="search">
+      <label class="buscador">
+        <span class="oculto">Buscar gasto</span>
+        <input type="search" name="q" placeholder="Nº, factura, proveedor, coche… en todos los meses" autocomplete="off">
+      </label>
       <label class="campo filtros-gastos__mes">
         <span class="oculto">Mes</span>
         <select name="mes">

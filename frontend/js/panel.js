@@ -25,7 +25,43 @@ const fijarUsuario = (u) => {
 // Sin red o con el servidor colgado, fetch falla en inglés («Failed to fetch») o no acaba nunca: el botón se
 // quedaba bloqueado. Se corta a los 20 s y se dice qué pasa y qué hacer.
 const ESPERA_API_MS = 20000;
-async function api(ruta, { method = 'GET', body } = {}) {
+// Doble envío: mientras un formulario espera a la API, sus botones de enviar se bloquean y un segundo
+// envío (doble clic, Intro repetido) se ignora. Se sueltan cuando no queda ninguna llamada en curso;
+// si el envío no llama a la API (falla una comprobación del panel), en cuanto acaba su código.
+let llamadasEnCurso = 0;
+const bloqueados = new Map(); // formulario → botones que se le han desactivado
+const soltarFormularios = () => {
+  if (llamadasEnCurso) return;
+  for (const [form, botones] of bloqueados) {
+    delete form.dataset.enviando;
+    botones.forEach((b) => { b.disabled = false; });
+  }
+  bloqueados.clear();
+};
+document.addEventListener('submit', (ev) => {
+  const form = ev.target;
+  if (form.dataset.enviando) {
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    return;
+  }
+  form.dataset.enviando = '1';
+  const botones = [...form.querySelectorAll('button[type="submit"], button:not([type])')].filter((b) => !b.disabled);
+  botones.forEach((b) => { b.disabled = true; });
+  bloqueados.set(form, botones);
+  setTimeout(soltarFormularios);
+}, true);
+
+async function api(ruta, opciones) {
+  llamadasEnCurso++;
+  try {
+    return await llamarApi(ruta, opciones);
+  } finally {
+    llamadasEnCurso--;
+    setTimeout(soltarFormularios);
+  }
+}
+async function llamarApi(ruta, { method = 'GET', body } = {}) {
   let res;
   try {
     res = await fetch(`/api${ruta}`, {
@@ -120,6 +156,19 @@ function fijarValor(form, nombre, valor) {
   }
 }
 
+// Algunos errores de la API nombran la columna (`pvp_cent`, `fecha_matriculacion`, `anio`): en pantalla, con su nombre
+const ETIQUETAS_CAMPO = {
+  fecha_matriculacion: 'primera matriculación', potencia_cv: 'potencia', emisiones_co2: 'emisiones de CO₂', etiqueta_dgt: 'etiqueta DGT',
+  color_exterior: 'color exterior', pvp_cent: 'precio de venta', regimen_iva: 'régimen de IVA', precio_compra_cent: 'precio de compra',
+  precio_minimo_cent: 'precio mínimo', precio_cent: 'precio', suplidos_cent: 'gestoría (suplidos)', parte_pago_cent: 'valor de su coche',
+  parte_pago_vehiculo: 'coche que entrega a cambio', cliente_id: 'cliente', vehiculo_id: 'coche', proveedor_id: 'proveedor',
+  responsable_id: 'quién', programada_para: 'cuándo', garantia_meses: 'meses de garantía', garantia_tipo: 'garantía', km_entrega: 'km a la entrega',
+  forma_pago: 'forma de pago', estado_comercial: 'estado comercial', codigo_postal: 'código postal', base_cent: 'importe sin IVA',
+  anio: 'año', pais: 'país', version: 'versión', matricula: 'matrícula', nif: 'NIF', kilometros: 'kilómetros', traccion: 'tracción',
+  carroceria: 'carrocería', tapiceria: 'tapicería',
+};
+const legible = (texto) => String(texto).replace(/\b[a-z0-9]+(?:_[a-z0-9]+)*\b/g, (p) => ETIQUETAS_CAMPO[p] ?? p);
+
 function mostrarErrores(caja, error, titulo) {
   if (!caja) {
     // Sin caja donde ponerlo, una arriba del contenido: nunca alert(), que bloquea la página
@@ -131,7 +180,7 @@ function mostrarErrores(caja, error, titulo) {
     banda ? banda.after(caja) : main.prepend(caja);
   }
   error.lista ??= [error.message];
-  caja.innerHTML = `<strong>${esc(titulo)}</strong><ul>${error.lista.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`;
+  caja.innerHTML = `<strong>${esc(titulo)}</strong><ul>${error.lista.map((m) => `<li>${esc(legible(m))}</li>`).join('')}</ul>`;
   caja.hidden = false;
   caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -1070,8 +1119,10 @@ function pintarReserva(v, reserva) {
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const d = Object.fromEntries(new FormData(form));
+    const senal = aCentimos(d.senal_cent);
+    if (senal == null) return mostrarErrores($('.error--lista'), { lista: ['La señal va en euros, por ejemplo 300 o 350,50'] }, 'No se ha podido reservar:');
     try {
-      await api(`/vehiculos/${v.id}/reserva`, { method: 'POST', body: { cliente: d.cliente, senal_cent: Math.round(Number(d.senal_cent) * 100), dias: Number(d.dias || 7) } });
+      await api(`/vehiculos/${v.id}/reserva`, { method: 'POST', body: { cliente: d.cliente, senal_cent: senal, dias: Number(d.dias || 7) } });
       avisarAlVolver('Reservado. La señal queda apuntada');
       location.reload();
     } catch (e) {
@@ -1100,7 +1151,7 @@ async function paginaAlta(usuario) {
     const nombres = new Set([...form.elements].map((c) => c.name).filter((n) => n && n !== 'extras' && n in v));
     for (const nombre of nombres) {
       const valor = v[nombre];
-      fijarValor(form, nombre, valor == null ? '' : nombre.endsWith('_cent') ? valor / 100 : valor);
+      fijarValor(form, nombre, valor == null ? '' : nombre.endsWith('_cent') ? textoImporte(valor) : valor);
     }
     casillas.forEach((c) => { c.checked = extras.includes(textoCasilla(c)); });
     form.querySelector('.barra-guardar a').href = urlCoche(v);
@@ -1143,6 +1194,7 @@ async function paginaAlta(usuario) {
     ev.preventDefault();
     cajaError.hidden = true;
     const datos = {};
+    const malos = [];
     for (const campo of form.elements) {
       if (!campo.name || campo.name === 'extras' || campo.disabled) continue;
       if (campo.type === 'radio') {
@@ -1157,10 +1209,14 @@ async function paginaAlta(usuario) {
         if (id) datos[campo.name] = null; // al editar, vaciar es borrar el dato
         continue;
       }
-      if (campo.name.endsWith('_cent')) datos[campo.name] = Math.round(Number(bruto) * 100);
-      else if (campo.type === 'number') datos[campo.name] = Number(bruto);
+      if (campo.name.endsWith('_cent')) {
+        const cent = aCentimos(bruto);
+        if (cent == null) malos.push(campo.closest('label')?.querySelector('.campo__nombre')?.textContent.trim() || campo.name);
+        datos[campo.name] = cent;
+      } else if (campo.type === 'number') datos[campo.name] = Number(bruto);
       else datos[campo.name] = bruto;
     }
+    if (malos.length) return mostrarErrores(cajaError, { lista: malos.map((m) => `${m}: va como 12.900 o 12.900,50`) }, 'No se ha podido guardar:');
     try {
       const guardado = await api(id ? `/vehiculos/${id}` : '/vehiculos', { method: id ? 'PUT' : 'POST', body: datos });
       await api(`/vehiculos/${guardado.id}/extras`, { method: 'PUT', body: { extras: casillas.filter((c) => c.checked).map(textoCasilla) } });
@@ -1349,8 +1405,10 @@ async function paginaUsuarios(yo) {
 
     // Lista: primero tú, luego gerencia y después por nombre
     const estado = new FormData(filtro).get('estado');
+    const palabras = paraBuscar(filtro.elements.q?.value ?? '').split(/\s+/).filter(Boolean);
     const visibles = usuarios
       .filter((u) => estado === 'todos' || (estado === 'activos') === Boolean(u.activo))
+      .filter((u) => palabras.every((w) => paraBuscar(`${u.nombre} ${u.email}`).includes(w)))
       .sort((a, b) => (b.id === yo.id) - (a.id === yo.id) || (a.rol !== 'gerencia') - (b.rol !== 'gerencia') || a.nombre.localeCompare(b.nombre, 'es'));
     lista.innerHTML = visibles.map((u) => {
       const tu = u.id === yo.id;
@@ -1383,6 +1441,8 @@ async function paginaUsuarios(yo) {
   const cargar = async () => { usuarios = await api('/usuarios'); pintar(); };
 
   filtro.addEventListener('change', pintar);
+  filtro.addEventListener('input', pintar);
+  filtro.addEventListener('submit', (ev) => ev.preventDefault());
 
   lista.addEventListener('click', async (ev) => {
     const tarjeta = ev.target.closest('.usuario');
@@ -1545,14 +1605,16 @@ async function paginaContactos() {
 
   let peticion = 0; // si se cambia de filtro deprisa, solo se pinta la respuesta del último
   const pintar = async () => {
-    const { estado, tipo } = Object.fromEntries(new FormData(form));
+    const { estado, tipo, q = '' } = Object.fromEntries(new FormData(form));
     const esta = ++peticion;
-    const contactos = await api(`/contactos?estado=${encodeURIComponent(estado)}${tipo ? `&tipo=${encodeURIComponent(tipo)}` : ''}`);
+    const contactos = await api(`/contactos?estado=${encodeURIComponent(estado)}${tipo ? `&tipo=${encodeURIComponent(tipo)}` : ''}${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`);
     if (esta !== peticion) return;
     lista.innerHTML = contactos.map(tarjeta).join('');
     lista.hidden = !contactos.length;
     vacio.hidden = !!contactos.length;
-    $('strong', vacio).textContent = estado === 'sin_atender' && !tipo ? 'Todo atendido' : 'No hay contactos con estos filtros';
+    $('strong', vacio).textContent = q.trim()
+      ? `Ningún contacto con «${q.trim()}»${estado === 'todos' ? '' : ' aquí: prueba en «Todos»'}`
+      : estado === 'sin_atender' && !tipo ? 'Todo atendido' : 'No hay contactos con estos filtros';
   };
 
   lista.addEventListener('click', async (ev) => {
@@ -1568,7 +1630,10 @@ async function paginaContactos() {
       mostrarErrores($('.error--lista') ?? cajaErrorEn(form), e, 'No se ha podido cambiar:');
     }
   });
-  form.addEventListener('change', pintar);
+  let espera;
+  form.addEventListener('input', (ev) => { if (ev.target.name === 'q') { clearTimeout(espera); espera = setTimeout(pintar, 250); } });
+  form.addEventListener('change', (ev) => { if (ev.target.name !== 'q') pintar(); });
+  form.addEventListener('submit', (ev) => { ev.preventDefault(); pintar(); });
   await Promise.all([pintar(), resumen()]);
   if (destacado && !document.getElementById(`contacto-${destacado}`)) {
     form.querySelector('input[name="estado"][value="todos"]').checked = true;
@@ -1860,13 +1925,54 @@ async function paginaCrm(usuario) {
   const pestanas = $('.hoy__pestanas', hoyCaja);
   const [cuentaHoy, cuentaProx] = hoyCaja.querySelectorAll('.hoy__cuenta');
   let notaHechas = '';
+  const buscaLista = $('.hoy__lista[data-vista="buscar"]', hoyCaja);
+  const buscaCampo = $('.hoy__buscador input', hoyCaja);
   const verPestana = () => {
+    const buscando = !!buscaCampo.value.trim();
     const vista = $('input[name="vista"]:checked', pestanas).value;
-    hoyLista.hidden = vista !== 'hoy';
-    proxLista.hidden = vista !== 'proximos';
-    $('.caja__titulo > .nota', hoyCaja).textContent = vista === 'hoy' ? notaHechas : '';
+    hoyLista.hidden = buscando || vista !== 'hoy';
+    proxLista.hidden = buscando || vista !== 'proximos';
+    buscaLista.hidden = !buscando;
+    pestanas.disabled = buscando;
+    $('.caja__titulo > .nota', hoyCaja).textContent = !buscando && vista === 'hoy' ? notaHechas : '';
   };
   pestanas.addEventListener('change', verPestana);
+  // Buscador: todas las actividades (hechas o no, con fecha o sin ella) de «Lo mío» o de todos
+  let busqueda = 0;
+  const pintarBusqueda = async () => {
+    const q = buscaCampo.value.trim();
+    verPestana();
+    if (!q) return;
+    const responsable = $('input[name="responsable"]:checked', deQuien)?.value ?? 'yo';
+    const esta = ++busqueda;
+    const halladas = await api(`/actividades?q=${encodeURIComponent(q)}${responsable ? `&responsable=${encodeURIComponent(responsable)}` : ''}`);
+    if (esta !== busqueda) return;
+    buscaLista.innerHTML = halladas.length
+      ? halladas.map((a) => {
+        const cuando = a.programada_para
+          ? new Date(a.programada_para.replace(' ', 'T')).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+          : 'Sin fecha';
+        const quien = a.cliente_id
+          ? `<a href="clientes.html?id=${a.cliente_id}"><strong>${esc(a.cliente_nombre)}</strong></a>`
+          : a.contacto_id ? `<a href="contactos.html?id=${a.contacto_id}"><strong>${esc(a.contacto_nombre ?? 'Contacto')}</strong></a>` : '';
+        const coche = a.vehiculo_marca ? ` <span class="nota">· ${esc(`${a.vehiculo_marca} ${a.vehiculo_modelo ?? ''}`.trim())}</span>` : '';
+        const fin = a.hecha_en
+          ? `<span class="actividad__hecha">Hecha el ${esc(fechaSql(a.hecha_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</span>`
+          : `<button class="boton boton--oscuro boton--pequeno" type="button" data-hecha="${a.id}">Hecho</button>`;
+        return `<li class="actividad${a.hecha_en ? ' actividad--hecha' : ''}">
+            <time class="actividad__hora cifra">${esc(cuando)}</time>
+            <span class="estado actividad--${esc(a.tipo)}">${esc(TIPOS_ACTIVIDAD[a.tipo] ?? a.tipo)}</span>
+            <p class="actividad__texto">${quien}${esc(a.descripcion)}${coche}${!responsable && a.responsable_nombre ? ` <span class="nota">· ${esc(a.responsable_nombre)}</span>` : ''}${a.resultado ? `<span class="actividad__resultado">${esc(a.resultado)}</span>` : ''}</p>
+            ${fin}
+          </li>`;
+      }).join('')
+      : `<li class="actividad actividad--vacia"><p class="actividad__texto">Nada con «${esc(q)}»${responsable ? ' en lo tuyo: prueba con «De todos»' : ''}.</p></li>`;
+  };
+  let esperaBusqueda;
+  buscaCampo.addEventListener('input', () => {
+    clearTimeout(esperaBusqueda);
+    esperaBusqueda = setTimeout(() => pintarBusqueda().catch((e) => mostrarErrores(cajaError, e, 'No se ha podido buscar:')), 250);
+  });
   const pintarHoy = async () => {
     const responsable = $('input[name="responsable"]:checked', deQuien)?.value ?? 'yo'; // 'yo' o '' (de todos)
     const filtro = responsable ? `&responsable=${encodeURIComponent(responsable)}` : '';
@@ -1955,14 +2061,14 @@ async function paginaCrm(usuario) {
         avisar(`Pasada al ${new Date(`${dia}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' })}`);
       }
       cajaError.hidden = true;
-      await Promise.all([pintarHoy(), pintarEmbudo()]);
+      await Promise.all([pintarHoy(), pintarEmbudo(), pintarBusqueda()]);
     } catch (e) {
       boton.disabled = false;
       mostrarErrores(cajaError, e, boton.dataset.hecha ? 'No se ha podido marcar como hecha:' : 'No se ha podido pasar a mañana:');
     }
   };
   hoyCaja.addEventListener('click', alPulsar);
-  deQuien.addEventListener('change', () => pintarHoy().catch((e) => mostrarErrores(cajaError, e, 'No se ha podido cargar:')));
+  deQuien.addEventListener('change', () => Promise.all([pintarHoy(), pintarBusqueda()]).catch((e) => mostrarErrores(cajaError, e, 'No se ha podido cargar:')));
 
   // --- Embudo ---
   let clientes = new Map();
@@ -2118,9 +2224,9 @@ async function paginaCrm(usuario) {
         <span class="campo__ayuda">¿No está? Dalo de alta en <a href="clientes.html#nuevo">Clientes</a>.</span>
       </label>
       <label class="campo">
-        <span class="campo__nombre">Cuándo</span>
-        <input type="datetime-local" name="programada_para" value="${diaLocal(ahoraMas)}T${String(ahoraMas.getHours()).padStart(2, '0')}:00">
-        <span class="campo__ayuda">Vacío en una nota.</span>
+        <span class="campo__nombre">Cuándo <em>*</em></span>
+        <input type="datetime-local" name="programada_para" value="${diaLocal(ahoraMas)}T${String(ahoraMas.getHours()).padStart(2, '0')}:00" required>
+        <span class="campo__ayuda">Sin fecha no saldría en «Hoy» ni en «Próximos». Una nota no lleva.</span>
       </label>
       ${gerencia ? `<label class="campo">
         <span class="campo__nombre">Quién</span>
@@ -2157,9 +2263,14 @@ async function paginaCrm(usuario) {
   };
   // Una nota no se programa: apunta algo que ya pasó (la API la guarda hecha). Con fecha, sería una tarea más.
   const fechaPorDefecto = form.elements.programada_para.value;
+  // Tras form.reset() el tipo vuelve a «Llamada»: la fecha vuelve a pedirse
+  form.addEventListener('reset', () => setTimeout(() => form.elements.tipo.dispatchEvent(new Event('change'))));
   form.elements.tipo.addEventListener('change', () => {
     const nota = form.elements.tipo.value === 'nota';
     form.elements.programada_para.value = nota ? '' : form.elements.programada_para.value || fechaPorDefecto;
+    form.elements.programada_para.required = !nota;
+    form.elements.programada_para.disabled = nota;
+    $('.campo__nombre em', form.elements.programada_para.closest('label')).hidden = nota;
   });
   boton.addEventListener('click', (ev) => {
     ev.preventDefault();
@@ -2222,10 +2333,8 @@ const FORMAS_COBRO = { ...FORMAS_PAGO, financiera: 'Financiera', senal: 'Señal 
 const formaCobro = (f) => (['contado', 'tarjeta', 'transferencia'].includes(f.forma_pago) ? f.forma_pago : 'transferencia');
 // Céntimos con dos decimales: en una factura no se redondea al euro
 const euros2 = (cent) => (cent == null ? '—' : `${(cent / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' })} €`);
-const aCent = (texto) => {
-  const n = Number(String(texto).trim().replace(/\./g, '').replace(',', '.'));
-  return Number.isFinite(n) ? Math.round(n * 100) : NaN;
-};
+// El mismo lector que el resto del panel (aCentimos), con NaN en vez de null para estos cálculos
+const aCent = (texto) => aCentimos(texto) ?? NaN;
 const fechaLarga = (dia) => (dia ? new Date(`${dia}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '—');
 
 async function paginaFacturas() {
@@ -2369,11 +2478,14 @@ async function paginaFacturas() {
 async function prepararAltaFactura() {
   const cabecera = $('.cabecera--portada > div');
   cabecera.insertAdjacentHTML('beforeend', '<p class="cabecera__acciones-factura"><a class="boton" href="#nueva-factura" data-nueva>Nueva factura</a></p>');
-  const [coches, clientes, { facturas }] = await Promise.all([api('/vehiculos'), api('/clientes'), api('/facturas')]);
+  // facturas.html?editar=ID: el mismo formulario, relleno con un borrador para corregirlo (PUT)
+  const editar = Number(params.get('editar')) || null;
+  const [coches, clientes, { facturas }, borrador] = await Promise.all([api('/vehiculos'), api('/clientes'), api('/facturas'),
+    editar ? api(`/facturas/${editar}`) : null]);
   const facturados = new Set(facturas.filter((f) => f.tipo === 'venta' && f.estado === 'emitida' && !f.anulada).map((f) => f.vehiculo_id));
   // Un entregado de hace más de dos meses sin factura nuestra se facturó en su día fuera (Pymecar): no se ofrece
-  const posibles = coches.filter((v) => ['publicado', 'reservado', 'vendido', 'entregado'].includes(v.estado) && !facturados.has(v.id)
-    && (v.estado !== 'entregado' || diasDesde(v.en_estado_desde) <= 60));
+  const posibles = coches.filter((v) => v.id === borrador?.vehiculo_id || (['publicado', 'reservado', 'vendido', 'entregado'].includes(v.estado) && !facturados.has(v.id)
+    && (v.estado !== 'entregado' || diasDesde(v.en_estado_desde) <= 60)));
   const seccion = document.createElement('section');
   seccion.className = 'caja form-tercero despliega';
   seccion.id = 'nueva-factura';
@@ -2463,9 +2575,36 @@ async function prepararAltaFactura() {
   };
   form.elements.forma_pago.addEventListener('change', proponerVence);
   form.elements.fecha.addEventListener('change', proponerVence);
+  // «Sin garantía» deja los meses a 0; al volver a una garantía, los 12 de siempre
+  form.elements.garantia_tipo.addEventListener('change', () => {
+    const sin = form.elements.garantia_tipo.value === 'sin';
+    if (sin) form.elements.garantia_meses.value = 0;
+    else if (Number(form.elements.garantia_meses.value) === 0) form.elements.garantia_meses.value = 12;
+    form.elements.garantia_meses.disabled = sin;
+  });
   const abrir = (ev) => { ev?.preventDefault(); seccion.hidden = false; seccion.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   $('[data-nueva]').addEventListener('click', abrir);
   $('[data-cancelar]', form).addEventListener('click', () => { seccion.hidden = true; form.reset(); error.hidden = true; });
+  if (borrador) {
+    if (borrador.estado !== 'borrador') { location.href = `factura.html?id=${borrador.id}`; return; }
+    $('h2', seccion).textContent = 'Corregir el borrador';
+    $('.caja__titulo .nota', seccion).textContent = 'Sigue siendo un borrador: cuando esté bien, se emite desde la factura';
+    $('button[type="submit"]', form).textContent = 'Guardar cambios';
+    const texto = (cent) => (cent ? textoImporte(cent) : '');
+    form.elements.vehiculo_id.value = String(borrador.vehiculo_id ?? '');
+    form.elements.vehiculo_id.dispatchEvent(new Event('change'));
+    form.elements.cliente_id.value = String(borrador.cliente_id ?? '');
+    form.elements.precio.value = texto(borrador.precio_cent);
+    form.elements.suplidos.value = texto(borrador.suplidos_cent);
+    form.elements.parte_pago.value = texto(borrador.parte_pago_cent);
+    for (const campo of ['regimen', 'fecha', 'vencimiento', 'forma_pago', 'garantia_tipo', 'garantia_meses', 'km_entrega', 'parte_pago_vehiculo', 'observaciones']) {
+      if (borrador[campo] != null) form.elements[campo].value = borrador[campo];
+    }
+    form.elements.garantia_tipo.dispatchEvent(new Event('change'));
+    pintarPrevia();
+    abrir();
+    $('[data-cancelar]', form).addEventListener('click', () => { location.href = `factura.html?id=${borrador.id}`; });
+  }
   // Desde la ficha de un coche: facturas.html?coche=ID abre el alta con él elegido
   if (params.get('coche')) {
     form.elements.vehiculo_id.value = params.get('coche');
@@ -2477,20 +2616,24 @@ async function prepararAltaFactura() {
     const d = Object.fromEntries(new FormData(form));
     const cuerpo = { vehiculo_id: Number(d.vehiculo_id), cliente_id: Number(d.cliente_id), fecha: d.fecha, forma_pago: d.forma_pago,
       garantia_tipo: d.garantia_tipo, garantia_meses: d.garantia_meses === '' ? null : Number(d.garantia_meses) };
+    // garantia_meses va desactivado con «Sin garantía»: FormData no lo trae
+    if (d.garantia_tipo === 'sin') cuerpo.garantia_meses = 0;
+    // Al corregir un borrador, lo que se vacía se borra (null); en uno nuevo, simplemente no se manda
+    const vacio = (campo) => { if (borrador) cuerpo[campo] = campo === 'suplidos_cent' ? 0 : null; };
     if (d.precio.trim()) cuerpo.precio_cent = aCent(d.precio);
-    if (d.suplidos.trim()) cuerpo.suplidos_cent = aCent(d.suplidos);
-    if (d.parte_pago.trim()) cuerpo.parte_pago_cent = aCent(d.parte_pago);
-    if (d.parte_pago_vehiculo.trim()) cuerpo.parte_pago_vehiculo = d.parte_pago_vehiculo.trim();
+    if (d.suplidos.trim()) cuerpo.suplidos_cent = aCent(d.suplidos); else vacio('suplidos_cent');
+    if (d.parte_pago.trim()) cuerpo.parte_pago_cent = aCent(d.parte_pago); else vacio('parte_pago_cent');
+    if (d.parte_pago_vehiculo.trim()) cuerpo.parte_pago_vehiculo = d.parte_pago_vehiculo.trim(); else vacio('parte_pago_vehiculo');
     if (d.regimen) cuerpo.regimen = d.regimen;
-    if (d.vencimiento) cuerpo.vencimiento = d.vencimiento;
-    if (d.km_entrega !== '') cuerpo.km_entrega = Number(d.km_entrega);
-    if (d.observaciones.trim()) cuerpo.observaciones = d.observaciones.trim();
-    if ([cuerpo.precio_cent, cuerpo.suplidos_cent].some((c) => c !== undefined && !(c >= 0))) {
+    if (d.vencimiento) cuerpo.vencimiento = d.vencimiento; else vacio('vencimiento');
+    if (d.km_entrega !== '') cuerpo.km_entrega = Number(d.km_entrega); else vacio('km_entrega');
+    if (d.observaciones.trim()) cuerpo.observaciones = d.observaciones.trim(); else vacio('observaciones');
+    if ([cuerpo.precio_cent, cuerpo.suplidos_cent, cuerpo.parte_pago_cent].some((c) => c !== undefined && !(c >= 0))) {
       return mostrarErrores(error, { lista: ['Los importes van como 12.900,00'] }, 'No se ha podido guardar:');
     }
     try {
-      const f = await api('/facturas', { method: 'POST', body: cuerpo });
-      avisarAlVolver('Borrador guardado: revísalo y emítelo');
+      const f = await api(borrador ? `/facturas/${borrador.id}` : '/facturas', { method: borrador ? 'PUT' : 'POST', body: cuerpo });
+      avisarAlVolver(borrador ? 'Borrador corregido: revísalo y emítelo' : 'Borrador guardado: revísalo y emítelo');
       location.href = `factura.html?id=${f.id}`; // a revisarla antes de emitir
     } catch (e) {
       mostrarErrores(error, e, 'No se ha podido guardar:');
@@ -2503,7 +2646,8 @@ async function prepararEmpresaYSeries() {
   const [empresa, series] = await Promise.all([api('/facturas/empresa'), api('/facturas/series')]);
   const anio = diaLocal().slice(2, 4);
   const ventas = series.find((s) => s.serie === `V${anio}`);
-  const campo = (nombre, etiqueta, valor, extra = '') => `<label class="campo${extra}"><span class="campo__nombre">${etiqueta}</span><input name="${nombre}" value="${esc(valor ?? '')}"></label>`;
+  const TIPO_CAMPO = { email: 'email', telefono: 'tel' };
+  const campo = (nombre, etiqueta, valor, extra = '') => `<label class="campo${extra}"><span class="campo__nombre">${etiqueta}</span><input${TIPO_CAMPO[nombre] ? ` type="${TIPO_CAMPO[nombre]}"` : ''} name="${nombre}" value="${esc(valor ?? '')}"></label>`;
   const sinDireccion = !empresa.direccion || !empresa.codigo_postal || !empresa.poblacion;
   const caja = document.createElement('details');
   caja.className = 'caja ajustes-factura';
@@ -2527,7 +2671,7 @@ async function prepararEmpresaYSeries() {
       <p class="nota campo--ancho">Serie de ventas de este año: <b>V${anio}</b>. ${ventas?.emitidas
         ? `La siguiente factura será la <b>${esc(ventas.codigo_siguiente)}</b>.`
         : 'Antes de la primera factura, pon el último número que se dio en Pymecar para seguir sin saltos.'}</p>
-      ${ventas?.emitidas ? '' : `<label class="campo"><span class="campo__nombre">Último número de Pymecar</span><input type="number" min="0" name="ultimo" value="${ventas?.ultimo ?? 0}"></label>
+      ${ventas?.emitidas ? '' : `<label class="campo"><span class="campo__nombre">Último número de Pymecar</span><input type="number" min="0" step="1" name="ultimo" value="${ventas?.ultimo ?? 0}" required></label>
       <div class="form-tercero__pie"><button class="boton boton--secundario" type="submit">Guardar numeración</button></div>`}
     </form>`;
   $('.contenido').append(caja);
@@ -2577,7 +2721,25 @@ async function paginaFactura() {
   const pintarCobros = (f) => {
     if (f.estado === 'borrador') {
       panel.hidden = false;
-      panel.innerHTML = `<p class="factura-cobros__aviso"><b>Borrador sin número.</b> Revísalo aquí abajo y pulsa «Emitir factura»: coge el siguiente número de la serie y ya no se puede cambiar.</p>`;
+      panel.innerHTML = `<p class="factura-cobros__aviso"><b>Borrador sin número.</b> Revísalo aquí abajo y pulsa «Emitir factura»: coge el siguiente número de la serie y ya no se puede cambiar.</p>
+        <div class="cobro-form__botones">
+          <a class="boton boton--secundario boton--pequeno" href="facturas.html?editar=${f.id}">Corregir el borrador</a>
+          <button class="boton boton--secundario boton--pequeno" type="button" data-borrar-borrador>Borrar el borrador</button>
+        </div>`;
+      // Borrar: dos pulsaciones, como quitar un cobro. Un borrador no tiene número: no deja hueco en la serie.
+      const borrar = $('[data-borrar-borrador]', panel);
+      borrar.addEventListener('click', async () => {
+        if (!borrar.dataset.seguro) { borrar.dataset.seguro = '1'; borrar.textContent = '¿Seguro? Pulsa otra vez para borrarlo'; return; }
+        borrar.disabled = true;
+        try {
+          await api(`/facturas/${id}`, { method: 'DELETE' });
+          avisarAlVolver('Borrador borrado');
+          location.href = 'facturas.html';
+        } catch (e) {
+          borrar.disabled = false;
+          mostrarErrores(cajaError, e, 'No se ha podido borrar:');
+        }
+      });
       return;
     }
     if (f.tipo !== 'venta' || f.anulada) {
@@ -3311,11 +3473,15 @@ const MES_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const TIPOS_GASTO = { general: 'General', irpf: 'Con IRPF', comision: 'Comisión', rebu: 'REBU', vehiculo: 'Vehículo' };
 // El tipo que propone cada concepto: el mismo que pone la API si no llega (gastos/calculo.js)
 const TIPO_POR_CONCEPTO = { alquileres: 'irpf', gestorias: 'irpf', comisiones: 'comision', vehiculos: 'vehiculo', compras: 'rebu' };
-/** «1.200,50» → 120050 céntimos; null si no es un importe */
+/** «1.200,50», «12.900» o «12.50» → céntimos; null si no es un importe. El punto seguido de tres cifras es de miles */
 function aCentimos(texto) {
   const t = String(texto ?? '').trim().replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
   if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
   return Math.round(Number(t) * 100);
+}
+/** 1290050 → «12900,5»: para poner un importe en un campo de texto y que aCentimos lo vuelva a leer igual */
+function textoImporte(cent) {
+  return (cent / 100).toLocaleString('es-ES', { maximumFractionDigits: 2, useGrouping: false });
 }
 const mesTitulo = (mes) => mayuscula(nombreMes(mes)); // «Octubre 2026»
 
@@ -3443,8 +3609,10 @@ async function paginaGastos() {
     }
   });
 
-  // Lista: se pide el mes entero (las cifras de arriba son del mes) y se filtra aquí
+  // Lista: se pide el mes entero (las cifras de arriba son del mes) y se filtra aquí. Con algo en el
+  // buscador, la lista es lo encontrado en todos los meses (las cifras de arriba siguen siendo del mes)
   let delMes = [];
+  let buscando = '';
   // El concepto que ya dice el tipo («Vehículo» y «Vehículos»): debajo solo sale si es otro
   const CONCEPTO_DEL_TIPO = { vehiculo: 'vehiculos', comision: 'comisiones', rebu: 'compras' };
   const fila = (g) => {
@@ -3463,7 +3631,7 @@ async function paginaGastos() {
       : `<button class="estado cobro--vencida gasto-pago" type="button" data-pago="${g.id}" data-pagado="1" data-texto="¿Pagado hoy?">Sin pagar</button>`;
     return `<tr data-id="${g.id}"${g.pagado_en ? '' : ' class="fila-pendiente"'}>
         <td class="cifra gasto-registro" data-rotulo="Nº de registro">${g.numero}</td>
-        <td class="cifra" data-rotulo="Fecha">${esc(new Date(`${g.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }))}</td>
+        <td class="cifra" data-rotulo="Fecha">${esc(new Date(`${g.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', ...(buscando ? { year: 'numeric' } : {}) }))}</td>
         <td class="t-titulo"><span class="coche-celda"><b class="dos-lineas" title="${esc(titulo)}">${esc(titulo)}</b>${sub ? `<span class="nota dos-lineas" title="${esc(sub)}">${esc(sub)}</span>` : ''}${coche}</span></td>
         <td data-rotulo="Tipo"><span class="gasto-tipo"><span class="estado gasto--${esc(g.tipo)}">${esc(TIPOS_GASTO[g.tipo])}</span>${CONCEPTO_DEL_TIPO[g.tipo] === g.concepto ? '' : `<span class="gasto-concepto">${esc(CONCEPTOS_GASTO[g.concepto])}</span>`}</span></td>
         <td class="derecha cifra" data-rotulo="Sin IVA">${euros2(g.base_cent)}</td>
@@ -3485,9 +3653,9 @@ async function paginaGastos() {
     $('.tabla-caja').hidden = !lista.length;
     vacio.hidden = !!lista.length;
     const mes = mesTitulo(selMes.value).split(' ')[0].toLowerCase();
-    $('.lista-pie__cuantos').textContent = `${cuenta(lista.length, 'gasto', 'gastos')}${soloCoche ? ' de este coche' : ''} · el más reciente arriba`;
+    $('.lista-pie__cuantos').textContent = `${cuenta(lista.length, 'gasto', 'gastos')}${soloCoche ? ' de este coche' : ''}${buscando ? ` con «${buscando}», de todos los meses` : ''} · el más reciente arriba`;
     const celdas = pie.querySelectorAll('td');
-    celdas[0].textContent = tipo || concepto || pago ? 'Total con este filtro' : `Total de ${mes}`;
+    celdas[0].textContent = buscando ? 'Total de lo encontrado' : tipo || concepto || pago ? 'Total con este filtro' : `Total de ${mes}`;
     celdas[1].textContent = euros2(suma(lista, 'base_cent'));
     celdas[2].textContent = euros2(suma(lista, 'iva_cent'));
     const irpf = suma(lista, 'irpf_cent');
@@ -3501,7 +3669,9 @@ async function paginaGastos() {
     const mes = selMes.value;
     const extra = soloCoche ? `&vehiculo=${encodeURIComponent(soloCoche)}` : '';
     const [actual, previo] = await Promise.all([api(`/gastos?mes=${mes}${extra}`), api(`/gastos?mes=${anterior(mes)}${extra}`)]);
-    delMes = actual.gastos;
+    buscando = (filtros.elements.q?.value ?? '').trim();
+    delMes = buscando ? (await api(`/gastos?q=${encodeURIComponent(buscando)}${extra}`)).gastos : actual.gastos;
+    selMes.disabled = !!buscando;
     const t = actual.totales;
     // Cabecera: el mes, sin IVA y lo que queda por pagar
     $('.portada__mes-titulo').textContent = mesTitulo(mes) + (soloCoche ? ' · este coche' : '');
@@ -3523,7 +3693,14 @@ async function paginaGastos() {
     pintarLista();
   };
 
-  filtros.addEventListener('change', (ev) => { if (ev.target !== selMes) pintarLista(); });
+  filtros.addEventListener('change', (ev) => { if (ev.target !== selMes && ev.target.name !== 'q') pintarLista(); });
+  let espera;
+  filtros.addEventListener('input', (ev) => {
+    if (ev.target.name !== 'q') return;
+    clearTimeout(espera);
+    espera = setTimeout(() => cargar().catch((err) => mostrarErrores(errorLista, err, 'No se ha podido buscar:')), 250);
+  });
+  filtros.addEventListener('submit', (ev) => ev.preventDefault());
   selMes.addEventListener('change', () => {
     history.replaceState(null, '', `?${new URLSearchParams({ mes: selMes.value, ...(soloCoche ? { vehiculo: soloCoche } : {}) })}`);
     cargar().catch((err) => mostrarErrores(errorLista, err, 'No se ha podido cargar el mes:'));
@@ -3656,7 +3833,7 @@ async function paginaIncentivos(usuario) {
           <button class="boton boton--secundario boton--pequeno" type="button" data-cerrar>Cancelar</button>
         </form>
         ${c.coches.length ? `<details class="incentivo__coches"${c.liquidado ? '' : ' open'}>
-          <summary>${c.liquidado ? `Ver ${c.coches.length === 1 ? 'su coche' : `sus ${c.coches.length} coches`}` : `${cuenta(c.coches.length, 'coche', 'coches')} vendidos`}</summary>
+          <summary>${c.liquidado ? `Ver ${c.coches.length === 1 ? 'su coche' : `sus ${c.coches.length} coches`}` : cuenta(c.coches.length, 'coche vendido', 'coches vendidos')}</summary>
           <div class="tabla-caja">
           <table class="tabla tabla--tarjetas">
             <thead><tr><th>Fecha</th><th>Coche</th><th class="derecha">Precio</th><th class="derecha">Margen</th><th class="derecha">Incentivo</th></tr></thead>
@@ -4294,6 +4471,33 @@ async function paginaAgenda() {
     if (dia) return abrirNueva({ dia: dia.dataset.dia });
   });
 
+  // Buscador: pruebas de cualquier fecha (las que vienen primero). Una pulsada abre su ficha.
+  const buscarForm = $('.agenda-buscar');
+  const encontradasLista = $('.agenda-encontradas');
+  let encontradas = [];
+  let busqueda = 0;
+  const buscar = async () => {
+    const q = buscarForm.elements.q.value.trim();
+    const esta = ++busqueda;
+    encontradas = q ? await api(`/citas?q=${encodeURIComponent(q)}&canceladas=1`) : [];
+    if (esta !== busqueda) return;
+    encontradasLista.hidden = !q;
+    encontradasLista.innerHTML = encontradas.length
+      ? encontradas.map((c) => `<li><button type="button" data-encontrada="${c.id}">
+          <b class="cifra">${esc(nombreDia(c.inicio.slice(0, 10), true))}${c.inicio.slice(0, 4) === hoy.slice(0, 4) ? '' : ` de ${c.inicio.slice(0, 4)}`}, ${esc(c.inicio.slice(11))}</b>
+          <span>${esc(c.nombre)} · ${esc(`${c.marca} ${c.modelo}`)}</span>
+          <span class="nota">${esc(ESTADOS_PRUEBA[c.estado] ?? c.estado)}${c.telefono ? ` · ${esc(telefonoBonito(c.telefono))}` : ''}</span>
+        </button></li>`).join('')
+      : `<li><p class="nota agenda-encontradas__nada">Ninguna prueba con «${esc(q)}».</p></li>`;
+  };
+  let esperaBusqueda;
+  buscarForm.addEventListener('input', () => { clearTimeout(esperaBusqueda); esperaBusqueda = setTimeout(() => buscar().catch((e) => mostrarErrores(cajaError, e, 'No se ha podido buscar:')), 250); });
+  buscarForm.addEventListener('submit', (ev) => ev.preventDefault());
+  encontradasLista.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-encontrada]');
+    if (b) abrirFicha(encontradas.find((c) => c.id === Number(b.dataset.encontrada)));
+  });
+
   // Al girar el móvil o cambiar el ancho, de rejilla a lista y al revés
   movil.addEventListener('change', () => pintar());
 
@@ -4360,7 +4564,7 @@ async function paginaAvisos(usuario) {
 
   const fila = (a) => {
     const tipo = TIPOS_AVISO[a.tipo] ?? { nombre: a.tipo, punto: 'tarea' };
-    return `<li class="aviso aviso--${esc(a.gravedad)}" data-tipo="${esc(a.tipo)}">
+    return `<li class="aviso aviso--${esc(a.gravedad)}" data-tipo="${esc(a.tipo)}" data-busca="${esc(paraBuscar(`${a.texto} ${tipo.nombre}`))}">
         <div>
           <p class="aviso__texto">${esc(a.texto)}</p>
           <p class="aviso__meta"><span class="aviso__tipo"><i class="punto aviso-tipo--${tipo.punto}"></i>${esc(tipo.nombre)}</span><span>${cuandoAviso(a)}</span></p>
@@ -4383,13 +4587,28 @@ async function paginaAvisos(usuario) {
   const contadores = document.querySelectorAll('.filtros--avisos .segmentos__n');
   [avisos.length, n.alta, n.media].forEach((v, i) => { contadores[i].textContent = v; });
 
+  // Buscador: filtra aquí mismo (los avisos se calculan al pedirlos y son pocos)
   const pintar = () => {
     const g = new FormData(filtro).get('gravedad');
-    for (const k of ['alta', 'media']) grupos[k].hidden = !n[k] || (g && g !== k);
-    vacio.hidden = avisos.length > 0;
+    const palabras = paraBuscar(filtro.elements.q.value).split(/\s+/).filter(Boolean);
+    let quedan = 0;
+    for (const k of ['alta', 'media']) {
+      let suyos = 0;
+      grupos[k].querySelectorAll('.aviso').forEach((li) => {
+        li.hidden = !palabras.every((w) => li.dataset.busca.includes(w));
+        if (!li.hidden) suyos++;
+      });
+      grupos[k].hidden = !suyos || (g && g !== k);
+      if (!grupos[k].hidden) quedan += suyos;
+    }
+    vacio.hidden = avisos.length > 0 && (quedan > 0 || !palabras.length);
+    $('strong', vacio).textContent = avisos.length ? 'Ningún aviso con esa búsqueda' : 'Nada que atender hoy';
+    $('p', vacio).hidden = avisos.length > 0;
   };
   filtro.hidden = !avisos.length;
   filtro.addEventListener('change', pintar);
+  filtro.addEventListener('input', pintar);
+  filtro.addEventListener('submit', (ev) => ev.preventDefault());
   pintar();
 }
 

@@ -2208,6 +2208,7 @@ html:not([data-rol="gerencia"]) .menu__enlaces a[href="incentivos.html"]::after,
 .hoy .caja__titulo { flex-wrap: wrap; row-gap: 8px; }
 /* (los span de dentro no son pestañas: sin el alto ni el relleno de .segmentos span) */
 .hoy__pestanas { flex-wrap: nowrap; }
+.hoy__buscador { flex: 1 1 100%; }
 .hoy__pestanas > label > span { white-space: nowrap; }
 .hoy__pestanas span span { display: inline; min-height: 0; padding: 0; border-radius: 0; background: none; box-shadow: none; color: inherit; font-size: inherit; }
 .hoy__pestanas .hoy__cuenta { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; background: var(--rojo-boton); color: var(--blanco); font-size: .6875rem; font-weight: 700; line-height: 1; }
@@ -2748,6 +2749,14 @@ rect.grafica__punto:focus-visible, .grafica__dato:focus-visible .grafica__diana 
    una prueba, para abrir su ficha (ventana). En el móvil, una lista por día. */
 
 /* Paso de semana compacto sobre la banda negra: ‹ Hoy › */
+/* Buscador de la agenda: lo encontrado, una línea por prueba, encima de la semana */
+.agenda-buscar { margin-bottom: var(--espacio-s); }
+.agenda-encontradas { margin: 0 0 var(--espacio-m); padding: 0; list-style: none; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--blanco); overflow: hidden; }
+.agenda-encontradas li + li { border-top: 1px solid var(--linea); }
+.agenda-encontradas button { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; width: 100%; padding: 10px 16px; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
+.agenda-encontradas button:hover { background: var(--fondo); }
+.agenda-encontradas .nota { margin: 0; }
+.agenda-encontradas__nada { padding: 10px 16px; }
 .agenda-paso { display: inline-flex; align-items: center; border: 1px solid #4a4f55; border-radius: var(--radio-boton); overflow: hidden; }
 .agenda-paso a { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 14px; color: var(--blanco); text-decoration: none; font-weight: 600; transition: background-color var(--hover); }
 .agenda-paso__flecha { font-size: 1.25rem; line-height: 1; padding: 0 12px; }
