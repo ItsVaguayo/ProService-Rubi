@@ -107,7 +107,7 @@ Clientes: los dos roles (el comercial los usa en el CRM). Proveedores: solo gere
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
-| `GET /clientes?q=` | con sesión | Lista por nombre. `q` busca en nombre, NIF, teléfono (sin espacios) y correo. `activos=0` incluye los desactivados. Como mucho 5.000. Cada fila trae `n_coches` (los que ha comprado) y `ultima_actividad` (cuándo se hizo su última actividad del CRM; las apuntadas sin hacer no cuentan) |
+| `GET /clientes?q=` | con sesión | Lista por nombre. `q` busca en nombre y correo (sin tildes ni mayúsculas), NIF y teléfono (sin espacios). `activos=0` incluye los desactivados. Como mucho 5.000. Cada fila trae `n_coches` (los que ha comprado) y `ultima_actividad` (cuándo se hizo su última actividad del CRM; las apuntadas sin hacer no cuentan) |
 | `GET /clientes/:id` | con sesión | La ficha, con `coches` (los que ha comprado: `vehiculos.comprador_id`) y `contactos` (los de la web unidos a él) |
 | `POST /clientes` | con sesión | Alta. Solo `nombre` es obligatorio. 201 |
 | `PUT /clientes/:id` | con sesión | Cambia los campos que lleguen. `{ activo: false }` lo desactiva: no se borra nunca |
@@ -387,7 +387,7 @@ Una venta es el último paso a «Vendido» (o a «Entregado», si se saltó ese 
 
 ## Buscar (`?q=`)
 
-En contactos, actividades, gastos y citas. Cada palabra tiene que salir en alguno de los campos, sin distinguir mayúsculas («golf marta» encuentra la prueba de Marta con el Golf). Los teléfonos se comparan sin espacios, guiones, puntos ni paréntesis. `%` y `_` se buscan tal cual. Más de 100 caracteres: 400. En blanco no filtra. Lo hace `api/src/buscar.js`.
+En contactos, actividades, gastos y citas. Cada palabra tiene que salir en alguno de los campos, sin distinguir mayúsculas ni tildes («golf marta» encuentra la prueba de Marta con el Golf; «garcia», a García). Los teléfonos se comparan sin espacios, guiones, puntos ni paréntesis. `%` y `_` se buscan tal cual. Más de 100 caracteres: 400. En blanco no filtra. Lo hace `api/src/buscar.js`.
 
 ## Pendiente
 

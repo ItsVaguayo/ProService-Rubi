@@ -2583,7 +2583,9 @@ async function prepararAltaFactura() {
     form.elements.garantia_meses.disabled = sin;
   });
   const abrir = (ev) => { ev?.preventDefault(); seccion.hidden = false; seccion.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  $('[data-nueva]').addEventListener('click', abrir);
+  // Corrigiendo un borrador, el formulario está ocupado con él: «Nueva factura» va a la página limpia con el alta abierta
+  if (borrador) $('[data-nueva]').href = 'facturas.html#nueva-factura';
+  else $('[data-nueva]').addEventListener('click', abrir);
   $('[data-cancelar]', form).addEventListener('click', () => { seccion.hidden = true; form.reset(); error.hidden = true; });
   if (borrador) {
     if (borrador.estado !== 'borrador') { location.href = `factura.html?id=${borrador.id}`; return; }
@@ -2611,6 +2613,7 @@ async function prepararAltaFactura() {
     form.elements.vehiculo_id.dispatchEvent(new Event('change'));
     abrir();
   }
+  if (!borrador && location.hash === '#nueva-factura') abrir();
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const d = Object.fromEntries(new FormData(form));
@@ -3473,11 +3476,14 @@ const MES_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const TIPOS_GASTO = { general: 'General', irpf: 'Con IRPF', comision: 'Comisión', rebu: 'REBU', vehiculo: 'Vehículo' };
 // El tipo que propone cada concepto: el mismo que pone la API si no llega (gastos/calculo.js)
 const TIPO_POR_CONCEPTO = { alquileres: 'irpf', gestorias: 'irpf', comisiones: 'comision', vehiculos: 'vehiculo', compras: 'rebu' };
-/** «1.200,50», «12.900» o «12.50» → céntimos; null si no es un importe. El punto seguido de tres cifras es de miles */
+/** «1.200,50», «12.900» o «12.50» → céntimos; null si no es un importe. Con puntos de miles bien puestos
+ * (de tres en tres), los decimales van con coma; sin ellos, con coma o con punto. «12.900.5» no es un importe */
+const IMPORTE = /^(?:(\d{1,3}(?:\.\d{3})+)(?:,(\d{1,2}))?|(\d+)(?:[.,](\d{1,2}))?)$/;
 function aCentimos(texto) {
-  const t = String(texto ?? '').trim().replace(/\s|€/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
-  if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
-  return Math.round(Number(t) * 100);
+  const m = IMPORTE.exec(String(texto ?? '').trim().replace(/\s|€/g, ''));
+  if (!m) return null;
+  const enteros = (m[1] ?? m[3]).replace(/\./g, '');
+  return Number(enteros) * 100 + Number((m[2] ?? m[4] ?? '').padEnd(2, '0'));
 }
 /** 1290050 → «12900,5»: para poner un importe en un campo de texto y que aCentimos lo vuelva a leer igual */
 function textoImporte(cent) {

@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { readFileSync, readdirSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { sinAcentos } from './buscar.js';
 
 const DIR_MIGRACIONES = new URL('../migraciones/', import.meta.url);
 
@@ -10,6 +11,8 @@ export function abrirDb(ruta = process.env.DB_PATH || './data/proservice.db') {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.pragma('busy_timeout = 5000');
+  // Para los buscadores (buscar.js): sin_acentos(nombre) LIKE ? encuentra «García» escribiendo «garcia»
+  db.function('sin_acentos', { deterministic: true }, (texto) => (texto == null ? null : sinAcentos(texto)));
   migrar(db);
   return db;
 }

@@ -30,6 +30,8 @@ test('clientes: alta, búsqueda, ficha y edición con los dos roles', () =>
     await pide('/clientes', { method: 'POST', body: { nombre: 'Talleres Vallès SL', tipo: 'empresa', nif: 'B12345674' } });
     assert.deepEqual((await pide('/clientes?q=600111')).json.map((c) => c.nombre), ['Marta Soler'], 'busca el teléfono sin espacios');
     assert.deepEqual((await pide('/clientes?q=b1234')).json.map((c) => c.nombre), ['Talleres Vallès SL']);
+    assert.deepEqual((await pide('/clientes?q=talleres valles')).json.map((c) => c.nombre), ['Talleres Vallès SL'], 'sin las tildes');
+    assert.deepEqual((await pide(`/clientes?q=${encodeURIComponent('VALLÈS')}`)).json.map((c) => c.nombre), ['Talleres Vallès SL'], 'y en mayúsculas con tilde');
     assert.equal((await pide('/clientes')).json.length, 2);
 
     const repetido = await pide('/clientes', { method: 'POST', body: { nombre: 'Otra', nif: '12345678Z' } });
