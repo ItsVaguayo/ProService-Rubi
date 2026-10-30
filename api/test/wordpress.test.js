@@ -50,6 +50,9 @@ function wordpressFalso({ acfExpuesto = false, sin = [], conCondiciones = false 
       if (ruta === '/wp/v2/marca' && req.method === 'GET') return json(200, estado.terminos.filter((t) => t.name.toLowerCase().includes(url.searchParams.get('search').toLowerCase())));
       if (ruta === '/wp/v2/marca' && req.method === 'POST') { const t = { id: estado.siguiente++, name: datos().name }; estado.terminos.push(t); return json(201, t); }
       if (ruta === '/wp/v2/media' && req.method === 'GET') {
+        if (url.searchParams.get('include')) {
+          return json(200, url.searchParams.get('include').split(',').map((id) => ({ id: Number(id), post: estado.adjuntos.get(Number(id)) ?? 0 })));
+        }
         const padre = Number(url.searchParams.get('parent'));
         const pagina = Number(url.searchParams.get('page') || 1);
         const todas = [...estado.adjuntos].filter(([, p]) => p === padre).map(([id]) => ({ id }));
@@ -59,6 +62,8 @@ function wordpressFalso({ acfExpuesto = false, sin = [], conCondiciones = false 
       if (ruta === '/wp/v2/media' && req.method === 'POST') {
         if (estado.fallarSubida) { estado.fallarSubida = false; return json(500, { code: 'error', message: 'Error al subir' }); }
         assert.match(req.headers['content-disposition'], /filename="PS-\d{5}-\d{2}\.png"/);
+        // Como WordPress: no deja adjuntar a un post que no existe
+        if (url.searchParams.get('post') && !estado.posts.has(Number(url.searchParams.get('post')))) return json(403, { code: 'rest_cannot_edit', message: 'No puedes editar este post' });
         estado.medios++;
         const id = estado.siguiente++;
         estado.adjuntos.set(id, Number(url.searchParams.get('post')) || 0);
@@ -71,6 +76,9 @@ function wordpressFalso({ acfExpuesto = false, sin = [], conCondiciones = false 
         return json(200, { id: Number(medio[1]), post: datos().post });
       }
       const m = ruta.match(/^\/wp\/v2\/coches(?:\/(\d+))?$/);
+      if (m?.[1] && req.method === 'GET') {
+        return estado.posts.has(Number(m[1])) ? json(200, { id: Number(m[1]) }) : json(404, { code: 'rest_post_invalid_id', message: 'ID de entrada no válido.' });
+      }
       if (m && req.method === 'POST') {
         const d = datos();
         if (d.acf && !acfExpuesto) return json(400, { code: 'rest_invalid_param', message: 'acf no admitido' });
@@ -250,8 +258,8 @@ test('con ACF: año como fecha Ymd, cambio, potencia, cilindrada como texto, col
 
     const kia = postDe(estado, 'Kia Modelo Versión').acf;
     assert.equal(kia.ano, '20170101', 'sin fecha de matriculación, el 1 de enero del año');
-    assert.equal(kia.combustible, null);
-    assert.deepEqual(kia.colores, []);
+    assert.equal(kia.combustible, undefined, 'fuera de sus opciones no se manda: ni null, que borraría lo suyo');
+    assert.equal(kia.colores, undefined);
     assert.ok(r.avisos.some((a) => a === 'PS-00002: «GLP» no está entre las opciones de «combustible» de la web: no se manda'));
     assert.ok(r.avisos.some((a) => a.startsWith('PS-00002: «Morado» no está entre las opciones de «colores»')));
     assert.ok(r.avisos.some((a) => a.startsWith('PS-00001: «Apple CarPlay»')));
@@ -435,7 +443,7 @@ test('vincular una ficha sin fotos nuestras todavía no la bloquea: «Traer foto
     }
     const r = await sincronizar(db, cfg);
     assert.ok(!r.avisos.some((a) => /subidas a mano/.test(a)));
-    assert.equal(db.prepare('SELECT fotos_propias FROM wp_posts').get().fotos_propias, 1);
+    assert.equal(db.prepare('SELECT fotos_propias FROM wp_posts').get().fotos_propias, 0, 'sin nada que subir no hay que decidir');
     assert.equal(estado.posts.get(500).acf.imagen_principal, 501);
   }));
 
@@ -446,7 +454,9 @@ test('ficha bloqueada: el motivo queda en el estado del coche, no solo en la pas
     await sincronizar(db, cfg);
     db.prepare('UPDATE vehiculos SET pvp_cent = 1300000 WHERE id = 1').run();
     await sincronizar(db, cfg);
-    assert.match(db.prepare('SELECT ultimo_error FROM wp_posts').get().ultimo_error, /post 500 ya tiene otras fotos subidas a mano/);
+    const fila = db.prepare('SELECT ultimo_error, avisos FROM wp_posts').get();
+    assert.match(fila.avisos, /post 500 ya tiene otras fotos subidas a mano/);
+    assert.equal(fila.ultimo_error, null, 'es un aviso, no un error');
   }));
 
 test('sin ninguna foto pública se vacía la foto principal; lo que suban a mano a un post nuestro no se toca', () =>
@@ -517,7 +527,50 @@ test('los avisos de opciones quedan en el estado del coche, no solo en la primer
     db.prepare("UPDATE vehiculos SET combustible = 'glp' WHERE id = 1").run();
     await sincronizar(db, cfg);
     assert.equal((await sincronizar(db, cfg)).sin_cambios, 1);
-    assert.match(db.prepare('SELECT ultimo_error FROM wp_posts').get().ultimo_error, /«GLP» no está entre las opciones de «combustible»/);
+    assert.match(db.prepare('SELECT avisos FROM wp_posts').get().avisos, /«GLP» no está entre las opciones de «combustible»/);
+  }));
+
+test('post borrado a mano con una foto nueva por subir: se vuelve a crear en vez de fallar en cada pasada', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 1);
+    await sincronizar(db, cfg);
+    estado.posts.clear();
+    db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (1, 2, 'vehiculos/1/1.png')").run();
+    const r = await sincronizar(db, cfg);
+    assert.deepEqual(r.errores, []);
+    assert.equal(r.creados, 1);
+    await sincronizar(db, cfg);
+    assert.ok(postDe(estado).acf.imagen_principal);
+  }));
+
+test('un error viejo se borra del estado aunque el coche no cambie', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, coche }) => {
+    coche(1, 'Seat');
+    await sincronizar(db, cfg);
+    db.prepare("UPDATE wp_posts SET ultimo_error = 'tiempo agotado'").run();
+    assert.equal((await sincronizar(db, cfg)).sin_cambios, 1);
+    assert.equal(db.prepare('SELECT ultimo_error FROM wp_posts').get().ultimo_error, null);
+  }));
+
+test('revincular el mismo post conserva lo que se cuadró: una foto nuestra borrada no cuenta como ajena', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 2);
+    await sincronizar(db, cfg);
+    const post = postDe(estado);
+    db.prepare('DELETE FROM fotos WHERE orden = 1').run(); // se borra en el panel (y su fila de wp_medios con ella)
+    db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (1, 3, 'vehiculos/1/2.png')").run();
+    vincular(db, 1, post.id);
+    const r = await sincronizar(db, cfg);
+    assert.ok(!r.avisos.some((a) => /subidas a mano/.test(a)));
+    assert.equal([...estado.adjuntos.values()].filter((p) => p === post.id).length, 2, 'la borrada fuera, la nueva dentro');
+  }));
+
+test('sin campo de foto principal en su web, las fotos se suben igual adjuntas al post', () =>
+  conEscenario({ acfExpuesto: true, sin: ['imagen_principal'] }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 2);
+    await sincronizar(db, cfg);
+    assert.equal([...estado.adjuntos.values()].filter((p) => p === postDe(estado).id).length, 2);
+    assert.equal(postDe(estado).acf.imagen_principal, undefined);
   }));
 
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {

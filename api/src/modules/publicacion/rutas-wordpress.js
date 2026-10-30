@@ -30,7 +30,7 @@ export function rutasWordPress(db) {
   });
 
   r.get('/estado', (_req, res) => {
-    res.json(db.prepare(`SELECT v.id, v.referencia, v.marca, v.modelo, v.estado, w.wp_post_id, w.estado AS estado_wp, w.ultimo_error, w.actualizado_en
+    res.json(db.prepare(`SELECT v.id, v.referencia, v.marca, v.modelo, v.estado, w.wp_post_id, w.estado AS estado_wp, w.ultimo_error, w.avisos, w.actualizado_en
                            FROM vehiculos v LEFT JOIN wp_posts w ON w.vehiculo_id = v.id ORDER BY v.id`).all());
   });
 

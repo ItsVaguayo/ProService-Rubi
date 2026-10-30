@@ -7,3 +7,6 @@
 ALTER TABLE wp_posts ADD COLUMN fotos_propias INTEGER NOT NULL DEFAULT 0;
 -- Las fotos (ids de WordPress, en orden) que se cuadraron con el post la última vez: si no cambian, no se repasa.
 ALTER TABLE wp_posts ADD COLUMN fotos_huella TEXT;
+-- Los avisos del coche en la última pasada (valores fuera de sus opciones, fotos bloqueadas): no son errores, el
+-- coche se publicó; van aparte de ultimo_error para que el estado distinga uno de otro.
+ALTER TABLE wp_posts ADD COLUMN avisos TEXT;
