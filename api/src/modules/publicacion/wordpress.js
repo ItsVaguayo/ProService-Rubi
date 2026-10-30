@@ -340,14 +340,14 @@ async function sincronizarSinBloqueo(db, cfg, { forzar, fetchImpl }) {
   const enUso = new Set([...vinculos.values()].map((p) => p.wp_post_id));
   const olvidarAnterior = db.prepare('UPDATE wp_posts SET anterior_propio = 0 WHERE vehiculo_id = ?');
   const retirado = db.prepare("UPDATE wp_posts SET estado = 'retirado', huella = NULL, ultimo_error = NULL, actualizado_en = datetime('now') WHERE vehiculo_id = ?");
-  // A borrador (nunca se borra). true si quedó retirado; un 404 (ya no existe) cuenta como hecho si se pide
-  const aBorrador = async (postId, que, { noExiste = false } = {}) => {
+  // A borrador (nunca se borra). true si quedó retirado; un 404 (lo borraron a mano) también: ya no sale en la web
+  const aBorrador = async (postId, que) => {
     try {
       await pedir('POST', `/wp/v2/${d.rutaTipo}/${postId}`, { json: { status: 'draft' } });
       resumen.retirados++;
       return true;
     } catch (e) {
-      if (noExiste && e.status === 404) return true;
+      if (e.status === 404) return true;
       resumen.errores.push(`Retirar ${que} ${postId}: ${e.message}`);
       return false;
     }
@@ -355,7 +355,7 @@ async function sincronizarSinBloqueo(db, cfg, { forzar, fetchImpl }) {
   for (const p of vinculos.values()) {
     if (!p.anterior_propio) continue;
     // Si ese post lo tiene ahora otro coche, es suyo: no se toca
-    if (enUso.has(p.wp_post_anterior) || await aBorrador(p.wp_post_anterior, 'el post anterior', { noExiste: true })) olvidarAnterior.run(p.vehiculo_id);
+    if (enUso.has(p.wp_post_anterior) || await aBorrador(p.wp_post_anterior, 'el post anterior')) olvidarAnterior.run(p.vehiculo_id);
   }
 
   for (const p of publicados) {
@@ -411,9 +411,12 @@ async function publicarCoche(ctx, v, vinculo) {
     // Sin los obligatorios no va ningún campo de ACF (cuerpo.acf), tampoco la principal: lo rechazaría entero
     const principal = cuerpo.acf && campoFotos && fotos?.propias ? { [campoFotos]: fotos.ids[0] ?? null } : null;
     const envio = principal ? { ...cuerpo, acf: { ...cuerpo.acf, ...principal } } : cuerpo;
-    const huella = huellaDe(envio);
-    // Si solo cambiaron las fotos adjuntas (o quedan por subir), el post no se reenvía pero sí se cambió algo
-    if (vinculo?.estado === 'publicado' && vinculo.huella === huella) {
+    // La huella es de lo que manda el post sin la principal: la principal se compara con la primera foto cuadrada
+    // la última vez (fotos_huella), y con fotos pendientes (sin principal) el post no cambia por eso
+    const huella = huellaDe(cuerpo);
+    const principalAntes = Number(String(vinculo?.fotos_huella ?? '').split(',')[0]) || null;
+    const principalCambia = Boolean(principal) && principal[campoFotos] !== principalAntes;
+    if (vinculo?.estado === 'publicado' && vinculo.huella === huella && !principalCambia) {
       return { accion: fotos?.cambio || (ctx.mapaFotos && fotos === null) ? 'actualizados' : 'sin_cambios', avisos, postId: fila.wp_post_id };
     }
 

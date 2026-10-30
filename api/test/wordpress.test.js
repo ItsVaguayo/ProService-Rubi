@@ -744,6 +744,30 @@ test('revincular el mismo post nuestro no lo bloquea por una foto subida a mano'
     assert.equal(r.fotos_subidas, 1);
   }));
 
+test('una foto nueva por subir con el presupuesto agotado no reenvía el post', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 2);
+    await sincronizar(db, cfg);
+    const antes = estado.peticiones.filter((x) => x.startsWith('POST /wp/v2/coches')).length;
+    db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (1, 3, 'vehiculos/1/1.png')").run();
+    await sincronizar(db, { ...cfg, fotosPorPasada: 0 });
+    await sincronizar(db, cfg);
+    assert.equal(estado.peticiones.filter((x) => x.startsWith('POST /wp/v2/coches')).length, antes, 'la principal es la misma: ni con la foto pendiente ni al subirla');
+  }));
+
+test('un post borrado a mano en WordPress se da por retirado (no da error en cada pasada)', () =>
+  conEscenario({}, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat');
+    coche(2, 'Kia');
+    await sincronizar(db, cfg);
+    const id = db.prepare('SELECT wp_post_id FROM wp_posts WHERE vehiculo_id = 1').get().wp_post_id;
+    estado.posts.delete(id);
+    db.prepare("UPDATE vehiculos SET estado = 'entregado' WHERE id = 1").run();
+    const r = await sincronizar(db, cfg);
+    assert.deepEqual(r.errores, []);
+    assert.equal(db.prepare('SELECT estado FROM wp_posts WHERE vehiculo_id = 1').get().estado, 'retirado');
+  }));
+
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
   assert.equal(convertir('reservado', MAPA_POR_DEFECTO.estado), 'Reservado');
   assert.equal(convertir('vendido', MAPA_POR_DEFECTO.estado), 'Vendido');
