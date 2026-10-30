@@ -13,7 +13,7 @@ import { ESTADOS_WEB } from '../estados.js';
 import { caducarReservas } from '../vehiculos/reservas.js';
 import { condicionesCuota, cuotaDe, textoCondiciones } from './cuota.js';
 import { sinAcentos } from '../../buscar.js';
-import { DIA } from '../../fechas.js';
+import { diaValido } from '../../fechas.js';
 
 // Dato nuestro → campo ACF de la web, con los nombres reales de proservicerubi.com (leídos de su API REST el
 // 30-oct-2026). «valores» traduce lo nuestro al texto de su web; en los campos de opciones cerradas (combustible,
@@ -26,8 +26,9 @@ export const MAPA_POR_DEFECTO = {
   // «Desde X €/mes» (cuota.js), en su campo «financiado». Calculada aquí: no es una columna del coche.
   // cuota_condiciones solo se manda si la web tiene ese campo (hoy no: aviso propio en el diagnóstico); lleva el
   // ejemplo representativo con la TAE y el total adeudado, que la ley pide junto a la cuota.
-  cuota: { acf: 'financiado', formato: 'numero' },
-  cuota_condiciones: { acf: 'cuota_condiciones', formato: 'texto', opcional: true },
+  // vaciar: con la cuota apagada (CUOTA_MESES=0) se vacía a propósito, aunque un dato vacío no se mande nunca
+  cuota: { acf: 'financiado', formato: 'numero', vaciar: true },
+  cuota_condiciones: { acf: 'cuota_condiciones', formato: 'texto', opcional: true, vaciar: true },
   // Su «ano» es un selector de fecha (Ymd): la de matriculación o, sin ella, el 1 de enero del año
   fecha_ymd: { acf: 'ano', formato: 'texto' },
   kilometros: { acf: 'kilometros', formato: 'numero' },
@@ -57,11 +58,10 @@ export const FORMATOS = ['texto', 'numero', 'euros', 'capitalizar', 'lista', 'fo
 // Datos del mapa que no son columnas del coche: se calculan, y solo si el mapa los usa.
 //   cuota y cuota_condiciones: cuota.js · fecha_ymd: su «ano» es un selector de fecha (Ymd), con la fecha de
 //   matriculación o, sin ella, el 1 de enero del año · extras: los nombres de nuestro catálogo
-const VACIAR = ['cuota', 'cuota_condiciones'];
 const CALCULADOS = {
   cuota: (v, ctx) => cuotaDe(v, ctx.condiciones),
   cuota_condiciones: (v, ctx) => textoCondiciones(v, ctx.condiciones),
-  fecha_ymd: (v) => (DIA.test(v.fecha_matriculacion ?? '') ? v.fecha_matriculacion.replaceAll('-', '') : v.anio ? `${v.anio}0101` : null),
+  fecha_ymd: (v) => (diaValido(v.fecha_matriculacion ?? '') ? v.fecha_matriculacion.replaceAll('-', '') : v.anio ? `${v.anio}0101` : null),
   extras: (v, ctx) => ctx.extrasDe.all(v.id).map((e) => e.nombre),
 };
 
@@ -223,12 +223,16 @@ const normalizar = (texto) => sinAcentos(texto).trim().replace(/\s+/g, ' ');
 /**
  * La opción de su lista cerrada que corresponde al valor, sin mirar mayúsculas ni tildes: «gris» → «Gris»,
  * y si no está tal cual, la más larga que empieza igual («Gris oscuro» → «Gris»; «Azul marino claro» → «Azul marino»
- * antes que «Azul»). null si ninguna.
+ * antes que «Azul»), o la única que empieza por el valor («marrón» → «Marrón Turmalina»). null si ninguna.
  */
-export function opcionDe(valor, opciones) {
+function opcionDe(valor, opciones) {
   const v = normalizar(valor);
   const lista = normalizadas(opciones);
-  return lista.find(([n]) => n === v)?.[1] ?? lista.find(([n]) => v.startsWith(`${n} `))?.[1] ?? null;
+  const exacta = lista.find(([n]) => n === v) ?? lista.find(([n]) => v.startsWith(`${n} `));
+  if (exacta) return exacta[1];
+  // «marrón» frente a «Marrón Turmalina»: vale si es la única opción que empieza así
+  const largas = lista.filter(([n]) => n.startsWith(`${v} `));
+  return largas.length === 1 ? largas[0][1] : null;
 }
 
 // Cada lista de opciones se normaliza una vez (el esquema es el mismo en toda la pasada), de la más larga a la
@@ -305,24 +309,27 @@ async function sincronizarSinBloqueo(db, cfg, { forzar, fetchImpl }) {
     ponerPropias: db.prepare('UPDATE wp_posts SET fotos_propias = ? WHERE vehiculo_id = ?'),
     ponerHuellaFotos: db.prepare('UPDATE wp_posts SET fotos_huella = ? WHERE vehiculo_id = ?'),
     olvidarMedio: db.prepare('DELETE FROM wp_medios WHERE wp_media_id = ?'),
-    // Los posts de los demás coches: una foto nuestra adjunta a uno de ellos (reutilizada a mano) no se mueve
-    postsDeOtros: db.prepare('SELECT wp_post_id FROM wp_posts WHERE vehiculo_id <> ?'),
+    apuntarMedio: db.prepare('INSERT INTO wp_medios (foto_id, wp_media_id) VALUES (?, ?)'),
+    ponerHuella: db.prepare("UPDATE wp_posts SET huella = ?, estado = 'publicado', actualizado_en = datetime('now') WHERE vehiculo_id = ?"),
     // Las fotos (adjuntas al post) van aunque la web no tenga el campo de la principal; la principal, solo si lo tiene
     mapaFotos: d.acf.expuesto && d.puede.subir_fotos ? mapaDeFotos(cfg.mapa) ?? null : null,
   };
   ctx.campoFotos = ctx.mapaFotos && d.acf.campos[ctx.mapaFotos.acf] ? ctx.mapaFotos.acf : null;
   const estadoBien = db.prepare('UPDATE wp_posts SET ultimo_error = NULL, avisos = ? WHERE vehiculo_id = ?');
+  const estadoMal = db.prepare("UPDATE wp_posts SET ultimo_error = ?, avisos = NULL, actualizado_en = datetime('now') WHERE vehiculo_id = ?");
   for (const v of visibles) {
     try {
       const { accion, avisos } = await publicarCoche(ctx, v, vinculos.get(v.id));
       resumen[accion]++;
       // Los avisos del coche (valores fuera de sus opciones, fotos bloqueadas) quedan en su estado (GET /wordpress/estado),
       // aparte de los errores; en el resumen, solo cuando se mandó algo
-      estadoBien.run(avisos.join('\n') || null, v.id);
+      const nota = avisos.join('\n') || null;
+      const antes = vinculos.get(v.id);
+      if (!antes || antes.ultimo_error || antes.avisos !== nota) estadoBien.run(nota, v.id);
       if (accion !== 'sin_cambios') resumen.avisos.push(...avisos);
     } catch (e) {
       resumen.errores.push(`${v.referencia}: ${e.message}`);
-      db.prepare("UPDATE wp_posts SET ultimo_error = ?, avisos = NULL, actualizado_en = datetime('now') WHERE vehiculo_id = ?").run(e.message, v.id);
+      estadoMal.run(e.message, v.id);
     }
   }
 
@@ -347,7 +354,6 @@ async function publicarCoche(ctx, v, vinculo) {
   const cuerpo = { title: titulo, status: 'publish' };
 
   const avisos = [];
-  let conAcf = d.acf.expuesto;
   if (d.acf.expuesto) {
     const acf = {};
     for (const [campo, destino] of Object.entries(cfg.mapa)) {
@@ -355,15 +361,14 @@ async function publicarCoche(ctx, v, vinculo) {
       // Las fotos van aparte; un formato desconocido lo avisa el diagnóstico
       if (!esquema || destino.formato === 'fotos' || !FORMATOS.includes(destino.formato ?? 'texto')) continue;
       const valor = Object.hasOwn(CALCULADOS, campo) ? CALCULADOS[campo](v, ctx) : v[campo];
-      // Un dato que no tenemos no se manda: en las fichas vinculadas borraría lo que pusieron a mano (los coches de
-      // Pymecar llegan sin extras, color ni vídeo). Solo la cuota apagada (CUOTA_MESES=0) se vacía a propósito.
-      const convertido = convertir(valor, destino);
-      if ((convertido === null || (Array.isArray(convertido) && !convertido.length)) && !VACIAR.includes(campo)) continue;
       const descartados = [];
-      const adaptado = adaptar(convertido, esquema, descartados);
+      const adaptado = adaptar(convertir(valor, destino), esquema, descartados);
       if (descartados.length) avisos.push(`${v.referencia}: ${descartados.map((f) => `«${f}»`).join(', ')} no está entre las opciones de «${destino.acf}» de la web: no se manda`);
-      // Si no encaja nada en sus opciones no se manda, como un dato que no tenemos: se respeta lo que haya y queda aviso
-      if (descartados.length && (adaptado === null || (Array.isArray(adaptado) && !adaptado.length))) continue;
+      // Un dato que no tenemos (o que no encaja en sus opciones) no se manda en una ficha hecha a mano: borraría lo que
+      // pusieron (los coches de Pymecar llegan sin extras, color ni vídeo). En un post nuestro, o en los campos
+      // marcados «vaciar», sí: se vacía (su ACF acepta null en sus listas, comprobado el 30-oct)
+      const propio = !vinculo || vinculo.propio === 1;
+      if ((adaptado === null || (Array.isArray(adaptado) && !adaptado.length)) && !propio && !destino.vaciar) continue;
       acf[destino.acf] = adaptado;
     }
     // Su ACF rechaza el post entero si falta un obligatorio (precio, estado_coche). Un coche nuevo no se publica; en
@@ -372,8 +377,7 @@ async function publicarCoche(ctx, v, vinculo) {
     const faltan = Object.entries(d.acf.campos).filter(([k, e]) => e.required && k !== campoFotos && acf[k] == null).map(([k]) => `«${k}»`);
     if (faltan.length && !vinculo) throw new Error(`falta ${faltan.join(', ')}, obligatorio en la web: no se publica`);
     if (faltan.length) avisos.push(`${v.referencia}: falta ${faltan.join(', ')}, obligatorio en la web: sus campos no se tocan`);
-    else if (Object.keys(acf).length) cuerpo.acf = acf;
-    conAcf = !faltan.length;
+    else cuerpo.acf = acf;
   }
 
   if (d.rutaMarca && v.marca) cuerpo[d.rutaMarca] = [await idMarca(ctx, sinEtiquetas(v.marca))];
@@ -383,10 +387,11 @@ async function publicarCoche(ctx, v, vinculo) {
   try {
     // Con fotos pendientes (null) no se guarda la huella: la próxima pasada termina de subirlas. La foto principal
     // solo se toca en un post con fotos nuestras: sin ninguna pública se vacía; en una ficha hecha a mano, se deja la suya.
+    ctx.avisos = avisos; // los de las fotos (formato no admitido) van con los del coche
     const fotos = ctx.mapaFotos ? await fotosDelPost(ctx, v, fila) : null;
     if (fotos?.bloqueo) avisos.push(fotos.bloqueo);
-    // Sin los obligatorios no va ningún campo de ACF, tampoco la principal (lo rechazaría entero)
-    const principal = conAcf && campoFotos && fotos?.propias ? { [campoFotos]: fotos.ids[0] ?? null } : null;
+    // Sin los obligatorios no va ningún campo de ACF (cuerpo.acf), tampoco la principal: lo rechazaría entero
+    const principal = cuerpo.acf && campoFotos && fotos?.propias ? { [campoFotos]: fotos.ids[0] ?? null } : null;
     const envio = principal ? { ...cuerpo, acf: { ...cuerpo.acf, ...principal } } : cuerpo;
     const huella = ctx.mapaFotos && fotos === null ? null : huellaDe(envio);
     // Si solo cambiaron las fotos adjuntas (la principal es la misma), el post no se reenvía pero sí se cambió algo
@@ -395,12 +400,14 @@ async function publicarCoche(ctx, v, vinculo) {
     // El post recién creado ya lleva todo salvo la foto principal. Se reenvía entero: su ACF rechaza un «acf» sin
     // los campos obligatorios (precio, estado_coche), comprobado contra ACF el 30-oct
     if (vinculo || principal?.[campoFotos]) await pedir('POST', `/wp/v2/${d.rutaTipo}/${fila.wp_post_id}`, { json: envio });
-    ctx.db.prepare("UPDATE wp_posts SET huella = ?, estado = 'publicado', actualizado_en = datetime('now') WHERE vehiculo_id = ?").run(huella, v.id);
+    ctx.ponerHuella.run(huella, v.id);
     return { accion: vinculo ? 'actualizados' : 'creados', avisos };
   } catch (e) {
     // Si lo borraron a mano en WordPress (subir una foto, adjuntarla o actualizarlo da 403 o 404), se vuelve a crear
     // y la pasada siguiente le vuelve a adjuntar nuestras fotos
     if (!vinculo || ![403, 404].includes(e.status) || !(await borrado(ctx, fila.wp_post_id))) throw e;
+    // Sin los obligatorios no se crea un post nuevo, como en el alta
+    if (d.acf.expuesto && !cuerpo.acf) throw new Error(`el post ${fila.wp_post_id} se borró en WordPress y faltan obligatorios para crearlo de nuevo`);
     await crearPost(ctx, v, cuerpo);
     return { accion: 'creados', avisos };
   }
@@ -422,10 +429,10 @@ async function borrado(ctx, postId) {
  */
 async function crearPost(ctx, v, cuerpo) {
   const post = await ctx.pedir('POST', `/wp/v2/${ctx.d.rutaTipo}`, { json: cuerpo });
-  ctx.db.prepare(`INSERT INTO wp_posts (vehiculo_id, wp_post_id, huella, estado, fotos_propias, fotos_huella) VALUES (?, ?, NULL, 'publicado', ${FOTOS_PROPIAS}, NULL)
+  ctx.db.prepare(`INSERT INTO wp_posts (vehiculo_id, wp_post_id, huella, estado, fotos_propias, fotos_huella, propio) VALUES (?, ?, NULL, 'publicado', ${FOTOS_PROPIAS}, NULL, 1)
                   ON CONFLICT (vehiculo_id) DO UPDATE SET wp_post_id = excluded.wp_post_id, huella = NULL, estado = 'publicado',
-                    fotos_propias = ${FOTOS_PROPIAS}, fotos_huella = NULL, ultimo_error = NULL, actualizado_en = datetime('now')`).run(v.id, post.id);
-  return { wp_post_id: post.id, fotos_propias: FOTOS_PROPIAS, fotos_huella: null };
+                    fotos_propias = ${FOTOS_PROPIAS}, fotos_huella = NULL, propio = 1, ultimo_error = NULL, actualizado_en = datetime('now')`).run(v.id, post.id);
+  return { wp_post_id: post.id, fotos_propias: FOTOS_PROPIAS, fotos_huella: null, wp_post_anterior: null };
 }
 
 async function idMarca(ctx, nombre) {
@@ -477,12 +484,13 @@ const avisoAjenas = (v, postId, n = null) => `${v.referencia}: el post ${postId}
  * Devuelve { ids, propias, bloqueo? }, o null si quedan por subir.
  */
 async function fotosDelPost(ctx, v, fila) {
-  const { db, pedir } = ctx;
+  const { pedir } = ctx;
   if (fila.fotos_propias === FOTOS_AJENAS) return { ids: [], propias: false, bloqueo: avisoAjenas(v, fila.wp_post_id) };
   const idsAdjuntas = async () => (await adjuntasDe(pedir, fila.wp_post_id, '&_fields=id')).map((m) => m.id);
-  // Nuestro es lo apuntado en wp_medios y lo que se cuadró la última vez (una foto borrada en el panel ya no está en wp_medios)
-  const nuestras = new Set(ctx.mediosDe.all(v.id).map((m) => m.wp_media_id));
-  for (const id of String(fila.fotos_huella ?? '').split(',').filter(Boolean)) nuestras.add(Number(id));
+  // Nuestro es lo apuntado en wp_medios y lo que se cuadró la última vez (una foto borrada en el panel ya no está en
+  // wp_medios). Solo hace falta si hay que decidir o cuadrar: no en la pasada de un coche sin cambios
+  const nuestrasDe = () => new Set([...ctx.mediosDe.all(v.id).map((m) => m.wp_media_id),
+    ...String(fila.fotos_huella ?? '').split(',').filter(Boolean).map(Number)]);
   const fotos = ctx.fotosPublicas.all(v.id);
 
   // Una ficha hecha a mano (recién vinculada): se decide una vez, en cuanto tengamos fotos públicas. Si habría que
@@ -492,8 +500,10 @@ async function fotosDelPost(ctx, v, fila) {
   if (fila.fotos_propias === FOTOS_SIN_MIRAR) {
     if (!fotos.length) return { ids: [], propias: false };
     const adjuntas = await idsAdjuntas();
+    const nuestras = nuestrasDe();
     const ajenas = adjuntas.filter((id) => !nuestras.has(id)).length;
-    const anadir = fotos.some((f) => !f.wp_media_id || !adjuntas.includes(f.wp_media_id));
+    // Lo que habría que añadirle: fotos por subir, o las del post anterior si se revinculó desde otro
+    const anadir = fotos.some((f) => !f.wp_media_id) || Boolean(fila.wp_post_anterior);
     const bloquear = ajenas && anadir;
     ctx.ponerPropias.run(bloquear ? FOTOS_AJENAS : FOTOS_PROPIAS, v.id);
     if (bloquear) return { ids: [], propias: false, bloqueo: avisoAjenas(v, fila.wp_post_id, ajenas) };
@@ -506,18 +516,29 @@ async function fotosDelPost(ctx, v, fila) {
   // vez que cambien en el panel o al revincular
   if (fila.fotos_huella === clave) return { ids, propias: true };
   const adjuntas = await idsAdjuntas();
+  const nuestras = nuestrasDe();
   for (const id of adjuntas.filter((i) => !ids.includes(i) && nuestras.has(i))) await pedir('POST', `/wp/v2/media/${id}`, { json: { post: 0 } });
-  // Se adjunta lo que falta (una sola petición para saber dónde está cada una): lo suelto y lo que quedó en un post
-  // anterior de este coche (revinculado a otra ficha). Una foto adjunta a la ficha de otro coche se deja donde está.
+  // Se adjunta lo que falta (una sola petición para saber dónde está cada una): lo suelto y lo que quedó en el post
+  // anterior de este coche (revinculado a otra ficha). Una foto adjunta a cualquier otro post se deja donde está.
   const faltan = ids.filter((i) => !adjuntas.includes(i));
   if (faltan.length) {
     const medios = await pedir('GET', `/wp/v2/media?include=${faltan.join(',')}&per_page=100&_fields=id,post`);
-    const deOtros = new Set(ctx.postsDeOtros.all(v.id).map((p) => p.wp_post_id));
-    for (const { id } of medios.filter((m) => !deOtros.has(m.post))) await pedir('POST', `/wp/v2/media/${id}`, { json: { post: fila.wp_post_id } });
-    // Una que ya no está en su biblioteca (la borraron a mano): se olvida y la pasada siguiente la vuelve a subir
-    const perdidas = faltan.filter((id) => !medios.some((m) => m.id === id));
-    for (const id of perdidas) ctx.olvidarMedio.run(id);
-    if (perdidas.length) return null;
+    for (const { id } of medios.filter((m) => !m.post || m.post === fila.wp_post_anterior)) {
+      await pedir('POST', `/wp/v2/media/${id}`, { json: { post: fila.wp_post_id } });
+    }
+    // Una que no aparece se confirma una a una: si ya no está en su biblioteca (la borraron a mano), se olvida y la
+    // pasada siguiente la vuelve a subir
+    let perdidas = 0;
+    for (const id of faltan.filter((i) => !medios.some((m) => m.id === i))) {
+      try {
+        await pedir('GET', `/wp/v2/media/${id}?context=edit&_fields=id`);
+      } catch (e) {
+        if (e.status !== 404) throw e;
+        ctx.olvidarMedio.run(id);
+        perdidas++;
+      }
+    }
+    if (perdidas) return null;
   }
   ctx.ponerHuellaFotos.run(clave, v.id);
   return { ids, propias: true, cambio: true };
@@ -525,7 +546,7 @@ async function fotosDelPost(ctx, v, fila) {
 
 /** Ids de WordPress de las fotos públicas del coche, en orden, subiendo adjuntas al post las que falten. null si quedan por subir. */
 async function subirFotos(ctx, v, postId, fotos) {
-  const { db, cfg, pedir, resumen } = ctx;
+  const { cfg, pedir, resumen } = ctx;
   const ids = [];
   let pendientes = 0;
   for (const f of fotos) {
@@ -534,14 +555,14 @@ async function subirFotos(ctx, v, postId, fotos) {
     const ruta = resolve(cfg.uploads, f.ruta_photocall || f.ruta_original);
     if (!ruta.startsWith(cfg.uploads + sep)) throw new Error(`Ruta de foto fuera de la carpeta de subidas: ${f.ruta_original}`);
     const tipo = TIPOS_IMAGEN[extname(ruta).toLowerCase()];
-    if (!tipo) { resumen.errores.push(`${v.referencia}: formato de foto no admitido (${extname(ruta)})`); continue; }
+    if (!tipo) { ctx.avisos.push(`${v.referencia}: formato de foto no admitido (${extname(ruta)}): no se sube`); continue; }
     ctx.presupuesto--;
     const nombre = `${v.referencia}-${String(f.orden).padStart(2, '0')}${extname(ruta).toLowerCase()}`;
     const medio = await pedir('POST', `/wp/v2/media?post=${postId}`, {
       cuerpo: await readFile(ruta),
       cabeceras: { 'Content-Type': tipo, 'Content-Disposition': `attachment; filename="${nombre}"` },
     });
-    db.prepare('INSERT INTO wp_medios (foto_id, wp_media_id) VALUES (?, ?)').run(f.id, medio.id);
+    ctx.apuntarMedio.run(f.id, medio.id);
     resumen.fotos_subidas++;
     ids.push(medio.id);
   }
@@ -558,5 +579,6 @@ export function vincular(db, vehiculoId, wpPostId) {
   db.prepare(`INSERT INTO wp_posts (vehiculo_id, wp_post_id, huella, estado) VALUES (?, ?, NULL, 'vinculado')
               ON CONFLICT (vehiculo_id) DO UPDATE SET wp_post_id = excluded.wp_post_id, huella = NULL, estado = 'vinculado',
                 fotos_propias = ${FOTOS_SIN_MIRAR}, avisos = NULL, ultimo_error = NULL,
+                wp_post_anterior = CASE WHEN wp_posts.wp_post_id = excluded.wp_post_id THEN wp_posts.wp_post_anterior ELSE wp_posts.wp_post_id END,
                 fotos_huella = CASE WHEN wp_posts.wp_post_id = excluded.wp_post_id THEN wp_posts.fotos_huella END`).run(vehiculoId, wpPostId);
 }

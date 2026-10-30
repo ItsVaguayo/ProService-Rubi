@@ -10,3 +10,8 @@ ALTER TABLE wp_posts ADD COLUMN fotos_huella TEXT;
 -- Los avisos del coche en la última pasada (valores fuera de sus opciones, fotos bloqueadas): no son errores, el
 -- coche se publicó; van aparte de ultimo_error para que el estado distinga uno de otro.
 ALTER TABLE wp_posts ADD COLUMN avisos TEXT;
+-- 1: el post lo creó la plataforma. En él un dato que se vacía en el panel se vacía también en la web; en una
+-- ficha vinculada (hecha a mano) un dato que no tenemos no se manda, para no borrar lo que pusieron.
+ALTER TABLE wp_posts ADD COLUMN propio INTEGER NOT NULL DEFAULT 0;
+-- El post que tenía antes el coche si se revinculó a otro: sus fotos (las nuestras) se mueven desde ahí.
+ALTER TABLE wp_posts ADD COLUMN wp_post_anterior INTEGER;

@@ -70,7 +70,10 @@ function wordpressFalso({ acfExpuesto = false, sin = [], conCondiciones = false 
         return json(201, { id });
       }
       const medio = ruta.match(/^\/wp\/v2\/media\/(\d+)$/);
-      if (medio && req.method === 'GET') return json(200, { post: estado.adjuntos.get(Number(medio[1])) ?? 0 });
+      if (medio && req.method === 'GET') {
+        return estado.adjuntos.has(Number(medio[1])) ? json(200, { id: Number(medio[1]), post: estado.adjuntos.get(Number(medio[1])) })
+          : json(404, { code: 'rest_post_invalid_id', message: 'ID no válido.' });
+      }
       if (medio && req.method === 'POST') {
         estado.adjuntos.set(Number(medio[1]), datos().post);
         return json(200, { id: Number(medio[1]), post: datos().post });
@@ -258,8 +261,8 @@ test('con ACF: año como fecha Ymd, cambio, potencia, cilindrada como texto, col
 
     const kia = postDe(estado, 'Kia Modelo Versión').acf;
     assert.equal(kia.ano, '20170101', 'sin fecha de matriculación, el 1 de enero del año');
-    assert.equal(kia.combustible, undefined, 'fuera de sus opciones no se manda: se respeta lo que haya');
-    assert.equal(kia.colores, undefined);
+    assert.equal(kia.combustible, null, 'en un post nuestro, fuera de sus opciones se vacía');
+    assert.deepEqual(kia.colores, []);
     assert.ok(r.avisos.some((a) => a === 'PS-00002: «GLP» no está entre las opciones de «combustible» de la web: no se manda'));
     assert.ok(r.avisos.some((a) => a.startsWith('PS-00002: «Morado» no está entre las opciones de «colores»')));
     assert.ok(r.avisos.some((a) => a.startsWith('PS-00001: «Apple CarPlay»')));
@@ -665,6 +668,27 @@ test('ficha vinculada sin precio: se actualizan título y marca sin tocar sus ca
     assert.ok(r.avisos.some((a) => /falta «precio».*sus campos no se tocan/.test(a)));
   }));
 
+test('en un post nuestro, lo que se vacía en el panel se vacía en la web', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat');
+    db.prepare("UPDATE vehiculos SET video_url = 'https://youtu.be/x' WHERE id = 1").run();
+    await sincronizar(db, cfg);
+    db.prepare('UPDATE vehiculos SET video_url = NULL WHERE id = 1').run();
+    await sincronizar(db, cfg);
+    assert.equal(postDe(estado).acf.video, null);
+  }));
+
+test('una foto nuestra adjunta a una ficha a mano sin vincular no se mueve', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 1);
+    await sincronizar(db, cfg);
+    const id = db.prepare('SELECT wp_media_id FROM wp_medios').get().wp_media_id;
+    estado.adjuntos.set(id, 888); // alguien la usó en otra ficha, que no está vinculada
+    db.prepare("UPDATE wp_posts SET fotos_huella = NULL").run();
+    await sincronizar(db, cfg);
+    assert.equal(estado.adjuntos.get(id), 888);
+  }));
+
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
   assert.equal(convertir('reservado', MAPA_POR_DEFECTO.estado), 'Reservado');
   assert.equal(convertir('vendido', MAPA_POR_DEFECTO.estado), 'Vendido');
@@ -686,6 +710,7 @@ test('adaptar: el valor sigue al tipo que anuncia la web, y a sus opciones cerra
   assert.equal(adaptar('diesel', { type: ['string', 'null'], items: { enum: ['Gasolina', 'Diésel'] } }), 'Diésel');
   assert.equal(adaptar('GLP', { type: ['string', 'null'], items: { enum: ['Gasolina', 'Diésel'] } }), null);
   assert.equal(adaptar('Azul marino metalizado', { type: ['string'], items: { enum: ['Azul', 'Azul marino'] } }), 'Azul marino', 'la opción más larga que encaja');
+  assert.equal(adaptar('marrón', colores), 'Marrón Turmalina', 'la única opción que empieza por el valor');
   const fuera = [];
   adaptar(['Rojo', 'Morado'], colores, fuera);
   assert.deepEqual(fuera, ['Rojo', 'Morado'], 'los que no están en sus opciones se apuntan');
