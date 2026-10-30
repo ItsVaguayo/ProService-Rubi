@@ -601,9 +601,12 @@ export function vincular(db, vehiculoId, wpPostId) {
   db.prepare(`INSERT INTO wp_posts (vehiculo_id, wp_post_id, huella, estado) VALUES (?, ?, NULL, 'vinculado')
               ON CONFLICT (vehiculo_id) DO UPDATE SET wp_post_id = excluded.wp_post_id, huella = NULL, estado = 'vinculado',
                 fotos_propias = ${FOTOS_SIN_MIRAR}, avisos = NULL, ultimo_error = NULL,
-                wp_post_anterior = CASE WHEN wp_posts.wp_post_id = excluded.wp_post_id THEN wp_posts.wp_post_anterior ELSE wp_posts.wp_post_id END,
-                -- A otro post: lo nuevo es una ficha hecha a mano, y el anterior, si era nuestro, se retira en la pasada
-                anterior_propio = CASE WHEN wp_posts.wp_post_id = excluded.wp_post_id THEN wp_posts.anterior_propio ELSE wp_posts.propio END,
+                -- A otro post: lo nuevo es una ficha hecha a mano, y el anterior, si era nuestro, se retira en la pasada. Si
+                -- ya había uno nuestro pendiente de retirar, se conserva ese (no se pierde con dos revinculaciones seguidas)
+                wp_post_anterior = CASE WHEN wp_posts.wp_post_id = excluded.wp_post_id OR wp_posts.anterior_propio = 1
+                  THEN wp_posts.wp_post_anterior ELSE wp_posts.wp_post_id END,
+                anterior_propio = CASE WHEN wp_posts.wp_post_id = excluded.wp_post_id OR wp_posts.anterior_propio = 1
+                  THEN wp_posts.anterior_propio ELSE wp_posts.propio END,
                 propio = CASE WHEN wp_posts.wp_post_id = excluded.wp_post_id THEN wp_posts.propio ELSE 0 END,
                 fotos_huella = CASE WHEN wp_posts.wp_post_id = excluded.wp_post_id THEN wp_posts.fotos_huella END`).run(vehiculoId, wpPostId);
 }

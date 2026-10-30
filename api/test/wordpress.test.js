@@ -716,6 +716,19 @@ test('el post anterior que ahora es de otro coche no se retira', () =>
     assert.equal(estado.posts.get(delSeat).status, 'publish');
   }));
 
+test('dos revinculaciones seguidas antes de una pasada: el post nuestro se retira igual', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat');
+    await sincronizar(db, cfg);
+    const nuestro = postDe(estado);
+    estado.posts.set(600, { id: 600, title: 'B', status: 'publish' });
+    estado.posts.set(700, { id: 700, title: 'C', status: 'publish' });
+    vincular(db, 1, 600);
+    vincular(db, 1, 700);
+    await sincronizar(db, cfg);
+    assert.equal(nuestro.status, 'draft');
+  }));
+
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
   assert.equal(convertir('reservado', MAPA_POR_DEFECTO.estado), 'Reservado');
   assert.equal(convertir('vendido', MAPA_POR_DEFECTO.estado), 'Vendido');
