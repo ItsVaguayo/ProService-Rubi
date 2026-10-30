@@ -3,8 +3,8 @@
 // rehacerlas, se bajan de la ficha que ya tienen en proservicerubi.com. Antes hay que vincular el coche con su
 // ficha (POST /api/wordpress/vincular).
 //
-// El orden: la foto destacada, después la galería de ACF (si la web la expone) y si no, las adjuntas a la
-// ficha por orden de subida. Jaume la ordena luego en el panel. Cada foto traída se apunta en wp_medios con su
+// El orden: la foto destacada (si la hay), después su ACF «imagen_principal» y luego las demás adjuntas a la
+// ficha (su galería) por orden de subida. Jaume la ordena luego en el panel. Cada foto traída se apunta en wp_medios con su
 // id de WordPress: la sincronización no la vuelve a subir.
 import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile, rm } from 'node:fs/promises';

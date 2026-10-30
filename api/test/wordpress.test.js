@@ -689,6 +689,33 @@ test('una foto nuestra adjunta a una ficha a mano sin vincular no se mueve', () 
     assert.equal(estado.adjuntos.get(id), 888);
   }));
 
+test('revincular a una ficha a mano un coche con post nuestro: el anterior a borrador y en la nueva no se vacía lo suyo', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat');
+    await sincronizar(db, cfg);
+    const antes = postDe(estado);
+    estado.posts.set(600, { id: 600, title: 'SEAT A MANO', status: 'publish', acf: { precio: 1, estado_coche: 'En venta', video: 'https://youtu.be/suyo' } });
+    vincular(db, 1, 600);
+    const r = await sincronizar(db, cfg);
+    assert.equal(antes.status, 'draft', 'el post anterior, nuestro, se retira: no sale dos veces');
+    assert.equal(r.retirados, 1);
+    assert.equal(estado.posts.get(600).acf.video, 'https://youtu.be/suyo', 'la ficha a mano conserva lo suyo');
+    assert.equal((await sincronizar(db, cfg)).retirados, 0, 'una sola vez');
+  }));
+
+test('el post anterior que ahora es de otro coche no se retira', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat');
+    coche(2, 'Kia');
+    await sincronizar(db, cfg);
+    const delSeat = db.prepare('SELECT wp_post_id FROM wp_posts WHERE vehiculo_id = 1').get().wp_post_id;
+    vincular(db, 1, 500);
+    db.prepare('DELETE FROM wp_posts WHERE vehiculo_id = 2').run();
+    vincular(db, 2, delSeat); // el Kia pasa a usar el post que tenía el Seat
+    await sincronizar(db, cfg);
+    assert.equal(estado.posts.get(delSeat).status, 'publish');
+  }));
+
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
   assert.equal(convertir('reservado', MAPA_POR_DEFECTO.estado), 'Reservado');
   assert.equal(convertir('vendido', MAPA_POR_DEFECTO.estado), 'Vendido');

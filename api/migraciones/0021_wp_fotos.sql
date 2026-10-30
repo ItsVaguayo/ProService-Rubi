@@ -15,3 +15,9 @@ ALTER TABLE wp_posts ADD COLUMN avisos TEXT;
 ALTER TABLE wp_posts ADD COLUMN propio INTEGER NOT NULL DEFAULT 0;
 -- El post que tenía antes el coche si se revinculó a otro: sus fotos (las nuestras) se mueven desde ahí.
 ALTER TABLE wp_posts ADD COLUMN wp_post_anterior INTEGER;
+-- 1: el post anterior lo había creado la plataforma; la próxima pasada lo pasa a borrador (si no, el coche saldría
+-- dos veces en la web) y lo pone a 0.
+ALTER TABLE wp_posts ADD COLUMN anterior_propio INTEGER NOT NULL DEFAULT 0;
+-- Los posts que ya publicó el conector antes de esta migración los creó él (los vinculados a mano siguen en
+-- «vinculado» hasta su primera pasada). En producción no hay ninguno: el conector no llegó a publicar.
+UPDATE wp_posts SET propio = 1 WHERE estado IN ('publicado', 'retirado');
