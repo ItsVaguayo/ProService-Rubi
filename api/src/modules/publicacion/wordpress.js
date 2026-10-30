@@ -51,6 +51,8 @@ export const MAPA_POR_DEFECTO = {
 export const FORMATOS = ['texto', 'numero', 'euros', 'capitalizar', 'lista', 'fotos'];
 
 // Datos del mapa que no son columnas del coche: se calculan, y solo si el mapa los usa.
+//   cuota y cuota_condiciones: cuota.js · fecha_ymd: su «ano» es un selector de fecha (Ymd), con la fecha de
+//   matriculación o, sin ella, el 1 de enero del año · extras: los nombres de nuestro catálogo
 const CALCULADOS = {
   cuota: (v, ctx) => cuotaDe(v, ctx.condiciones),
   cuota_condiciones: (v, ctx) => textoCondiciones(v, ctx.condiciones),
@@ -236,8 +238,7 @@ function normalizadas(opciones) {
 
 /**
  * Ajusta un valor al tipo que anuncia el esquema REST del campo (la web manda). En un campo de opciones cerradas,
- * lo que no está entre ellas no se manda (WordPress rechazaría el post entero) y se apunta en `descartados`; si no
- * queda nada, null.
+ * lo que no está entre ellas no se manda (WordPress rechazaría el post entero) y se apunta en `descartados`.
  */
 export function adaptar(valor, esquema, descartados = []) {
   const tipos = [].concat(esquema?.type ?? []);
@@ -250,7 +251,7 @@ export function adaptar(valor, esquema, descartados = []) {
       if (o === null) descartados.push(v);
       else if (!elegidas.includes(o)) elegidas.push(o);
     }
-    if (!elegidas.length) return null;
+    if (!Array.isArray(valor) && !elegidas.length) return null;
     valor = Array.isArray(valor) ? elegidas : elegidas[0];
   }
   if (Array.isArray(valor)) return tipos.includes('array') ? valor : valor.join(',');
@@ -311,7 +312,7 @@ async function sincronizarSinBloqueo(db, cfg, { forzar, fetchImpl }) {
       if (accion !== 'sin_cambios') resumen.avisos.push(...avisos);
     } catch (e) {
       resumen.errores.push(`${v.referencia}: ${e.message}`);
-      db.prepare("UPDATE wp_posts SET ultimo_error = ?, actualizado_en = datetime('now') WHERE vehiculo_id = ?").run(e.message, v.id);
+      db.prepare("UPDATE wp_posts SET ultimo_error = ?, avisos = NULL, actualizado_en = datetime('now') WHERE vehiculo_id = ?").run(e.message, v.id);
     }
   }
 
@@ -346,9 +347,9 @@ async function publicarCoche(ctx, v, vinculo) {
       const descartados = [];
       const adaptado = adaptar(convertir(valor, destino), esquema, descartados);
       if (descartados.length) avisos.push(`${v.referencia}: ${descartados.map((f) => `«${f}»`).join(', ')} no está entre las opciones de «${destino.acf}» de la web: no se manda`);
-      // Si no queda nada por estar fuera de sus opciones, el campo no va: un null tumbaría un select sin vacío y
-      // borraría lo que tengan puesto a mano
-      if (adaptado === null && descartados.length) continue;
+      // Si no queda nada por estar fuera de sus opciones, se vacía (su ACF acepta null en sus listas, comprobado el
+      // 30-oct): así no se queda el valor de antes. Solo en un campo que no admite vacío no se manda
+      if (adaptado === null && descartados.length && ![].concat(esquema.type ?? []).includes('null')) continue;
       acf[destino.acf] = adaptado;
     }
     if (Object.keys(acf).length) cuerpo.acf = acf;
@@ -378,9 +379,9 @@ async function publicarCoche(ctx, v, vinculo) {
     ctx.db.prepare("UPDATE wp_posts SET huella = ?, estado = 'publicado', actualizado_en = datetime('now') WHERE vehiculo_id = ?").run(huella, v.id);
     return { accion: vinculo ? 'actualizados' : 'creados', avisos };
   } catch (e) {
-    // Si lo borraron a mano en WordPress (subir una foto, adjuntarla o actualizarlo falla), se vuelve a crear y la
-    // pasada siguiente le vuelve a adjuntar nuestras fotos
-    if (!vinculo || !(await borrado(ctx, fila.wp_post_id))) throw e;
+    // Si lo borraron a mano en WordPress (subir una foto, adjuntarla o actualizarlo da 403 o 404), se vuelve a crear
+    // y la pasada siguiente le vuelve a adjuntar nuestras fotos
+    if (!vinculo || ![403, 404].includes(e.status) || !(await borrado(ctx, fila.wp_post_id))) throw e;
     await crearPost(ctx, v, cuerpo);
     return { accion: 'creados', avisos };
   }
@@ -463,40 +464,48 @@ async function fotosDelPost(ctx, v, fila) {
   // Nuestro es lo apuntado en wp_medios y lo que se cuadró la última vez (una foto borrada en el panel ya no está en wp_medios)
   const nuestras = new Set(ctx.mediosDe.all(v.id).map((m) => m.wp_media_id));
   for (const id of String(fila.fotos_huella ?? '').split(',').filter(Boolean)) nuestras.add(Number(id));
-  let propias = fila.fotos_propias === FOTOS_PROPIAS;
+  const fotos = ctx.fotosPublicas.all(v.id);
 
-  // Una ficha hecha a mano: antes de subir ninguna foto nuestra se mira que no tenga otras, o saldrían mezcladas.
-  // Si las tiene se bloquea hasta que se quiten y se revincule. Sin nada que subir no hay mezcla y no se decide:
-  // las que trae «Traer fotos de la web» ya son suyas, aunque se dejara alguna sin traer.
-  if (!propias && ctx.fotosPublicas.all(v.id).some((f) => !f.wp_media_id)) {
-    const ajenas = (await idsAdjuntas()).filter((id) => !nuestras.has(id)).length;
-    db.prepare('UPDATE wp_posts SET fotos_propias = ? WHERE vehiculo_id = ?').run(ajenas ? FOTOS_AJENAS : FOTOS_PROPIAS, v.id);
-    if (ajenas) return { ids: [], propias: false, bloqueo: avisoAjenas(v, fila.wp_post_id, ajenas) };
-    propias = true;
+  // Una ficha hecha a mano (recién vinculada): se decide una vez, en cuanto tengamos fotos públicas. Si habría que
+  // añadirle alguna que no tiene y lleva otras que no son nuestras, saldrían mezcladas: se bloquea hasta que se
+  // quiten y se revincule. Si todas las nuestras ya están en ella (las trajo «Traer fotos de la web»), no hay mezcla
+  // aunque se dejara alguna suya sin traer.
+  if (fila.fotos_propias === FOTOS_SIN_MIRAR) {
+    if (!fotos.length) return { ids: [], propias: false };
+    const adjuntas = await idsAdjuntas();
+    const ajenas = adjuntas.filter((id) => !nuestras.has(id)).length;
+    const anadir = fotos.some((f) => !f.wp_media_id || !adjuntas.includes(f.wp_media_id));
+    const bloquear = ajenas && anadir;
+    db.prepare('UPDATE wp_posts SET fotos_propias = ? WHERE vehiculo_id = ?').run(bloquear ? FOTOS_AJENAS : FOTOS_PROPIAS, v.id);
+    if (bloquear) return { ids: [], propias: false, bloqueo: avisoAjenas(v, fila.wp_post_id, ajenas) };
   }
 
-  const ids = await subirFotos(ctx, v, fila.wp_post_id);
+  const ids = await subirFotos(ctx, v, fila.wp_post_id, fotos);
   if (ids === null) return null;
-  propias ||= ids.length > 0;
   const clave = ids.join(',');
-  if (fila.fotos_huella === clave) return { ids, propias };
+  if (fila.fotos_huella === clave) return { ids, propias: true };
   const adjuntas = await idsAdjuntas();
   for (const id of adjuntas.filter((i) => !ids.includes(i) && nuestras.has(i))) await pedir('POST', `/wp/v2/media/${id}`, { json: { post: 0 } });
   // Se adjunta lo que está suelto (una sola petición para saber dónde está cada una); una foto adjunta a otra
   // ficha (reutilizada a mano) se deja donde está
   const faltan = ids.filter((i) => !adjuntas.includes(i));
   if (faltan.length) {
-    const sueltas = (await pedir('GET', `/wp/v2/media?include=${faltan.join(',')}&per_page=100&_fields=id,post`)).filter((m) => !m.post);
-    for (const { id } of sueltas) await pedir('POST', `/wp/v2/media/${id}`, { json: { post: fila.wp_post_id } });
+    const medios = await pedir('GET', `/wp/v2/media?include=${faltan.join(',')}&per_page=100&_fields=id,post`);
+    for (const { id } of medios.filter((m) => !m.post)) await pedir('POST', `/wp/v2/media/${id}`, { json: { post: fila.wp_post_id } });
+    // Una que ya no está en su biblioteca (la borraron a mano): se olvida y la pasada siguiente la vuelve a subir
+    const perdidas = faltan.filter((id) => !medios.some((m) => m.id === id));
+    if (perdidas.length) {
+      db.prepare(`DELETE FROM wp_medios WHERE wp_media_id IN (${perdidas.map(() => '?').join(',')})`).run(...perdidas);
+      return null;
+    }
   }
   db.prepare('UPDATE wp_posts SET fotos_huella = ? WHERE vehiculo_id = ?').run(clave, v.id);
-  return { ids, propias };
+  return { ids, propias: true };
 }
 
 /** Ids de WordPress de las fotos públicas del coche, en orden, subiendo adjuntas al post las que falten. null si quedan por subir. */
-async function subirFotos(ctx, v, postId) {
+async function subirFotos(ctx, v, postId, fotos) {
   const { db, cfg, pedir, resumen } = ctx;
-  const fotos = ctx.fotosPublicas.all(v.id);
   const ids = [];
   let pendientes = 0;
   for (const f of fotos) {

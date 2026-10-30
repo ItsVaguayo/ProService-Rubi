@@ -51,7 +51,7 @@ function wordpressFalso({ acfExpuesto = false, sin = [], conCondiciones = false 
       if (ruta === '/wp/v2/marca' && req.method === 'POST') { const t = { id: estado.siguiente++, name: datos().name }; estado.terminos.push(t); return json(201, t); }
       if (ruta === '/wp/v2/media' && req.method === 'GET') {
         if (url.searchParams.get('include')) {
-          return json(200, url.searchParams.get('include').split(',').map((id) => ({ id: Number(id), post: estado.adjuntos.get(Number(id)) ?? 0 })));
+          return json(200, url.searchParams.get('include').split(',').map(Number).filter((id) => estado.adjuntos.has(id)).map((id) => ({ id, post: estado.adjuntos.get(id) })));
         }
         const padre = Number(url.searchParams.get('parent'));
         const pagina = Number(url.searchParams.get('page') || 1);
@@ -258,8 +258,8 @@ test('con ACF: año como fecha Ymd, cambio, potencia, cilindrada como texto, col
 
     const kia = postDe(estado, 'Kia Modelo Versión').acf;
     assert.equal(kia.ano, '20170101', 'sin fecha de matriculación, el 1 de enero del año');
-    assert.equal(kia.combustible, undefined, 'fuera de sus opciones no se manda: ni null, que borraría lo suyo');
-    assert.equal(kia.colores, undefined);
+    assert.equal(kia.combustible, null, 'fuera de sus opciones se vacía: no se queda el valor de antes');
+    assert.deepEqual(kia.colores, []);
     assert.ok(r.avisos.some((a) => a === 'PS-00002: «GLP» no está entre las opciones de «combustible» de la web: no se manda'));
     assert.ok(r.avisos.some((a) => a.startsWith('PS-00002: «Morado» no está entre las opciones de «colores»')));
     assert.ok(r.avisos.some((a) => a.startsWith('PS-00001: «Apple CarPlay»')));
@@ -443,7 +443,7 @@ test('vincular una ficha sin fotos nuestras todavía no la bloquea: «Traer foto
     }
     const r = await sincronizar(db, cfg);
     assert.ok(!r.avisos.some((a) => /subidas a mano/.test(a)));
-    assert.equal(db.prepare('SELECT fotos_propias FROM wp_posts').get().fotos_propias, 0, 'sin nada que subir no hay que decidir');
+    assert.equal(db.prepare('SELECT fotos_propias FROM wp_posts').get().fotos_propias, 1, 'todas las nuestras ya están en ella: sin mezcla, queda decidida');
     assert.equal(estado.posts.get(500).acf.imagen_principal, 501);
   }));
 
@@ -571,6 +571,49 @@ test('sin campo de foto principal en su web, las fotos se suben igual adjuntas a
     await sincronizar(db, cfg);
     assert.equal([...estado.adjuntos.values()].filter((p) => p === postDe(estado).id).length, 2);
     assert.equal(postDe(estado).acf.imagen_principal, undefined);
+  }));
+
+test('vincular a una ficha hecha a mano un coche cuyas fotos están en otro post: se bloquea, no se mezcla', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 2);
+    await sincronizar(db, cfg);
+    vincular(db, 1, 500);
+    const r = await sincronizar(db, cfg);
+    assert.ok(r.avisos.some((a) => /post 500 ya tiene 3 fotos subidas a mano/.test(a)));
+    assert.equal(estado.posts.get(500).acf.imagen_principal, undefined);
+  }));
+
+test('una ficha con sus fotos traídas de la web queda decidida: una foto nueva después se sube sin bloquear', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Volkswagen');
+    vincular(db, 1, 500);
+    // «Traer fotos» trajo 2 de sus 3 (la 503 se quedó sin traer)
+    for (const [i, id] of [501, 502].entries()) {
+      const f = db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (1, ?, 'x.jpg')").run(i + 1).lastInsertRowid;
+      db.prepare('INSERT INTO wp_medios (foto_id, wp_media_id) VALUES (?, ?)').run(f, id);
+    }
+    await sincronizar(db, cfg);
+    assert.equal(db.prepare('SELECT fotos_propias FROM wp_posts').get().fotos_propias, 1);
+    mkdirSync(join(cfg.uploads, 'v'), { recursive: true });
+    writeFileSync(join(cfg.uploads, 'v/n.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (1, 3, 'v/n.png')").run();
+    const r = await sincronizar(db, cfg);
+    assert.equal(r.fotos_subidas, 1);
+    assert.ok(!r.avisos.some((a) => /subidas a mano/.test(a)));
+    assert.equal(estado.adjuntos.get(503), 500, 'la suya que no se trajo, intacta');
+  }));
+
+test('una foto borrada de su biblioteca se vuelve a subir', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 2);
+    await sincronizar(db, cfg);
+    const id = db.prepare('SELECT wp_media_id FROM wp_medios LIMIT 1').get().wp_media_id;
+    estado.adjuntos.delete(id); // la borran de Medios
+    db.prepare("UPDATE wp_posts SET fotos_huella = NULL").run();
+    await sincronizar(db, cfg);
+    await sincronizar(db, cfg);
+    assert.equal(estado.medios, 3, 'se sube otra vez');
+    assert.equal([...estado.adjuntos.values()].filter((p) => p === postDe(estado).id).length, 2);
   }));
 
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
