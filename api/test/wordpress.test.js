@@ -65,6 +65,7 @@ function wordpressFalso({ acfExpuesto = false, sin = [], conCondiciones = false 
         return json(201, { id });
       }
       const medio = ruta.match(/^\/wp\/v2\/media\/(\d+)$/);
+      if (medio && req.method === 'GET') return json(200, { post: estado.adjuntos.get(Number(medio[1])) ?? 0 });
       if (medio && req.method === 'POST') {
         estado.adjuntos.set(Number(medio[1]), datos().post);
         return json(200, { id: Number(medio[1]), post: datos().post });
@@ -320,6 +321,7 @@ test('si borran el post a mano en WordPress, se vuelve a crear y le adjunta las 
     coche(1, 'Seat', 'publicado', 2);
     await sincronizar(db, cfg);
     estado.posts.clear();
+    for (const id of estado.adjuntos.keys()) estado.adjuntos.set(id, 0); // como WordPress: al borrar el post, sus adjuntas quedan sueltas
     db.prepare('UPDATE vehiculos SET pvp_cent = 1 WHERE id = 1').run();
     const r = await sincronizar(db, cfg);
     assert.equal(r.creados, 1);
@@ -485,6 +487,37 @@ test('más de 100 fotos adjuntas: se piden todas, de 100 en 100', () =>
     vincular(db, 1, 500);
     const r = await sincronizar(db, cfg);
     assert.ok(r.avisos.some((a) => /post 500 ya tiene 103 fotos/.test(a)));
+  }));
+
+test('fotos de daños o privadas no cuentan para decidir el bloqueo de una ficha vinculada', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, coche }) => {
+    coche(1, 'Volkswagen', 'publicado', 1);
+    db.prepare('UPDATE fotos SET es_dano = 1').run();
+    vincular(db, 1, 500);
+    await sincronizar(db, cfg);
+    assert.equal(db.prepare('SELECT fotos_propias FROM wp_posts').get().fotos_propias, 0, 'sin decidir');
+  }));
+
+test('una foto nuestra adjunta a otra ficha no se mueve a esta', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 1);
+    await sincronizar(db, cfg);
+    const post = postDe(estado);
+    const id = db.prepare('SELECT wp_media_id FROM wp_medios').get().wp_media_id;
+    estado.adjuntos.set(id, 777); // alguien la reutilizó en otra ficha
+    db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (1, 2, 'vehiculos/1/1.png')").run();
+    await sincronizar(db, cfg);
+    assert.equal(estado.adjuntos.get(id), 777);
+    assert.ok(post.acf.imagen_principal);
+  }));
+
+test('los avisos de opciones quedan en el estado del coche, no solo en la primera pasada', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, coche }) => {
+    coche(1, 'Seat', 'publicado', 1);
+    db.prepare("UPDATE vehiculos SET combustible = 'glp' WHERE id = 1").run();
+    await sincronizar(db, cfg);
+    assert.equal((await sincronizar(db, cfg)).sin_cambios, 1);
+    assert.match(db.prepare('SELECT ultimo_error FROM wp_posts').get().ultimo_error, /«GLP» no está entre las opciones de «combustible»/);
   }));
 
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
