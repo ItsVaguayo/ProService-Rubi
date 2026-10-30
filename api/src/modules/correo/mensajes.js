@@ -20,7 +20,7 @@ export function correoDeContacto(db, cfg, contacto, coche) {
   const lineas = [
     `${contacto.nombre} ha escrito por la web: pide ${tipo}.`,
     '',
-    `Teléfono: ${contacto.telefono}`,
+    contacto.telefono ? `Teléfono: ${contacto.telefono}` : 'Teléfono: no lo ha dejado, hay que contestar por correo',
     contacto.email ? `Correo: ${contacto.email}` : null,
     coche ? `Coche: ${coche.marca} ${coche.modelo}${coche.version ? ` ${coche.version}` : ''} (${coche.referencia})` : null,
     suCoche(contacto),

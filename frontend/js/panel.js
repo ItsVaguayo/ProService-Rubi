@@ -1596,7 +1596,7 @@ async function paginaContactos() {
             <span class="${urgente ? 'dias dias--peligro' : 'nota'}" title="${esc(fechaHora(c.recibido_en))}">${esc(haceCuanto(recibido))}</span></p>
           <p class="contacto__mensaje${c.mensaje ? '' : ' contacto__mensaje--vacio'}">${esc(c.mensaje || 'Sin mensaje')}</p>
           ${tasacion(c)}
-          <p class="contacto__datos"><a href="tel:${esc(tel)}">${esc(telefonoBonito(c.telefono))}</a>${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}</p>
+          <p class="contacto__datos">${c.telefono ? `<a href="tel:${esc(tel)}">${esc(telefonoBonito(c.telefono))}</a>` : ''}${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}</p>
         </div>
         ${coche}
         <div class="contacto__acciones">${acciones}</div>

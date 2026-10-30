@@ -182,6 +182,7 @@ Todo esto toca la web de Jaume: lo hace Francesc o se hace con él. Guía de la 
 - [ ] `[proservice_buscador]` en la página del listado, si se usa el buscador del plugin. Quién: Francesc.
 - [ ] `[proservice_contacto]` dentro de la plantilla de la ficha del coche del tema hijo (`<?php echo do_shortcode('[proservice_contacto]'); ?>`). Antes hay que decidir si sustituye a su formulario «Solicita tu prueba gratuita» o convive con él (B14). Quién: Francesc. Depende de: B14 (Jaume y Francesc).
 - [ ] `CORS_ORIGENES` con el origen exacto de la web: `https://proservicerubi.com`, y también la variante con `www` si la web la usa. Sin él, el formulario de la ficha recibe 403. Quién: Victor.
+- [ ] Formularios de Elementor (contacto y tasación) y prueba de la ficha conectados al CRM por el webhook: `FORMULARIOS_WEB_TOKEN` y `FORMULARIOS_WEB_HOSTS` en el servidor (Victor) y los pasos de [formularios-web.md](formularios-web.md) en la web (Francesc).
 - [ ] Política de privacidad. El formulario enlaza a la página que WordPress tenga puesta en Ajustes, Privacidad. Si no hay ninguna, el enlace sale vacío (`#`) y la casilla obligatoria no lleva a ningún sitio. Comprobar que existe y que cubre los datos del formulario: nombre, teléfono, correo y las fotos y datos del coche de la tasación (E5). Quién: Francesc lo comprueba, Diego decide si hace falta revisión legal.
 
 ## 3. Migración del miércoles 28
@@ -275,6 +276,8 @@ Las lee el código con `process.env`. Van en el `.env` de la raíz del repo; tod
 | `PANEL_URL` | Dirección del panel en los enlaces de los correos | Vacío: sin enlace | `https://stock.proservicerubi.com/panel/` |
 | `SERVIR_FRONTEND` | La API sirve `frontend/` en su mismo origen. Solo para el sistema de pruebas | Vacío | No se pone: lo sirve nginx, y con ella saldrían también las maquetas |
 | `ACCESO_PRUEBAS` | Usuarios de prueba para el botón «Rellenar» del login. Lo pone `dev:pruebas` | Vacío | No se pone. Con `NODE_ENV=production` se ignora igualmente |
+| `FORMULARIOS_WEB_TOKEN` | Token del webhook de los formularios de Elementor (`POST /api/contactos/elementor?token=`) | Vacío: la ruta no existe | `openssl rand -hex 24`. Se le pasa a Francesc por privado ([formularios-web.md](formularios-web.md)) |
+| `FORMULARIOS_WEB_HOSTS` | Dominios de los que se bajan las fotos de tasación que llegan por el webhook | El de `WP_URL` | `proservicerubi.com,www.proservicerubi.com` |
 | `CONTACTOS_POR_IP` | Envíos de los formularios de la web por IP cada 10 minutos: contactos y citas (`POST /api/citas/pedir`), cada uno con su cuenta | `5` | `5` |
 | `FOTOS_MINIMAS` | Fotos para poder publicar (briefing 4.1) | `15` | `15` |
 | `SMTP_URL` | Servidor de correo. Vacío, modo simulado | Vacío | La cuenta del dominio en Loading (H13). La da Francesc |

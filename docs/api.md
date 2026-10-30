@@ -66,6 +66,7 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
+| `POST /contactos/elementor?token=` | **token** | El webhook de los formularios de Elementor de la web. Ver «Formularios de Elementor» abajo |
 | `POST /contactos` | **sin sesión** | Lo manda el formulario de la web. Ver abajo. Cada contacto apunta su correo para `CORREO_CONTACTOS` (ver «Correos») |
 | `GET /contactos?estado=sin_atender&tipo=prueba` | con sesión | `estado`: `sin_atender` (por defecto, el que más espera primero), `atendidos` o `todos`. `tipo`: `informacion`, `prueba`, `financiacion` o `tasacion`. `q`: ver «Buscar» abajo; en nombre, teléfono, correo, mensaje y coche. Cada contacto lleva la matrícula, marca y modelo del coche, quién lo atendió y, en una tasación, `tasacion_marca`, `tasacion_modelo`, `tasacion_anio`, `tasacion_km` y `fotos` (`[{ id, url }]`, vacía si no mandó ninguna) |
 | `GET /contactos/sin-atender` | con sesión | `{ total }`, para el contador del menú |
@@ -100,6 +101,15 @@ Las fotos solo se sirven con sesión, también al `<img>` del panel: las de dañ
 - Los datos o las fotos de un coche en un contacto que no es de tasación: 400.
 - El límite de envíos por IP se comprueba **antes** de recibir las fotos.
 - El correo al comercial dice el coche y cuántas fotos ha mandado.
+
+**Formularios de Elementor** (`POST /contactos/elementor?token=`): la acción «Webhook» de Elementor Pro, que manda el servidor de WordPress y no el navegador. Pasos para la web en [formularios-web.md](formularios-web.md).
+- `token` tiene que ser el de `FORMULARIOS_WEB_TOKEN`: si no, 401. Sin esa variable, 404. Sin CORS y sin límite por IP (todos los envíos salen de la IP del servidor de WordPress).
+- Llega como `application/x-www-form-urlencoded`, con «Datos avanzados» (`fields[id][title|type|value]`, `form[name]`, `meta[page_url][value]`) o sin ellos (`Etiqueta=valor`; los metadatos de Elementor se ignoran).
+- Los campos se reconocen por la etiqueta, sin tildes ni mayúsculas: `nombre`, `correo`/`email`, `teléfono`/`móvil`, `marca…`, `modelo…`, `año…`/`…matriculación…`, `kilómetros…`, `mensaje`/`consulta`. Además `tipo`, `referencia` o `wp_post_id` (el coche, si está en la web) y `pagina`. Lo demás va al mensaje como «Etiqueta: valor», y la página de la que viene al final.
+- `tipo`: el que llegue; si no, `tasacion` si hay datos o fotos de un coche o el formulario se llama «…Tasación…», y si no `informacion`.
+- **Siempre 200** `{ ok: true }` con el token bueno: Elementor espera un 200 y, si no, le enseña un error a la persona. Un teléfono o un correo mal escrito no se rechaza: queda vacío y lo escrito va al mensaje. Sin teléfono ni correo, o con el campo trampa de Elementor relleno, no se guarda.
+- El teléfono puede quedar vacío (su tasación no lo pide): el correo al comercial lo dice, y «Pasar a cliente» no lo une por teléfono.
+- Fotos (tasación): los enlaces del campo de subida, hasta 6, solo de `FORMULARIOS_WEB_HOSTS` (o el dominio de `WP_URL`) y de `/wp-content/uploads/`. Se contesta antes de bajarlas; las que fallan se apuntan en el mensaje.
 
 ## Clientes y proveedores
 
