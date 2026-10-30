@@ -17,9 +17,9 @@ Un WordPress aparte de la aplicación que se comporta como proservicerubi.com: l
 - Ficha: portada con la primera foto, precio, «Desde X €/mes», galería con miniaturas y lightbox, ficha técnica de 6 datos (año, combustible, km, potencia, cilindrada, uso anterior), la sección de Jaume, la comparativa, las reseñas y **su formulario de prueba de conducción**.
 - Valores con su texto: estado «En venta», «Reservado» o «Vendido»; combustible «Gasolina», «Diésel», «Híbrido»…
 
-Los **nombres** de los campos ACF (`precio`, `cuota`, `estado`, `potencia`, `galeria`…) son una suposición sacada de sus etiquetas y de los parámetros de su filtro. Los reales se verán con el diagnóstico en cuanto haya credenciales y el grupo esté expuesto.
+Los **nombres, tipos y opciones** de los campos ACF son los de su web, leídos por REST el 30-oct-2026 (`precio`, `financiado`, `estado_coche`, `ano`, `potencia_cv`, `colores`, `extras`…). Como allí, no hay campo de galería: son las fotos adjuntas al post, con `imagen_principal` delante.
 
-**Un campo que su web no tiene:** `referencia` (texto, `PS-00031`). Lo añade la imitación para que el formulario de la ficha del plugin diga a la API de qué coche se pregunta. En la real hay que pedir a Francesc que lo cree en el grupo (duda B16); sin él, el conector se lo salta y el formulario pone el coche en el mensaje.
+**`referencia`** (texto, `PS-00031`): ya existe en su grupo de ACF (B16, vacío en sus 31 fichas el 30-oct). El conector la rellena y el formulario de la ficha la usa para decir a la API de qué coche se pregunta.
 
 ## Lo que se vio en su web y conviene saber
 
@@ -34,7 +34,7 @@ Los **nombres** de los campos ACF (`precio`, `cuota`, `estado`, `potencia`, `gal
 | Con un usuario Editor | Qué llega a la web |
 |---|---|
 | Hoy (ACF oculto en REST) | Título, estado (publicado o borrador) y marca |
-| Si un administrador marca «Mostrar en la API REST» en el grupo de campos de ACF de «coches» | Además: precio, km, combustible, potencia, cilindrada, color, año, estado («En venta», «Reservado», «Vendido») y galería |
+| Si un administrador marca «Mostrar en la API REST» en el grupo de campos de ACF de «coches» | Además: precio, km, combustible, potencia, cilindrada, cambio, colores, extras, año, estado («En venta», «Reservado», «Vendido») y fotos adjuntas con la principal |
 
 Esa casilla es la única acción de administrador que hace falta para que el precio y las fotos viajen solos.
 

@@ -9,7 +9,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { cliente } from './wordpress.js';
+import { adjuntasDe, cliente } from './wordpress.js';
 import { reducirImagen, FOTOS_MAXIMAS, MB_POR_FOTO } from '../fotos/routes.js';
 import { registrar } from '../auditoria.js';
 
@@ -65,19 +65,17 @@ export async function traerFotosDeLaWeb(db, cfg, vehiculoId, { fetchImpl = fetch
   const pedir = cliente(cfg, fetchImpl);
   const tipo = await pedir('GET', `/wp/v2/types/${encodeURIComponent(cfg.tipo)}?context=edit`);
   const post = await pedir('GET', `/wp/v2/${tipo.rest_base || cfg.tipo}/${vinculo.wp_post_id}?context=edit`);
-  const campoGaleria = Object.values(cfg.mapa ?? {}).find((m) => m.formato === 'galeria')?.acf;
+  // Su galería son las fotos adjuntas al post, y su ACF «imagen_principal» (formato «fotos» del mapa) dice la primera
+  const campoPrincipal = Object.values(cfg.mapa ?? {}).find((m) => m.formato === 'fotos')?.acf;
 
-  // Qué fotos y en qué orden
+  // Qué fotos y en qué orden: la destacada (si la hay), la principal y después las adjuntas
   let medios = [];
-  const galeria = idsDe(campoGaleria ? post.acf?.[campoGaleria] : null);
-  const ids = [...new Set([...idsDe(post.featured_media), ...galeria])];
+  const ids = [...new Set([...idsDe(post.featured_media), ...idsDe(campoPrincipal ? post.acf?.[campoPrincipal] : null)])];
   for (const id of ids) {
     try { medios.push(await pedir('GET', `/wp/v2/media/${id}?context=edit`)); } catch { /* una que ya no existe: se salta */ }
   }
-  if (!galeria.length) {
-    const adjuntas = await pedir('GET', `/wp/v2/media?parent=${vinculo.wp_post_id}&media_type=image&per_page=100&orderby=id&order=asc&context=edit`);
-    medios.push(...(adjuntas ?? []).filter((m) => !ids.includes(m.id)));
-  }
+  const adjuntas = await adjuntasDe(pedir, vinculo.wp_post_id, '&orderby=id&order=asc&context=edit');
+  medios.push(...(adjuntas ?? []).filter((m) => !ids.includes(m.id)));
   medios = medios.filter((m) => String(m.mime_type ?? '').startsWith('image/')).slice(0, FOTOS_MAXIMAS);
   if (!medios.length) throw new ErrorFotosWeb(409, `La ficha ${vinculo.wp_post_id} de la web no tiene fotos`);
 

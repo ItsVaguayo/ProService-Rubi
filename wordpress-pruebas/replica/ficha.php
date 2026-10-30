@@ -16,9 +16,9 @@ $id = get_the_ID();
 $fotos = replica_fotos($id);
 $modelo = replica_campo($id, 'modelo');
 $precio = replica_campo($id, 'precio');
-$cuota = replica_campo($id, 'cuota');
+$cuota = replica_campo($id, 'financiado');
 $km = replica_campo($id, 'kilometros');
-$potencia = replica_campo($id, 'potencia');
+$potencia = replica_campo($id, 'potencia_cv');
 $cilindrada = replica_campo($id, 'cilindrada');
 ?>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css">
@@ -37,7 +37,7 @@ $cilindrada = replica_campo($id, 'cilindrada');
 
   <div class="hero-overlay"></div>
   <div class="hero-content" data-a>
-    <span class="badge"><?php echo esc_html(replica_campo($id, 'estado') ?: 'En venta'); ?></span>
+    <span class="badge"><?php echo esc_html(replica_campo($id, 'estado_coche') ?: 'En venta'); ?></span>
     <h1><?php echo esc_html($modelo); ?> </h1>
     <p>Vehículo revisado · Garantía real · Sin presión</p>
     <div class="price"><?php echo esc_html($precio); ?>€</div>
@@ -110,7 +110,7 @@ $cilindrada = replica_campo($id, 'cilindrada');
   <div class="tech-column">
     <h2>Ficha Técnica</h2>
     <div class="tech-grid">
-      <div class="tech-card"><strong>Año</strong><span><?php echo esc_html(replica_campo($id, 'anio')); ?></span></div>
+      <div class="tech-card"><strong>Año</strong><span><?php echo esc_html(substr(replica_campo($id, 'ano'), 0, 4)); ?></span></div>
       <div class="tech-card"><strong>Combustible</strong><span><?php echo esc_html(replica_campo($id, 'combustible')); ?> </span></div>
       <div class="tech-card"><strong>Kilómetros</strong><span><?php echo esc_html($km !== '' ? $km . ' KM' : ''); ?></span></div>
       <div class="tech-card"><strong>Potencia</strong><span><?php echo esc_html($potencia !== '' ? $potencia . ' CV' : ''); ?></span></div>

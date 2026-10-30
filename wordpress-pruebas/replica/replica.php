@@ -9,8 +9,9 @@
  *    potencia_min y estado), tarjetas con miniaturas, 10 por página.
  *  - Ficha: portada con la primera foto, precio, «Desde X €/mes», galería con lightbox, ficha técnica
  *    de 6 datos, y su formulario de prueba de conducción.
- * Lo que no se sabe y aquí se supone: los nombres de los campos (ver imita-proservicerubi.php), qué
- * campo pinta el título grande de la ficha (en su web sale vacío) y qué hace su formulario al enviarse.
+ * Los nombres de los campos son los de su ACF (leídos por REST el 30-oct, ver imita-proservicerubi.php). Lo que
+ * no se sabe y aquí se supone: qué campo pinta el título grande de la ficha (en su web sale vacío) y qué hace
+ * su formulario al enviarse.
  */
 
 if (!defined('ABSPATH')) {
@@ -25,13 +26,20 @@ function replica_campo($id, $nombre)
     return is_scalar($valor) ? trim((string) $valor) : $valor;
 }
 
-/** URLs de la galería. ACF Pro la guarda como lista de ids; aquí, como texto «12,13,14». */
+/** Lista de un campo de casillas (colores, extras) como texto: «Blanco, Gris». */
+function replica_lista($id, $nombre)
+{
+    $valor = get_post_meta($id, $nombre, true);
+    return is_array($valor) ? implode(', ', $valor) : trim((string) $valor);
+}
+
+/** URLs de la galería: como en su web, las fotos adjuntas al post, con su «imagen_principal» delante. */
 function replica_fotos($id)
 {
-    $galeria = get_post_meta($id, 'galeria', true);
-    $ids = is_array($galeria) ? $galeria : explode(',', (string) $galeria);
+    $adjuntas = get_children(['post_parent' => $id, 'post_type' => 'attachment', 'post_mime_type' => 'image', 'orderby' => 'ID', 'order' => 'ASC', 'fields' => 'ids']);
+    $ids = array_unique(array_merge(array_filter([(int) get_post_meta($id, 'imagen_principal', true)]), array_map('intval', $adjuntas)));
     $urls = [];
-    foreach (array_filter(array_map('intval', $ids)) as $adjunto) {
+    foreach ($ids as $adjunto) {
         $url = wp_get_attachment_image_url($adjunto, 'large');
         if ($url) {
             $urls[] = $url;
@@ -52,14 +60,14 @@ function replica_tarjeta($id)
 {
     $enlace = esc_url(get_permalink($id));
     $fotos = replica_fotos($id);
-    $estado = replica_campo($id, 'estado');
+    $estado = replica_campo($id, 'estado_coche');
     $precio = replica_campo($id, 'precio');
-    $cuota = replica_campo($id, 'cuota');
-    $color = replica_campo($id, 'color');
+    $cuota = replica_campo($id, 'financiado');
+    $color = replica_lista($id, 'colores');
     $meta = array_filter([
         'Kilómetros'  => ($v = replica_campo($id, 'kilometros')) !== '' ? $v . 'KM' : '',
         'Combustible' => replica_campo($id, 'combustible'),
-        'Potencia'    => ($v = replica_campo($id, 'potencia')) !== '' ? $v . ' CV' : '',
+        'Potencia'    => ($v = replica_campo($id, 'potencia_cv')) !== '' ? $v . ' CV' : '',
         'Cilindrada'  => ($v = replica_campo($id, 'cilindrada')) !== '' ? $v . ' cc' : '',
         'Uso'         => replica_campo($id, 'uso_anterior'),
     ]);
@@ -127,10 +135,10 @@ function replica_filtrar_coches()
     if (isset($_POST['potencia_min']) && $_POST['potencia_min'] !== '') {
         // En su web este filtro devuelve 0 coches (1-oct-2026: «mínimo 130 CV» no saca el Niro de 138 CV).
         // Aquí funciona: el fallo será del dato o de su consulta, y no se puede ver desde fuera.
-        $meta[] = ['key' => 'potencia', 'value' => absint($_POST['potencia_min']), 'compare' => '>=', 'type' => 'NUMERIC'];
+        $meta[] = ['key' => 'potencia_cv', 'value' => absint($_POST['potencia_min']), 'compare' => '>=', 'type' => 'NUMERIC'];
     }
     if (!empty($_POST['estado'])) {
-        $meta[] = ['key' => 'estado', 'value' => sanitize_text_field(wp_unslash($_POST['estado']))];
+        $meta[] = ['key' => 'estado_coche', 'value' => sanitize_text_field(wp_unslash($_POST['estado']))];
     }
     $coches = get_posts(['post_type' => 'coches', 'post_status' => 'publish', 'numberposts' => -1, 'meta_query' => $meta, 'fields' => 'ids']);
     foreach ($coches as $id) {

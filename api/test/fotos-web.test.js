@@ -13,8 +13,8 @@ import { conServidor } from './ayuda.js';
 
 const png = (color) => sharp({ create: { width: 40, height: 30, channels: 3, background: color } }).png().toBuffer();
 
-// WordPress falso: la ficha 500 con foto destacada (10), galería de ACF opcional y fotos adjuntas
-async function webFalsa({ galeria = null } = {}) {
+// WordPress falso: la ficha 500 con foto destacada (10), su ACF imagen_principal opcional y fotos adjuntas
+async function webFalsa({ principal = null, adjuntas = [10, 13, 11, 14, 15, 12] } = {}) {
   const imagenes = { '/wp-content/uploads/a.png': await png('red'), '/wp-content/uploads/b.png': await png('blue'), '/wp-content/uploads/c.png': await png('green') };
   const pedidas = [];
   let base;
@@ -49,10 +49,10 @@ async function webFalsa({ galeria = null } = {}) {
     }
     const ruta = url.pathname.replace(/^\/wp-json/, '');
     if (ruta === '/wp/v2/types/coches') return json({ rest_base: 'coches' });
-    if (ruta === '/wp/v2/coches/500') return json({ id: 500, featured_media: 10, acf: galeria ? { galeria } : {} });
+    if (ruta === '/wp/v2/coches/500') return json({ id: 500, featured_media: 10, acf: { imagen_principal: principal } });
     const m = ruta.match(/^\/wp\/v2\/media\/(\d+)$/);
     if (m) return medios()[m[1]] ? json(medios()[m[1]]) : json({ code: 'rest_post_invalid_id' }, 404);
-    if (ruta === '/wp/v2/media' && url.searchParams.get('parent') === '500') return json([10, 13, 11, 14, 15, 12].map((id) => medios()[id]));
+    if (ruta === '/wp/v2/media' && url.searchParams.get('parent') === '500') return json(adjuntas.map((id) => medios()[id]));
     json({ code: 'rest_no_route' }, 404);
   });
   await new Promise((r) => servidor.listen(0, r));
@@ -90,19 +90,18 @@ test('fotos de la web: destacada primero y después las adjuntas; nada de fuera 
   } finally { fin(); }
 });
 
-test('fotos de la web: con la galería de ACF expuesta, en su orden', async () => {
-  const { db, id, cfg, web, fin } = await preparar({ galeria: [12, { id: 11 }, 99] });
+test('fotos de la web: su imagen_principal va justo detrás de la destacada, y luego las adjuntas', async () => {
+  const { db, id, cfg, fin } = await preparar({ principal: 12 });
   try {
     vincular(db, id, 500);
     const r = await traerFotosDeLaWeb(db, cfg, id);
     assert.equal(r.traidas, 3);
     assert.deepEqual(db.prepare('SELECT m.wp_media_id FROM fotos f JOIN wp_medios m ON m.foto_id = f.id WHERE f.vehiculo_id = ? ORDER BY f.orden').all(id).map((f) => f.wp_media_id), [10, 12, 11]);
-    assert.ok(!web.pedidas.some((p) => p.includes('parent=')), 'con galería no hacen falta las adjuntas');
   } finally { fin(); }
 });
 
 test('fotos de la web: redirecciones solo dentro del dominio, y corta la que pasa de 15 MB sin decir su tamaño', async () => {
-  const { db, id, cfg, web, fin } = await preparar({ galeria: [16, 17, 18] });
+  const { db, id, cfg, web, fin } = await preparar({ adjuntas: [16, 17, 18] });
   try {
     vincular(db, id, 500);
     const r = await traerFotosDeLaWeb(db, cfg, id);

@@ -330,13 +330,15 @@ Nadie se borra: se desactiva, y su nombre sigue en el historial. Nadie puede des
 
 Necesita `WP_URL`, `WP_USUARIO` y `WP_CLAVE_APLICACION`; sin ellas, 503. Detalles en `wordpress-pruebas/README.md`. Cada foto traída de la web queda apuntada con su id de WordPress (`wp_medios`): al sincronizar no se vuelve a subir.
 
+Qué se manda a su ACF (expuesto desde el 30-oct; mapa en `MAPA_POR_DEFECTO` de `wordpress.js`): `precio`, `financiado` (la cuota), `estado_coche`, `ano` (fecha Ymd: la de matriculación o el 1 de enero del año), `kilometros`, `combustible`, `cambio`, `potencia_cv`, `cilindrada`, `colores`, `extras`, `video` y `referencia`. En los campos de opciones cerradas solo va lo que está entre sus opciones, sin mirar mayúsculas ni tildes («gris oscuro» → «Gris»); lo demás no se manda y sale en `avisos` del resumen. Su galería son las fotos adjuntas al post: se suben con `?post=` y la primera va a `imagen_principal`. Cuando cambian las fotos del coche, se cuadra lo adjunto una vez (migración 0021, `fotos_huella`): las ocultas o borradas en el panel se desadjuntan (`post: 0`, no se borran de su biblioteca) y las que estén sueltas se adjuntan. En una ficha vinculada que ya tenga fotos subidas a mano no se sube ninguna (saldrían mezcladas): se avisa una vez, y se suben al quitar las suyas del post y volver a vincular. El orden en que su ficha pinta las adjuntas lo decide su plantilla (en la réplica, por id): el nuestro solo manda en `imagen_principal`.
+
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
 | `GET /wordpress/diagnostico` | gerencia | Qué deja escribir la web, sin escribir nada |
 | `POST /wordpress/sincronizar` | gerencia | Publica, actualiza y retira. `{ forzar: true }` permite retirar aunque no quede ningún coche a la venta |
 | `GET /wordpress/estado` | gerencia | Cada coche con su post de WordPress y el último error |
 | `POST /wordpress/vincular` | gerencia | `{ vehiculo_id, wp_post_id }` une un coche con una ficha que ya existía en la web |
-| `POST /wordpress/fotos/:vehiculoId` | gerencia | Baja las fotos de la ficha de la web de un coche vinculado que **aún no tiene ninguna** (los del stock que llegan de Pymecar). Primero la destacada, después la galería de ACF si la web la expone y, si no, las adjuntas a la ficha por orden de subida, hasta 25. Las reduce como las del panel. Solo del dominio de la web. `{ traidas, saltadas }`. Sin vincular o con fotos ya: 409 |
+| `POST /wordpress/fotos/:vehiculoId` | gerencia | Baja las fotos de la ficha de la web de un coche vinculado que **aún no tiene ninguna** (los del stock que llegan de Pymecar). Primero la destacada (si la hay), después su `imagen_principal` y luego las demás adjuntas a la ficha por orden de subida, hasta 25. Las reduce como las del panel. Solo del dominio de la web. `{ traidas, saltadas }`. Sin vincular o con fotos ya: 409 |
 | `POST /wordpress/fotos` | gerencia | Lo mismo con todos los coches vinculados que no tienen fotos. `{ coches, fotos, errores }` |
 
 ## Portales (Coches.net, Milanuncios y Wallapop)
