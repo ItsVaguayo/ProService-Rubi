@@ -12,10 +12,11 @@ import { ESTADOS_WEB } from '../estados.js';
 import { configCorreo } from '../correo/envio.js';
 import { correoDeContacto } from '../correo/mensajes.js';
 import { filtroBusqueda } from '../../buscar.js';
+import { rutaElementor } from './elementor.js';
 
 export const TIPOS = ['informacion', 'prueba', 'financiacion', 'tasacion'];
-const TELEFONO = /^[+\d][\d\s().-]{5,19}$/;
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const TELEFONO = /^[+\d][\d\s().-]{5,19}$/;
+export const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Como mucho 5 envíos por IP cada 10 minutos: suficiente para una persona, corta los robots
 const VENTANA_MS = 10 * 60 * 1000;
@@ -28,9 +29,9 @@ const texto = (v, max) => (typeof v === 'string' && v.trim() && v.trim().length 
 export const FOTOS_TASACION = 5;
 const MB_TASACION = 10;
 const CAMPOS_TASACION = ['tasacion_marca', 'tasacion_modelo', 'tasacion_anio', 'tasacion_km'];
-const carpetaSubidas = () => resolve(process.env.UPLOADS_PATH || './data/uploads');
+export const carpetaSubidas = () => resolve(process.env.UPLOADS_PATH || './data/uploads');
 const esHeic = (f) => /^image\/hei[cf]/.test(f.mimetype) || /\.hei[cf]$/i.test(f.originalname);
-const numero = (v) => (Number.isInteger(v) ? v : typeof v === 'string' && /^\d{1,3}(\.?\d{3})*$/.test(v.trim()) ? Number(v.trim().replace(/\./g, '')) : null);
+export const numero = (v) => (Number.isInteger(v) ? v : typeof v === 'string' && /^\d{1,3}(\.?\d{3})*$/.test(v.trim()) ? Number(v.trim().replace(/\./g, '')) : null);
 // En un formulario multipart todo llega como texto: «true» o «on» en la casilla, el id del coche como «12»
 const SI = ['true', 'on', '1'];
 
@@ -51,8 +52,28 @@ function recibirFotos(req, res, next) {
   });
 }
 
+/**
+ * El contacto, sus fotos y su correo al comercial, juntos: o entra todo o nada. El correo sale después
+ * (correo/envio.js). `fotosEnCamino`: las que aún se están descargando (webhook de Elementor), para el correo.
+ */
+export function guardarContacto(db, datos, rutas = [], { fotosEnCamino = 0 } = {}) {
+  return db.transaction(() => {
+    const columnas = Object.keys(datos);
+    const id = Number(db.prepare(`INSERT INTO contactos (${columnas.join(', ')}) VALUES (${columnas.map(() => '?').join(', ')})`)
+      .run(...Object.values(datos)).lastInsertRowid);
+    const foto = db.prepare('INSERT INTO contacto_fotos (contacto_id, orden, ruta) VALUES (?, ?, ?)');
+    rutas.forEach((ruta, i) => foto.run(id, i + 1, ruta));
+    const coche = datos.vehiculo_id ? db.prepare('SELECT marca, modelo, version, referencia FROM vehiculos WHERE id = ?').get(datos.vehiculo_id) : null;
+    correoDeContacto(db, configCorreo(), { id, ...datos, fotos: rutas.length + fotosEnCamino }, coche);
+    return id;
+  })();
+}
+
 export function rutasContactosPublicas(db) {
   const r = Router();
+  // El webhook de los formularios de Elementor de proservicerubi.com (elementor.js). Va antes que POST /:
+  // lo manda el servidor de WordPress, con un token, y no la persona desde su navegador.
+  r.use('/elementor', rutaElementor(db));
   const envios = new Map(); // ip → { n, desde }
   // Solo coches que salen en la web: así el formulario no sirve para averiguar qué otros coches hay
   const enLaWeb = `estado IN (${ESTADOS_WEB.map(() => '?').join(',')})`;
@@ -142,17 +163,7 @@ export function rutasContactosPublicas(db) {
         await mkdir(join(carpetaSubidas(), carpeta), { recursive: true });
         for (const [i, ruta] of rutas.entries()) await writeFile(join(carpetaSubidas(), ruta), reducidas[i]);
       }
-      // El contacto, sus fotos y su correo al comercial, juntos: o entra todo o nada. El correo sale después (correo/envio.js).
-      db.transaction(() => {
-        const columnas = ['nombre', 'telefono', 'email', 'tipo', 'vehiculo_id', 'mensaje', ...Object.keys(tasacion)];
-        const valores = [nombre, telefono, email, b.tipo, vehiculoId, mensaje, ...Object.values(tasacion)];
-        const id = Number(db.prepare(`INSERT INTO contactos (${columnas.join(', ')}) VALUES (${columnas.map(() => '?').join(', ')})`)
-          .run(...valores).lastInsertRowid);
-        const foto = db.prepare('INSERT INTO contacto_fotos (contacto_id, orden, ruta) VALUES (?, ?, ?)');
-        rutas.forEach((ruta, i) => foto.run(id, i + 1, ruta));
-        const coche = vehiculoId ? db.prepare('SELECT marca, modelo, version, referencia FROM vehiculos WHERE id = ?').get(vehiculoId) : null;
-        correoDeContacto(db, configCorreo(), { id, nombre, telefono, email, tipo: b.tipo, mensaje, ...tasacion, fotos: rutas.length }, coche);
-      })();
+      guardarContacto(db, { nombre, telefono, email, tipo: b.tipo, vehiculo_id: vehiculoId, mensaje, ...tasacion }, rutas);
     } catch (err) {
       if (rutas.length) await rm(join(carpetaSubidas(), carpeta), { recursive: true, force: true });
       return next(err);
@@ -239,9 +250,9 @@ export function rutasContactos(db) {
     const telefono = c.telefono.replace(/[\s().-]/g, '');
     const resultado = db.transaction(() => {
       const existente = db.prepare(`SELECT id FROM clientes
-                                     WHERE replace(replace(replace(replace(replace(telefono, ' ', ''), '-', ''), '.', ''), '(', ''), ')', '') = ?
+                                     WHERE (? <> '' AND replace(replace(replace(replace(replace(telefono, ' ', ''), '-', ''), '.', ''), '(', ''), ')', '') = ?)
                                         OR (? IS NOT NULL AND email = ? COLLATE NOCASE)
-                                     ORDER BY id LIMIT 1`).get(telefono, c.email, c.email);
+                                     ORDER BY id LIMIT 1`).get(telefono, telefono, c.email, c.email);
       let clienteId = existente?.id;
       if (!clienteId) {
         clienteId = Number(db.prepare("INSERT INTO clientes (nombre, telefono, email, origen) VALUES (?, ?, ?, 'web')")
