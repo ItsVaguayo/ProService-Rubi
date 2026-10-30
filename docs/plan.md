@@ -187,7 +187,7 @@ Te toca todo lo que ve el cliente final y los portales. Tu bloque es el que quit
   - Publicación desde la API (`api/src/modules/publicacion/wordpress.js`): diagnóstico, sincronizar, vincular las fichas que ya existen y retirar. Nunca datos de compra, proveedor ni margen.
   - Su web ya tiene listado y filtro propios (precio, potencia y estado), que funcionan con lo que manda la API si coinciden los campos.
   - Plugin buscador opcional (`wp-plugin/proservice-stock/`): más filtros (los de la 5.4), ficha con el diseño de la maqueta (apagada por defecto), cintas «Reservado» y «Vendido», y 301 de los coches retirados.
-- Pendiente para cerrar con la web real: usuario Editor (B8), «Mostrar en la API REST» en el grupo de ACF (B11) y los nombres reales de los campos para ajustar `WP_MAPA`.
+- Pendiente para cerrar con la web real: usuario Editor (B8). B11 hecha el 30-oct y el mapa ya usa los nombres reales de los campos.
 
 **Semana 3**
 - En la ficha pública: formulario, WhatsApp con el coche ya escrito en el mensaje, pedir prueba, calculadora de cuota orientativa, pedir financiación, tasar su coche y compartir.

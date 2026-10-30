@@ -173,7 +173,7 @@ WantedBy=multi-user.target
 Todo esto toca la web de Jaume: lo hace Francesc o se hace con él. Guía de la conexión en [wordpress-pruebas/README.md](../wordpress-pruebas/README.md#para-la-web-real) y del plugin en [wp-plugin/README.md](../wp-plugin/README.md).
 
 - [x] Usuario con rol Editor y una contraseña de aplicación creada desde su perfil (B8). **Conseguido el 20-oct** ([web-real.md](web-real.md)). Cargar el `.env` siempre con `node --env-file`, nunca con `source`: la clave lleva espacios. Con eso basta para publicar: no hace falta administrador. Francesc nos pasa el usuario y la contraseña de aplicación, que van a `WP_USUARIO` y `WP_CLAVE_APLICACION`. Quién: Francesc.
-- [ ] Marcar «Mostrar en la API REST» en el grupo de campos de ACF de «coches» (B11). A 20-oct sigue sin hacer (comprobado con el Editor). Sin ella solo viajan título, estado y marca: ni precio, ni km, ni fotos. Quién: Francesc, con administrador.
+- [x] Marcar «Mostrar en la API REST» en el grupo de campos de ACF de «coches» (B11). Hecho: comprobado el 30-oct con el Editor. Quién: Francesc, con administrador.
 - [ ] Campo de texto `referencia` en ese mismo grupo (B16), para que un contacto de la ficha quede unido a su coche. Sin él, el formulario escribe el coche en el mensaje. Quién: Francesc.
 - [ ] Qué campos llevan el nombre del coche y el año (B12). Quién: Francesc.
 - [ ] Lanzar el diagnóstico (`npm run wordpress --workspace api -- diagnostico`). Primera vez el 20-oct, sin ACF: ver [web-real.md](web-real.md#diagnóstico). Repetirlo cuando esté B11 con las claves en el `.env`. Dice qué deja escribir la web y qué campos del mapa existen. Si los nombres de ACF no coinciden, se ajusta `WP_MAPA`. Quién: Victor. Depende de: B8 y B11.
@@ -195,7 +195,7 @@ El procedimiento entero está en [migracion.md](migracion.md). Aquí solo los pu
 - [ ] Miércoles 28: export final, ensayo otra vez y carga con `--aplicar`, con el OK de Diego. El script copia la base antes de tocar nada (`proservice.db.antes-de-migrar-…`). Quién: Victor.
 - [ ] Copia de seguridad a mano justo después (`npm run copia --workspace api`). Quién: Victor.
 - [ ] Vincular cada coche del stock con su ficha de la web (`POST /api/wordpress/vincular`) antes de la primera sincronización, para no duplicarlas y conservar sus URLs. A 20-oct hay 35 fichas publicadas y ninguna en borrador: las de vendidos no las retira nadie si no se vinculan (B17, tabla en [web-real.md](web-real.md#las-35-fichas-para-jaume)). A 13-oct había 33 coches dados de alta a mano en WordPress (B9). Quién: Victor. Depende de: B8.
-- [ ] Bajar las fotos del stock desde la web (`POST /api/wordpress/fotos`). Si la web no expone la galería de ACF (B11), baja las adjuntas a la ficha y Jaume las ordena. Quién: Victor, después Jaume.
+- [ ] Bajar las fotos del stock desde la web (`POST /api/wordpress/fotos`). Baja la `imagen_principal` y las adjuntas a la ficha; Jaume las ordena. Quién: Victor, después Jaume.
 - [ ] Comprobar en Facturas, Datos de la empresa, que la serie `V26` sigue en el número que dejó Pymecar (H8). Quién: Victor, con Jaume.
 - [ ] Si sale mal: parar la API, poner la copia `antes-de-migrar` en su sitio y arrancar. El plan B es el mes extra de Pymecar (B2). Quién: Victor avisa, Diego decide.
 
@@ -235,7 +235,7 @@ El procedimiento entero está en [migracion.md](migracion.md). Aquí solo los pu
 | B7 | Export de Pymecar | Jaume | Sin export no hay migración |
 | B8 | Administrador una vez y DNS (el Editor ya está, 20-oct) | Francesc | Sin administrador no hay buscador ni 301; sin DNS no hay subdominio |
 | B9 | Quién da de alta hoy los coches en la web (35 a mano a 20-oct) | Francesc | Se vinculan los que haya el 28 |
-| B11 | «Mostrar en la API REST» en ACF | Francesc | Solo título, estado y marca. **Es lo que bloquea conectar la web** |
+| B11 ✅ | «Mostrar en la API REST» en ACF | Francesc | Hecho el 30-oct |
 | B17 | Cuáles de las 35 fichas siguen en venta | Jaume | Sin la lista no se vincula nada |
 | B18 | Marca (y modelo) en la web | Francesc | Solo la marca |
 | B19 | Toyota Proace publicada dos veces | Jaume | Se pregunta antes de vincular |

@@ -16,8 +16,8 @@ Revisado el 20-oct-2026, el primer día con acceso a la WordPress de proservicer
 |---|---|
 | Sesión | Editor: publicar, editar fichas de otros, subir fotos y crear marcas, sí |
 | Tipo «coches» | Se pueden escribir `title`, `status`, `slug`, `date`, `template`, `marca` y `acf` |
-| ACF en la API REST | **No.** Sigue la duda B11: sin ella, la plataforma solo manda título, estado y marca. Ni precio, ni km, ni fotos |
-| Campos del mapa (`WP_MAPA`) | No se pueden comprobar hasta que ACF esté expuesto: los nombres reales siguen siendo una suposición |
+| ACF en la API REST | **Sí desde el 30-oct** (B11, comprobado con GET y OPTIONS). 15 campos: `precio`, `financiado`, `estado_coche`, `imagen_principal`, `video`, `ano` (fecha Ymd), `combustible`, `kilometros`, `cilindrada` (texto), `potencia_cv`, `cambio`, `uso_anterior`, `extras` y `colores` (listas cerradas) y `referencia` |
+| Campos del mapa (`WP_MAPA`) | El mapa por defecto ya usa esos nombres: el diagnóstico solo echa en falta `cuota_condiciones` (opcional, duda E9) |
 
 ## Lo que tienen publicado
 
@@ -25,7 +25,7 @@ Revisado el 20-oct-2026, el primer día con acceso a la WordPress de proservicer
 - La más antigua es de abril de 2026. Altas: 2 en abril, 13 en julio, 1 en agosto, 14 en septiembre y 5 en octubre.
 - **Títulos a mano**, con erratas («VOLSKWAGEN», «QASHCAI») y la potencia y la etiqueta dentro del título. La plataforma los sustituirá por marca, modelo y versión al sincronizar.
 - **«TOYOTA PROACE 150CV DIESEL 8 PLAZAS» está dos veces** (8503 y 8362): duplicado o dos furgonetas (B19).
-- **Ninguna tiene foto destacada**: las fotos van en la galería de ACF, que no se puede leer mientras ACF no esté expuesto.
+- **Ninguna tiene foto destacada**: su galería son las fotos adjuntas al post, y el ACF `imagen_principal` dice la primera (comprobado el 30-oct en la ficha 8835: sus 10 adjuntas salen en la página).
 - **Marcas** (taxonomía `marca`, jerárquica: la marca arriba y sus modelos colgando, como Seat → Arona). Hay 39 términos, pero **solo 2 fichas la tienen puesta** (Seat Arona y Toyota Proace). Faltan marcas que sí están en el stock: Mini, Mitsubishi, Jeep, Land Rover, Volkswagen. Ver B18.
 
 ## Lo que hace la plataforma con esto (comprobado en el código)
@@ -36,7 +36,7 @@ Revisado el 20-oct-2026, el primer día con acceso a la WordPress de proservicer
 
 ## Pasos para conectarla, en orden
 
-1. Francesc: «Mostrar en la API REST» en el grupo de ACF de «coches» (B11) y campo `referencia` (B16). Después, repetir el diagnóstico y ajustar `WP_MAPA` a los nombres reales.
+1. Francesc: «Mostrar en la API REST» en el grupo de ACF de «coches» (B11) y campo `referencia` (B16). Hecho el 30-oct: el mapa ya usa los nombres reales; el campo `referencia` existe, vacío en las 31 fichas.
 2. Jaume: rellenar la tabla de abajo (B17).
 3. Servidor de producción con la API y los coches migrados de Pymecar (28-oct). **La primera sincronización sale de ahí, nunca de un ordenador de desarrollo**: publicaría los coches de prueba en su web.
 4. Vincular cada coche en venta con su ficha (`vincular`). Las de vendidos: a borrador (Francesc o, con su OK, nosotros) o vinculadas a su coche vendido para que las retire la plataforma.
