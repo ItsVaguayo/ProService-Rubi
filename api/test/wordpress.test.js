@@ -616,6 +616,27 @@ test('una foto borrada de su biblioteca se vuelve a subir', () =>
     assert.equal([...estado.adjuntos.values()].filter((p) => p === postDe(estado).id).length, 2);
   }));
 
+test('en una ficha vinculada no se borra lo que pusieron a mano si nosotros no tenemos ese dato', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    estado.posts.get(500).acf = { precio: 9000, estado_coche: 'En venta', extras: ['GPS'], colores: ['Rojo'], video: 'https://youtu.be/suyo', ano: '20180101' };
+    coche(1, 'Volkswagen'); // de Pymecar: sin extras, color, vídeo ni año
+    db.prepare("UPDATE vehiculos SET uso_anterior = 'profesional' WHERE id = 1").run();
+    vincular(db, 1, 500);
+    await sincronizar(db, cfg);
+    const acf = estado.posts.get(500).acf;
+    assert.deepEqual([acf.extras, acf.colores, acf.video, acf.ano], [['GPS'], ['Rojo'], 'https://youtu.be/suyo', '20180101']);
+    assert.equal(acf.precio, 12900, 'lo que sí tenemos manda');
+    assert.equal(acf.uso_anterior, 'Empresa');
+  }));
+
+test('solo cambian las fotos adjuntas: cuenta como actualizado aunque el post no se reenvíe', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, coche }) => {
+    coche(1, 'Seat', 'publicado', 3);
+    await sincronizar(db, cfg);
+    db.prepare('UPDATE fotos SET publica = 0 WHERE orden = 3').run();
+    assert.equal((await sincronizar(db, cfg)).actualizados, 1);
+  }));
+
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
   assert.equal(convertir('reservado', MAPA_POR_DEFECTO.estado), 'Reservado');
   assert.equal(convertir('vendido', MAPA_POR_DEFECTO.estado), 'Vendido');

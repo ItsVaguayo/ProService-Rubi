@@ -36,6 +36,7 @@ export const MAPA_POR_DEFECTO = {
     valores: { gasolina: 'Gasolina', diesel: 'Diésel', hibrido: 'Híbrido', hibrido_enchufable: 'Híbrido', electrico: 'Eléctrico', glp: 'GLP' },
   },
   cambio: { acf: 'cambio', formato: 'texto', valores: { manual: 'Manual', automatico: 'Automático' } },
+  uso_anterior: { acf: 'uso_anterior', formato: 'texto', valores: { particular: 'Particular', profesional: 'Empresa' } },
   potencia_cv: { acf: 'potencia_cv', formato: 'numero' },
   cilindrada: { acf: 'cilindrada', formato: 'numero' },
   color_exterior: { acf: 'colores', formato: 'lista' },
@@ -53,6 +54,7 @@ export const FORMATOS = ['texto', 'numero', 'euros', 'capitalizar', 'lista', 'fo
 // Datos del mapa que no son columnas del coche: se calculan, y solo si el mapa los usa.
 //   cuota y cuota_condiciones: cuota.js · fecha_ymd: su «ano» es un selector de fecha (Ymd), con la fecha de
 //   matriculación o, sin ella, el 1 de enero del año · extras: los nombres de nuestro catálogo
+const VACIAR = ['cuota', 'cuota_condiciones'];
 const CALCULADOS = {
   cuota: (v, ctx) => cuotaDe(v, ctx.condiciones),
   cuota_condiciones: (v, ctx) => textoCondiciones(v, ctx.condiciones),
@@ -344,8 +346,12 @@ async function publicarCoche(ctx, v, vinculo) {
       // Las fotos van aparte; un formato desconocido lo avisa el diagnóstico
       if (!esquema || destino.formato === 'fotos' || !FORMATOS.includes(destino.formato ?? 'texto')) continue;
       const valor = Object.hasOwn(CALCULADOS, campo) ? CALCULADOS[campo](v, ctx) : v[campo];
+      // Un dato que no tenemos no se manda: en las fichas vinculadas borraría lo que pusieron a mano (los coches de
+      // Pymecar llegan sin extras, color ni vídeo). Solo la cuota apagada (CUOTA_MESES=0) se vacía a propósito.
+      const convertido = convertir(valor, destino);
+      if ((convertido === null || (Array.isArray(convertido) && !convertido.length)) && !VACIAR.includes(campo)) continue;
       const descartados = [];
-      const adaptado = adaptar(convertir(valor, destino), esquema, descartados);
+      const adaptado = adaptar(convertido, esquema, descartados);
       if (descartados.length) avisos.push(`${v.referencia}: ${descartados.map((f) => `«${f}»`).join(', ')} no está entre las opciones de «${destino.acf}» de la web: no se manda`);
       // Si no queda nada por estar fuera de sus opciones, se vacía (su ACF acepta null en sus listas, comprobado el
       // 30-oct): así no se queda el valor de antes. Solo en un campo que no admite vacío no se manda
@@ -371,7 +377,8 @@ async function publicarCoche(ctx, v, vinculo) {
     const principal = campoFotos && fotos?.propias ? { [campoFotos]: fotos.ids[0] ?? null } : null;
     const envio = principal ? { ...cuerpo, acf: { ...cuerpo.acf, ...principal } } : cuerpo;
     const huella = ctx.mapaFotos && fotos === null ? null : huellaDe(envio);
-    if (vinculo?.estado === 'publicado' && huella && vinculo.huella === huella) return { accion: 'sin_cambios', avisos };
+    // Si solo cambiaron las fotos adjuntas (la principal es la misma), el post no se reenvía pero sí se cambió algo
+    if (vinculo?.estado === 'publicado' && huella && vinculo.huella === huella) return { accion: fotos?.cambio ? 'actualizados' : 'sin_cambios', avisos };
 
     // El post recién creado ya lleva todo salvo la foto principal. Se reenvía entero: su ACF rechaza un «acf» sin
     // los campos obligatorios (precio, estado_coche), comprobado contra ACF el 30-oct
@@ -500,7 +507,7 @@ async function fotosDelPost(ctx, v, fila) {
     }
   }
   db.prepare('UPDATE wp_posts SET fotos_huella = ? WHERE vehiculo_id = ?').run(clave, v.id);
-  return { ids, propias: true };
+  return { ids, propias: true, cambio: true };
 }
 
 /** Ids de WordPress de las fotos públicas del coche, en orden, subiendo adjuntas al post las que falten. null si quedan por subir. */
@@ -537,6 +544,6 @@ export function vincular(db, vehiculoId, wpPostId) {
   // Revincular vuelve a mirar sus fotos: así se desbloquea una ficha a la que le han quitado las suyas
   db.prepare(`INSERT INTO wp_posts (vehiculo_id, wp_post_id, huella, estado) VALUES (?, ?, NULL, 'vinculado')
               ON CONFLICT (vehiculo_id) DO UPDATE SET wp_post_id = excluded.wp_post_id, huella = NULL, estado = 'vinculado',
-                fotos_propias = ${FOTOS_SIN_MIRAR},
+                fotos_propias = ${FOTOS_SIN_MIRAR}, avisos = NULL, ultimo_error = NULL,
                 fotos_huella = CASE WHEN wp_posts.wp_post_id = excluded.wp_post_id THEN wp_posts.fotos_huella END`).run(vehiculoId, wpPostId);
 }
