@@ -825,6 +825,23 @@ test('con la primera foto por subir, la principal no se cambia por otra', () =>
     assert.notEqual(postDe(estado).acf.imagen_principal, principal, 'subida la nueva primera, pasa a principal');
   }));
 
+test('de nuestro post retirado que ahora es de otro coche no se mueven fotos', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 1);
+    await sincronizar(db, cfg);
+    const p1 = postDe(estado).id;
+    estado.posts.set(600, { id: 600, title: 'B', status: 'publish' });
+    vincular(db, 1, 600);
+    await sincronizar(db, cfg);
+    coche(2, 'Kia');
+    vincular(db, 2, p1); // el Kia pasa a usar el post retirado del Seat
+    const id = db.prepare('SELECT wp_media_id FROM wp_medios').get().wp_media_id;
+    estado.adjuntos.set(id, p1);
+    db.prepare("UPDATE wp_posts SET fotos_huella = NULL WHERE vehiculo_id = 1").run();
+    await sincronizar(db, cfg);
+    assert.equal(estado.adjuntos.get(id), p1);
+  }));
+
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
   assert.equal(convertir('reservado', MAPA_POR_DEFECTO.estado), 'Reservado');
   assert.equal(convertir('vendido', MAPA_POR_DEFECTO.estado), 'Vendido');
