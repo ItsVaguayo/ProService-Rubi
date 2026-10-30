@@ -9,7 +9,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { adjuntasDe, cliente } from './wordpress.js';
+import { adjuntasDe, cliente, mapaDeFotos } from './wordpress.js';
 import { reducirImagen, FOTOS_MAXIMAS, MB_POR_FOTO } from '../fotos/routes.js';
 import { registrar } from '../auditoria.js';
 
@@ -66,7 +66,7 @@ export async function traerFotosDeLaWeb(db, cfg, vehiculoId, { fetchImpl = fetch
   const tipo = await pedir('GET', `/wp/v2/types/${encodeURIComponent(cfg.tipo)}?context=edit`);
   const post = await pedir('GET', `/wp/v2/${tipo.rest_base || cfg.tipo}/${vinculo.wp_post_id}?context=edit`);
   // Su galería son las fotos adjuntas al post, y su ACF «imagen_principal» (formato «fotos» del mapa) dice la primera
-  const campoPrincipal = Object.values(cfg.mapa ?? {}).find((m) => m.formato === 'fotos')?.acf;
+  const campoPrincipal = mapaDeFotos(cfg.mapa)?.acf;
 
   // Qué fotos y en qué orden: la destacada (si la hay), la principal y después las adjuntas
   let medios = [];

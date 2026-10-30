@@ -258,8 +258,8 @@ test('con ACF: año como fecha Ymd, cambio, potencia, cilindrada como texto, col
 
     const kia = postDe(estado, 'Kia Modelo Versión').acf;
     assert.equal(kia.ano, '20170101', 'sin fecha de matriculación, el 1 de enero del año');
-    assert.equal(kia.combustible, null, 'fuera de sus opciones se vacía: no se queda el valor de antes');
-    assert.deepEqual(kia.colores, []);
+    assert.equal(kia.combustible, undefined, 'fuera de sus opciones no se manda: se respeta lo que haya');
+    assert.equal(kia.colores, undefined);
     assert.ok(r.avisos.some((a) => a === 'PS-00002: «GLP» no está entre las opciones de «combustible» de la web: no se manda'));
     assert.ok(r.avisos.some((a) => a.startsWith('PS-00002: «Morado» no está entre las opciones de «colores»')));
     assert.ok(r.avisos.some((a) => a.startsWith('PS-00001: «Apple CarPlay»')));
@@ -514,7 +514,9 @@ test('una foto nuestra adjunta a otra ficha no se mueve a esta', () =>
     await sincronizar(db, cfg);
     const post = postDe(estado);
     const id = db.prepare('SELECT wp_media_id FROM wp_medios').get().wp_media_id;
-    estado.adjuntos.set(id, 777); // alguien la reutilizó en otra ficha
+    estado.adjuntos.set(id, 777); // alguien la reutilizó en la ficha de otro coche
+    coche(2, 'Kia');
+    db.prepare("INSERT INTO wp_posts (vehiculo_id, wp_post_id, estado) VALUES (2, 777, 'vinculado')").run();
     db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (1, 2, 'vehiculos/1/1.png')").run();
     await sincronizar(db, cfg);
     assert.equal(estado.adjuntos.get(id), 777);
@@ -635,6 +637,32 @@ test('solo cambian las fotos adjuntas: cuenta como actualizado aunque el post no
     await sincronizar(db, cfg);
     db.prepare('UPDATE fotos SET publica = 0 WHERE orden = 3').run();
     assert.equal((await sincronizar(db, cfg)).actualizados, 1);
+  }));
+
+test('revinculado a otra ficha: sus fotos se mueven desde el post anterior', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 2);
+    await sincronizar(db, cfg);
+    const antes = postDe(estado).id;
+    estado.posts.set(600, { id: 600, title: 'SEAT A MANO', status: 'publish' });
+    vincular(db, 1, 600);
+    await sincronizar(db, cfg);
+    assert.equal([...estado.adjuntos.values()].filter((p) => p === 600).length, 2);
+    assert.equal([...estado.adjuntos.values()].filter((p) => p === antes).length, 0);
+  }));
+
+test('ficha vinculada sin precio: se actualizan título y marca sin tocar sus campos, con aviso', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    estado.posts.get(500).acf = { precio: 9000, estado_coche: 'En venta' };
+    coche(1, 'Volkswagen', 'publicado', 1);
+    db.prepare('UPDATE vehiculos SET pvp_cent = NULL WHERE id = 1').run();
+    estado.adjuntos.clear();
+    vincular(db, 1, 500);
+    const r = await sincronizar(db, cfg);
+    assert.deepEqual(r.errores, []);
+    assert.equal(estado.posts.get(500).title, 'Volkswagen Modelo Versión');
+    assert.equal(estado.posts.get(500).acf.precio, 9000, 'su precio se queda');
+    assert.ok(r.avisos.some((a) => /falta «precio».*sus campos no se tocan/.test(a)));
   }));
 
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
