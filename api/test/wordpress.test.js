@@ -305,10 +305,12 @@ test('fotos de más: como mucho N por pasada y la siguiente termina y pone la pr
     const r = await sincronizar(db, { ...cfg, fotosPorPasada: 2 });
     assert.equal(r.fotos_subidas, 2);
     assert.equal(r.fotos_pendientes, 1);
-    assert.equal(db.prepare('SELECT huella FROM wp_posts').get().huella, null);
+    assert.equal(db.prepare('SELECT fotos_huella FROM wp_posts').get().fotos_huella, null, 'las fotos quedan por cuadrar');
+    const posts = estado.peticiones.filter((x) => x.startsWith('POST /wp/v2/coches')).length;
     assert.equal(postDe(estado).acf.imagen_principal, undefined, 'la principal espera a tenerlas todas');
     const r2 = await sincronizar(db, { ...cfg, fotosPorPasada: 2 });
     assert.equal(r2.fotos_subidas, 1);
+    assert.equal(estado.peticiones.filter((x) => x.startsWith('POST /wp/v2/coches')).length, posts + 1, 'solo se reenvía al poner la principal');
     assert.equal(estado.medios, 3);
     assert.ok(postDe(estado).acf.imagen_principal);
     assert.equal([...estado.adjuntos.values()].filter((p) => p === postDe(estado).id).length, 3);
