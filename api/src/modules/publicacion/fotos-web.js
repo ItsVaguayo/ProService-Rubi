@@ -74,7 +74,7 @@ export async function traerFotosDeLaWeb(db, cfg, vehiculoId, { fetchImpl = fetch
   for (const id of ids) {
     try { medios.push(await pedir('GET', `/wp/v2/media/${id}?context=edit`)); } catch { /* una que ya no existe: se salta */ }
   }
-  const adjuntas = await adjuntasDe(pedir, vinculo.wp_post_id, '&orderby=id&order=asc&context=edit');
+  const adjuntas = await adjuntasDe(pedir, vinculo.wp_post_id, '&context=edit');
   medios.push(...adjuntas.filter((m) => !ids.includes(m.id)));
   medios = medios.filter((m) => String(m.mime_type ?? '').startsWith('image/')).slice(0, FOTOS_MAXIMAS);
   if (!medios.length) throw new ErrorFotosWeb(409, `La ficha ${vinculo.wp_post_id} de la web no tiene fotos`);

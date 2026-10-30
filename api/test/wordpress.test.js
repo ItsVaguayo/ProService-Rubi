@@ -797,6 +797,34 @@ test('revincular desde una ficha hecha a mano no le quita sus fotos', () =>
     assert.deepEqual([501, 502, 503].map((id) => estado.adjuntos.get(id)), [500, 500, 500], 'siguen en su ficha');
   }));
 
+test('varias revinculaciones: las fotos siguen en nuestro post ya retirado y llegan a la ficha final', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 2);
+    await sincronizar(db, cfg);
+    const nuestro = postDe(estado).id;
+    vincular(db, 1, 500); // ficha a mano con fotos suyas: se bloquea, las nuestras se quedan en el nuestro
+    await sincronizar(db, cfg);
+    estado.posts.set(700, { id: 700, title: 'LIMPIA', status: 'publish' });
+    vincular(db, 1, 700);
+    await sincronizar(db, cfg);
+    assert.equal([...estado.adjuntos].filter(([, p]) => p === 700).length, 2, 'las nuestras, desde el post retirado');
+    assert.equal(estado.adjuntos.get(501), 500, 'las suyas no se tocan');
+    assert.notEqual(nuestro, 700);
+  }));
+
+test('con la primera foto por subir, la principal no se cambia por otra', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 2);
+    await sincronizar(db, cfg);
+    const principal = postDe(estado).acf.imagen_principal;
+    db.prepare('UPDATE fotos SET orden = orden + 1').run();
+    db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (1, 1, 'vehiculos/1/1.png')").run();
+    await sincronizar(db, { ...cfg, fotosPorPasada: 0 });
+    assert.equal(postDe(estado).acf.imagen_principal, principal);
+    await sincronizar(db, cfg);
+    assert.notEqual(postDe(estado).acf.imagen_principal, principal, 'subida la nueva primera, pasa a principal');
+  }));
+
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
   assert.equal(convertir('reservado', MAPA_POR_DEFECTO.estado), 'Reservado');
   assert.equal(convertir('vendido', MAPA_POR_DEFECTO.estado), 'Vendido');
