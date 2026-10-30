@@ -83,6 +83,7 @@ function wordpressFalso({ acfExpuesto = false, sin = [], conCondiciones = false 
         return estado.posts.has(Number(m[1])) ? json(200, { id: Number(m[1]) }) : json(404, { code: 'rest_post_invalid_id', message: 'ID de entrada no válido.' });
       }
       if (m && req.method === 'POST') {
+        if (m[1] && estado.fallarPost) { estado.fallarPost = false; return json(500, { code: 'error', message: 'Error interno' }); }
         const d = datos();
         if (d.acf && !acfExpuesto) return json(400, { code: 'rest_invalid_param', message: 'acf no admitido' });
         // Como ACF: sin un campo obligatorio, o con un valor fuera de las opciones de una lista, rechaza el post entero
@@ -307,10 +308,10 @@ test('fotos de más: como mucho N por pasada y la siguiente termina y pone la pr
     assert.equal(r.fotos_pendientes, 1);
     assert.equal(db.prepare('SELECT fotos_huella FROM wp_posts').get().fotos_huella, null, 'las fotos quedan por cuadrar');
     const posts = estado.peticiones.filter((x) => x.startsWith('POST /wp/v2/coches')).length;
-    assert.equal(postDe(estado).acf.imagen_principal, undefined, 'la principal espera a tenerlas todas');
+    assert.ok(postDe(estado).acf.imagen_principal, 'la principal sale de las ya subidas');
     const r2 = await sincronizar(db, { ...cfg, fotosPorPasada: 2 });
     assert.equal(r2.fotos_subidas, 1);
-    assert.equal(estado.peticiones.filter((x) => x.startsWith('POST /wp/v2/coches')).length, posts + 1, 'solo se reenvía al poner la principal');
+    assert.equal(estado.peticiones.filter((x) => x.startsWith('POST /wp/v2/coches')).length, posts, 'la principal es la misma: no se reenvía');
     assert.equal(estado.medios, 3);
     assert.ok(postDe(estado).acf.imagen_principal);
     assert.equal([...estado.adjuntos.values()].filter((p) => p === postDe(estado).id).length, 3);
@@ -766,6 +767,34 @@ test('un post borrado a mano en WordPress se da por retirado (no da error en cad
     const r = await sincronizar(db, cfg);
     assert.deepEqual(r.errores, []);
     assert.equal(db.prepare('SELECT estado FROM wp_posts WHERE vehiculo_id = 1').get().estado, 'retirado');
+  }));
+
+test('si el post falla después de cuadrar las fotos, la pasada siguiente manda la principal nueva', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 2);
+    await sincronizar(db, cfg);
+    db.prepare('UPDATE fotos SET orden = 3 - orden').run(); // cambia el orden: la principal es otra
+    estado.fallarPost = true;
+    const r = await sincronizar(db, cfg);
+    assert.match(r.errores[0], /Error interno/);
+    await sincronizar(db, cfg);
+    const primera = db.prepare('SELECT m.wp_media_id FROM fotos f JOIN wp_medios m ON m.foto_id = f.id ORDER BY f.orden LIMIT 1').get().wp_media_id;
+    assert.equal(postDe(estado).acf.imagen_principal, primera);
+  }));
+
+test('revincular desde una ficha hecha a mano no le quita sus fotos', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Volkswagen');
+    vincular(db, 1, 500);
+    for (const [i, id] of [501, 502, 503].entries()) { // «Traer fotos» trajo sus 3
+      const f = db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (1, ?, 'x.jpg')").run(i + 1).lastInsertRowid;
+      db.prepare('INSERT INTO wp_medios (foto_id, wp_media_id) VALUES (?, ?)').run(f, id);
+    }
+    await sincronizar(db, cfg);
+    estado.posts.set(600, { id: 600, title: 'OTRA', status: 'publish' });
+    vincular(db, 1, 600);
+    await sincronizar(db, cfg);
+    assert.deepEqual([501, 502, 503].map((id) => estado.adjuntos.get(id)), [500, 500, 500], 'siguen en su ficha');
   }));
 
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
