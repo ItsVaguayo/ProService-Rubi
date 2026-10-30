@@ -302,6 +302,32 @@ async function sincronizarSinBloqueo(db, cfg, { forzar, fetchImpl }) {
     return resumen;
   }
 
+  // El post que creamos para un coche que luego se vinculó a otra ficha: a borrador, o saldría dos veces en la web.
+  // Antes que los coches: sus fotos solo se mueven al post nuevo desde uno ya retirado (si no se puede retirar, no
+  // se queda vacío) y nunca desde uno que ahora sea de otro coche
+  const enUso = new Set([...vinculos.values()].map((p) => p.wp_post_id));
+  const anteriorRetirado = db.prepare(`UPDATE wp_posts SET anterior_propio = ${ANTERIOR_RETIRADO} WHERE vehiculo_id = ?`);
+  const anteriorAjeno = db.prepare(`UPDATE wp_posts SET anterior_propio = ${ANTERIOR_AJENO} WHERE vehiculo_id = ?`);
+  const retirado = db.prepare("UPDATE wp_posts SET estado = 'retirado', huella = NULL, ultimo_error = NULL, actualizado_en = datetime('now') WHERE vehiculo_id = ?");
+  // A borrador (nunca se borra). true si quedó retirado; un 404 (lo borraron a mano) también: ya no sale en la web
+  const aBorrador = async (postId, que) => {
+    try {
+      await pedir('POST', `/wp/v2/${d.rutaTipo}/${postId}`, { json: { status: 'draft' } });
+      resumen.retirados++;
+      return true;
+    } catch (e) {
+      if (e.status === 404) return true;
+      resumen.errores.push(`Retirar ${que} ${postId}: ${e.message}`);
+      return false;
+    }
+  };
+  for (const p of vinculos.values()) {
+    if (p.anterior_propio !== ANTERIOR_POR_RETIRAR) continue;
+    // Si ese post lo tiene ahora otro coche, es suyo: no se toca
+    if (enUso.has(p.wp_post_anterior)) { anteriorAjeno.run(p.vehiculo_id); p.anterior_propio = ANTERIOR_AJENO; }
+    else if (await aBorrador(p.wp_post_anterior, 'el post anterior')) { anteriorRetirado.run(p.vehiculo_id); p.anterior_propio = ANTERIOR_RETIRADO; }
+  }
+
   const ctx = {
     db, cfg, d, pedir, resumen, marcas: new Map(), presupuesto: cfg.fotosPorPasada,
     // Sin cfg.cuota (pruebas antiguas, config a mano) va la de por defecto
@@ -316,7 +342,6 @@ async function sincronizarSinBloqueo(db, cfg, { forzar, fetchImpl }) {
     // Solo de este coche: la misma foto de la web puede estar apuntada en dos (la traída a ambos)
     olvidarMedio: db.prepare('DELETE FROM wp_medios WHERE wp_media_id = ? AND foto_id IN (SELECT id FROM fotos WHERE vehiculo_id = ?)'),
     apuntarMedio: db.prepare('INSERT INTO wp_medios (foto_id, wp_media_id) VALUES (?, ?)'),
-    mediosPorFoto: (f) => f && db.prepare('SELECT wp_media_id FROM wp_medios WHERE foto_id = ?').get(f.id)?.wp_media_id,
     ponerHuella: db.prepare("UPDATE wp_posts SET huella = ?, estado = 'publicado', actualizado_en = datetime('now') WHERE vehiculo_id = ? AND wp_post_id = ?"),
     // Las fotos (adjuntas al post) van aunque la web no tenga el campo de la principal; la principal, solo si lo tiene
     mapaFotos: d.acf.expuesto && d.puede.subir_fotos ? mapaDeFotos(cfg.mapa) ?? null : null,
@@ -342,30 +367,6 @@ async function sincronizarSinBloqueo(db, cfg, { forzar, fetchImpl }) {
   }
 
   const aLaVenta = new Set(visibles.map((v) => v.id));
-  // El post que creamos para un coche que luego se vinculó a otra ficha: a borrador, o saldría dos veces en la web
-  const enUso = new Set([...vinculos.values()].map((p) => p.wp_post_id));
-  const anteriorRetirado = db.prepare(`UPDATE wp_posts SET anterior_propio = ${ANTERIOR_RETIRADO} WHERE vehiculo_id = ?`);
-  const anteriorAjeno = db.prepare(`UPDATE wp_posts SET anterior_propio = ${ANTERIOR_AJENO} WHERE vehiculo_id = ?`);
-  const retirado = db.prepare("UPDATE wp_posts SET estado = 'retirado', huella = NULL, ultimo_error = NULL, actualizado_en = datetime('now') WHERE vehiculo_id = ?");
-  // A borrador (nunca se borra). true si quedó retirado; un 404 (lo borraron a mano) también: ya no sale en la web
-  const aBorrador = async (postId, que) => {
-    try {
-      await pedir('POST', `/wp/v2/${d.rutaTipo}/${postId}`, { json: { status: 'draft' } });
-      resumen.retirados++;
-      return true;
-    } catch (e) {
-      if (e.status === 404) return true;
-      resumen.errores.push(`Retirar ${que} ${postId}: ${e.message}`);
-      return false;
-    }
-  };
-  for (const p of vinculos.values()) {
-    if (p.anterior_propio !== ANTERIOR_POR_RETIRAR) continue;
-    // Si ese post lo tiene ahora otro coche, es suyo: no se toca
-    if (enUso.has(p.wp_post_anterior)) anteriorAjeno.run(p.vehiculo_id);
-    else if (await aBorrador(p.wp_post_anterior, 'el post anterior')) anteriorRetirado.run(p.vehiculo_id);
-  }
-
   for (const p of publicados) {
     if (!aLaVenta.has(p.vehiculo_id) && await aBorrador(p.wp_post_id, 'el post')) retirado.run(p.vehiculo_id);
   }
@@ -414,7 +415,6 @@ async function publicarCoche(ctx, v, vinculo) {
     // Con fotos pendientes la próxima pasada termina de subirlas (fotos_huella sin poner); la principal sale de las
     // ya subidas, así que el post no se reenvía por eso. La foto principal solo se toca en un post con fotos nuestras:
     // sin ninguna pública se vacía; en una ficha hecha a mano, se deja la suya.
-    const subidasAntes = ctx.resumen.fotos_subidas;
     const fotos = ctx.mapaFotos ? await fotosDelPost(ctx, v, fila, avisos) : null;
     if (fotos?.bloqueo) avisos.push(fotos.bloqueo);
     // Sin los obligatorios no va ningún campo de ACF (cuerpo.acf), tampoco la principal: lo rechazaría entero
@@ -425,8 +425,7 @@ async function publicarCoche(ctx, v, vinculo) {
     const huella = huellaDe(envio);
     if (vinculo?.estado === 'publicado' && vinculo.huella === huella) {
       // Si solo cambiaron sus fotos (adjuntas o subidas), el post no se reenvía pero sí se cambió algo
-      const cambio = fotos?.cambio || ctx.resumen.fotos_subidas > subidasAntes;
-      return { accion: cambio ? 'actualizados' : 'sin_cambios', avisos, postId: fila.wp_post_id };
+      return { accion: fotos?.cambio ? 'actualizados' : 'sin_cambios', avisos, postId: fila.wp_post_id };
     }
 
     // El post recién creado ya lleva todo salvo la foto principal. Se reenvía entero: su ACF rechaza un «acf» sin
@@ -526,8 +525,8 @@ async function fotosDelPost(ctx, v, fila, avisos) {
   const { pedir } = ctx;
   if (fila.fotos_propias === FOTOS_AJENAS) return { ids: [], propias: false, bloqueo: avisoAjenas(v, fila.wp_post_id) };
   // Una foto nuestra se mueve a este post si está suelta, o en el post anterior del coche cuando ese post lo creamos
-  // nosotros (en una ficha hecha a mano son sus fotos, aunque las trajéramos)
-  const movible = (m) => !m.post || (m.post === fila.wp_post_anterior && fila.anterior_propio !== ANTERIOR_AJENO);
+  // nosotros y ya se retiró (en una ficha hecha a mano son sus fotos, aunque las trajéramos)
+  const movible = (m) => !m.post || (m.post === fila.wp_post_anterior && fila.anterior_propio === ANTERIOR_RETIRADO);
   const idsAdjuntas = async () => (await adjuntasDe(pedir, fila.wp_post_id, '&_fields=id')).map((m) => m.id);
   // Nuestro es lo apuntado en wp_medios y lo que se cuadró la última vez (una foto borrada en el panel ya no está en
   // wp_medios). Solo hace falta si hay que decidir o cuadrar: no en la pasada de un coche sin cambios
@@ -557,13 +556,13 @@ async function fotosDelPost(ctx, v, fila, avisos) {
     if (bloquear) return { ids: [], propias: false, bloqueo: avisoAjenas(v, fila.wp_post_id, ajenas) };
   }
 
-  const { ids, pendientes } = await subirFotos(ctx, v, fila.wp_post_id, fotos, avisos);
+  const { ids, pendientes, subidas } = await subirFotos(ctx, v, fila.wp_post_id, fotos, avisos);
   // Con fotos por subir, la principal solo se toca si la primera ya está subida; si no, se deja la que haya
-  if (pendientes) return { ids, propias: Boolean(ids.length) && ids[0] === ctx.mediosPorFoto(fotos[0]) };
+  if (pendientes) return { ids, propias: Boolean(fotos[0]?.wp_media_id), cambio: subidas > 0 };
   const clave = ids.join(',');
   // Si nuestras fotos no cambiaron no se repasa (ni una petición): lo que toquen a mano en Medios se repara la próxima
   // vez que cambien en el panel o al revincular
-  if (fila.fotos_huella === clave) return { ids, propias: true };
+  if (fila.fotos_huella === clave) return { ids, propias: true, cambio: subidas > 0 };
   const adjuntas = await idsAdjuntas();
   const nuestras = nuestrasDe();
   for (const id of adjuntas.filter((i) => !ids.includes(i) && nuestras.has(i))) await pedir('POST', `/wp/v2/media/${id}`, { json: { post: 0 } });
@@ -584,7 +583,7 @@ async function fotosDelPost(ctx, v, fila, avisos) {
       perdidas.push(id);
     }
     // Se vuelven a subir en la pasada siguiente; mientras, la principal sale de las que siguen
-    if (perdidas.length) return { ids: ids.filter((id) => !perdidas.includes(id)), propias: true };
+    if (perdidas.length) return { ids: ids.filter((id) => !perdidas.includes(id)), propias: true, cambio: true };
   }
   ctx.ponerHuellaFotos.run(clave, v.id, fila.wp_post_id);
   return { ids, propias: true, cambio: true };
@@ -592,12 +591,13 @@ async function fotosDelPost(ctx, v, fila, avisos) {
 
 /**
  * Ids de WordPress de las fotos públicas del coche, en orden, subiendo adjuntas al post las que falten:
- * { ids, pendientes }. Si quedan por subir (presupuesto de la pasada), ids son las ya subidas.
+ * { ids, pendientes, subidas }. Si quedan por subir (presupuesto de la pasada), ids son las ya subidas.
  */
 async function subirFotos(ctx, v, postId, fotos, avisos) {
   const { cfg, pedir, resumen } = ctx;
   const ids = [];
   let pendientes = 0;
+  let subidas = 0;
   for (const f of fotos) {
     if (f.wp_media_id) { ids.push(f.wp_media_id); continue; }
     if (ctx.presupuesto <= 0) { pendientes++; continue; }
@@ -612,11 +612,13 @@ async function subirFotos(ctx, v, postId, fotos, avisos) {
       cabeceras: { 'Content-Type': tipo, 'Content-Disposition': `attachment; filename="${nombre}"` },
     });
     ctx.apuntarMedio.run(f.id, medio.id);
+    f.wp_media_id = medio.id;
+    subidas++;
     resumen.fotos_subidas++;
     ids.push(medio.id);
   }
   resumen.fotos_pendientes += pendientes;
-  return { ids, pendientes };
+  return { ids, pendientes, subidas };
 }
 
 /** Une un coche nuestro con un post que ya existía en la web (las 30 fichas hechas a mano). */
