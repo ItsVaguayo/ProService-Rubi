@@ -51,7 +51,10 @@ function wordpressFalso({ acfExpuesto = false, sin = [], conCondiciones = false 
       if (ruta === '/wp/v2/marca' && req.method === 'POST') { const t = { id: estado.siguiente++, name: datos().name }; estado.terminos.push(t); return json(201, t); }
       if (ruta === '/wp/v2/media' && req.method === 'GET') {
         const padre = Number(url.searchParams.get('parent'));
-        return json(200, [...estado.adjuntos].filter(([, p]) => p === padre).map(([id]) => ({ id })));
+        const pagina = Number(url.searchParams.get('page') || 1);
+        const todas = [...estado.adjuntos].filter(([, p]) => p === padre).map(([id]) => ({ id }));
+        if (pagina > 1 && todas.length <= (pagina - 1) * 100) return json(400, { code: 'rest_post_invalid_page_number', message: 'Página no válida' });
+        return json(200, todas.slice((pagina - 1) * 100, pagina * 100));
       }
       if (ruta === '/wp/v2/media' && req.method === 'POST') {
         if (estado.fallarSubida) { estado.fallarSubida = false; return json(500, { code: 'error', message: 'Error al subir' }); }
@@ -417,6 +420,73 @@ test('un formato viejo de WP_MAPA («galeria») se avisa y no se manda', () =>
     assert.equal(postDe(estado).acf.video, undefined);
   }));
 
+test('vincular una ficha sin fotos nuestras todavía no la bloquea: «Traer fotos» puede importar las suyas', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Volkswagen');
+    vincular(db, 1, 500);
+    await sincronizar(db, cfg);
+    assert.equal(db.prepare('SELECT fotos_propias FROM wp_posts').get().fotos_propias, 0, 'sin mirar todavía');
+    // Lo que hace «Traer fotos de la web»: sus 3 fotos pasan a ser nuestras, con su id de WordPress
+    for (const [i, id] of [501, 502, 503].entries()) {
+      const f = db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (1, ?, 'x.jpg')").run(i + 1).lastInsertRowid;
+      db.prepare('INSERT INTO wp_medios (foto_id, wp_media_id) VALUES (?, ?)').run(f, id);
+    }
+    const r = await sincronizar(db, cfg);
+    assert.ok(!r.avisos.some((a) => /subidas a mano/.test(a)));
+    assert.equal(db.prepare('SELECT fotos_propias FROM wp_posts').get().fotos_propias, 1);
+    assert.equal(estado.posts.get(500).acf.imagen_principal, 501);
+  }));
+
+test('ficha bloqueada: el motivo queda en el estado del coche, no solo en la pasada que lo vio', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, coche }) => {
+    coche(1, 'Volkswagen', 'publicado', 1);
+    vincular(db, 1, 500);
+    await sincronizar(db, cfg);
+    db.prepare('UPDATE vehiculos SET pvp_cent = 1300000 WHERE id = 1').run();
+    await sincronizar(db, cfg);
+    assert.match(db.prepare('SELECT ultimo_error FROM wp_posts').get().ultimo_error, /post 500 ya tiene otras fotos subidas a mano/);
+  }));
+
+test('sin ninguna foto pública se vacía la foto principal; lo que suban a mano a un post nuestro no se toca', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 2);
+    await sincronizar(db, cfg);
+    const post = postDe(estado);
+    estado.adjuntos.set(9000, post.id); // la sube Francesc a mano
+    db.prepare('UPDATE fotos SET publica = 0').run();
+    await sincronizar(db, cfg);
+    assert.equal(post.acf.imagen_principal, null);
+    assert.deepEqual([...estado.adjuntos].filter(([, p]) => p === post.id).map(([id]) => id), [9000], 'las nuestras fuera, la suya se queda');
+  }));
+
+test('un campo obligatorio de su web sin valor: error claro y no se manda nada', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat');
+    db.prepare('UPDATE vehiculos SET pvp_cent = NULL WHERE id = 1').run();
+    const r = await sincronizar(db, cfg);
+    assert.match(r.errores[0], /PS-00001: falta «precio», obligatorio en la web/);
+    assert.equal(estado.posts.size, 1, 'no se crea el post');
+    const d = await diagnosticar({ ...cfg, mapa: { estado: MAPA_POR_DEFECTO.estado } });
+    assert.ok(d.avisos.some((a) => /obligatorios de la web que el mapa no rellena: precio/.test(a)));
+  }));
+
+test('WP_MAPA sin formato manda texto, como antes', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat');
+    db.prepare("UPDATE vehiculos SET video_url = 'https://youtu.be/x' WHERE id = 1").run();
+    await sincronizar(db, { ...cfg, mapa: { ...MAPA_POR_DEFECTO, video_url: { acf: 'video' } } });
+    assert.equal(postDe(estado).acf.video, 'https://youtu.be/x');
+  }));
+
+test('más de 100 fotos adjuntas: se piden todas, de 100 en 100', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    for (let id = 2000; id < 2100; id++) estado.adjuntos.set(id, 500); // justo 100 más las 3 suyas: 103
+    coche(1, 'Volkswagen', 'publicado', 1);
+    vincular(db, 1, 500);
+    const r = await sincronizar(db, cfg);
+    assert.ok(r.avisos.some((a) => /post 500 ya tiene 103 fotos/.test(a)));
+  }));
+
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
   assert.equal(convertir('reservado', MAPA_POR_DEFECTO.estado), 'Reservado');
   assert.equal(convertir('vendido', MAPA_POR_DEFECTO.estado), 'Vendido');
@@ -437,4 +507,8 @@ test('adaptar: el valor sigue al tipo que anuncia la web, y a sus opciones cerra
   assert.deepEqual(adaptar(['marron turmalina', 'Gris perla', 'Morado'], colores), ['Marrón Turmalina', 'Gris']);
   assert.equal(adaptar('diesel', { type: ['string', 'null'], items: { enum: ['Gasolina', 'Diésel'] } }), 'Diésel');
   assert.equal(adaptar('GLP', { type: ['string', 'null'], items: { enum: ['Gasolina', 'Diésel'] } }), null);
+  assert.equal(adaptar('Azul marino metalizado', { type: ['string'], items: { enum: ['Azul', 'Azul marino'] } }), 'Azul marino', 'la opción más larga que encaja');
+  const fuera = [];
+  adaptar(['Rojo', 'Morado'], colores, fuera);
+  assert.deepEqual(fuera, ['Rojo', 'Morado'], 'los que no están en sus opciones se apuntan');
 });

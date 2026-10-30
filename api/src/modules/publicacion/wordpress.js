@@ -47,7 +47,7 @@ export const MAPA_POR_DEFECTO = {
   fotos: { acf: 'imagen_principal', formato: 'fotos' },
 };
 
-// Los formatos que entiende el conector (ver convertir). «galeria» (un campo con los ids) ya no existe: su web no lo tiene.
+// Los formatos que entiende el conector (ver convertir); sin formato, texto. «galeria» (un campo con los ids) ya no existe: su web no lo tiene.
 export const FORMATOS = ['texto', 'numero', 'euros', 'capitalizar', 'lista', 'fotos'];
 
 // Datos del mapa que no son columnas del coche: se calculan, y solo si el mapa los usa.
@@ -167,13 +167,15 @@ export async function diagnosticar(cfg, fetchImpl = fetch) {
     campo, acf: destino.acf, estado: d.acf.campos[destino.acf] ? 'ok' : d.acf.expuesto ? 'no existe en la web' : 'ACF no expuesto',
   }));
 
-  const desconocidos = Object.entries(cfg.mapa).filter(([, m]) => !FORMATOS.includes(m.formato)).map(([c, m]) => `${c} (${m.formato})`);
+  const desconocidos = Object.entries(cfg.mapa).filter(([, m]) => !FORMATOS.includes(m.formato ?? 'texto')).map(([c, m]) => `${c} (${m.formato})`);
   if (desconocidos.length) d.avisos.push(`Formatos de WP_MAPA que el conector no entiende y no se mandan: ${desconocidos.join(', ')}. Las fotos van con formato «fotos».`);
   if (!d.puede.publicar) d.avisos.push('El usuario no puede publicar: hace falta rol Editor (o Autor como mínimo).');
   if (!d.acf.expuesto) {
     d.avisos.push('Los campos de ACF no están expuestos en la API REST: solo se puede enviar título, estado y marca. '
       + 'Para mandar precio, datos y fotos, un administrador tiene que activar «Mostrar en la API REST» en el grupo de campos de ACF del tipo «coches».');
   } else {
+    const obligatorios = Object.entries(d.acf.campos).filter(([k, e]) => e.required && !Object.values(cfg.mapa).some((m) => m.acf === k)).map(([k]) => k);
+    if (obligatorios.length) d.avisos.push(`Campos obligatorios de la web que el mapa no rellena: ${obligatorios.join(', ')}. Sin ellos no se publica ningún coche.`);
     const faltan = d.mapa.filter((m) => m.estado !== 'ok' && !cfg.mapa[m.campo].opcional).map((m) => m.acf);
     if (faltan.length) d.avisos.push(`Campos del mapa que la web no tiene: ${faltan.join(', ')}. Ajustar WP_MAPA a los nombres reales.`);
     // La cuota sin su ejemplo representativo (TAE y total adeudado) no cumple la Ley 16/2011 (cuota.js, duda E9)
@@ -213,11 +215,13 @@ const normalizar = (texto) => sinAcentos(texto).trim().replace(/\s+/g, ' ');
 
 /**
  * La opción de su lista cerrada que corresponde al valor, sin mirar mayúsculas ni tildes: «gris» → «Gris»,
- * y si no está tal cual, la que empieza igual («Gris oscuro» → «Gris»). null si ninguna.
+ * y si no está tal cual, la más larga que empieza igual («Gris oscuro» → «Gris»; «Azul marino claro» → «Azul marino»
+ * antes que «Azul»). null si ninguna.
  */
 export function opcionDe(valor, opciones) {
   const v = normalizar(valor);
-  return opciones.find((o) => normalizar(o) === v) ?? opciones.find((o) => v.startsWith(`${normalizar(o)} `)) ?? null;
+  return opciones.find((o) => normalizar(o) === v)
+    ?? opciones.filter((o) => v.startsWith(`${normalizar(o)} `)).sort((a, b) => b.length - a.length)[0] ?? null;
 }
 
 /**
@@ -317,30 +321,34 @@ async function publicarCoche(ctx, v, vinculo) {
     for (const [campo, destino] of Object.entries(cfg.mapa)) {
       const esquema = d.acf.campos[destino.acf];
       // Las fotos van aparte; un formato desconocido lo avisa el diagnóstico
-      if (!esquema || destino.formato === 'fotos' || !FORMATOS.includes(destino.formato)) continue;
+      if (!esquema || destino.formato === 'fotos' || !FORMATOS.includes(destino.formato ?? 'texto')) continue;
       const valor = Object.hasOwn(CALCULADOS, campo) ? CALCULADOS[campo](v, ctx) : v[campo];
       const descartados = [];
       acf[destino.acf] = adaptar(convertir(valor, destino), esquema, descartados);
       if (descartados.length) avisos.push(`${v.referencia}: ${descartados.map((f) => `«${f}»`).join(', ')} no está entre las opciones de «${destino.acf}» de la web: no se manda`);
     }
     if (Object.keys(acf).length) cuerpo.acf = acf;
+    // Su ACF rechaza el post entero si falta un obligatorio (precio, estado_coche): mejor decirlo que mandarlo
+    const faltan = Object.entries(d.acf.campos).filter(([k, e]) => e.required && acf[k] == null).map(([k]) => `«${k}»`);
+    if (faltan.length) throw new Error(`falta ${faltan.join(', ')}, obligatorio en la web: no se publica`);
   }
 
   // Un coche nuevo necesita su post antes que las fotos (van adjuntas a él)
   const fila = vinculo ?? await crearPost(ctx, v, cuerpo);
 
-  // Con fotos pendientes (null) no se guarda la huella: la próxima pasada termina de subirlas.
-  const ids = campoFotos ? await fotosDelPost(ctx, v, fila, avisos) : [];
-  const principal = ids?.length ? { [campoFotos]: ids[0] } : null;
+  // Con fotos pendientes (null) no se guarda la huella: la próxima pasada termina de subirlas. La foto principal
+  // solo se toca en un post con fotos nuestras: sin ninguna pública se vacía; en una ficha hecha a mano, se deja la suya.
+  const fotos = campoFotos ? await fotosDelPost(ctx, v, fila, avisos) : null;
+  const principal = fotos?.propias ? { [campoFotos]: fotos.ids[0] ?? null } : null;
   const envio = principal ? { ...cuerpo, acf: { ...cuerpo.acf, ...principal } } : cuerpo;
-  const huella = ids === null ? null : huellaDe(envio);
+  const huella = campoFotos && fotos === null ? null : huellaDe(envio);
   if (vinculo?.estado === 'publicado' && huella && vinculo.huella === huella) return 'sin_cambios';
   resumen.avisos.push(...avisos);
 
   try {
     // El post recién creado ya lleva todo salvo la foto principal. Se reenvía entero: su ACF rechaza un «acf» sin
     // los campos obligatorios (precio, estado_coche), comprobado contra ACF el 30-oct
-    if (vinculo || principal) await pedir('POST', `/wp/v2/${d.rutaTipo}/${fila.wp_post_id}`, { json: envio });
+    if (vinculo || principal?.[campoFotos]) await pedir('POST', `/wp/v2/${d.rutaTipo}/${fila.wp_post_id}`, { json: envio });
   } catch (e) {
     if (e.status !== 404 || !vinculo) throw e;
     // Lo borraron a mano en WordPress: se vuelve a crear, y la pasada siguiente le vuelve a adjuntar nuestras fotos
@@ -348,7 +356,9 @@ async function publicarCoche(ctx, v, vinculo) {
     return 'creados';
   }
 
-  ctx.db.prepare("UPDATE wp_posts SET huella = ?, estado = 'publicado', ultimo_error = NULL, actualizado_en = datetime('now') WHERE vehiculo_id = ?").run(huella, v.id);
+  // Una ficha bloqueada por sus fotos lo sigue diciendo en el estado (GET /wordpress/estado), no solo en la pasada que lo vio
+  ctx.db.prepare("UPDATE wp_posts SET huella = ?, estado = 'publicado', ultimo_error = ?, actualizado_en = datetime('now') WHERE vehiculo_id = ?")
+    .run(huella, fotos?.bloqueo ?? null, v.id);
   return vinculo ? 'actualizados' : 'creados';
 }
 
@@ -389,48 +399,64 @@ const FOTOS_SIN_MIRAR = 0;
 const FOTOS_PROPIAS = 1;
 const FOTOS_AJENAS = -1;
 
-/** Las imágenes adjuntas a un post: su galería. */
+/** Las imágenes adjuntas a un post: su galería. Todas, de 100 en 100. */
 export async function adjuntasDe(pedir, postId, extra = '') {
-  return pedir('GET', `/wp/v2/media?parent=${postId}&media_type=image&per_page=100${extra}`);
+  const todas = [];
+  for (let pagina = 1; ; pagina++) {
+    let lote;
+    try {
+      lote = await pedir('GET', `/wp/v2/media?parent=${postId}&media_type=image&per_page=100&page=${pagina}${extra}`);
+    } catch (e) {
+      if (e.codigo === 'rest_post_invalid_page_number') return todas; // justo 100: la página siguiente no existe
+      throw e;
+    }
+    todas.push(...lote);
+    if (lote.length < 100) return todas;
+  }
 }
+
+const avisoAjenas = (v, postId, n = null) => `${v.referencia}: el post ${postId} ya tiene ${n ?? 'otras'} fotos subidas a mano. Las nuestras no se suben `
+  + 'hasta que se quiten de ese post en WordPress (Medios, «Desadjuntar») y se vuelva a vincular el coche.';
 
 /**
  * Las fotos del coche en su post: sube las que falten (adjuntas a él) y, si el juego cambió, cuadra lo adjunto:
- * desadjunta lo que ya no va (ocultas o borradas en el panel) y adjunta lo que no está (subidas antes a otro post).
- * Nunca borra nada de su biblioteca de medios. Devuelve los ids en orden ([] si no hay o está bloqueada), o null
- * si quedan por subir.
+ * desadjunta lo que fue nuestro y ya no va (ocultas o borradas en el panel) y adjunta lo que no está (subidas
+ * antes a otro post). Lo que suban a mano a un post nuestro se respeta, y nunca se borra nada de su biblioteca.
+ * Devuelve { ids, propias, bloqueo? }, o null si quedan por subir.
  */
 async function fotosDelPost(ctx, v, fila, avisos) {
   const { db, pedir } = ctx;
-  if (fila.fotos_propias === FOTOS_AJENAS) return [];
+  if (fila.fotos_propias === FOTOS_AJENAS) return { ids: [], propias: false, bloqueo: avisoAjenas(v, fila.wp_post_id) };
+  const nuestras = new Set(db.prepare('SELECT m.wp_media_id FROM wp_medios m JOIN fotos f ON f.id = m.foto_id WHERE f.vehiculo_id = ?')
+    .all(v.id).map((m) => m.wp_media_id));
   let adjuntas = null;
-  let nuestras = null;
   // Una ficha hecha a mano: antes de subir nada se mira que no tenga otras fotos que las nuestras, o saldrían
-  // mezcladas. Si las tiene se bloquea hasta que se quiten y se revincule.
+  // mezcladas. Si las tiene se bloquea hasta que se quiten y se revincule. Sin fotos nuestras todavía no se
+  // decide: «Traer fotos de la web» puede importar justo las suyas.
   if (fila.fotos_propias === FOTOS_SIN_MIRAR) {
-    nuestras = new Set(db.prepare('SELECT m.wp_media_id FROM wp_medios m JOIN fotos f ON f.id = m.foto_id WHERE f.vehiculo_id = ?')
-      .all(v.id).map((m) => m.wp_media_id));
+    if (!db.prepare('SELECT 1 FROM fotos WHERE vehiculo_id = ? LIMIT 1').get(v.id)) return { ids: [], propias: false };
     adjuntas = (await adjuntasDe(pedir, fila.wp_post_id, '&_fields=id')).map((m) => m.id);
     const ajenas = adjuntas.filter((id) => !nuestras.has(id)).length;
-    const estado = ajenas ? FOTOS_AJENAS : FOTOS_PROPIAS;
-    db.prepare('UPDATE wp_posts SET fotos_propias = ? WHERE vehiculo_id = ?').run(estado, v.id);
+    db.prepare('UPDATE wp_posts SET fotos_propias = ? WHERE vehiculo_id = ?').run(ajenas ? FOTOS_AJENAS : FOTOS_PROPIAS, v.id);
     if (ajenas) {
-      avisos.push(`${v.referencia}: el post ${fila.wp_post_id} ya tiene ${ajenas} fotos subidas a mano. Las nuestras no se suben `
-        + 'hasta que se quiten de ese post en WordPress (Medios, «Desadjuntar») y se vuelva a vincular el coche.');
-      return [];
+      const bloqueo = avisoAjenas(v, fila.wp_post_id, ajenas);
+      avisos.push(bloqueo);
+      return { ids: [], propias: false, bloqueo };
     }
   }
 
   const ids = await subirFotos(ctx, v, fila.wp_post_id);
   if (ids === null) return null;
   const clave = ids.join(',');
-  if (fila.fotos_huella === clave) return ids;
+  if (fila.fotos_huella === clave) return { ids, propias: true };
   // Si la lista ya se pidió antes de subir, no se vuelve a pedir: lo recién subido (lo que no era nuestro) ya va adjunto
   adjuntas = adjuntas ? [...adjuntas, ...ids.filter((id) => !nuestras.has(id))] : (await adjuntasDe(pedir, fila.wp_post_id, '&_fields=id')).map((m) => m.id);
-  for (const id of adjuntas.filter((i) => !ids.includes(i))) await pedir('POST', `/wp/v2/media/${id}`, { json: { post: 0 } });
+  // Nuestro es lo apuntado en wp_medios y lo que se cuadró la última vez (una foto borrada en el panel ya no está en wp_medios)
+  const fueNuestra = new Set([...nuestras, ...String(fila.fotos_huella ?? '').split(',').filter(Boolean).map(Number)]);
+  for (const id of adjuntas.filter((i) => !ids.includes(i) && fueNuestra.has(i))) await pedir('POST', `/wp/v2/media/${id}`, { json: { post: 0 } });
   for (const id of ids.filter((i) => !adjuntas.includes(i))) await pedir('POST', `/wp/v2/media/${id}`, { json: { post: fila.wp_post_id } });
   db.prepare('UPDATE wp_posts SET fotos_huella = ? WHERE vehiculo_id = ?').run(clave, v.id);
-  return ids;
+  return { ids, propias: true };
 }
 
 /** Ids de WordPress de las fotos públicas del coche, en orden, subiendo adjuntas al post las que falten. null si quedan por subir. */
