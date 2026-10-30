@@ -729,6 +729,19 @@ test('dos revinculaciones seguidas antes de una pasada: el post nuestro se retir
     assert.equal(nuestro.status, 'draft');
   }));
 
+test('revincular el mismo post nuestro no lo bloquea por una foto subida a mano', () =>
+  conEscenario({ acfExpuesto: true }, async ({ db, cfg, estado, coche }) => {
+    coche(1, 'Seat', 'publicado', 1);
+    await sincronizar(db, cfg);
+    const post = postDe(estado);
+    estado.adjuntos.set(9100, post.id); // una suya en nuestro post
+    vincular(db, 1, post.id);
+    db.prepare("INSERT INTO fotos (vehiculo_id, orden, ruta_original) VALUES (1, 2, 'vehiculos/1/1.png')").run();
+    const r = await sincronizar(db, cfg);
+    assert.ok(!r.avisos.some((a) => /subidas a mano/.test(a)));
+    assert.equal(r.fotos_subidas, 1);
+  }));
+
 test('convertir: traduce valores, euros, mayúsculas y listas', () => {
   assert.equal(convertir('reservado', MAPA_POR_DEFECTO.estado), 'Reservado');
   assert.equal(convertir('vendido', MAPA_POR_DEFECTO.estado), 'Vendido');

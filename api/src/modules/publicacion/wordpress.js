@@ -316,37 +316,39 @@ async function sincronizarSinBloqueo(db, cfg, { forzar, fetchImpl }) {
     mapaFotos: d.acf.expuesto && d.puede.subir_fotos ? mapaDeFotos(cfg.mapa) ?? null : null,
   };
   ctx.campoFotos = ctx.mapaFotos && d.acf.campos[ctx.mapaFotos.acf] ? ctx.mapaFotos.acf : null;
-  const estadoBien = db.prepare('UPDATE wp_posts SET ultimo_error = NULL, avisos = ? WHERE vehiculo_id = ?');
+  // Con el post que se usó en la pasada: si alguien vincula el coche a otro mientras tanto, no se pisa su estado
+  const estadoBien = db.prepare('UPDATE wp_posts SET ultimo_error = NULL, avisos = ? WHERE vehiculo_id = ? AND wp_post_id = ?');
   const estadoMal = db.prepare("UPDATE wp_posts SET ultimo_error = ?, avisos = NULL, actualizado_en = datetime('now') WHERE vehiculo_id = ?");
   for (const v of visibles) {
     try {
-      const { accion, avisos } = await publicarCoche(ctx, v, vinculos.get(v.id));
+      const { accion, avisos, postId } = await publicarCoche(ctx, v, vinculos.get(v.id));
       resumen[accion]++;
       // Los avisos del coche (valores fuera de sus opciones, fotos bloqueadas) quedan en su estado (GET /wordpress/estado),
       // aparte de los errores; en el resumen, solo cuando se mandó algo
       const nota = avisos.join('\n') || null;
       const antes = vinculos.get(v.id);
-      if (!antes || antes.ultimo_error || antes.avisos !== nota) estadoBien.run(nota, v.id);
+      if (!antes || antes.wp_post_id !== postId || antes.ultimo_error || antes.avisos !== nota) estadoBien.run(nota, v.id, postId);
       if (accion !== 'sin_cambios') resumen.avisos.push(...avisos);
     } catch (e) {
       resumen.errores.push(`${v.referencia}: ${e.message}`);
-      estadoMal.run(e.message, v.id);
+      if (vinculos.get(v.id)?.ultimo_error !== e.message) estadoMal.run(e.message, v.id);
     }
   }
 
   const aLaVenta = new Set(visibles.map((v) => v.id));
   // El post que creamos para un coche que luego se vinculó a otra ficha: a borrador, o saldría dos veces en la web
   const enUso = new Set([...vinculos.values()].map((p) => p.wp_post_id));
+  const olvidarAnterior = db.prepare('UPDATE wp_posts SET anterior_propio = 0 WHERE vehiculo_id = ?');
   for (const p of vinculos.values()) {
     if (!p.anterior_propio) continue;
     // Si ese post lo tiene ahora otro coche, es suyo: no se toca
-    if (enUso.has(p.wp_post_anterior)) { db.prepare('UPDATE wp_posts SET anterior_propio = 0 WHERE vehiculo_id = ?').run(p.vehiculo_id); continue; }
+    if (enUso.has(p.wp_post_anterior)) { olvidarAnterior.run(p.vehiculo_id); continue; }
     try {
       await pedir('POST', `/wp/v2/${d.rutaTipo}/${p.wp_post_anterior}`, { json: { status: 'draft' } });
-      db.prepare('UPDATE wp_posts SET anterior_propio = 0 WHERE vehiculo_id = ?').run(p.vehiculo_id);
+      olvidarAnterior.run(p.vehiculo_id);
       resumen.retirados++;
     } catch (e) {
-      if (e.status === 404) db.prepare('UPDATE wp_posts SET anterior_propio = 0 WHERE vehiculo_id = ?').run(p.vehiculo_id);
+      if (e.status === 404) olvidarAnterior.run(p.vehiculo_id);
       else resumen.errores.push(`Retirar el post anterior ${p.wp_post_anterior}: ${e.message}`);
     }
   }
@@ -364,7 +366,7 @@ async function sincronizarSinBloqueo(db, cfg, { forzar, fetchImpl }) {
   return resumen;
 }
 
-/** Publica o actualiza el post de un coche. Devuelve { accion, avisos }. */
+/** Publica o actualiza el post de un coche. Devuelve { accion, avisos, postId }. */
 async function publicarCoche(ctx, v, vinculo) {
   const { cfg, d, pedir, campoFotos } = ctx;
   const titulo = sinEtiquetas([v.marca, v.modelo, v.version].filter(Boolean).join(' '));
@@ -373,6 +375,7 @@ async function publicarCoche(ctx, v, vinculo) {
   const avisos = [];
   if (d.acf.expuesto) {
     const acf = {};
+    const propio = !vinculo || vinculo.propio === 1;
     for (const [campo, destino] of Object.entries(cfg.mapa)) {
       const esquema = d.acf.campos[destino.acf];
       // Las fotos van aparte; un formato desconocido lo avisa el diagnóstico
@@ -384,8 +387,8 @@ async function publicarCoche(ctx, v, vinculo) {
       // Un dato que no tenemos (o que no encaja en sus opciones) no se manda en una ficha hecha a mano: borraría lo que
       // pusieron (los coches de Pymecar llegan sin extras, color ni vídeo). En un post nuestro, o en los campos
       // marcados «vaciar», sí: se vacía (su ACF acepta null en sus listas, comprobado el 30-oct)
-      const propio = !vinculo || vinculo.propio === 1;
-      if ((adaptado === null || (Array.isArray(adaptado) && !adaptado.length)) && !propio && !destino.vaciar) continue;
+      const vacio = adaptado === null || adaptado === '' || (Array.isArray(adaptado) && !adaptado.length);
+      if (vacio && !propio && !destino.vaciar) continue;
       acf[destino.acf] = adaptado;
     }
     // Su ACF rechaza el post entero si falta un obligatorio (precio, estado_coche). Un coche nuevo no se publica; en
@@ -411,21 +414,21 @@ async function publicarCoche(ctx, v, vinculo) {
     const envio = principal ? { ...cuerpo, acf: { ...cuerpo.acf, ...principal } } : cuerpo;
     const huella = ctx.mapaFotos && fotos === null ? null : huellaDe(envio);
     // Si solo cambiaron las fotos adjuntas (la principal es la misma), el post no se reenvía pero sí se cambió algo
-    if (vinculo?.estado === 'publicado' && huella && vinculo.huella === huella) return { accion: fotos?.cambio ? 'actualizados' : 'sin_cambios', avisos };
+    if (vinculo?.estado === 'publicado' && huella && vinculo.huella === huella) return { accion: fotos?.cambio ? 'actualizados' : 'sin_cambios', avisos, postId: fila.wp_post_id };
 
     // El post recién creado ya lleva todo salvo la foto principal. Se reenvía entero: su ACF rechaza un «acf» sin
     // los campos obligatorios (precio, estado_coche), comprobado contra ACF el 30-oct
     if (vinculo || principal?.[campoFotos]) await pedir('POST', `/wp/v2/${d.rutaTipo}/${fila.wp_post_id}`, { json: envio });
     ctx.ponerHuella.run(huella, v.id, fila.wp_post_id);
-    return { accion: vinculo ? 'actualizados' : 'creados', avisos };
+    return { accion: vinculo ? 'actualizados' : 'creados', avisos, postId: fila.wp_post_id };
   } catch (e) {
     // Si lo borraron a mano en WordPress (subir una foto, adjuntarla o actualizarlo da 403 o 404), se vuelve a crear
     // y la pasada siguiente le vuelve a adjuntar nuestras fotos
     if (!vinculo || ![403, 404].includes(e.status) || !(await borrado(ctx, fila.wp_post_id))) throw e;
     // Sin los obligatorios no se crea un post nuevo, como en el alta
     if (d.acf.expuesto && !cuerpo.acf) throw new Error(`el post ${fila.wp_post_id} se borró en WordPress y faltan obligatorios para crearlo de nuevo`);
-    await crearPost(ctx, v, cuerpo);
-    return { accion: 'creados', avisos };
+    const nuevo = await crearPost(ctx, v, cuerpo);
+    return { accion: 'creados', avisos, postId: nuevo.wp_post_id };
   }
 }
 
@@ -600,7 +603,9 @@ export function vincular(db, vehiculoId, wpPostId) {
   // Revincular vuelve a mirar sus fotos: así se desbloquea una ficha a la que le han quitado las suyas
   db.prepare(`INSERT INTO wp_posts (vehiculo_id, wp_post_id, huella, estado) VALUES (?, ?, NULL, 'vinculado')
               ON CONFLICT (vehiculo_id) DO UPDATE SET wp_post_id = excluded.wp_post_id, huella = NULL, estado = 'vinculado',
-                fotos_propias = ${FOTOS_SIN_MIRAR}, avisos = NULL, ultimo_error = NULL,
+                -- Revincular el mismo post nuestro no vuelve a mirar sus fotos (lo que suban a mano a un post nuestro se respeta)
+                fotos_propias = CASE WHEN wp_posts.wp_post_id = excluded.wp_post_id AND wp_posts.propio = 1 THEN wp_posts.fotos_propias ELSE ${FOTOS_SIN_MIRAR} END,
+                avisos = NULL, ultimo_error = NULL,
                 -- A otro post: lo nuevo es una ficha hecha a mano, y el anterior, si era nuestro, se retira en la pasada. Si
                 -- ya había uno nuestro pendiente de retirar, se conserva ese (no se pierde con dos revinculaciones seguidas)
                 wp_post_anterior = CASE WHEN wp_posts.wp_post_id = excluded.wp_post_id OR wp_posts.anterior_propio = 1
